@@ -1,0 +1,14 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <f:optionalBlock name="on" checked="${instance.on}" title="DataDog tagging" inline="true">
+        <f:radioBlock title="Properties content" name="choice" checked="${!instance.isTaggingEmpty()}">
+            <f:entry title="Properties" field="tagging">    
+                <f:textarea/>
+            </f:entry>            
+        </f:radioBlock>   
+        <f:radioBlock title="File from workspace" name="choice" checked="${!instance.isTagFileEmpty()}">
+            <f:entry title="File" field="tagFile">
+                <f:textbox/>
+            </f:entry>
+        </f:radioBlock>
+    </f:optionalBlock>
+</j:jelly>
