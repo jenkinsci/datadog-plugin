@@ -50,9 +50,16 @@ public class DataDogJobProperty<T extends Job<?,?>> extends JobProperty<T> {
   @Override
   public JobProperty<?> reconfigure(StaplerRequest req, JSONObject form) 
           throws Descriptor.FormException {
+
     DataDogJobProperty prop = (DataDogJobProperty) super.reconfigure(req, form);
     prop.tagFile = (String)form.getJSONObject("choice").get("tagFile");
     prop.tagging = (String)form.getJSONObject("choice").get("tagging");
+    
+    if(!on) {
+      prop.tagFile = null;
+      prop.tagging = null;
+    }
+    
     return prop;
   }
  
