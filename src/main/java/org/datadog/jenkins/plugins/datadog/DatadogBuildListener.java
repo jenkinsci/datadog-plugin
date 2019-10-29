@@ -32,7 +32,6 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.concurrent.TimeUnit;
@@ -382,7 +381,7 @@ public class DatadogBuildListener extends RunListener<Run>
    */
   @Override
   public DescriptorImpl getDescriptor() {
-    return new DescriptorImpl();
+    return DatadogUtilities.getDatadogDescriptor();
   }
 
   /**
