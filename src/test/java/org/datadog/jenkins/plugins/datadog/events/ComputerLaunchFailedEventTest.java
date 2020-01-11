@@ -25,7 +25,6 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.events;
 
-import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.junit.Assert;
