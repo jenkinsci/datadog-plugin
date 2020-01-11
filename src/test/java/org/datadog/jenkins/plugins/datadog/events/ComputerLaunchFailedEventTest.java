@@ -48,8 +48,6 @@ public class ComputerLaunchFailedEventTest {
 
     @Before
     public void setUp() {
-        PowerMockito.mockStatic(Jenkins.MasterComputer.class);
-
         PowerMockito.mockStatic(DatadogUtilities.class);
     }
 
