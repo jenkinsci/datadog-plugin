@@ -80,6 +80,9 @@ public class DatadogUtilities {
      */
     public static Map<String, Set<String>> getBuildTags(Run run, @Nonnull TaskListener listener) {
         Map<String, Set<String>> result = new HashMap<>();
+        if(run == null){
+            return result;
+        }
         String jobName = run.getParent().getFullName();
         final String globalJobTags = getDatadogGlobalDescriptor().getGlobalJobTags();
         final DatadogJobProperty property = DatadogUtilities.getDatadogJobProperties(run);

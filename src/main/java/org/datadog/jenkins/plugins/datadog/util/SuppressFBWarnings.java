@@ -4,7 +4,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * inspired from https://sourceforge.net/p/findbugs/feature-requests/298/#5e88
+ * Inspired from https://sourceforge.net/p/findbugs/feature-requests/298/#5e88
  */
 @Retention(RetentionPolicy.CLASS)
 public @interface SuppressFBWarnings {

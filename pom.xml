@@ -19,10 +19,10 @@
   <packaging>hpi</packaging>
 
   <properties>
-    <jenkins.version>2.150</jenkins.version>
+    <!--<jenkins.version>2.150</jenkins.version>-->
     <java.level>8</java.level>
-    <findbugs.skip>true</findbugs.skip>
-    <powermock.version>1.6.6</powermock.version>
+    <!--<findbugs.skip>true</findbugs.skip>-->
+    <!--<powermock.version>2.0.2</powermock.version>-->
   </properties>
 
   <licenses>
@@ -76,19 +76,16 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>2.0.42-beta</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.powermock</groupId>
       <artifactId>powermock-module-junit4</artifactId>
-      <version>${powermock.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.powermock</groupId>
       <artifactId>powermock-api-mockito2</artifactId>
-      <version>${powermock.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -98,7 +95,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-site-plugin</artifactId>
-        <version>3.5</version>
       </plugin>
     </plugins>
   </build>

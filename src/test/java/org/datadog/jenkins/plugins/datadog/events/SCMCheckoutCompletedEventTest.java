@@ -27,13 +27,16 @@ package org.datadog.jenkins.plugins.datadog.events;
 
 import hudson.EnvVars;
 import hudson.model.*;
+import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
@@ -46,20 +49,29 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({DatadogUtilities.class})
+@PrepareForTest({DatadogUtilities.class, Jenkins.class})
 public class SCMCheckoutCompletedEventTest {
+
+    @Mock
+    private Jenkins jenkins;
+
+    @Before
+    public void setUp() throws Exception {
+        PowerMockito.mockStatic(Jenkins.class);
+        PowerMockito.when(Jenkins.getInstance()).thenReturn(jenkins);
+
+        PowerMockito.mockStatic(DatadogUtilities.class);
+    }
 
     @Test
     public void testWithNothingSet() throws IOException, InterruptedException {
-        PowerMockito.mockStatic(DatadogUtilities.class);
         when(DatadogUtilities.currentTimeMillis()).thenReturn(0l);
-        when(DatadogUtilities.getHostname(any(String.class))).thenReturn(null);
+        when(DatadogUtilities.getHostname(any())).thenReturn(null);
 
-        ItemGroup parent = mock(ItemGroup.class);
-        when(parent.getFullName()).thenReturn(null);
+        when(jenkins.getFullName()).thenReturn(null);
 
         Job job = mock(Job.class);
-        when(job.getParent()).thenReturn(parent);
+        when(job.getParent()).thenReturn(jenkins);
         when(job.getName()).thenReturn(null);
 
         Run run = mock(Run.class);
@@ -84,15 +96,13 @@ public class SCMCheckoutCompletedEventTest {
 
     @Test
     public void testWithNothingSet_parentFullName() throws IOException, InterruptedException {
-        PowerMockito.mockStatic(DatadogUtilities.class);
         when(DatadogUtilities.currentTimeMillis()).thenReturn(0l);
-        when(DatadogUtilities.getHostname(any(String.class))).thenReturn(null);
+        when(DatadogUtilities.getHostname(any())).thenReturn(null);
 
-        ItemGroup parent = mock(ItemGroup.class);
-        when(parent.getFullName()).thenReturn("parentFullName");
+        when(jenkins.getFullName()).thenReturn("parentFullName");
 
         Job job = mock(Job.class);
-        when(job.getParent()).thenReturn(parent);
+        when(job.getParent()).thenReturn(jenkins);
         when(job.getName()).thenReturn(null);
 
         Run run = mock(Run.class);
@@ -117,15 +127,13 @@ public class SCMCheckoutCompletedEventTest {
 
     @Test
     public void testWithNothingSet_parentFullName_2() throws IOException, InterruptedException {
-        PowerMockito.mockStatic(DatadogUtilities.class);
         when(DatadogUtilities.currentTimeMillis()).thenReturn(0l);
-        when(DatadogUtilities.getHostname(any(String.class))).thenReturn(null);
+        when(DatadogUtilities.getHostname(any())).thenReturn(null);
 
-        ItemGroup parent = mock(ItemGroup.class);
-        when(parent.getFullName()).thenReturn("parent»Full  Name");
+        when(jenkins.getFullName()).thenReturn("parent»Full  Name");
 
         Job job = mock(Job.class);
-        when(job.getParent()).thenReturn(parent);
+        when(job.getParent()).thenReturn(jenkins);
         when(job.getName()).thenReturn(null);
 
         Run run = mock(Run.class);
@@ -150,15 +158,13 @@ public class SCMCheckoutCompletedEventTest {
 
     @Test
     public void testWithNothingSet_jobName() throws IOException, InterruptedException {
-        PowerMockito.mockStatic(DatadogUtilities.class);
         when(DatadogUtilities.currentTimeMillis()).thenReturn(0l);
-        when(DatadogUtilities.getHostname(any(String.class))).thenReturn(null);
+        when(DatadogUtilities.getHostname(any())).thenReturn(null);
 
-        ItemGroup parent = mock(ItemGroup.class);
-        when(parent.getFullName()).thenReturn("parentFullName");
+        when(jenkins.getFullName()).thenReturn("parentFullName");
 
         Job job = mock(Job.class);
-        when(job.getParent()).thenReturn(parent);
+        when(job.getParent()).thenReturn(jenkins);
         when(job.getName()).thenReturn("jobName");
 
         Run run = mock(Run.class);
@@ -183,15 +189,13 @@ public class SCMCheckoutCompletedEventTest {
 
     @Test
     public void testWithNothingSet_result() throws IOException, InterruptedException {
-        PowerMockito.mockStatic(DatadogUtilities.class);
         when(DatadogUtilities.currentTimeMillis()).thenReturn(0l);
-        when(DatadogUtilities.getHostname(any(String.class))).thenReturn(null);
+        when(DatadogUtilities.getHostname(any())).thenReturn(null);
 
-        ItemGroup parent = mock(ItemGroup.class);
-        when(parent.getFullName()).thenReturn("parentFullName");
+        when(jenkins.getFullName()).thenReturn("parentFullName");
 
         Job job = mock(Job.class);
-        when(job.getParent()).thenReturn(parent);
+        when(job.getParent()).thenReturn(jenkins);
         when(job.getName()).thenReturn("jobName");
 
         Run run = mock(Run.class);
@@ -217,15 +221,13 @@ public class SCMCheckoutCompletedEventTest {
 
     @Test
     public void testWithEverythingSet() throws IOException, InterruptedException {
-        PowerMockito.mockStatic(DatadogUtilities.class);
         when(DatadogUtilities.currentTimeMillis()).thenReturn(System.currentTimeMillis());
-        when(DatadogUtilities.getHostname(any(String.class))).thenReturn("test-hostname-1");
+        when(DatadogUtilities.getHostname(any())).thenReturn("test-hostname-1");
 
-        ItemGroup parent = mock(ItemGroup.class);
-        when(parent.getFullName()).thenReturn("ParentFullName");
+        when(jenkins.getFullName()).thenReturn("ParentFullName");
 
         Job job = mock(Job.class);
-        when(job.getParent()).thenReturn(parent);
+        when(job.getParent()).thenReturn(jenkins);
         when(job.getName()).thenReturn("JobName");
 
         EnvVars envVars = new EnvVars();
@@ -260,15 +262,13 @@ public class SCMCheckoutCompletedEventTest {
 
     @Test
     public void testWithEverythingSet_envVarsAndTags() throws IOException, InterruptedException {
-        PowerMockito.mockStatic(DatadogUtilities.class);
         when(DatadogUtilities.currentTimeMillis()).thenReturn(System.currentTimeMillis());
-        when(DatadogUtilities.getHostname(any(String.class))).thenReturn("test-hostname-1");
+        when(DatadogUtilities.getHostname(any())).thenReturn("test-hostname-1");
 
-        ItemGroup parent = mock(ItemGroup.class);
-        when(parent.getFullName()).thenReturn("ParentFullName");
+        when(jenkins.getFullName()).thenReturn("ParentFullName");
 
         Job job = mock(Job.class);
-        when(job.getParent()).thenReturn(parent);
+        when(job.getParent()).thenReturn(jenkins);
         when(job.getName()).thenReturn("JobName");
 
         EnvVars envVars = new EnvVars();

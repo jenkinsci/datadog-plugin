@@ -25,10 +25,10 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.events;
 
-import hudson.XmlFile;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.api.mockito.PowerMockito;
@@ -37,7 +37,6 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Set;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
@@ -46,13 +45,17 @@ import static org.mockito.Mockito.when;
 @PrepareForTest({DatadogUtilities.class})
 public class ConfigChangedEventTest {
 
+    @Before
+    public void setUp() {
+        PowerMockito.mockStatic(DatadogUtilities.class);
+    }
+
     @Test
     public void testWithNothingSet() throws IOException, InterruptedException {
-        PowerMockito.mockStatic(DatadogUtilities.class);
         when(DatadogUtilities.currentTimeMillis()).thenReturn(0l);
-        when(DatadogUtilities.getHostname(any(String.class))).thenReturn(null);
+        when(DatadogUtilities.getHostname(any())).thenReturn(null);
         when(DatadogUtilities.getUserId()).thenReturn(null);
-        when(DatadogUtilities.getFileName(any(XmlFile.class))).thenReturn(null);
+        when(DatadogUtilities.getFileName(any())).thenReturn(null);
 
         DatadogEvent event = new ConfigChangedEventImpl(null, null, null);
 
@@ -68,13 +71,12 @@ public class ConfigChangedEventTest {
 
     @Test
     public void testWithEverythingSet() throws IOException, InterruptedException {
-        PowerMockito.mockStatic(DatadogUtilities.class);
         when(DatadogUtilities.currentTimeMillis()).thenReturn(System.currentTimeMillis());
-        when(DatadogUtilities.getHostname(any(String.class))).thenReturn("hostname");
+        when(DatadogUtilities.getHostname(any())).thenReturn("hostname");
         when(DatadogUtilities.getUserId()).thenReturn("username");
-        when(DatadogUtilities.getFileName(any(XmlFile.class))).thenReturn("filename");
+        when(DatadogUtilities.getFileName(any())).thenReturn("filename");
 
-        DatadogEvent event = new ConfigChangedEventImpl(null, null, new HashMap<String, Set<String>>());
+        DatadogEvent event = new ConfigChangedEventImpl(null, null, new HashMap<>());
 
         Assert.assertTrue(event.getHost().equals("hostname"));
         Assert.assertTrue(event.getDate() != 0);
@@ -86,7 +88,7 @@ public class ConfigChangedEventTest {
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
 
         when(DatadogUtilities.getUserId()).thenReturn("SyStEm");
-        event = new ConfigChangedEventImpl(null, null, new HashMap<String, Set<String>>());
+        event = new ConfigChangedEventImpl(null, null, new HashMap<>());
 
         Assert.assertTrue(event.getHost().equals("hostname"));
         Assert.assertTrue(event.getDate() != 0);
