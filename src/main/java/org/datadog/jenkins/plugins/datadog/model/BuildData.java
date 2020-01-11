@@ -30,6 +30,7 @@ import hudson.model.*;
 import hudson.triggers.SCMTrigger;
 import hudson.triggers.TimerTrigger;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 import java.io.IOException;
@@ -75,6 +76,7 @@ public class BuildData {
     private Long endTime;
     private Long duration;
 
+    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
     public BuildData(Run run, TaskListener listener) throws IOException, InterruptedException {
         if (run == null) {
             return;

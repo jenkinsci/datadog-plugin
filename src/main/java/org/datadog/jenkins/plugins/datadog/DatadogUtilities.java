@@ -40,6 +40,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -373,7 +374,7 @@ public class DatadogUtilities {
                 String[] cmd = {"/bin/hostname", "-f"};
                 Process proc = Runtime.getRuntime().exec(cmd);
                 InputStream in = proc.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in, Charset.forName("UTF-8")));
                 StringBuilder out = new StringBuilder();
                 String line;
                 while ((line = reader.readLine()) != null) {
