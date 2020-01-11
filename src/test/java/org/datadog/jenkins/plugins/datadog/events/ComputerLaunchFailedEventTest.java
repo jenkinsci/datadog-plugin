@@ -25,6 +25,8 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.events;
 
+import hudson.model.Computer;
+import hudson.model.TaskListener;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.junit.Assert;
@@ -39,6 +41,7 @@ import java.io.IOException;
 import java.util.HashMap;
 
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({DatadogUtilities.class})
@@ -51,11 +54,13 @@ public class ComputerLaunchFailedEventTest {
 
     @Test
     public void testWithNothingSet() throws IOException, InterruptedException {
+        Computer computer = mock(Computer.class);
+
         when(DatadogUtilities.currentTimeMillis()).thenReturn(0L);
         when(DatadogUtilities.getHostname(null)).thenReturn(null);
-        when(DatadogUtilities.getNodeName(null)).thenReturn(null);
+        when(DatadogUtilities.getNodeName(computer)).thenReturn(null);
 
-        DatadogEvent event = new ComputerLaunchFailedEventImpl(null, null, null);
+        DatadogEvent event = new ComputerLaunchFailedEventImpl(computer, null, null);
 
         Assert.assertTrue(event.getHost() == null);
         Assert.assertTrue(event.getDate() == 0);
@@ -69,11 +74,13 @@ public class ComputerLaunchFailedEventTest {
 
     @Test
     public void testWithEverythingSet() throws IOException, InterruptedException {
+        Computer computer = mock(Computer.class);
+
         when(DatadogUtilities.currentTimeMillis()).thenReturn(System.currentTimeMillis());
         when(DatadogUtilities.getHostname(null)).thenReturn("hostname");
-        when(DatadogUtilities.getNodeName(null)).thenReturn("computer");
+        when(DatadogUtilities.getNodeName(computer)).thenReturn("computer");
 
-        DatadogEvent event = new ComputerLaunchFailedEventImpl(null, null, new HashMap<>());
+        DatadogEvent event = new ComputerLaunchFailedEventImpl(computer, null, new HashMap<>());
 
         Assert.assertTrue(event.getHost().equals("hostname"));
         Assert.assertTrue(event.getDate() != 0);
