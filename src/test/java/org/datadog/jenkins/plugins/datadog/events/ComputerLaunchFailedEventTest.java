@@ -25,6 +25,7 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.events;
 
+import hudson.model.Computer;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.junit.Assert;
@@ -40,6 +41,7 @@ import java.util.HashMap;
 
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.isNull;
+import static org.mockito.Mockito.nullable;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({DatadogUtilities.class})
@@ -54,7 +56,7 @@ public class ComputerLaunchFailedEventTest {
     public void testWithNothingSet() throws IOException, InterruptedException {
         when(DatadogUtilities.currentTimeMillis()).thenReturn(0L);
         when(DatadogUtilities.getHostname(isNull())).thenReturn(null);
-        when(DatadogUtilities.getNodeName(isNull())).thenReturn(null);
+        when(DatadogUtilities.getNodeName(nullable(Computer.class))).thenReturn(null);
 
         DatadogEvent event = new ComputerLaunchFailedEventImpl(null, null, null);
 
@@ -72,7 +74,7 @@ public class ComputerLaunchFailedEventTest {
     public void testWithEverythingSet() throws IOException, InterruptedException {
         when(DatadogUtilities.currentTimeMillis()).thenReturn(System.currentTimeMillis());
         when(DatadogUtilities.getHostname(isNull())).thenReturn("hostname");
-        when(DatadogUtilities.getNodeName(isNull())).thenReturn("computer");
+        when(DatadogUtilities.getNodeName(nullable(Computer.class))).thenReturn("computer");
 
         DatadogEvent event = new ComputerLaunchFailedEventImpl(null, null, new HashMap<>());
 
