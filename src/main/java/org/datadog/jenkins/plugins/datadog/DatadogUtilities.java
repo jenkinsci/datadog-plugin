@@ -56,10 +56,6 @@ public class DatadogUtilities {
      * @return - The descriptor for the Datadog plugin. In this case the global configuration.
      */
     public static DatadogGlobalConfiguration getDatadogGlobalDescriptor() {
-        Jenkins jenkins = Jenkins.getInstance();
-        if (jenkins == null) {
-            return null;
-        }
         return ExtensionList.lookup(DatadogGlobalConfiguration.class).get(DatadogGlobalConfiguration.class);
     }
 

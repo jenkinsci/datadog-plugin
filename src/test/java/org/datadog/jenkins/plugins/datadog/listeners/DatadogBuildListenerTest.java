@@ -56,7 +56,7 @@ public class DatadogBuildListenerTest {
     @Before
     public void setUp() throws Exception {
         PowerMockito.mockStatic(Jenkins.class);
-        PowerMockito.when(Jenkins.getInstance()).thenReturn(jenkins);
+        PowerMockito.when(Jenkins.get()).thenReturn(jenkins);
 
         PowerMockito.mockStatic(DatadogUtilities.class);
         when(DatadogUtilities.isJobTracked(anyString())).thenReturn(true);

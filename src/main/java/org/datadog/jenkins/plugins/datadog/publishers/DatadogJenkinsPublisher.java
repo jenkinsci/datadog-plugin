@@ -65,13 +65,13 @@ public class DatadogJenkinsPublisher extends PeriodicWork {
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
             long projectCount = 0;
             try {
-                projectCount = Jenkins.getInstance().getAllItems(Project.class).size();
+                projectCount = Jenkins.get().getAllItems(Project.class).size();
             } catch (NullPointerException e){
                 logger.fine("Could not retrieve projects");
             }
             long pluginCount = 0;
             try {
-                pluginCount = Jenkins.getInstance().pluginManager.getPlugins().size();
+                pluginCount = Jenkins.get().pluginManager.getPlugins().size();
             } catch (NullPointerException e){
                 logger.fine("Could not retrieve plugins");
             }
