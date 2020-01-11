@@ -44,7 +44,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.mock;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({DatadogUtilities.class})
+@PrepareForTest({DatadogUtilities.class, SlaveComputer.class})
 public class ComputerLaunchFailedEventTest {
 
     @Before
