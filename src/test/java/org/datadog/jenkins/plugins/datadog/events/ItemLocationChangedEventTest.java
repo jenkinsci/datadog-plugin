@@ -54,7 +54,6 @@ public class ItemLocationChangedEventTest {
         when(DatadogUtilities.currentTimeMillis()).thenReturn(0L);
         when(DatadogUtilities.getHostname(null)).thenReturn(null);
         when(DatadogUtilities.getUserId()).thenReturn(null);
-        when(DatadogUtilities.getItemName(null)).thenReturn(null);
 
         DatadogEvent event = new ItemLocationChangedEventImpl(null, null, null, null);
 

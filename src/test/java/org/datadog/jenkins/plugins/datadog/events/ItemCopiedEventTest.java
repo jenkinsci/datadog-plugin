@@ -54,7 +54,6 @@ public class ItemCopiedEventTest {
         when(DatadogUtilities.currentTimeMillis()).thenReturn(0L);
         when(DatadogUtilities.getHostname(null)).thenReturn(null);
         when(DatadogUtilities.getUserId()).thenReturn(null);
-        when(DatadogUtilities.getItemName(null)).thenReturn(null);
 
         DatadogEvent event = new ItemCopiedEventImpl(null, null, null);
 

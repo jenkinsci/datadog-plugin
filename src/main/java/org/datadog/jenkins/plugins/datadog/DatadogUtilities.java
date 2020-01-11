@@ -492,6 +492,9 @@ public class DatadogUtilities {
     }
 
     public static String getNodeName(Computer computer){
+        if(computer == null){
+            return null;
+        }
         if (computer instanceof Jenkins.MasterComputer) {
             return "master";
         } else {

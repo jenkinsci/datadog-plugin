@@ -53,7 +53,6 @@ public class ItemCRUDEventTest {
     public void testWithNothingSet() throws IOException, InterruptedException {
         when(DatadogUtilities.currentTimeMillis()).thenReturn(0L);
         when(DatadogUtilities.getHostname(null)).thenReturn(null);
-        when(DatadogUtilities.getNodeName(null)).thenReturn(null);
         when(DatadogUtilities.getItemName(null)).thenReturn(null);
 
         DatadogEvent event = new ItemCRUDEventImpl(null, null, null);

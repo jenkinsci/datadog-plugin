@@ -54,7 +54,6 @@ public class ConfigChangedEventTest {
         when(DatadogUtilities.currentTimeMillis()).thenReturn(0L);
         when(DatadogUtilities.getHostname(null)).thenReturn(null);
         when(DatadogUtilities.getUserId()).thenReturn(null);
-        when(DatadogUtilities.getFileName(null)).thenReturn(null);
 
         DatadogEvent event = new ConfigChangedEventImpl(null, null, null);
 
