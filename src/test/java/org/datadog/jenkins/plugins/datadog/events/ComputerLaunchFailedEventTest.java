@@ -26,7 +26,7 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.events;
 
 import hudson.model.Computer;
-import hudson.model.TaskListener;
+import hudson.slaves.SlaveComputer;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.junit.Assert;
@@ -54,7 +54,7 @@ public class ComputerLaunchFailedEventTest {
 
     @Test
     public void testWithNothingSet() throws IOException, InterruptedException {
-        Computer computer = mock(Computer.class);
+        Computer computer = mock(SlaveComputer.class);
 
         when(DatadogUtilities.currentTimeMillis()).thenReturn(0L);
         when(DatadogUtilities.getHostname(null)).thenReturn(null);
@@ -74,7 +74,7 @@ public class ComputerLaunchFailedEventTest {
 
     @Test
     public void testWithEverythingSet() throws IOException, InterruptedException {
-        Computer computer = mock(Computer.class);
+        Computer computer = mock(SlaveComputer.class);
 
         when(DatadogUtilities.currentTimeMillis()).thenReturn(System.currentTimeMillis());
         when(DatadogUtilities.getHostname(null)).thenReturn("hostname");
