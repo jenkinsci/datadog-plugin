@@ -38,7 +38,6 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import java.io.IOException;
 import java.util.HashMap;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
 @RunWith(PowerMockRunner.class)
@@ -52,9 +51,9 @@ public class ComputerOnlineEventTest {
 
     @Test
     public void testWithNothingSet() throws IOException, InterruptedException {
-        when(DatadogUtilities.currentTimeMillis()).thenReturn(0l);
-        when(DatadogUtilities.getHostname(any())).thenReturn(null);
-        when(DatadogUtilities.getNodeName(any())).thenReturn(null);
+        when(DatadogUtilities.currentTimeMillis()).thenReturn(0L);
+        when(DatadogUtilities.getHostname(null)).thenReturn(null);
+        when(DatadogUtilities.getNodeName(null)).thenReturn(null);
 
         DatadogEvent event = new ComputerOnlineEventImpl(null, null, null, false);
 
@@ -82,8 +81,8 @@ public class ComputerOnlineEventTest {
     @Test
     public void testWithEverythingSet() throws IOException, InterruptedException {
         when(DatadogUtilities.currentTimeMillis()).thenReturn(System.currentTimeMillis());
-        when(DatadogUtilities.getHostname(any())).thenReturn("hostname");
-        when(DatadogUtilities.getNodeName(any())).thenReturn("computer");
+        when(DatadogUtilities.getHostname(null)).thenReturn("hostname");
+        when(DatadogUtilities.getNodeName(null)).thenReturn("computer");
 
         DatadogEvent event = new ComputerOnlineEventImpl(null, null, new HashMap<>(), false);
 

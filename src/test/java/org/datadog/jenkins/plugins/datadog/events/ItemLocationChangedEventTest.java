@@ -38,7 +38,6 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import java.io.IOException;
 import java.util.HashMap;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
 @RunWith(PowerMockRunner.class)
@@ -52,10 +51,10 @@ public class ItemLocationChangedEventTest {
 
     @Test
     public void testWithNothingSet() throws IOException, InterruptedException {
-        when(DatadogUtilities.currentTimeMillis()).thenReturn(0l);
-        when(DatadogUtilities.getHostname(any())).thenReturn(null);
+        when(DatadogUtilities.currentTimeMillis()).thenReturn(0L);
+        when(DatadogUtilities.getHostname(null)).thenReturn(null);
         when(DatadogUtilities.getUserId()).thenReturn(null);
-        when(DatadogUtilities.getItemName(any())).thenReturn(null);
+        when(DatadogUtilities.getItemName(null)).thenReturn(null);
 
         DatadogEvent event = new ItemLocationChangedEventImpl(null, null, null, null);
 
@@ -72,9 +71,9 @@ public class ItemLocationChangedEventTest {
     @Test
     public void testWithEverythingSet() throws IOException, InterruptedException {
         when(DatadogUtilities.currentTimeMillis()).thenReturn(System.currentTimeMillis());
-        when(DatadogUtilities.getHostname(any())).thenReturn("hostname");
+        when(DatadogUtilities.getHostname(null)).thenReturn("hostname");
         when(DatadogUtilities.getUserId()).thenReturn("username");
-        when(DatadogUtilities.getItemName(any())).thenReturn("itemname");
+        when(DatadogUtilities.getItemName(null)).thenReturn("itemname");
 
         DatadogEvent event = new ItemLocationChangedEventImpl(null, "from_loc", "to_loc", new HashMap<>());
 

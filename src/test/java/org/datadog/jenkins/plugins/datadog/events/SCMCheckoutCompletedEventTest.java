@@ -65,7 +65,7 @@ public class SCMCheckoutCompletedEventTest {
 
     @Test
     public void testWithNothingSet() throws IOException, InterruptedException {
-        when(DatadogUtilities.currentTimeMillis()).thenReturn(0l);
+        when(DatadogUtilities.currentTimeMillis()).thenReturn(0L    );
         when(DatadogUtilities.getHostname(any())).thenReturn(null);
 
         when(jenkins.getFullName()).thenReturn(null);
@@ -96,7 +96,7 @@ public class SCMCheckoutCompletedEventTest {
 
     @Test
     public void testWithNothingSet_parentFullName() throws IOException, InterruptedException {
-        when(DatadogUtilities.currentTimeMillis()).thenReturn(0l);
+        when(DatadogUtilities.currentTimeMillis()).thenReturn(0L);
         when(DatadogUtilities.getHostname(any())).thenReturn(null);
 
         when(jenkins.getFullName()).thenReturn("parentFullName");
@@ -127,7 +127,7 @@ public class SCMCheckoutCompletedEventTest {
 
     @Test
     public void testWithNothingSet_parentFullName_2() throws IOException, InterruptedException {
-        when(DatadogUtilities.currentTimeMillis()).thenReturn(0l);
+        when(DatadogUtilities.currentTimeMillis()).thenReturn(0L);
         when(DatadogUtilities.getHostname(any())).thenReturn(null);
 
         when(jenkins.getFullName()).thenReturn("parent»Full  Name");
@@ -158,7 +158,7 @@ public class SCMCheckoutCompletedEventTest {
 
     @Test
     public void testWithNothingSet_jobName() throws IOException, InterruptedException {
-        when(DatadogUtilities.currentTimeMillis()).thenReturn(0l);
+        when(DatadogUtilities.currentTimeMillis()).thenReturn(0L);
         when(DatadogUtilities.getHostname(any())).thenReturn(null);
 
         when(jenkins.getFullName()).thenReturn("parentFullName");
@@ -189,7 +189,7 @@ public class SCMCheckoutCompletedEventTest {
 
     @Test
     public void testWithNothingSet_result() throws IOException, InterruptedException {
-        when(DatadogUtilities.currentTimeMillis()).thenReturn(0l);
+        when(DatadogUtilities.currentTimeMillis()).thenReturn(0L);
         when(DatadogUtilities.getHostname(any())).thenReturn(null);
 
         when(jenkins.getFullName()).thenReturn("parentFullName");

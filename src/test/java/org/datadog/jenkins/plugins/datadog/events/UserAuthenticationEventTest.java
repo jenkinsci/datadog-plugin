@@ -38,7 +38,6 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import java.io.IOException;
 import java.util.HashMap;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
 @RunWith(PowerMockRunner.class)
@@ -52,8 +51,8 @@ public class UserAuthenticationEventTest {
 
     @Test
     public void testWithNothingSet() throws IOException, InterruptedException {
-        when(DatadogUtilities.currentTimeMillis()).thenReturn(0l);
-        when(DatadogUtilities.getHostname(any())).thenReturn(null);
+        when(DatadogUtilities.currentTimeMillis()).thenReturn(0L);
+        when(DatadogUtilities.getHostname(null)).thenReturn(null);
 
         DatadogEvent event = new UserAuthenticationEventImpl(null, null, null);
 
@@ -81,7 +80,7 @@ public class UserAuthenticationEventTest {
     @Test
     public void testWithEverythingSet() throws IOException, InterruptedException {
         when(DatadogUtilities.currentTimeMillis()).thenReturn(System.currentTimeMillis());
-        when(DatadogUtilities.getHostname(any())).thenReturn("hostname");
+        when(DatadogUtilities.getHostname(null)).thenReturn("hostname");
 
         DatadogEvent event = new UserAuthenticationEventImpl("username", UserAuthenticationEventImpl.ACCESS_DENIED, new HashMap<>());
 
