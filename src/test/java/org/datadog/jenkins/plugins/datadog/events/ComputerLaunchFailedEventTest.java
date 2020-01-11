@@ -25,8 +25,7 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.events;
 
-import hudson.model.Computer;
-import hudson.slaves.SlaveComputer;
+import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.junit.Assert;
@@ -41,26 +40,26 @@ import java.io.IOException;
 import java.util.HashMap;
 
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.isNull;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({DatadogUtilities.class, SlaveComputer.class})
+@PrepareForTest({DatadogUtilities.class})
 public class ComputerLaunchFailedEventTest {
 
     @Before
     public void setUp() {
+        PowerMockito.mockStatic(Jenkins.MasterComputer.class);
+
         PowerMockito.mockStatic(DatadogUtilities.class);
     }
 
     @Test
     public void testWithNothingSet() throws IOException, InterruptedException {
-        Computer computer = mock(SlaveComputer.class);
-
         when(DatadogUtilities.currentTimeMillis()).thenReturn(0L);
-        when(DatadogUtilities.getHostname(null)).thenReturn(null);
-        when(DatadogUtilities.getNodeName(computer)).thenReturn(null);
+        when(DatadogUtilities.getHostname(isNull())).thenReturn(null);
+        when(DatadogUtilities.getNodeName(isNull())).thenReturn(null);
 
-        DatadogEvent event = new ComputerLaunchFailedEventImpl(computer, null, null);
+        DatadogEvent event = new ComputerLaunchFailedEventImpl(null, null, null);
 
         Assert.assertTrue(event.getHost() == null);
         Assert.assertTrue(event.getDate() == 0);
@@ -74,13 +73,11 @@ public class ComputerLaunchFailedEventTest {
 
     @Test
     public void testWithEverythingSet() throws IOException, InterruptedException {
-        Computer computer = mock(SlaveComputer.class);
-
         when(DatadogUtilities.currentTimeMillis()).thenReturn(System.currentTimeMillis());
-        when(DatadogUtilities.getHostname(null)).thenReturn("hostname");
-        when(DatadogUtilities.getNodeName(computer)).thenReturn("computer");
+        when(DatadogUtilities.getHostname(isNull())).thenReturn("hostname");
+        when(DatadogUtilities.getNodeName(isNull())).thenReturn("computer");
 
-        DatadogEvent event = new ComputerLaunchFailedEventImpl(computer, null, new HashMap<>());
+        DatadogEvent event = new ComputerLaunchFailedEventImpl(null, null, new HashMap<>());
 
         Assert.assertTrue(event.getHost().equals("hostname"));
         Assert.assertTrue(event.getDate() != 0);
