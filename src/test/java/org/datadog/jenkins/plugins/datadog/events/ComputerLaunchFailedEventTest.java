@@ -44,7 +44,7 @@ import static org.mockito.Mockito.isNull;
 import static org.mockito.Mockito.nullable;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({DatadogUtilities.class})
+@PrepareForTest({DatadogUtilities.class, Computer.class})
 public class ComputerLaunchFailedEventTest {
 
     @Before
