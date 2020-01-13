@@ -37,6 +37,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Set;
 
 import static org.mockito.Mockito.when;
 
@@ -74,7 +75,7 @@ public class ItemCopiedEventTest {
         when(DatadogUtilities.getUserId()).thenReturn("username");
         when(DatadogUtilities.getItemName(null)).thenReturn("itemname");
 
-        DatadogEvent event = new ItemCopiedEventImpl(null, null, new HashMap<>());
+        DatadogEvent event = new ItemCopiedEventImpl(null, null, new HashMap<String, Set<String>>());
 
         Assert.assertTrue(event.getHost().equals("hostname"));
         Assert.assertTrue(event.getDate() != 0);

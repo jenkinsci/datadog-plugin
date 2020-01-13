@@ -58,7 +58,7 @@ public class BuildStartedEventTest {
     @Before
     public void setUp() throws Exception {
         PowerMockito.mockStatic(Jenkins.class);
-        PowerMockito.when(Jenkins.get()).thenReturn(jenkins);
+        PowerMockito.when(Jenkins.getInstance()).thenReturn(jenkins);
 
         PowerMockito.mockStatic(DatadogUtilities.class);
     }
@@ -66,7 +66,7 @@ public class BuildStartedEventTest {
     @Test
     public void testWithNothingSet() throws IOException, InterruptedException {
         when(DatadogUtilities.currentTimeMillis()).thenReturn(0l);
-        when(DatadogUtilities.getHostname(any())).thenReturn(null);
+        when(DatadogUtilities.getHostname(any(String.class))).thenReturn(null);
 
         when(jenkins.getFullName()).thenReturn(null);
 
@@ -97,7 +97,7 @@ public class BuildStartedEventTest {
     @Test
     public void testWithNothingSet_parentFullName() throws IOException, InterruptedException {
         when(DatadogUtilities.currentTimeMillis()).thenReturn(0l);
-        when(DatadogUtilities.getHostname(any())).thenReturn(null);
+        when(DatadogUtilities.getHostname(any(String.class))).thenReturn(null);
 
         when(jenkins.getFullName()).thenReturn("parentFullName");
 
@@ -128,7 +128,7 @@ public class BuildStartedEventTest {
     @Test
     public void testWithNothingSet_parentFullName_2() throws IOException, InterruptedException {
         when(DatadogUtilities.currentTimeMillis()).thenReturn(0l);
-        when(DatadogUtilities.getHostname(any())).thenReturn(null);
+        when(DatadogUtilities.getHostname(any(String.class))).thenReturn(null);
 
         when(jenkins.getFullName()).thenReturn("parent»Full  Name");
 
@@ -159,7 +159,7 @@ public class BuildStartedEventTest {
     @Test
     public void testWithNothingSet_jobName() throws IOException, InterruptedException {
         when(DatadogUtilities.currentTimeMillis()).thenReturn(0l);
-        when(DatadogUtilities.getHostname(any())).thenReturn(null);
+        when(DatadogUtilities.getHostname(any(String.class))).thenReturn(null);
 
         when(jenkins.getFullName()).thenReturn("parentFullName");
 
@@ -190,7 +190,7 @@ public class BuildStartedEventTest {
     @Test
     public void testWithNothingSet_result() throws IOException, InterruptedException {
         when(DatadogUtilities.currentTimeMillis()).thenReturn(0l);
-        when(DatadogUtilities.getHostname(any())).thenReturn(null);
+        when(DatadogUtilities.getHostname(any(String.class))).thenReturn(null);
 
         when(jenkins.getFullName()).thenReturn("parentFullName");
 
@@ -222,7 +222,7 @@ public class BuildStartedEventTest {
     @Test
     public void testWithEverythingSet() throws IOException, InterruptedException {
         when(DatadogUtilities.currentTimeMillis()).thenReturn(System.currentTimeMillis());
-        when(DatadogUtilities.getHostname(any())).thenReturn("test-hostname-1");
+        when(DatadogUtilities.getHostname(any(String.class))).thenReturn("test-hostname-1");
 
         when(jenkins.getFullName()).thenReturn("ParentFullName");
 
@@ -263,7 +263,7 @@ public class BuildStartedEventTest {
     @Test
     public void testWithEverythingSet_envVarsAndTags() throws IOException, InterruptedException {
         when(DatadogUtilities.currentTimeMillis()).thenReturn(System.currentTimeMillis());
-        when(DatadogUtilities.getHostname(any())).thenReturn("test-hostname-1");
+        when(DatadogUtilities.getHostname(any(String.class))).thenReturn("test-hostname-1");
 
         when(jenkins.getFullName()).thenReturn("ParentFullName");
 

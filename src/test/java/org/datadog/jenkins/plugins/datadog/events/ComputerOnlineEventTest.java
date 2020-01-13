@@ -37,6 +37,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Set;
 
 import static org.mockito.Mockito.when;
 
@@ -83,7 +84,8 @@ public class ComputerOnlineEventTest {
         when(DatadogUtilities.getHostname(null)).thenReturn("hostname");
         when(DatadogUtilities.getNodeName(null)).thenReturn("computer");
 
-        DatadogEvent event = new ComputerOnlineEventImpl(null, null, new HashMap<>(), false);
+        DatadogEvent event = new ComputerOnlineEventImpl(null, null,
+                new HashMap<String, Set<String>>(), false);
 
         Assert.assertTrue(event.getHost().equals("hostname"));
         Assert.assertTrue(event.getDate() != 0);
@@ -94,7 +96,8 @@ public class ComputerOnlineEventTest {
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.SUCCESS));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.LOW));
 
-        event = new ComputerOnlineEventImpl(null, null, new HashMap<>(), true);
+        event = new ComputerOnlineEventImpl(null, null,
+                new HashMap<String, Set<String>>(), true);
 
         Assert.assertTrue(event.getHost().equals("hostname"));
         Assert.assertTrue(event.getDate() != 0);

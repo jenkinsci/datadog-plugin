@@ -37,6 +37,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Set;
 
 import static org.mockito.Mockito.when;
 
@@ -74,7 +75,8 @@ public class ItemLocationChangedEventTest {
         when(DatadogUtilities.getUserId()).thenReturn("username");
         when(DatadogUtilities.getItemName(null)).thenReturn("itemname");
 
-        DatadogEvent event = new ItemLocationChangedEventImpl(null, "from_loc", "to_loc", new HashMap<>());
+        DatadogEvent event = new ItemLocationChangedEventImpl(null, "from_loc", "to_loc",
+                new HashMap<String, Set<String>>());
 
         Assert.assertTrue(event.getHost().equals("hostname"));
         Assert.assertTrue(event.getDate() != 0);

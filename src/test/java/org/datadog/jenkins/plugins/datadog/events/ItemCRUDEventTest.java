@@ -37,6 +37,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Set;
 
 import static org.mockito.Mockito.when;
 
@@ -85,7 +86,7 @@ public class ItemCRUDEventTest {
         when(DatadogUtilities.getUserId()).thenReturn("username");
         when(DatadogUtilities.getItemName(null)).thenReturn("itemname");
 
-        DatadogEvent event = new ItemCRUDEventImpl(null, ItemCRUDEventImpl.CREATED, new HashMap<>());
+        DatadogEvent event = new ItemCRUDEventImpl(null, ItemCRUDEventImpl.CREATED, new HashMap<String, Set<String>>());
 
         Assert.assertTrue(event.getHost().equals("hostname"));
         Assert.assertTrue(event.getDate() != 0);
@@ -96,7 +97,7 @@ public class ItemCRUDEventTest {
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
 
-        event = new ItemCRUDEventImpl(null, ItemCRUDEventImpl.UPDATED, new HashMap<>());
+        event = new ItemCRUDEventImpl(null, ItemCRUDEventImpl.UPDATED, new HashMap<String, Set<String>>());
 
         Assert.assertTrue(event.getHost().equals("hostname"));
         Assert.assertTrue(event.getDate() != 0);
@@ -107,7 +108,7 @@ public class ItemCRUDEventTest {
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
 
-        event = new ItemCRUDEventImpl(null, ItemCRUDEventImpl.DELETED, new HashMap<>());
+        event = new ItemCRUDEventImpl(null, ItemCRUDEventImpl.DELETED, new HashMap<String, Set<String>>());
 
         Assert.assertTrue(event.getHost().equals("hostname"));
         Assert.assertTrue(event.getDate() != 0);

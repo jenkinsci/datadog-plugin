@@ -40,6 +40,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.util.HashMap;
+import java.util.Set;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
@@ -56,7 +57,7 @@ public class DatadogBuildListenerTest {
     @Before
     public void setUp() throws Exception {
         PowerMockito.mockStatic(Jenkins.class);
-        PowerMockito.when(Jenkins.get()).thenReturn(jenkins);
+        PowerMockito.when(Jenkins.getInstance()).thenReturn(jenkins);
 
         PowerMockito.mockStatic(DatadogUtilities.class);
         when(DatadogUtilities.isJobTracked(anyString())).thenReturn(true);
@@ -73,8 +74,8 @@ public class DatadogBuildListenerTest {
         DatadogBuildListener datadogBuildListener = new DatadogBuildListener();
         when(ClientFactory.getClient()).thenReturn(client);
         when(DatadogUtilities.getBuildTags(any(Run.class), any(TaskListener.class))).
-                thenReturn(new HashMap<>());
-        when(DatadogUtilities.getTagsFromGlobalTags()).thenReturn(new HashMap<>());
+                thenReturn(new HashMap<String, Set<String>>());
+        when(DatadogUtilities.getTagsFromGlobalTags()).thenReturn(new HashMap<String, Set<String>>());
 
         when(jenkins.getFullName()).thenReturn(null);
 
@@ -100,8 +101,8 @@ public class DatadogBuildListenerTest {
         DatadogBuildListener datadogBuildListener = new DatadogBuildListener();
         when(ClientFactory.getClient()).thenReturn(client);
         when(DatadogUtilities.getBuildTags(any(Run.class), any(TaskListener.class))).
-                thenReturn(new HashMap<>());
-        when(DatadogUtilities.getTagsFromGlobalTags()).thenReturn(new HashMap<>());
+                thenReturn(new HashMap<String, Set<String>>());
+        when(DatadogUtilities.getTagsFromGlobalTags()).thenReturn(new HashMap<String, Set<String>>());
 
         when(jenkins.getFullName()).thenReturn("ParentFullName");
 
@@ -164,7 +165,7 @@ public class DatadogBuildListenerTest {
         client.assertMetric("jenkins.job.leadtime", 121, "null", expectedTags1);
         client.assertServiceCheck("jenkins.job.status", 0, "null", expectedTags1);
 
-        when(DatadogUtilities.getTagsFromGlobalTags()).thenReturn(new HashMap<>());
+        when(DatadogUtilities.getTagsFromGlobalTags()).thenReturn(new HashMap<String, Set<String>>());
         datadogBuildListener.onCompleted(previousFailedRun1, mock(TaskListener.class));
         String[] expectedTags2 = new String[4];
         expectedTags2[0] = "job:ParentFullName/JobName";
@@ -175,14 +176,14 @@ public class DatadogBuildListenerTest {
         client.assertMetric("jenkins.job.feedbacktime", 122, "null", expectedTags2);
         client.assertServiceCheck("jenkins.job.status", 2, "null", expectedTags2);
 
-        when(DatadogUtilities.getTagsFromGlobalTags()).thenReturn(new HashMap<>());
+        when(DatadogUtilities.getTagsFromGlobalTags()).thenReturn(new HashMap<String, Set<String>>());
         datadogBuildListener.onCompleted(previousFailedRun2, mock(TaskListener.class));
         client.assertMetric("jenkins.job.duration", 123, "null", expectedTags2);
         client.assertMetric("jenkins.job.feedbacktime", 123, "null", expectedTags2);
         client.assertMetric("jenkins.job.completed", 2, "null", expectedTags2);
         client.assertServiceCheck("jenkins.job.status", 2, "null", expectedTags2);
 
-        when(DatadogUtilities.getTagsFromGlobalTags()).thenReturn(new HashMap<>());
+        when(DatadogUtilities.getTagsFromGlobalTags()).thenReturn(new HashMap<String, Set<String>>());
         datadogBuildListener.onCompleted(successRun, mock(TaskListener.class));
         client.assertMetric("jenkins.job.duration", 124, "null", expectedTags1);
         client.assertMetric("jenkins.job.leadtime", 2124, "null", expectedTags1);

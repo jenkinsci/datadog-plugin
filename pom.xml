@@ -5,7 +5,9 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>3.43</version> <!-- or whatever the newest version available is -->
+    <!--<version>3.55</version>-->
+    <version>2.17</version> <!-- or whatever the newest version available is -->
+    <!--Check https://mvnrepository.com/artifact/org.jenkins-ci.plugins/plugin?repo=jenkins-releases-->
     <relativePath />
   </parent>
 
@@ -19,10 +21,10 @@
   <packaging>hpi</packaging>
 
   <properties>
+    <!--See https://github.com/jenkinsci/plugin-pom/-->
     <!--<jenkins.version>2.150</jenkins.version>-->
-    <java.level>8</java.level>
-    <!--<findbugs.skip>true</findbugs.skip>-->
-    <!--<powermock.version>2.0.2</powermock.version>-->
+    <!--<java.level>8</java.level>-->
+    <!--<jenkins-test-harness.version>2.2</jenkins-test-harness.version>-->
   </properties>
 
   <licenses>
@@ -49,23 +51,45 @@
 
   <repositories>
     <repository>
-      <id>repo.jenkins-ci.org</id>
+      <id>releases.repo.jenkins-ci.org</id>
+      <url>https://repo.jenkins-ci.org/releases/</url>
+    </repository>
+    <repository>
+      <id>public.repo.jenkins-ci.org</id>
       <url>https://repo.jenkins-ci.org/public/</url>
     </repository>
   </repositories>
 
   <pluginRepositories>
     <pluginRepository>
-      <id>repo.jenkins-ci.org</id>
+      <id>releases.repo.jenkins-ci.org</id>
+      <url>https://repo.jenkins-ci.org/releases/</url>
+    </pluginRepository>
+    <pluginRepository>
+      <id>public.repo.jenkins-ci.org</id>
       <url>https://repo.jenkins-ci.org/public/</url>
     </pluginRepository>
   </pluginRepositories>
+
+  <!--<dependencyManagement>-->
+    <!--<dependencies>-->
+      <!--<dependency>-->
+        <!--<groupId>io.jenkins.tools.bom</groupId>-->
+        <!--<artifactId>bom-2.176.x</artifactId>-->
+        <!--<version>5</version>-->
+        <!--<scope>import</scope>-->
+        <!--<type>pom</type>-->
+      <!--</dependency>-->
+    <!--</dependencies>-->
+  <!--</dependencyManagement>-->
 
   <dependencies>
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
+      <!--<version>4.5.10</version>-->
       <version>4.5.6</version>
+      <!--Checkout out latest https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient-->
     </dependency>
     <dependency>
       <groupId>com.datadoghq</groupId>
@@ -73,28 +97,81 @@
       <version>2.8.1</version>
     </dependency>
 
+    <!--See https://jenkins.io/doc/developer/testing/-->
+    <!--<dependency>-->
+      <!--<groupId>org.jenkins-ci.plugins.workflow</groupId>-->
+      <!--<artifactId>workflow-basic-steps</artifactId>-->
+      <!--<scope>test</scope>-->
+    <!--</dependency>-->
+    <!--<dependency>-->
+      <!--<groupId>org.jenkins-ci.plugins.workflow</groupId>-->
+      <!--<artifactId>workflow-cps</artifactId>-->
+      <!--<scope>test</scope>-->
+    <!--</dependency>-->
+    <!--<dependency>-->
+      <!--<groupId>org.jenkins-ci.plugins.workflow</groupId>-->
+      <!--<artifactId>workflow-durable-task-step</artifactId>-->
+      <!--<scope>test</scope>-->
+    <!--</dependency>-->
+    <!--<dependency>-->
+      <!--<groupId>org.jenkins-ci.plugins.workflow</groupId>-->
+      <!--<artifactId>workflow-job</artifactId>-->
+      <!--<scope>test</scope>-->
+    <!--</dependency>-->
+
+    <!--&lt;!&ndash; https://mvnrepository.com/artifact/org.mockito/mockito-core &ndash;&gt;-->
+    <!--<dependency>-->
+      <!--<groupId>org.mockito</groupId>-->
+      <!--<artifactId>mockito-core</artifactId>-->
+      <!--<version>3.2.4</version>-->
+      <!--<scope>test</scope>-->
+    <!--</dependency>-->
+
+    <!--&lt;!&ndash; https://mvnrepository.com/artifact/org.powermock/powermock-module-junit4 &ndash;&gt;-->
+    <!--<dependency>-->
+      <!--<groupId>org.powermock</groupId>-->
+      <!--<artifactId>powermock-module-junit4</artifactId>-->
+      <!--<version>2.0.4</version>-->
+      <!--<scope>test</scope>-->
+    <!--</dependency>-->
+
+    <!--&lt;!&ndash; https://mvnrepository.com/artifact/org.powermock/powermock-api-mockito2 &ndash;&gt;-->
+    <!--<dependency>-->
+      <!--<groupId>org.powermock</groupId>-->
+      <!--<artifactId>powermock-api-mockito2</artifactId>-->
+      <!--<version>2.0.4</version>-->
+      <!--<scope>test</scope>-->
+    <!--</dependency>-->
+
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
+      <version>2.0.42-beta</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.powermock</groupId>
       <artifactId>powermock-module-junit4</artifactId>
+      <version>1.6.6</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.powermock</groupId>
       <artifactId>powermock-api-mockito2</artifactId>
+      <version>1.6.6</version>
       <scope>test</scope>
     </dependency>
+
   </dependencies>
 
   <build>
     <plugins>
+      <!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-site-plugin -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-site-plugin</artifactId>
+        <!--<version>3.8.2</version>-->
+        <version>3.5</version>
       </plugin>
     </plugins>
   </build>

@@ -37,7 +37,9 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Set;
 
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
 @RunWith(PowerMockRunner.class)
@@ -83,7 +85,8 @@ public class ComputerOfflineEventTest {
         when(DatadogUtilities.getHostname(null)).thenReturn("hostname");
         when(DatadogUtilities.getNodeName(null)).thenReturn("computer");
 
-        DatadogEvent event = new ComputerOfflineEventImpl(null, null, new HashMap<>(), false);
+        DatadogEvent event = new ComputerOfflineEventImpl(null, null,
+                new HashMap<String, Set<String>>(), false);
 
         Assert.assertTrue(event.getHost().equals("hostname"));
         Assert.assertTrue(event.getDate() != 0);
@@ -94,7 +97,8 @@ public class ComputerOfflineEventTest {
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.WARNING));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
 
-        event = new ComputerOfflineEventImpl(null, null, new HashMap<>(), true);
+        event = new ComputerOfflineEventImpl(null, null,
+                new HashMap<String, Set<String>>(), true);
 
         Assert.assertTrue(event.getHost().equals("hostname"));
         Assert.assertTrue(event.getDate() != 0);

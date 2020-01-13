@@ -37,6 +37,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Set;
 
 import static org.mockito.Mockito.when;
 
@@ -82,7 +83,7 @@ public class UserAuthenticationEventTest {
         when(DatadogUtilities.currentTimeMillis()).thenReturn(System.currentTimeMillis());
         when(DatadogUtilities.getHostname(null)).thenReturn("hostname");
 
-        DatadogEvent event = new UserAuthenticationEventImpl("username", UserAuthenticationEventImpl.ACCESS_DENIED, new HashMap<>());
+        DatadogEvent event = new UserAuthenticationEventImpl("username", UserAuthenticationEventImpl.ACCESS_DENIED, new HashMap<String, Set<String>>());
 
         Assert.assertTrue(event.getHost().equals("hostname"));
         Assert.assertTrue(event.getDate() != 0);
@@ -93,7 +94,7 @@ public class UserAuthenticationEventTest {
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.ERROR));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
 
-        event = new UserAuthenticationEventImpl("username", UserAuthenticationEventImpl.LOGOUT, new HashMap<>());
+        event = new UserAuthenticationEventImpl("username", UserAuthenticationEventImpl.LOGOUT, new HashMap<String, Set<String>>());
 
         Assert.assertTrue(event.getHost().equals("hostname"));
         Assert.assertTrue(event.getDate() != 0);
@@ -104,7 +105,7 @@ public class UserAuthenticationEventTest {
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.SUCCESS));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.LOW));
 
-        event = new UserAuthenticationEventImpl("username", UserAuthenticationEventImpl.LOGIN, new HashMap<>());
+        event = new UserAuthenticationEventImpl("username", UserAuthenticationEventImpl.LOGIN, new HashMap<String, Set<String>>());
 
         Assert.assertTrue(event.getHost().equals("hostname"));
         Assert.assertTrue(event.getDate() != 0);
