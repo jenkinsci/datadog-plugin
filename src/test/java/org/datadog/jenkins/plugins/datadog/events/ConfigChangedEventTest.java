@@ -25,76 +25,58 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.events;
 
+import hudson.XmlFile;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Set;
 
-import static org.mockito.Mockito.when;
-
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({DatadogUtilities.class})
 public class ConfigChangedEventTest {
-
-    @Before
-    public void setUp() {
-        PowerMockito.mockStatic(DatadogUtilities.class);
-    }
 
     @Test
     public void testWithNothingSet() throws IOException, InterruptedException {
-        when(DatadogUtilities.currentTimeMillis()).thenReturn(0L);
-        when(DatadogUtilities.getHostname(null)).thenReturn(null);
-        when(DatadogUtilities.getUserId()).thenReturn(null);
-
         DatadogEvent event = new ConfigChangedEventImpl(null, null, null);
 
-        Assert.assertTrue(event.getHost() == null);
-        Assert.assertTrue(event.getDate() == 0);
-        Assert.assertTrue(event.getAggregationKey() == null);
+        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        Assert.assertTrue(event.getDate() != 0);
+        Assert.assertTrue(event.getAggregationKey().equals("unknown"));
         Assert.assertTrue(event.getTags() == null);
-        Assert.assertTrue(event.getTitle().equals("User null changed file null"));
-        Assert.assertTrue(event.getText().contains("User null changed file null"));
+        Assert.assertTrue(event.getTitle().equals("User anonymous changed file unknown"));
+        Assert.assertTrue(event.getText(), event.getText().contains("User anonymous changed file unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.WARNING));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
     }
 
     @Test
     public void testWithEverythingSet() throws IOException, InterruptedException {
-        when(DatadogUtilities.currentTimeMillis()).thenReturn(System.currentTimeMillis());
-        when(DatadogUtilities.getHostname(null)).thenReturn("hostname");
-        when(DatadogUtilities.getUserId()).thenReturn("username");
-        when(DatadogUtilities.getFileName(null)).thenReturn("filename");
+        File file = new File("filename");
+        XmlFile xmlfile = new XmlFile(file);
 
-        DatadogEvent event = new ConfigChangedEventImpl(null, null, new HashMap<String, Set<String>>());
+        DatadogEvent event = new ConfigChangedEventImpl(null, xmlfile, new HashMap<String, Set<String>>());
 
-        Assert.assertTrue(event.getHost().equals("hostname"));
+        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("filename"));
         Assert.assertTrue(event.getTags() != null);
-        Assert.assertTrue(event.getTitle().equals("User username changed file filename"));
-        Assert.assertTrue(event.getText().contains("User username changed file filename"));
+        Assert.assertTrue(event.getTitle().equals("User anonymous changed file filename"));
+        Assert.assertTrue(event.getText().contains("User anonymous changed file filename"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.WARNING));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
 
-        when(DatadogUtilities.getUserId()).thenReturn("SyStEm");
-        event = new ConfigChangedEventImpl(null, null, new HashMap<String, Set<String>>());
+        event = new ConfigChangedEventImpl(null, xmlfile, new HashMap<String, Set<String>>());
+        ((ConfigChangedEventImpl)event).setEnums("SyStEm");
 
-        Assert.assertTrue(event.getHost().equals("hostname"));
+        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("filename"));
         Assert.assertTrue(event.getTags() != null);
-        Assert.assertTrue(event.getTitle().equals("User SyStEm changed file filename"));
-        Assert.assertTrue(event.getText().contains("User SyStEm changed file filename"));
+        Assert.assertTrue(event.getTitle().equals("User anonymous changed file filename"));
+        Assert.assertTrue(event.getText().contains("User anonymous changed file filename"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.LOW));
     }

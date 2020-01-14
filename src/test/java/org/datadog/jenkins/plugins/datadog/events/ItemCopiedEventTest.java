@@ -25,64 +25,50 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.events;
 
+import hudson.model.FreeStyleProject;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Set;
 
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({DatadogUtilities.class})
 public class ItemCopiedEventTest {
-
-    @Before
-    public void setUp() {
-        PowerMockito.mockStatic(DatadogUtilities.class);
-    }
 
     @Test
     public void testWithNothingSet() throws IOException, InterruptedException {
-        when(DatadogUtilities.currentTimeMillis()).thenReturn(0L);
-        when(DatadogUtilities.getHostname(null)).thenReturn(null);
-        when(DatadogUtilities.getUserId()).thenReturn(null);
-
         DatadogEvent event = new ItemCopiedEventImpl(null, null, null);
 
-        Assert.assertTrue(event.getHost() == null);
-        Assert.assertTrue(event.getDate() == 0);
-        Assert.assertTrue(event.getAggregationKey() == null);
+        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));;
+        Assert.assertTrue(event.getDate() != 0);
+        Assert.assertTrue(event.getAggregationKey().equals("unknown"));
         Assert.assertTrue(event.getTags() == null);
-        Assert.assertTrue(event.getTitle().equals("User null copied the item null from null"));
-        Assert.assertTrue(event.getText().contains("User null copied the item null from null"));
+        Assert.assertTrue(event.getTitle().equals("User anonymous copied the item unknown from unknown"));
+        Assert.assertTrue(event.getText().contains("User anonymous copied the item unknown from unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
     }
 
     @Test
     public void testWithEverythingSet() throws IOException, InterruptedException {
-        when(DatadogUtilities.currentTimeMillis()).thenReturn(System.currentTimeMillis());
-        when(DatadogUtilities.getHostname(null)).thenReturn("hostname");
-        when(DatadogUtilities.getUserId()).thenReturn("username");
-        when(DatadogUtilities.getItemName(null)).thenReturn("itemname");
+        FreeStyleProject src = mock(FreeStyleProject.class);
+        when(src.getName()).thenReturn("srcname");
+        FreeStyleProject item = mock(FreeStyleProject.class);
+        when(item.getName()).thenReturn("itemname");
 
-        DatadogEvent event = new ItemCopiedEventImpl(null, null, new HashMap<String, Set<String>>());
+        DatadogEvent event = new ItemCopiedEventImpl(src, item, new HashMap<String, Set<String>>());
 
-        Assert.assertTrue(event.getHost().equals("hostname"));
+        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("itemname"));
         Assert.assertTrue(event.getTags() != null);
-        Assert.assertTrue(event.getTitle().equals("User username copied the item itemname from itemname"));
-        Assert.assertTrue(event.getText().contains("User username copied the item itemname from itemname"));
+        Assert.assertTrue(event.getTitle().equals("User anonymous copied the item itemname from srcname"));
+        Assert.assertTrue(event.getText().contains("User anonymous copied the item itemname from srcname"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
 

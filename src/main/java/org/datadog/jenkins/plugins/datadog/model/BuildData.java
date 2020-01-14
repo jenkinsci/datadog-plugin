@@ -34,10 +34,7 @@ import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class BuildData {
 
@@ -428,16 +425,25 @@ public class BuildData {
             return promotedUserId;
         }
         String userName;
-        for (CauseAction action : run.getActions(CauseAction.class)) {
-            if (action != null && action.getCauses() != null) {
-                for (Cause cause : action.getCauses()) {
-                    userName = getUserId(cause);
-                    if (userName != null) {
-                        return userName;
+        List<CauseAction> actions = null;
+        try {
+            actions = run.getActions(CauseAction.class);
+        }catch(NullPointerException e){
+            //noop
+        }
+        if(actions != null){
+            for (CauseAction action : actions) {
+                if (action != null && action.getCauses() != null) {
+                    for (Cause cause : action.getCauses()) {
+                        userName = getUserId(cause);
+                        if (userName != null) {
+                            return userName;
+                        }
                     }
                 }
             }
         }
+
         if (run.getParent().getClass().getName().equals("hudson.maven.MavenModule")) {
             return "maven";
         }

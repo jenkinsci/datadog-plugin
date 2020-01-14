@@ -25,41 +25,27 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.events;
 
+import hudson.model.Computer;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Set;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({DatadogUtilities.class})
 public class ComputerOfflineEventTest {
-
-    @Before
-    public void setUp() {
-        PowerMockito.mockStatic(DatadogUtilities.class);
-    }
 
     @Test
     public void testWithNothingSet() throws IOException, InterruptedException {
-        when(DatadogUtilities.currentTimeMillis()).thenReturn(0L);
-        when(DatadogUtilities.getHostname(null)).thenReturn(null);
-
         DatadogEvent event = new ComputerOfflineEventImpl(null, null, null, false);
 
-        Assert.assertTrue(event.getHost() == null);
-        Assert.assertTrue(event.getDate() == 0);
+        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey() == null);
         Assert.assertTrue(event.getTags() == null);
         Assert.assertTrue(event.getTitle().equals("Jenkins node null is offline"));
@@ -69,8 +55,8 @@ public class ComputerOfflineEventTest {
 
         event = new ComputerOfflineEventImpl(null, null, null, true);
 
-        Assert.assertTrue(event.getHost() == null);
-        Assert.assertTrue(event.getDate() == 0);
+        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey() == null);
         Assert.assertTrue(event.getTags() == null);
         Assert.assertTrue(event.getTitle().equals("Jenkins node null is temporarily offline"));
@@ -81,14 +67,13 @@ public class ComputerOfflineEventTest {
 
     @Test
     public void testWithEverythingSet() throws IOException, InterruptedException {
-        when(DatadogUtilities.currentTimeMillis()).thenReturn(System.currentTimeMillis());
-        when(DatadogUtilities.getHostname(null)).thenReturn("hostname");
-        when(DatadogUtilities.getNodeName(null)).thenReturn("computer");
+        Computer computer = mock(Computer.class);
+        when(computer.getName()).thenReturn("computer");
 
-        DatadogEvent event = new ComputerOfflineEventImpl(null, null,
+        DatadogEvent event = new ComputerOfflineEventImpl(computer, null,
                 new HashMap<String, Set<String>>(), false);
 
-        Assert.assertTrue(event.getHost().equals("hostname"));
+        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("computer"));
         Assert.assertTrue(event.getTags() != null);
@@ -97,10 +82,10 @@ public class ComputerOfflineEventTest {
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.WARNING));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
 
-        event = new ComputerOfflineEventImpl(null, null,
+        event = new ComputerOfflineEventImpl(computer, null,
                 new HashMap<String, Set<String>>(), true);
 
-        Assert.assertTrue(event.getHost().equals("hostname"));
+        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("computer"));
         Assert.assertTrue(event.getTags() != null);

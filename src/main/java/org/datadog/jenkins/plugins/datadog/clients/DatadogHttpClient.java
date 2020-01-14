@@ -368,8 +368,12 @@ public class DatadogHttpClient implements DatadogClient {
      */
     private HttpURLConnection getHttpURLConnection(final URL url) throws IOException {
         HttpURLConnection conn = null;
+        ProxyConfiguration proxyConfig = null;
+
         Jenkins jenkins = Jenkins.getInstance();
-        ProxyConfiguration proxyConfig = jenkins.proxy;
+        if(jenkins != null){
+            proxyConfig = jenkins.proxy;
+        }
 
         /* Attempt to use proxy */
         if (proxyConfig != null) {

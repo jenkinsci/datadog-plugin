@@ -56,7 +56,12 @@ public class DatadogUtilities {
      * @return - The descriptor for the Datadog plugin. In this case the global configuration.
      */
     public static DatadogGlobalConfiguration getDatadogGlobalDescriptor() {
-        return ExtensionList.lookup(DatadogGlobalConfiguration.class).get(DatadogGlobalConfiguration.class);
+        try {
+            return ExtensionList.lookup(DatadogGlobalConfiguration.class).get(DatadogGlobalConfiguration.class);
+        } catch(NullPointerException e){
+            // It can only throw a NullPointerException when running tests
+            return null;
+        }
     }
 
     /**
@@ -64,7 +69,12 @@ public class DatadogUtilities {
      * @return - The configured {@link DatadogJobProperty}. Null if not there
      */
     public static DatadogJobProperty getDatadogJobProperties(@Nonnull Run r) {
-        return (DatadogJobProperty) r.getParent().getProperty(DatadogJobProperty.class);
+        try {
+            return (DatadogJobProperty) r.getParent().getProperty(DatadogJobProperty.class);
+        } catch(NullPointerException e){
+            // It can only throw a NullPointerException when running tests
+            return null;
+        }
     }
 
     /**
@@ -79,13 +89,23 @@ public class DatadogUtilities {
         if(run == null){
             return result;
         }
-        String jobName = run.getParent().getFullName();
-        final String globalJobTags = getDatadogGlobalDescriptor().getGlobalJobTags();
+        String jobName;
+        try {
+            jobName = run.getParent().getFullName();
+        } catch (NullPointerException e){
+            // It can only throw a NullPointerException when running tests
+            return result;
+        }
+        final DatadogGlobalConfiguration datadogGlobalConfig = getDatadogGlobalDescriptor();
+        if (datadogGlobalConfig == null){
+            return result;
+        }
+        final String globalJobTags = datadogGlobalConfig.getGlobalJobTags();
         final DatadogJobProperty property = DatadogUtilities.getDatadogJobProperties(run);
         String workspaceTagFile = property.readTagFile(run);
         // If job doesn't have a workspace Tag File set we check if one has been defined globally
         if(workspaceTagFile == null){
-            workspaceTagFile = getDatadogGlobalDescriptor().getGlobalTagFile();
+            workspaceTagFile = datadogGlobalConfig.getGlobalTagFile();
         }
         try {
             final EnvVars envVars = run.getEnvironment(listener);
@@ -186,8 +206,14 @@ public class DatadogUtilities {
      * @return a map containing the globalTags global configuration.
      */
     public static Map<String, Set<String>> getTagsFromGlobalTags() {
-        final String globalTags = getDatadogGlobalDescriptor().getGlobalTags();
         Map<String, Set<String>> tags = new HashMap<>();
+
+        final DatadogGlobalConfiguration datadogGlobalConfig = getDatadogGlobalDescriptor();
+        if (datadogGlobalConfig == null){
+            return tags;
+        }
+
+        final String globalTags = datadogGlobalConfig.getGlobalTags();
         List<String> globalTagsLines = DatadogUtilities.linesToList(globalTags);
 
         for (String globalTagsLine : globalTagsLines) {
@@ -225,7 +251,11 @@ public class DatadogUtilities {
      * @return a boolean to signify if the jobName is or is not blacklisted.
      */
     private static boolean isJobBlacklisted(final String jobName) {
-        final String blacklistProp = getDatadogGlobalDescriptor().getBlacklist();
+        final DatadogGlobalConfiguration datadogGlobalConfig = getDatadogGlobalDescriptor();
+        if (datadogGlobalConfig == null){
+            return false;
+        }
+        final String blacklistProp = datadogGlobalConfig.getBlacklist();
         List<String> blacklist = cstrToList(blacklistProp);
         for (String blacklistedJob : blacklist){
             Pattern blacklistedJobPattern = Pattern.compile(blacklistedJob);
@@ -245,7 +275,11 @@ public class DatadogUtilities {
      * @return a boolean to signify if the jobName is or is not whitelisted.
      */
     private static boolean isJobWhitelisted(final String jobName) {
-        final String whitelistProp = getDatadogGlobalDescriptor().getWhitelist();
+        final DatadogGlobalConfiguration datadogGlobalConfig = getDatadogGlobalDescriptor();
+        if (datadogGlobalConfig == null){
+            return true;
+        }
+        final String whitelistProp = datadogGlobalConfig.getWhitelist();
         final List<String> whitelist = cstrToList(whitelistProp);
         for (String whitelistedJob : whitelist){
             Pattern whitelistedJobPattern = Pattern.compile(whitelistedJob);
