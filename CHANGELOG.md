@@ -1,17 +1,6 @@
 Changes
 =======
-
-# 1.0.0 / 01-07-2020
-### Details
-https://github.com/jenkinsci/datadog-plugin/compare/datadog-0.7.1...datadog-1.0.0
-
-[BACKWARDS INCOMPATIBILITY NOTES]
-* Instead of sending `null` as default value for some tags we now send `unknown`.
-* Event titles and messages now include additional information. Search queries and monitors may need updating.
-* Node tag is added by default.
-* Groovy scripts need to be updated (descriptor path changed). See [Configure With A Groovy Script](https://github.com/DataDog/jenkins-datadog-plugin#configure-with-a-groovy-script).
-* More configs are available (some got removed, some added). See [Customization](https://github.com/DataDog/jenkins-datadog-plugin#customization).
-* Whitelist and blacklist configs now support regex expressions.
+TESTSETSETSETSET
 
 ### Changes
 * [IMPROVEMENT][BREAKING CHANGE] Add more granular statuses (i.e. `Not Built`, etc) to onCompleted event. See [153](https://github.com/DataDog/jenkins-datadog-plugin/pull/153) (Thanks @mbaitelman)
