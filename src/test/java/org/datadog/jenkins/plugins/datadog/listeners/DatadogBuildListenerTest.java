@@ -32,32 +32,16 @@ import org.datadog.jenkins.plugins.datadog.stubs.BuildStub;
 import org.datadog.jenkins.plugins.datadog.stubs.ProjectStub;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogMetric;
+import org.datadog.jenkins.plugins.datadog.stubs.QueueStub;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.util.Arrays;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({Jenkins.class})
 public class DatadogBuildListenerTest {
-
-    @Mock
-    private Jenkins jenkins;
-
-    @Before
-    public void setUp() throws Exception {
-        PowerMockito.mockStatic(Jenkins.class);
-        PowerMockito.when(Jenkins.getInstance()).thenReturn(jenkins);
-    }
 
     @Test
     public void testOnCompletedWithNothing() throws Exception {
@@ -65,10 +49,10 @@ public class DatadogBuildListenerTest {
         DatadogBuildListener datadogBuildListener = new DatadogBuildListenerTestWrapper();
         ((DatadogBuildListenerTestWrapper)datadogBuildListener).setDatadogClient(client);
 
+        Jenkins jenkins = mock(Jenkins.class);
         when(jenkins.getFullName()).thenReturn(null);
 
-        Job job = mock(Job.class);
-        when(job.getParent()).thenReturn(jenkins);
+        ProjectStub job = new ProjectStub(jenkins,null);
 
         EnvVars envVars = new EnvVars();
 
@@ -89,6 +73,7 @@ public class DatadogBuildListenerTest {
         DatadogBuildListener datadogBuildListener = new DatadogBuildListenerTestWrapper();
         ((DatadogBuildListenerTestWrapper)datadogBuildListener).setDatadogClient(client);
 
+        Jenkins jenkins = mock(Jenkins.class);
         when(jenkins.getFullName()).thenReturn("ParentFullName");
 
         ProjectStub project = new ProjectStub(jenkins,"JobName");
@@ -153,6 +138,7 @@ public class DatadogBuildListenerTest {
         DatadogBuildListener datadogBuildListener = new DatadogBuildListenerTestWrapper();
         ((DatadogBuildListenerTestWrapper)datadogBuildListener).setDatadogClient(client);
 
+        Jenkins jenkins = mock(Jenkins.class);
         when(jenkins.getFullName()).thenReturn("ParentFullName");
 
         ProjectStub project = new ProjectStub(jenkins,"JobName");
@@ -200,9 +186,10 @@ public class DatadogBuildListenerTest {
         DatadogClientStub client = new DatadogClientStub();
         DatadogBuildListener datadogBuildListener = new DatadogBuildListenerTestWrapper();
         ((DatadogBuildListenerTestWrapper)datadogBuildListener).setDatadogClient(client);
-        Queue queue = mock(Queue.class);
+        Queue queue = new QueueStub(mock(LoadBalancer.class));
         ((DatadogBuildListenerTestWrapper)datadogBuildListener).setQueue(queue);
 
+        Jenkins jenkins = mock(Jenkins.class);
         when(jenkins.getFullName()).thenReturn("ParentFullName");
 
         ProjectStub project = new ProjectStub(jenkins,"JobName");
@@ -210,7 +197,8 @@ public class DatadogBuildListenerTest {
         Queue.Item item = mock(Queue.Item.class);
         when(item.getId()).thenReturn(1L);
         when(item.getInQueueSince()).thenReturn(2000000L);
-        when(queue.getItem(1L)).thenReturn(item);
+
+        ((QueueStub)queue).setItem(item);
 
         EnvVars envVars = new EnvVars();
         envVars.put("HOSTNAME", "test-hostname-2");

@@ -32,47 +32,27 @@ import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.stubs.BuildStub;
+import org.datadog.jenkins.plugins.datadog.stubs.ProjectStub;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
 import java.util.*;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({Jenkins.class})
 public class BuildStartedEventTest {
-
-    @Mock
-    private Jenkins jenkins;
-
-    @Before
-    public void setUp() throws Exception {
-        PowerMockito.mockStatic(Jenkins.class);
-        PowerMockito.when(Jenkins.getInstance()).thenReturn(jenkins);
-    }
 
     @Test
     public void testWithNothingSet() throws IOException, InterruptedException {
+        Jenkins jenkins = mock(Jenkins.class);
         when(jenkins.getFullName()).thenReturn(null);
 
-        Job job = mock(Job.class);
-        when(job.getParent()).thenReturn(jenkins);
-        when(job.getName()).thenReturn(null);
+        ProjectStub job = new ProjectStub(jenkins,null);
 
-        Run run = mock(Run.class);
-        when(run.getResult()).thenReturn(null);
-        when(run.getEnvironment(any(TaskListener.class))).thenReturn(null);
-        when(run.getParent()).thenReturn(job);
+        Run run = new BuildStub(job, null, null, null, 0L, 0, null, 0L, null);
 
         TaskListener listener = mock(TaskListener.class);
         BuildData bd = new BuildData(run, listener);
@@ -92,16 +72,12 @@ public class BuildStartedEventTest {
 
     @Test
     public void testWithNothingSet_parentFullName() throws IOException, InterruptedException {
+        Jenkins jenkins = mock(Jenkins.class);
         when(jenkins.getFullName()).thenReturn("parentFullName");
 
-        Job job = mock(Job.class);
-        when(job.getParent()).thenReturn(jenkins);
-        when(job.getName()).thenReturn(null);
+        ProjectStub job = new ProjectStub(jenkins,null);
 
-        Run run = mock(Run.class);
-        when(run.getResult()).thenReturn(null);
-        when(run.getEnvironment(any(TaskListener.class))).thenReturn(null);
-        when(run.getParent()).thenReturn(job);
+        Run run = new BuildStub(job, null, null, null, 0L, 0, null, 0L, null);
 
         TaskListener listener = mock(TaskListener.class);
         BuildData bd = new BuildData(run, listener);
@@ -121,16 +97,12 @@ public class BuildStartedEventTest {
 
     @Test
     public void testWithNothingSet_parentFullName_2() throws IOException, InterruptedException {
+        Jenkins jenkins = mock(Jenkins.class);
         when(jenkins.getFullName()).thenReturn("parent»Full  Name");
 
-        Job job = mock(Job.class);
-        when(job.getParent()).thenReturn(jenkins);
-        when(job.getName()).thenReturn(null);
+        ProjectStub job = new ProjectStub(jenkins,null);
 
-        Run run = mock(Run.class);
-        when(run.getResult()).thenReturn(null);
-        when(run.getEnvironment(any(TaskListener.class))).thenReturn(null);
-        when(run.getParent()).thenReturn(job);
+        Run run = new BuildStub(job, null, null, null, 0L, 0, null, 0L, null);
 
         TaskListener listener = mock(TaskListener.class);
         BuildData bd = new BuildData(run, listener);
@@ -150,16 +122,12 @@ public class BuildStartedEventTest {
 
     @Test
     public void testWithNothingSet_jobName() throws IOException, InterruptedException {
+        Jenkins jenkins = mock(Jenkins.class);
         when(jenkins.getFullName()).thenReturn("parentFullName");
 
-        Job job = mock(Job.class);
-        when(job.getParent()).thenReturn(jenkins);
-        when(job.getName()).thenReturn("jobName");
+        ProjectStub job = new ProjectStub(jenkins,"jobName");
 
-        Run run = mock(Run.class);
-        when(run.getResult()).thenReturn(null);
-        when(run.getEnvironment(any(TaskListener.class))).thenReturn(null);
-        when(run.getParent()).thenReturn(job);
+        Run run = new BuildStub(job, null, null, null, 0L, 0, null, 0L, null);
 
         TaskListener listener = mock(TaskListener.class);
         BuildData bd = new BuildData(run, listener);
@@ -179,16 +147,12 @@ public class BuildStartedEventTest {
 
     @Test
     public void testWithNothingSet_result() throws IOException, InterruptedException {
+        Jenkins jenkins = mock(Jenkins.class);
         when(jenkins.getFullName()).thenReturn("parentFullName");
 
-        Job job = mock(Job.class);
-        when(job.getParent()).thenReturn(jenkins);
-        when(job.getName()).thenReturn("jobName");
+        ProjectStub job = new ProjectStub(jenkins,"jobName");
 
-        Run run = mock(Run.class);
-        when(run.getResult()).thenReturn(Result.FAILURE);
-        when(run.getEnvironment(any(TaskListener.class))).thenReturn(null);
-        when(run.getParent()).thenReturn(job);
+        Run run = new BuildStub(job, Result.FAILURE, null, null, 0L, 0, null, 0L, null);
 
         TaskListener listener = mock(TaskListener.class);
         BuildData bd = new BuildData(run, listener);
@@ -209,11 +173,10 @@ public class BuildStartedEventTest {
 
     @Test
     public void testWithEverythingSet() throws IOException, InterruptedException {
+        Jenkins jenkins = mock(Jenkins.class);
         when(jenkins.getFullName()).thenReturn("ParentFullName");
 
-        Job job = mock(Job.class);
-        when(job.getParent()).thenReturn(jenkins);
-        when(job.getName()).thenReturn("JobName");
+        ProjectStub job = new ProjectStub(jenkins,"JobName");
 
         EnvVars envVars = new EnvVars();
         envVars.put("HOSTNAME", "test-hostname-2");
@@ -221,11 +184,7 @@ public class BuildStartedEventTest {
         envVars.put("BUILD_URL", "http://build_url.com");
         envVars.put("GIT_BRANCH", "test-branch");
 
-        Run run = mock(Run.class);
-        when(run.getEnvironment(any(TaskListener.class))).thenReturn(envVars);
-        when(run.getDuration()).thenReturn(10L);
-        when(run.getNumber()).thenReturn(2);
-        when(run.getParent()).thenReturn(job);
+        Run run = new BuildStub(job, null, envVars, null, 10L, 2, null, 0L, null);
 
         TaskListener listener = mock(TaskListener.class);
 
@@ -247,22 +206,17 @@ public class BuildStartedEventTest {
 
     @Test
     public void testWithEverythingSet_envVarsAndTags() throws IOException, InterruptedException {
+        Jenkins jenkins = mock(Jenkins.class);
         when(jenkins.getFullName()).thenReturn("ParentFullName");
 
-        Job job = mock(Job.class);
-        when(job.getParent()).thenReturn(jenkins);
-        when(job.getName()).thenReturn("JobName");
+        ProjectStub job = new ProjectStub(jenkins,"JobName");
 
         EnvVars envVars = new EnvVars();
         envVars.put("BUILD_URL", "http://build_url.com");
         envVars.put("CVS_BRANCH", "csv-branch");
         envVars.put("SVN_BRANCH", "svn-branch");
 
-        Run run = mock(Run.class);
-        when(run.getEnvironment(any(TaskListener.class))).thenReturn(envVars);
-        when(run.getDuration()).thenReturn(10L);
-        when(run.getNumber()).thenReturn(2);
-        when(run.getParent()).thenReturn(job);
+        Run run = new BuildStub(job, null, envVars, null, 10L, 2, null, 0L, null);
 
         TaskListener listener = mock(TaskListener.class);
 
