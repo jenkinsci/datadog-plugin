@@ -30,7 +30,6 @@ import hudson.model.*;
 import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.stubs.BuildStub;
 import org.datadog.jenkins.plugins.datadog.stubs.ProjectStub;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogMetric;
 import org.junit.Assert;
@@ -48,31 +47,23 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({Jenkins.class, Queue.class, ClientFactory.class})
+@PrepareForTest({Jenkins.class})
 public class DatadogBuildListenerTest {
 
     @Mock
     private Jenkins jenkins;
 
-    @Mock
-    private Queue queue;
-
     @Before
     public void setUp() throws Exception {
         PowerMockito.mockStatic(Jenkins.class);
         PowerMockito.when(Jenkins.getInstance()).thenReturn(jenkins);
-
-        PowerMockito.mockStatic(Queue.class);
-        PowerMockito.when(Queue.getInstance()).thenReturn(queue);
-
-        PowerMockito.mockStatic(ClientFactory.class);
     }
 
     @Test
     public void testOnCompletedWithNothing() throws Exception {
         DatadogClientStub client = new DatadogClientStub();
-        DatadogBuildListener datadogBuildListener = new DatadogBuildListener();
-        when(ClientFactory.getClient()).thenReturn(client);
+        DatadogBuildListener datadogBuildListener = new DatadogBuildListenerTestWrapper();
+        ((DatadogBuildListenerTestWrapper)datadogBuildListener).setDatadogClient(client);
 
         when(jenkins.getFullName()).thenReturn(null);
 
@@ -95,8 +86,8 @@ public class DatadogBuildListenerTest {
     @Test
     public void testOnCompletedOnSuccessfulRun() throws Exception {
         DatadogClientStub client = new DatadogClientStub();
-        DatadogBuildListener datadogBuildListener = new DatadogBuildListener();
-        when(ClientFactory.getClient()).thenReturn(client);
+        DatadogBuildListener datadogBuildListener = new DatadogBuildListenerTestWrapper();
+        ((DatadogBuildListenerTestWrapper)datadogBuildListener).setDatadogClient(client);
 
         when(jenkins.getFullName()).thenReturn("ParentFullName");
 
@@ -159,8 +150,8 @@ public class DatadogBuildListenerTest {
     @Test
     public void testOnCompletedOnFailedRun() throws Exception {
         DatadogClientStub client = new DatadogClientStub();
-        DatadogBuildListener datadogBuildListener = new DatadogBuildListener();
-        when(ClientFactory.getClient()).thenReturn(client);
+        DatadogBuildListener datadogBuildListener = new DatadogBuildListenerTestWrapper();
+        ((DatadogBuildListenerTestWrapper)datadogBuildListener).setDatadogClient(client);
 
         when(jenkins.getFullName()).thenReturn("ParentFullName");
 
@@ -207,8 +198,10 @@ public class DatadogBuildListenerTest {
     @Test
     public void testOnStarted() throws Exception {
         DatadogClientStub client = new DatadogClientStub();
-        DatadogBuildListener datadogBuildListener = new DatadogBuildListener();
-        when(ClientFactory.getClient()).thenReturn(client);
+        DatadogBuildListener datadogBuildListener = new DatadogBuildListenerTestWrapper();
+        ((DatadogBuildListenerTestWrapper)datadogBuildListener).setDatadogClient(client);
+        Queue queue = mock(Queue.class);
+        ((DatadogBuildListenerTestWrapper)datadogBuildListener).setQueue(queue);
 
         when(jenkins.getFullName()).thenReturn("ParentFullName");
 
