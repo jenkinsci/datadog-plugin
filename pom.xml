@@ -21,7 +21,7 @@
 
   <properties>
     <!--See https://github.com/jenkinsci/plugin-pom/-->
-    <!--<jenkins.version>2.150</jenkins.version>-->
+    <jenkins.version>2.176.1</jenkins.version>
     <java.level>8</java.level>
     <!--<jenkins-test-harness.version>2.2</jenkins-test-harness.version>-->
   </properties>
@@ -70,17 +70,17 @@
     </pluginRepository>
   </pluginRepositories>
 
-  <!--<dependencyManagement>-->
-    <!--<dependencies>-->
-      <!--<dependency>-->
-        <!--<groupId>io.jenkins.tools.bom</groupId>-->
-        <!--<artifactId>bom-2.176.x</artifactId>-->
-        <!--<version>5</version>-->
-        <!--<scope>import</scope>-->
-        <!--<type>pom</type>-->
-      <!--</dependency>-->
-    <!--</dependencies>-->
-  <!--</dependencyManagement>-->
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.jenkins.tools.bom</groupId>
+        <artifactId>bom-2.176.x</artifactId>
+        <version>5</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <dependency>
@@ -96,26 +96,26 @@
     </dependency>
 
     <!--See https://jenkins.io/doc/developer/testing/-->
-    <!--<dependency>-->
-      <!--<groupId>org.jenkins-ci.plugins.workflow</groupId>-->
-      <!--<artifactId>workflow-basic-steps</artifactId>-->
-      <!--<scope>test</scope>-->
-    <!--</dependency>-->
-    <!--<dependency>-->
-      <!--<groupId>org.jenkins-ci.plugins.workflow</groupId>-->
-      <!--<artifactId>workflow-cps</artifactId>-->
-      <!--<scope>test</scope>-->
-    <!--</dependency>-->
-    <!--<dependency>-->
-      <!--<groupId>org.jenkins-ci.plugins.workflow</groupId>-->
-      <!--<artifactId>workflow-durable-task-step</artifactId>-->
-      <!--<scope>test</scope>-->
-    <!--</dependency>-->
-    <!--<dependency>-->
-      <!--<groupId>org.jenkins-ci.plugins.workflow</groupId>-->
-      <!--<artifactId>workflow-job</artifactId>-->
-      <!--<scope>test</scope>-->
-    <!--</dependency>-->
+    <dependency>
+      <groupId>org.jenkins-ci.plugins.workflow</groupId>
+      <artifactId>workflow-basic-steps</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins.workflow</groupId>
+      <artifactId>workflow-cps</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins.workflow</groupId>
+      <artifactId>workflow-durable-task-step</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins.workflow</groupId>
+      <artifactId>workflow-job</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <!-- https://mvnrepository.com/artifact/org.mockito/mockito-core -->
     <dependency>
