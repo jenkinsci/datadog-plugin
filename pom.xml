@@ -121,16 +121,4 @@
 
   </dependencies>
 
-  <build>
-    <plugins>
-      <!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-site-plugin -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-site-plugin</artifactId>
-        <!--<version>3.8.2</version>-->
-        <version>3.5</version>
-      </plugin>
-    </plugins>
-  </build>
-
 </project>
