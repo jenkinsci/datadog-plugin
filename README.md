@@ -2,9 +2,9 @@
 
 [![Build Status](https://dev.azure.com/datadoghq/jenkins-datadog-plugin/_apis/build/status/DataDog.jenkins-datadog-plugin?branchName=master)](https://dev.azure.com/datadoghq/jenkins-datadog-plugin/_build/latest?definitionId=18&branchName=master)
 
-A Jenkins plugin used to forward automatically metrics, events, and service checks to a Datadog account.
+A Jenkins plugin for automatically forwarding metrics, events, and service checks to a Datadog account.
 
-**Note**: There is a [Jenkins CI Plugin page][1] for this plugin, but it refers to this documentation.
+**Note**: The [Jenkins CI plugin page][1] for this plugin references this documentation.
 
 ## Setup
 
@@ -14,11 +14,11 @@ _This plugin requires [Jenkins 1.580.1][2] or newer._
 
 This plugin can be installed from the [Update Center][3] (found at `Manage Jenkins -> Manage Plugins`) in your Jenkins installation:
 
-1. Select the `Available` tab, search for `Datadog` and look for `Datadog Plugin`.
-2. Check the checkbox next to it, and install via your preference by using one of the two install buttons at the bottom of the screen.
-3. Check that the plugin has been successfully installed by searching for `Datadog Plugin` on the `Installed` tab. If the plugin has been successfully installed, continue on to the configuration step, described below.
+1. Select the `Available` tab, search for `Datadog`, and select the checkbox next to `Datadog Plugin`.
+2. Install the plugin by using one of the two install buttons at the bottom of the screen.
+3. To verify the plugin is installed, search for `Datadog Plugin` on the `Installed` tab. After the plugin is installed successfully, continue to the configuration section below.
 
-**Note**: If you do not see the version of `Datadog Plugin` that you are expecting, make sure you have run `Check Now` from the `Manage Jenkins -> Manage Plugins` screen.
+**Note**: If you see an unexpected version of the `Datadog Plugin`, run `Check Now` from the `Manage Jenkins -> Manage Plugins` screen.
 
 ### Configuration
 
@@ -27,7 +27,7 @@ You can use two ways to configure your plugin to submit data to Datadog:
 * Sending the data directly to Datadog through HTTP.
 * Using a DogStatsD server that acts as a forwarder between Jenkins and Datadog.
 
-This configuration can be done from the [plugin user interface](#plugin-user-interface), thanks to a [Groovy script](#groovy-script), or through [Environment variables](#environment-variables).
+The configuration can be done from the [plugin user interface](#plugin-user-interface) with a [Groovy script](#groovy-script), or through [environment variables](#environment-variables).
 
 #### Plugin user interface
 
@@ -35,20 +35,20 @@ To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure S
 
 ##### HTTP forwarding {#http-forwarding-plugin}
 
-1. Click the "Use Datadog API URL and Key to report to Datadog" radio button (selected by default)
-2. Find your API Key from the [API Keys][4] page on your Datadog account, and copy/paste it into the `API Key` textbox on the Jenkins configuration screen.
-3. You can test that your API Key works by pressing the `Test Key` button, on the Jenkins configuration screen, directly below the API Key textbox.
+1. Select the radio button next to **Use Datadog API URL and Key to report to Datadog** (selected by default).
+2. Use your [Datadog API key][4] in the `API Key` textbox on the Jenkins configuration screen.
+3. Test your Datadog API key by using the `Test Key` button on the Jenkins configuration screen directly below the API key textbox.
 4. Save your configuration.
 
 ##### DogStatsD forwarding {#dogstatsd-forwarding-plugin}
 
-1. Click the **Use a DogStatsD Server to report to Datadog** radio button.
-2. Specify both your DogStatD server `hostname` and `port`
+1. Select the radio button next to **Use a DogStatsD Server to report to Datadog**.
+2. Specify your DogStatD server `hostname` and `port`.
 3. Save your configuration.
 
 #### Groovy script
 
-Configure your Datadog plugin to forward its data through HTTP or DogStatsD using the Groovy scripts below. Configuring the plugin this way might be useful if you're running your Jenkins Master in a Docker container using the [Official Jenkins Docker Image][5] or any derivative that supports plugins.txt and Groovy init scripts.
+Configure your Datadog plugin to forward data through HTTP or DogStatsD using the Groovy scripts below. Configuring the plugin this way might be useful if you're running your Jenkins Master in a Docker container using the [official Jenkins Docker image][5] or any derivative that supports `plugins.txt` and Groovy init scripts.
 
 ##### HTTP forwarding {#http-forwarding-groovy-script}
 
@@ -93,72 +93,72 @@ d.save()
 
 #### Environment variables
 
-Configure your Datadog plugin using environment variables by specifying the `DATADOG_JENKINS_PLUGIN_REPORT_WITH` variable which specifies which report mechanism you want to use.
+Configure your Datadog plugin using environment variables with the `DATADOG_JENKINS_PLUGIN_REPORT_WITH` variable, which specifies the report mechanism to use.
 
-##### HTTP Forwarding {#http-forwarding-env}
+##### HTTP forwarding {#http-forwarding-env}
 
 1. Set the `DATADOG_JENKINS_PLUGIN_REPORT_WITH` variable to `HTTP`.
-2. Set the `DATADOG_JENKINS_PLUGIN_TARGET_API_URL` parameter which specifies the Datadog API Endpoint to report to. Default value is `https://api.datadoghq.com/api/`.
-3. Set the `DATADOG_JENKINS_PLUGIN_TARGET_API_KEY` parameter which specifies your Datadog API key in order to report to your Datadog account. Get your API Key from the [Datadog API Keys page][4].
+2. Set the `DATADOG_JENKINS_PLUGIN_TARGET_API_URL` variable, which specifies the Datadog API endpoint (defaults `https://api.datadoghq.com/api/`).
+3. Set the `DATADOG_JENKINS_PLUGIN_TARGET_API_KEY` variable, which specifies your [Datadog API key][4].
 
 ##### DogStatsD forwarding {#dogstatsd-forwarding-env}
 
 1. Set the `DATADOG_JENKINS_PLUGIN_REPORT_WITH` variable to `DSD`.
-2. Set the `DATADOG_JENKINS_PLUGIN_TARGET_HOST` variable which specifies the DogStatsD Server host to report to. Default value is `localhost`.
-3. Set the `DATADOG_JENKINS_PLUGIN_TARGET_PORT` variable which specifies the DogStatsD Server port to report to. Default value is `8125`.
+2. Set the `DATADOG_JENKINS_PLUGIN_TARGET_HOST` variable, which specifies the DogStatsD server host (defaults to `localhost`).
+3. Set the `DATADOG_JENKINS_PLUGIN_TARGET_PORT` variable, which specifies the DogStatsD server port (defaults to `8125`).
 
 #### Logging
 
-Logging is done by utilizing the `java.util.Logger`, which follows the [best logging practices for Jenkins][6]. In order to obtain logs, follow the directions listed in [the Jenkins logging documentation][6]. When adding a Logger, all Datadog plugin functions start with `org.datadog.jenkins.plugins.datadog.` and the function name you are after should autopopulate. As of this writing, the only function available was `org.datadog.jenkins.plugins.datadog.listeners.DatadogBuildListener`.
+Logging is done by utilizing the `java.util.Logger`, which follows the [best logging practices for Jenkins][6]. To obtain logs, follow the directions in the [Jenkins logging documentation][6]. When adding a logger, all Datadog plugin functions start with `org.datadog.jenkins.plugins.datadog.` and the function name you are after should autopopulate. As of this writing, the only function available was `org.datadog.jenkins.plugins.datadog.listeners.DatadogBuildListener`.
 
 ## Customization
 
-### Global Customization
+### Global customization
 
 From the global configuration page, at `Manage Jenkins -> Configure System` you can customize your configuration with:
 
-| Customization              | Description                                                                                                                                                                                                                                 | Environment Variable                          |
+| Customization              | Description                                                                                                                                                                                                                                 | Environment variable                          |
 |----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|
-| Blacklisted Jobs           | A comma-separated list of regex to match job names that should not be monitored, e.g.: `susans-job,johns-.*,prod_folder/prod_release`.                                                                                                      | `DATADOG_JENKINS_PLUGIN_BLACKLIST`            |
-| Whitelisted Jobs           | A comma-separated list of regex to match job names that should be monitored, e.g.: `susans-job,johns-.*,prod_folder/prod_release`.                                                                                                          | `DATADOG_JENKINS_PLUGIN_WHITELIST`            |
-| Global Tag File            | Path to the workspace file containing a comma separated list of tags (not compatible with Pipeline jobs).                                                                                                                                   | `DATADOG_JENKINS_PLUGIN_GLOBAL_TAG_FILE`      |
-| Global Tags                | A comma-separated list of tags to apply to all metrics, events, and service checks.                                                                                                                                                         | `DATADOG_JENKINS_PLUGIN_GLOBAL_TAGS`          |
-| Global Job Tags            | A regex to match a job, and a list of tags to apply to that job, all separated by a comma. Note: tags can reference match groups in the regex using the `$` symbol, e.g.: `(.*?)_job_(*?)_release, owner:$1, release_env:$2, optional:Tag3` | `DATADOG_JENKINS_PLUGIN_GLOBAL_JOB_TAGS`      |
-| Send Security audit events | Enabled by default, it submits `Security Events Type` of events and metrics.                                                                                                                                                                | `DATADOG_JENKINS_PLUGIN_EMIT_SECURITY_EVENTS` |
-| Send System events         | Enabled by default, it submits `System Events Type` of events and metrics                                                                                                                                                                   | `DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS`   |
+| Blacklisted jobs           | A comma-separated list of regex used to exclude job names from monitoring, for example: `susans-job,johns-.*,prod_folder/prod_release`.                                                                                                      | `DATADOG_JENKINS_PLUGIN_BLACKLIST`            |
+| Whitelisted jobs           | A comma-separated list of regex used to include job names for monitoring, for example: `susans-job,johns-.*,prod_folder/prod_release`.                                                                                                          | `DATADOG_JENKINS_PLUGIN_WHITELIST`            |
+| Global tag file            | The path to a workspace file containing a comma separated list of tags (not compatible with pipeline jobs).                                                                                                                                   | `DATADOG_JENKINS_PLUGIN_GLOBAL_TAG_FILE`      |
+| Global tags                | A comma-separated list of tags to apply to all metrics, events, and service checks.                                                                                                                                                         | `DATADOG_JENKINS_PLUGIN_GLOBAL_TAGS`          |
+| Global job tags            | A comma separated list of regex to match a job and a list of tags to apply to that job. **Note**: Tags can reference match groups in the regex using the `$` symbol, for example: `(.*?)_job_(*?)_release, owner:$1, release_env:$2, optional:Tag3` | `DATADOG_JENKINS_PLUGIN_GLOBAL_JOB_TAGS`      |
+| Send security audit events | Submits the `Security Events Type` of events and metrics (enabled by default).                                                                                                                                                                | `DATADOG_JENKINS_PLUGIN_EMIT_SECURITY_EVENTS` |
+| Send system events         | Submits the `System Events Type` of events and metrics (enabled by default).                                                                                                                                                                  | `DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS`   |
 
-### Job Customization
+### Job customization
 
 From a job specific configuration page:
 
 | Customization                         | Description                                                                                                                                                                                           |
 |---------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Custom tags                           | Set it from a `File` in the job workspace (not compatible with Pipeline jobs) or as text `Properties` directly from the configuration page. If set, it overrides the `Global Job Tags` configuration. |
-| Send Source Control Management events | Enabled by default, it submits `Source Control Management Events Type` of events and metrics.                                                                                                         |
+| Custom tags                           | Set from a `File` in the job workspace (not compatible with pipeline jobs) or as text `Properties` directly from the configuration page. If set, this overrides the `Global Job Tags` configuration. |
+| Send source control management events | Submits the `Source Control Management Events Type` of events and metrics (enabled by default).                                                                                                         |
 
-## Data Collected
+## Data collected
 
-The plugin is collecting the following [Events](#events), [Metrics](#metrics), and [Service Checks](#service-checks):
+This plugin is collecting the following [events](#events), [metrics](#metrics), and [service checks](#service-checks):
 
 ### Events
 
-#### Default Events Type
+#### Default events type
 
-| Event Name      | Triggered on              | Default Tags                                                               | Associated RATE metric  |
+| Event name      | Triggered on              | Default tags                                                               | Associated RATE metric  |
 |-----------------|---------------------------|----------------------------------------------------------------------------|-------------------------|
-| Build Started   | `RunListener#onStarted`   | `job`, `node`, `branch`                                                    | `jenkins.job.started`   |
-| Build Aborted   | `RunListener#onDeleted`   | `job`, `node`, `branch`                                                    | `jenkins.job.aborted`   |
-| Build Completed | `RunListener#onCompleted` | `job`, `node`, `branch`, `result` (Git Branch, SVN revision or CVS branch) | `jenkins.job.completed` |
+| Build started   | `RunListener#onStarted`   | `job`, `node`, `branch`                                                    | `jenkins.job.started`   |
+| Build aborted   | `RunListener#onDeleted`   | `job`, `node`, `branch`                                                    | `jenkins.job.aborted`   |
+| Build completed | `RunListener#onCompleted` | `job`, `node`, `branch`, `result` (Git branch, SVN revision, or CVS branch) | `jenkins.job.completed` |
 
-#### Source Control Management Events Type
+#### Source control management events type
 
-| Event Name   | Triggered on             | Default Tags            | Associated RATE metric |
+| Event name   | Triggered on             | Default tags            | Associated RATE metric |
 |--------------|--------------------------|-------------------------|------------------------|
-| SCM Checkout | `SCMListener#onCheckout` | `job`, `node`, `branch` | `jenkins.scm.checkout` |
+| SCM checkout | `SCMListener#onCheckout` | `job`, `node`, `branch` | `jenkins.scm.checkout` |
 
-#### Systems Events Type
+#### Systems events type
 
-| Event Name                   | Triggered on                            | Associated RATE metric                 |
+| Event name                   | Triggered on                            | Associated RATE metric                 |
 |------------------------------|-----------------------------------------|----------------------------------------|
 | Computer Online              | `ComputerListener#onOnline`             | `jenkins.computer.online`              |
 | Computer Offline             | `ComputerListener#onOffline`            | `jenkins.computer.online`              |
@@ -172,9 +172,9 @@ The plugin is collecting the following [Events](#events), [Metrics](#metrics), a
 | ItemListener LocationChanged | `ItemListener#onLocationChanged`        | `jenkins.item.location_changed`        |
 | Config Changed               | `SaveableListener#onChange`             | `jenkins.config.changed`               |
 
-#### Security Events Type
+#### Security events type
 
-| Event Name                  | Triggered on                            | Associated RATE metric       |
+| Event name                  | Triggered on                            | Associated RATE metric       |
 |-----------------------------|-----------------------------------------|------------------------------|
 | User Authenticated          | `SecurityListener#authenticated`        | `jenkins.user.authenticated` |
 | User failed To Authenticate | `SecurityListener#failedToAuthenticate` | `jenkins.user.access_denied` |
@@ -225,7 +225,7 @@ The plugin is collecting the following [Events](#events), [Metrics](#metrics), a
 
 ### Service checks
 
-Build status `jenkins.job.status` with the default tags: : `job`, `node`, `branch`, `result` (Git Branch, SVN revision or CVS branch)
+Build status `jenkins.job.status` with the default tags: : `job`, `node`, `branch`, `result` (Git branch, SVN revision, or CVS branch)
 
 **Note**: Git `branch` tag is available when using the [Git Plugin][7].
 
@@ -239,13 +239,13 @@ Every commit to the [DataDog/jenkins-datadog-plugin][8] repository triggers a Je
 
 A list of releases is available at [jenkinsci/datadog-plugin/releases][10].
 
-### How to Release
+### How to release
 
 To release a new plugin version, change the project version in the [pom.xml][11] from `x.x.x-SNAPSHOT` to the updated version number you would like to see. Add an entry for the new release number to the [CHANGELOG.md][12] file, and ensure that all the changes are listed accurately. Then run the `jenkins-datadog-plugin-release` job in the Jenkins installation. If the job completes successfully, then the newly updated plugin should be available from the Jenkins [Update Center][3] within ~4 hours (plus mirror propogation time).
 
 ## Issue Tracking
 
-The Github's built in issue tracking system is used to track all issues tickets relating to this plugin, found [DataDog/jenkins-datadog-plugin/issues][13]. However, given how Jenkins Plugins are hosted, there may be issues that are posted to JIRA as well. You can check [this jenkins issue][14] for those issue postings.
+Github's built-in issue tracking system is used to track all issues relating to this plugin: [DataDog/jenkins-datadog-plugin/issues][13]. However, given how Jenkins plugins are hosted, there may be issues that are posted to JIRA as well. You can check [this jenkins issue][14] for those issue postings.
 
 **Note**: [Unresolved issues on JIRA mentioning Datadog.][15].
 
@@ -261,9 +261,9 @@ If you want to submit code, fork this repository and submit pull requests agains
 
 Check out the [development document][17] for tips on spinning up a quick development environment locally.
 
-## Manual Testing
+## Manual testing
 
-In order to keep track of some testing procedures for ensuring proper functionality of the Datadog Plugin on Jenkins, there is a [testing document][17].
+To keep track of testing procedures for ensuring proper functionality of the Datadog Plugin on Jenkins, there is a [testing document][17].
 
 [1]: https://plugins.jenkins.io/datadog
 [2]: http://updates.jenkins-ci.org/download/war/1.580.1/jenkins.war
