@@ -21,7 +21,7 @@
 
   <properties>
     <!--See https://github.com/jenkinsci/plugin-pom/-->
-    <jenkins.version>2.176.1</jenkins.version> <!-- default 2.138.4 (too low), 2.150.1 (too low), 2.190.1, 2.214, 2.179.1 -->
+    <jenkins.version>2.176.1</jenkins.version> <!-- default 2.138.4 (too low), 2.150.1 (too low), 2.190.1, 2.214, 2.179.1 --> 
     <java.level>8</java.level>
     <slf4jVersion>1.7.26</slf4jVersion>
     <!--<jenkins-test-harness.version>2.2</jenkins-test-harness.version>-->
