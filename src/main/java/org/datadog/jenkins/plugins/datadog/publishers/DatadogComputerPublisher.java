@@ -69,7 +69,7 @@ public class DatadogComputerPublisher extends PeriodicWork {
             long nodeOnline = 0;
             Jenkins jenkins = Jenkins.getInstance();
             Computer[] computers = new Computer[0];
-            if(jenkins != null) {
+            if(jenkins != null){
                 computers = jenkins.getComputers();
             }
             final Map<String, Set<String>> globalTags = DatadogUtilities.getTagsFromGlobalTags();
