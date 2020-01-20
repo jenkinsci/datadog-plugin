@@ -6,7 +6,7 @@ We love pull requests. Here's a quick guide.
 
 Fork, then clone the repo:
 
-    git clone git@github.com:DataDog/jenkins-datadog-plugin.git
+    git clone git@github.com:jenkinsci/datadog-plugin.git
 
 Make sure the tests pass:
 
@@ -18,7 +18,7 @@ It is strongly recommended to perform manual testing as well, see section below.
 
 Push to your fork and [submit a pull request][pr].
 
-[pr]: https://github.com/your-username/jenkins-datadog-plugin/compare/DataDog:master...master
+[pr]: https://github.com/your-username/datadog-plugin/compare/jenkinsci:master...master
 
 At this point you're waiting on us. We may suggest some changes, improvements or alternatives.
 
@@ -26,7 +26,7 @@ At this point you're waiting on us. We may suggest some changes, improvements or
 
 ### Setup
 
-To spin up a development environment for the *jenkins-datadog-plugin* repository. The requirements are:
+To spin up a development environment for the *jenkins-datadog* plugin repository. The requirements are:
 
 * [Java 1.8](https://www.java.com/en/download/)
 * [Docker](https://docs.docker.com/get-started/) & [docker-compose](https://docs.docker.com/compose/install/)
