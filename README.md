@@ -250,10 +250,10 @@ If the command completes successfully, then the newly updated plugin should be a
 
 ## Issue Tracking
 
-Github's built-in issue tracking system is used to track all issues relating to this plugin: [jenkinsci/datadog-plugin/issues][13]. 
+GitHub's built-in issue tracking system is used to track all issues relating to this plugin: [jenkinsci/datadog-plugin/issues][13]. 
 However, given how Jenkins plugins are hosted, there may be issues that are posted to JIRA as well. You can check [this jenkins issue][14] for those issue postings.
 
-**Note**: [Unresolved issues on JIRA mentioning Datadog.][15].
+**Note**: [Unresolved issues on JIRA mentioning Datadog][15].
 
 ## Changes
 
