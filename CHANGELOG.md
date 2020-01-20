@@ -1,6 +1,14 @@
 Changes
 =======
 
+# 1.0.1 / 01-20-2020
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-1.0.0...datadog-1.0.1
+
+### Changes
+* [BUGFIX] Bug fix when calling fetching build tags from job properties. See [#17](https://github.com/jenkinsci/datadog-plugin/pull/17)
+* [BUGFIX] Switch labels from entry to checkbox. See [#7](https://github.com/DataDog/jenkins-datadog-plugin/pull/7) Thanks [@jsoref](https://github.com/jsoref)
+
 # 1.0.0 / 01-07-2020
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-0.7.1...datadog-1.0.0
