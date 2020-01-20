@@ -233,19 +233,25 @@ Build status `jenkins.job.status` with the default tags: : `job`, `node`, `branc
 
 ### Overview
 
-The [DataDog/jenkins-datadog-plugin][8] repository handles the most up-to-date changes made to the Datadog Plugin, as well as issue tickets revolving around that work. Releases are merged to the [Jenkins-CI git repo for our plugin][9], and represents the source used for plugin releases found in the [Update Center][3] in your Jenkins installation.
+The [jenkinsci/datadog-plugin][8] repository handles the most up-to-date changes made to the Datadog Plugin, as well as issue tickets revolving around that work. 
+Releases are merged to the [Jenkins-CI git repo for our plugin][9], and represents the source used for plugin releases found in the [Update Center][3] in your Jenkins installation.
 
-Every commit to the [DataDog/jenkins-datadog-plugin][8] repository triggers a Jenkins build on our internal Jenkins installation.
+Every commit to the repository triggers the Jenkins Org CI pipeline defined in the `JenkinsFile` at the root folder of the source code.
 
 A list of releases is available at [jenkinsci/datadog-plugin/releases][10].
 
 ### How to release
 
-To release a new plugin version, change the project version in the [pom.xml][11] from `x.x.x-SNAPSHOT` to the updated version number you would like to see. Add an entry for the new release number to the [CHANGELOG.md][12] file, and ensure that all the changes are listed accurately. Then run the `jenkins-datadog-plugin-release` job in the Jenkins installation. If the job completes successfully, then the newly updated plugin should be available from the Jenkins [Update Center][3] within ~4 hours (plus mirror propogation time).
+To release a new plugin version, change the project version in the [pom.xml][11] from `x.x.x-SNAPSHOT` to the updated version number you would like to see. 
+Add an entry for the new release number to the [CHANGELOG.md][12] file, and ensure that all the changes are listed accurately. 
+- Clone to repo and checkout the `master` branch.
+- (By repo admins only) Run the following command `mvn -DlocalCheckout=true release:prepare release:perform` to trigger the release. 
+If the command completes successfully, then the newly updated plugin should be available from the Jenkins [Update Center][3] within ~4 hours (plus mirror propagation time).
 
 ## Issue Tracking
 
-Github's built-in issue tracking system is used to track all issues relating to this plugin: [DataDog/jenkins-datadog-plugin/issues][13]. However, given how Jenkins plugins are hosted, there may be issues that are posted to JIRA as well. You can check [this jenkins issue][14] for those issue postings.
+Github's built-in issue tracking system is used to track all issues relating to this plugin: [jenkinsci/datadog-plugin/issues][13]. 
+However, given how Jenkins plugins are hosted, there may be issues that are posted to JIRA as well. You can check [this jenkins issue][14] for those issue postings.
 
 **Note**: [Unresolved issues on JIRA mentioning Datadog.][15].
 
@@ -272,12 +278,12 @@ To keep track of testing procedures for ensuring proper functionality of the Dat
 [5]: https://github.com/jenkinsci/docker
 [6]: https://wiki.jenkins-ci.org/display/JENKINS/Logging
 [7]: https://wiki.jenkins.io/display/JENKINS/Git+Plugin
-[8]: https://github.com/DataDog/jenkins-datadog-plugin
+[8]: https://github.com/jenkinsci/datadog-plugin
 [9]: https://github.com/jenkinsci/datadog-plugin
 [10]: https://github.com/jenkinsci/datadog-plugin/releases
 [11]: pom.xml
 [12]: CHANGELOG.md
-[13]: https://github.com/DataDog/jenkins-datadog-plugin/issues
+[13]: https://github.com/jenkinsci/datadog-plugin/issues
 [14]: https://issues.jenkins-ci.org/issues/?jql=project%20%3D%20JENKINS%20AND%20status%20in%20%28Open%2C%20%22In%20Progress%22%2C%20Reopened%29%20AND%20component%20%3D%20datadog-plugin%20ORDER%20BY%20updated%20DESC%2C%20priority%20DESC%2C%20created%20ASC
 [15]: https://issues.jenkins-ci.org/browse/INFRA-305?jql=status%20in%20%28Open%2C%20%22In%20Progress%22%2C%20Reopened%2C%20Verified%2C%20Untriaged%2C%20%22Fix%20Prepared%22%29%20AND%20text%20~%20%22datadog%22
 [16]: https://github.com/DataDog/datadog-agent/blob/master/CONTRIBUTING.md
