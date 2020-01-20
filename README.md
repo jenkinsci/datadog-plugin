@@ -244,7 +244,7 @@ To release a new Datadog-plugin version:
 
 1. Change the project version in the [pom.xml][11] from `x.x.x-SNAPSHOT` to the updated version number you would like to see. 
 2. Add an entry for the new release number to the [CHANGELOG.md][12] file, and ensure that all changes are listed accurately. 
-3. Clone to repository and checkout the `master` branch.
+3. Clone the repository and checkout the `master` branch.
 4. For repository admins only - Trigger the release by running the following command `mvn -DlocalCheckout=true release:prepare release:perform`.
 If the command completes successfully, then the newly updated plugin should be available from the Jenkins [Update Center][3] within ~4 hours (plus mirror propagation time).
 
