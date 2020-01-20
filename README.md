@@ -1,7 +1,5 @@
 # Jenkins Datadog Plugin
 
-[![Build Status](https://dev.azure.com/datadoghq/jenkins-datadog-plugin/_apis/build/status/DataDog.jenkins-datadog-plugin?branchName=master)](https://dev.azure.com/datadoghq/jenkins-datadog-plugin/_build/latest?definitionId=18&branchName=master)
-
 A Jenkins plugin for automatically forwarding metrics, events, and service checks to a Datadog account.
 
 **Note**: The [Jenkins CI plugin page][1] for this plugin references this documentation.
@@ -236,7 +234,7 @@ Build status `jenkins.job.status` with the default tags: : `job`, `node`, `branc
 The [jenkinsci/datadog-plugin][8] repository handles the most up-to-date changes made to the Datadog Plugin, as well as issue tickets revolving around that work. 
 Releases are merged to the [Jenkins-CI git repo for our plugin][9], and represents the source used for plugin releases found in the [Update Center][3] in your Jenkins installation.
 
-Every commit to the repository triggers the Jenkins Org CI pipeline defined in the `JenkinsFile` at the root folder of the source code.
+Every commit to the repository triggers the Jenkins Org CI pipeline defined in the `Jenkinsfile` at the root folder of the source code.
 
 A list of releases is available at [jenkinsci/datadog-plugin/releases][10].
 
