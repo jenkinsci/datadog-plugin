@@ -76,7 +76,7 @@ public class DatadogSecurityListener extends SecurityListener {
 
             logger.fine("End DatadogSecurityListener#authenticated");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 
@@ -105,7 +105,7 @@ public class DatadogSecurityListener extends SecurityListener {
 
             logger.fine("End DatadogSecurityListener#failedToAuthenticate");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 
@@ -144,7 +144,7 @@ public class DatadogSecurityListener extends SecurityListener {
 
             logger.fine("End DatadogSecurityListener#loggedOut");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 }

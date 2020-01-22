@@ -164,8 +164,8 @@ public class DatadogJobProperty<T extends Job<?, ?>> extends JobProperty<T> {
                     s = path.readToString();
                 }
             }
-        } catch (IOException | InterruptedException | NullPointerException ex) {
-            logger.severe(ex.getMessage());
+        } catch (IOException | InterruptedException | NullPointerException e) {
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
         return s;
     }

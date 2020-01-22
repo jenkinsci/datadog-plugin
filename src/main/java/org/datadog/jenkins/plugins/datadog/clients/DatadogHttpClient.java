@@ -33,14 +33,12 @@ import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 import javax.servlet.ServletException;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.Proxy;
 import java.net.URL;
@@ -155,7 +153,7 @@ public class DatadogHttpClient implements DatadogClient {
             payload.put("alert_type", event.getAlertType().name().toLowerCase());
             status = post(payload, EVENT);
         } catch (Exception e) {
-            logger.severe(e.toString());
+            DatadogUtilities.severe(logger, e, null);
             status = false;
         }
         return status;
@@ -232,7 +230,7 @@ public class DatadogHttpClient implements DatadogClient {
         try {
             status = post(payload, METRIC);
         } catch (Exception e) {
-            logger.severe(e.toString());
+            DatadogUtilities.severe(logger, e, null);
             status = false;
         }
         return status;
@@ -305,11 +303,12 @@ public class DatadogHttpClient implements DatadogClient {
             try {
                 if (conn != null && conn.getResponseCode() == HTTP_FORBIDDEN) {
                     logger.severe("Hmmm, your API key may be invalid. We received a 403 error.");
+                    DatadogUtilities.severe(logger, e, null);
                 } else {
-                    logger.severe(String.format("Client error: %s", e.toString()));
+                    DatadogUtilities.severe(logger, e, "Client error: ");
                 }
             } catch (IOException ex) {
-                logger.severe(ex.toString());
+                DatadogUtilities.severe(logger, e, null);
             }
             status = false;
         } finally {
@@ -347,8 +346,9 @@ public class DatadogHttpClient implements DatadogClient {
         } catch (Exception e) {
             if (conn != null && conn.getResponseCode() == HTTP_FORBIDDEN) {
                 logger.severe("Hmmm, your API key may be invalid. We received a 403 error.");
+                DatadogUtilities.severe(logger, e, null);
             } else {
-                logger.severe(String.format("Client error: %s", e.toString()));
+                DatadogUtilities.severe(logger, e, "Client error: ");
             }
             status = false;
         } finally {

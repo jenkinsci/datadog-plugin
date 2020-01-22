@@ -34,10 +34,7 @@ import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 import javax.annotation.Nonnull;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
@@ -119,8 +116,8 @@ public class DatadogUtilities {
                 result = TagsUtil.merge(result, computeTagListFromVarList(envVars, workspaceTagFile));
             }
             result = TagsUtil.merge(result, computeTagListFromVarList(envVars, tagProperties));
-        } catch (IOException | InterruptedException ex) {
-            logger.severe(ex.getMessage());
+        } catch (IOException | InterruptedException e) {
+            severe(logger, e, null);
         }
 
         result = TagsUtil.merge(result, getTagsFromGlobalJobTags(jobName, globalJobTags));
@@ -421,7 +418,7 @@ public class DatadogUtilities {
 
                 hostname = out.toString();
             } catch (Exception e) {
-                logger.severe(e.getMessage());
+                severe(logger, e, null);
             }
 
             // Check hostname
@@ -572,5 +569,12 @@ public class DatadogUtilities {
         } else {
             return file.getFile().getName();
         }
+    }
+
+    public static void severe(Logger logger, Throwable e, String message){
+        message = (message == null) ? "" : message;
+        StringWriter sw = new StringWriter();
+        e.printStackTrace(new PrintWriter(sw));
+        logger.severe(message + sw.toString());
     }
 }

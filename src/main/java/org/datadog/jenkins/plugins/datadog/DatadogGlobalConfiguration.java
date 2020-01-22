@@ -290,7 +290,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                     this.getTargetApiURL(), this.getTargetApiKey(), this.getTargetHost(), this.getTargetPort());
 
         } catch(Exception e){
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
         return super.configure(req, formData);
     }

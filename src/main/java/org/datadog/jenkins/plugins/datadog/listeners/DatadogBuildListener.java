@@ -78,7 +78,7 @@ public class DatadogBuildListener extends RunListener<Run>  {
             try {
                 buildData = new BuildData(run, listener);
             } catch (IOException | InterruptedException e) {
-                logger.severe(e.getMessage());
+                DatadogUtilities.severe(logger, e, null);
                 return;
             }
 
@@ -107,7 +107,7 @@ public class DatadogBuildListener extends RunListener<Run>  {
 
             logger.fine("End DatadogBuildListener#onStarted");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 
@@ -136,7 +136,7 @@ public class DatadogBuildListener extends RunListener<Run>  {
             try {
                 buildData = new BuildData(run, listener);
             } catch (IOException | InterruptedException e) {
-                logger.severe(e.getMessage());
+                DatadogUtilities.severe(logger, e, null);
                 return;
             }
 
@@ -190,7 +190,7 @@ public class DatadogBuildListener extends RunListener<Run>  {
 
             logger.fine("End DatadogBuildListener#onCompleted");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 
@@ -211,7 +211,7 @@ public class DatadogBuildListener extends RunListener<Run>  {
             try {
                 buildData = new BuildData(run, null);
             } catch (IOException | InterruptedException e) {
-                logger.severe(e.getMessage());
+                DatadogUtilities.severe(logger, e, null);
                 return;
             }
 
@@ -228,7 +228,7 @@ public class DatadogBuildListener extends RunListener<Run>  {
 
             logger.fine("End DatadogBuildListener#onDeleted");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 

@@ -29,6 +29,7 @@ import com.timgroup.statsd.*;
 import hudson.util.Secret;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
@@ -111,7 +112,7 @@ public class DogStatsDClient implements DatadogClient {
             this.statsd = new NonBlockingStatsDClient(null, this.hostname, this.port);
             this.isStopped = false;
         } catch (Exception e){
-            logger.severe("Failed to reinitialize DogStatsD Client: " + e);
+            DatadogUtilities.severe(logger, e, "Failed to reinitialize DogStatsD Client: ");
             this.stop();
         }
         return !isStopped;
@@ -121,8 +122,8 @@ public class DogStatsDClient implements DatadogClient {
         if (this.statsd != null){
             try{
                 this.statsd.stop();
-            }catch(Exception ex){
-                logger.severe("Failed to stop DogStatsD Client: " + ex);
+            }catch(Exception e){
+                DatadogUtilities.severe(logger, e, "Failed to stop DogStatsD Client: ");
                 return false;
             }
             this.statsd = null;
@@ -176,7 +177,7 @@ public class DogStatsDClient implements DatadogClient {
             this.statsd.recordEvent(ev, TagsUtil.convertTagsToArray(event.getTags()));
             return true;
         } catch(Exception e){
-            logger.severe("An unexpected error occurred: " + e);
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
             reinitialize(true);
             return false;
         }
@@ -189,7 +190,7 @@ public class DogStatsDClient implements DatadogClient {
             logger.fine("increment counter with dogStatD client");
             this.statsd.incrementCounter(name, TagsUtil.convertTagsToArray(tags));
         } catch(Exception e){
-            logger.severe("An unexpected error occurred: " + e);
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
             reinitialize(true);
         }
     }
@@ -207,7 +208,7 @@ public class DogStatsDClient implements DatadogClient {
             this.statsd.gauge(name, value, TagsUtil.convertTagsToArray(tags));
             return true;
         } catch(Exception e){
-            logger.severe("An unexpected error occurred: " + e);
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
             reinitialize(true);
             return false;
         }
@@ -227,7 +228,7 @@ public class DogStatsDClient implements DatadogClient {
             this.statsd.serviceCheck(sc);
             return true;
         } catch(Exception e){
-            logger.severe("An unexpected error occurred: " + e);
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
             reinitialize(true);
             return false;
         }

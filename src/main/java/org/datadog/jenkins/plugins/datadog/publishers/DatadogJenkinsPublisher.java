@@ -79,7 +79,7 @@ public class DatadogJenkinsPublisher extends PeriodicWork {
             client.gauge("jenkins.plugin.count", pluginCount, hostname, tags);
 
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
 
     }

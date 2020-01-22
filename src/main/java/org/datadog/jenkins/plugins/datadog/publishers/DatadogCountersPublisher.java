@@ -28,6 +28,7 @@ package org.datadog.jenkins.plugins.datadog.publishers;
 import hudson.Extension;
 import hudson.model.*;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 
 import java.io.IOException;
@@ -57,7 +58,7 @@ public class DatadogCountersPublisher extends AsyncPeriodicWork {
             DatadogClient client = ClientFactory.getClient();
             client.flushCounters();
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 }

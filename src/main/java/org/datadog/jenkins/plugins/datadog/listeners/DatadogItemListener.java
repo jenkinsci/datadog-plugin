@@ -92,7 +92,7 @@ public class DatadogItemListener extends ItemListener {
 
             logger.fine("End DatadogItemListener#on" + action);
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 
@@ -121,7 +121,7 @@ public class DatadogItemListener extends ItemListener {
 
             logger.fine("End DatadogItemListener#onCopied");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 
@@ -150,7 +150,7 @@ public class DatadogItemListener extends ItemListener {
 
             logger.fine("End DatadogItemListener#onLocationChanged");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 

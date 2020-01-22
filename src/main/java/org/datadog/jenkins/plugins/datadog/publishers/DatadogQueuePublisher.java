@@ -86,7 +86,7 @@ public class DatadogQueuePublisher extends PeriodicWork {
             client.gauge("jenkins.queue.blocked", blocked, hostname, tags);
 
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
 
     }

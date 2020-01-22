@@ -73,7 +73,7 @@ public class DatadogSaveableListener  extends SaveableListener {
 
             logger.fine("End DatadogSaveableListener#onChange");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 }

@@ -84,7 +84,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             logger.fine("End DatadogComputerListener#onOnline");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 
@@ -115,7 +115,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             logger.fine("End DatadogComputerListener#onOffline");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 
@@ -146,7 +146,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             logger.fine("End DatadogComputerListener#onTemporarilyOnline");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 
@@ -177,7 +177,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             logger.fine("End DatadogComputerListener#onTemporarilyOffline");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 
@@ -208,7 +208,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             logger.fine("End DatadogComputerListener#onLaunchFailure");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 

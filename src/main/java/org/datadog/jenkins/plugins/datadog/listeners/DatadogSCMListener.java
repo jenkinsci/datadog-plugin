@@ -87,7 +87,7 @@ public class DatadogSCMListener extends SCMListener {
             try {
                 buildData = new BuildData(build, listener);
             } catch (IOException | InterruptedException e) {
-                logger.severe(e.getMessage());
+                DatadogUtilities.severe(logger, e, null);
                 return;
             }
 
@@ -102,7 +102,7 @@ public class DatadogSCMListener extends SCMListener {
 
             logger.fine("End DatadogSCMListener#onCheckout");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 
