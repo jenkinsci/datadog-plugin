@@ -45,23 +45,15 @@
   </scm>
 
   <repositories>
-    <!--<repository>-->
-      <!--<id>releases.repo.jenkins-ci.org</id>-->
-      <!--<url>https://repo.jenkins-ci.org/releases/</url>-->
-    <!--</repository>-->
     <repository>
-      <id>public.repo.jenkins-ci.org</id>
+      <id>repo.jenkins-ci.org</id>
       <url>https://repo.jenkins-ci.org/public/</url>
     </repository>
   </repositories>
 
   <pluginRepositories>
-    <!--<pluginRepository>-->
-      <!--<id>releases.repo.jenkins-ci.org</id>-->
-      <!--<url>https://repo.jenkins-ci.org/releases/</url>-->
-    <!--</pluginRepository>-->
     <pluginRepository>
-      <id>public.repo.jenkins-ci.org</id>
+      <id>repo.jenkins-ci.org</id>
       <url>https://repo.jenkins-ci.org/public/</url>
     </pluginRepository>
   </pluginRepositories>
