@@ -117,9 +117,7 @@ public class DatadogUtilities {
             }
             result = TagsUtil.merge(result, computeTagListFromVarList(envVars, tagProperties));
         } catch (IOException | InterruptedException e) {
-            StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            logger.severe(sw.toString());
+            severe(logger, e, null);
         }
 
         result = TagsUtil.merge(result, getTagsFromGlobalJobTags(jobName, globalJobTags));
@@ -420,9 +418,7 @@ public class DatadogUtilities {
 
                 hostname = out.toString();
             } catch (Exception e) {
-                StringWriter sw = new StringWriter();
-                e.printStackTrace(new PrintWriter(sw));
-                logger.severe(sw.toString());
+                severe(logger, e, null);
             }
 
             // Check hostname
