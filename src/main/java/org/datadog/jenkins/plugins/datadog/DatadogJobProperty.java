@@ -32,8 +32,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.logging.Logger;
 
 /**
@@ -167,9 +165,7 @@ public class DatadogJobProperty<T extends Job<?, ?>> extends JobProperty<T> {
                 }
             }
         } catch (IOException | InterruptedException | NullPointerException e) {
-            StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            logger.severe(sw.toString());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
         return s;
     }

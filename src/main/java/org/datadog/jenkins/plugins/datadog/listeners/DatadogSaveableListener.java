@@ -35,8 +35,6 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.events.ConfigChangedEventImpl;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -75,9 +73,7 @@ public class DatadogSaveableListener  extends SaveableListener {
 
             logger.fine("End DatadogSaveableListener#onChange");
         } catch (Exception e) {
-            StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            logger.severe("Unexpected exception occurred - " + sw.toString());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 }

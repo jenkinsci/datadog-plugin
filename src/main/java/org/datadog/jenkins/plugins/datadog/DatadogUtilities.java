@@ -574,4 +574,11 @@ public class DatadogUtilities {
             return file.getFile().getName();
         }
     }
+
+    public static void severe(Logger logger, Throwable e, String message){
+        message = (message == null) ? "" : message;
+        StringWriter sw = new StringWriter();
+        e.printStackTrace(new PrintWriter(sw));
+        logger.severe(message + sw.toString());
+    }
 }

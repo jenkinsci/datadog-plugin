@@ -40,8 +40,6 @@ import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -86,9 +84,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             logger.fine("End DatadogComputerListener#onOnline");
         } catch (Exception e) {
-            StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            logger.severe("Unexpected exception occurred - " + sw.toString());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 
@@ -119,9 +115,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             logger.fine("End DatadogComputerListener#onOffline");
         } catch (Exception e) {
-            StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            logger.severe("Unexpected exception occurred - " + sw.toString());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 
@@ -152,9 +146,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             logger.fine("End DatadogComputerListener#onTemporarilyOnline");
         } catch (Exception e) {
-            StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            logger.severe("Unexpected exception occurred - " + sw.toString());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 
@@ -185,9 +177,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             logger.fine("End DatadogComputerListener#onTemporarilyOffline");
         } catch (Exception e) {
-            StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            logger.severe("Unexpected exception occurred - " + sw.toString());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 
@@ -218,9 +208,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             logger.fine("End DatadogComputerListener#onLaunchFailure");
         } catch (Exception e) {
-            StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            logger.severe("Unexpected exception occurred - " + sw.toString());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 

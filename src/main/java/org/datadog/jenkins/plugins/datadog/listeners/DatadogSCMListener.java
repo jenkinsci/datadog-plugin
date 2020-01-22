@@ -42,8 +42,6 @@ import org.datadog.jenkins.plugins.datadog.model.BuildData;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -89,9 +87,7 @@ public class DatadogSCMListener extends SCMListener {
             try {
                 buildData = new BuildData(build, listener);
             } catch (IOException | InterruptedException e) {
-                StringWriter sw = new StringWriter();
-                e.printStackTrace(new PrintWriter(sw));
-                logger.severe(sw.toString());
+                DatadogUtilities.severe(logger, e, null);
                 return;
             }
 
@@ -106,9 +102,7 @@ public class DatadogSCMListener extends SCMListener {
 
             logger.fine("End DatadogSCMListener#onCheckout");
         } catch (Exception e) {
-            StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            logger.severe("Unexpected exception occurred - " + sw.toString());
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
         }
     }
 
