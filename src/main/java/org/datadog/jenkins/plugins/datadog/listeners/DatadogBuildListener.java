@@ -39,6 +39,8 @@ import org.datadog.jenkins.plugins.datadog.model.BuildData;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -78,7 +80,9 @@ public class DatadogBuildListener extends RunListener<Run>  {
             try {
                 buildData = new BuildData(run, listener);
             } catch (IOException | InterruptedException e) {
-                logger.severe(e.getMessage());
+                StringWriter sw = new StringWriter();
+                e.printStackTrace(new PrintWriter(sw));
+                logger.severe(sw.toString());
                 return;
             }
 
@@ -107,7 +111,9 @@ public class DatadogBuildListener extends RunListener<Run>  {
 
             logger.fine("End DatadogBuildListener#onStarted");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            logger.severe("Unexpected exception occurred - " + sw.toString());
         }
     }
 
@@ -136,7 +142,9 @@ public class DatadogBuildListener extends RunListener<Run>  {
             try {
                 buildData = new BuildData(run, listener);
             } catch (IOException | InterruptedException e) {
-                logger.severe(e.getMessage());
+                StringWriter sw = new StringWriter();
+                e.printStackTrace(new PrintWriter(sw));
+                logger.severe(sw.toString());
                 return;
             }
 
@@ -190,7 +198,9 @@ public class DatadogBuildListener extends RunListener<Run>  {
 
             logger.fine("End DatadogBuildListener#onCompleted");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            logger.severe("Unexpected exception occurred - " + sw.toString());
         }
     }
 
@@ -211,7 +221,9 @@ public class DatadogBuildListener extends RunListener<Run>  {
             try {
                 buildData = new BuildData(run, null);
             } catch (IOException | InterruptedException e) {
-                logger.severe(e.getMessage());
+                StringWriter sw = new StringWriter();
+                e.printStackTrace(new PrintWriter(sw));
+                logger.severe(sw.toString());
                 return;
             }
 
@@ -228,7 +240,9 @@ public class DatadogBuildListener extends RunListener<Run>  {
 
             logger.fine("End DatadogBuildListener#onDeleted");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            logger.severe("Unexpected exception occurred - " + sw.toString());
         }
     }
 

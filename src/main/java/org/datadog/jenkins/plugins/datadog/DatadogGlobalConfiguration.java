@@ -41,6 +41,8 @@ import org.kohsuke.stapler.StaplerRequest;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.logging.Logger;
 
 import static hudson.Util.fixEmptyAndTrim;
@@ -290,7 +292,9 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                     this.getTargetApiURL(), this.getTargetApiKey(), this.getTargetHost(), this.getTargetPort());
 
         } catch(Exception e){
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            logger.severe("Unexpected exception occurred - " + sw.toString());
         }
         return super.configure(req, formData);
     }

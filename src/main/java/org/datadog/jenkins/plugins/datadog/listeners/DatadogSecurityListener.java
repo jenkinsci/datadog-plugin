@@ -35,6 +35,8 @@ import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.events.UserAuthenticationEventImpl;
 
 import javax.annotation.Nonnull;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -76,7 +78,9 @@ public class DatadogSecurityListener extends SecurityListener {
 
             logger.fine("End DatadogSecurityListener#authenticated");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            logger.severe("Unexpected exception occurred - " + sw.toString());
         }
     }
 
@@ -105,7 +109,9 @@ public class DatadogSecurityListener extends SecurityListener {
 
             logger.fine("End DatadogSecurityListener#failedToAuthenticate");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            logger.severe("Unexpected exception occurred - " + sw.toString());
         }
     }
 
@@ -144,7 +150,9 @@ public class DatadogSecurityListener extends SecurityListener {
 
             logger.fine("End DatadogSecurityListener#loggedOut");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            logger.severe("Unexpected exception occurred - " + sw.toString());
         }
     }
 }

@@ -31,6 +31,8 @@ import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -57,7 +59,9 @@ public class DatadogCountersPublisher extends AsyncPeriodicWork {
             DatadogClient client = ClientFactory.getClient();
             client.flushCounters();
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            logger.severe("Unexpected exception occurred - " + sw.toString());
         }
     }
 }

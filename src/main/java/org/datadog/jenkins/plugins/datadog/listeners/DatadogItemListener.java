@@ -36,6 +36,8 @@ import org.datadog.jenkins.plugins.datadog.events.ItemCRUDEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.ItemCopiedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.ItemLocationChangedEventImpl;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -92,7 +94,9 @@ public class DatadogItemListener extends ItemListener {
 
             logger.fine("End DatadogItemListener#on" + action);
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            logger.severe("Unexpected exception occurred - " + sw.toString());
         }
     }
 
@@ -121,7 +125,9 @@ public class DatadogItemListener extends ItemListener {
 
             logger.fine("End DatadogItemListener#onCopied");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            logger.severe("Unexpected exception occurred - " + sw.toString());
         }
     }
 
@@ -150,7 +156,9 @@ public class DatadogItemListener extends ItemListener {
 
             logger.fine("End DatadogItemListener#onLocationChanged");
         } catch (Exception e) {
-            logger.warning("Unexpected exception occurred - " + e.getMessage());
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            logger.severe("Unexpected exception occurred - " + sw.toString());
         }
     }
 
