@@ -250,7 +250,7 @@ public class DatadogHttpClient implements DatadogClient {
         // Remove result tag, so we don't create multiple service check groups
         if (tags != null) {
             logger.fine(tags.toString());
-            payload.put("tags", tags);
+            payload.put("tags", TagsUtil.convertTagsToJSONArray(tags));
         }
         return post(payload, SERVICECHECK);
     }
