@@ -14,19 +14,28 @@ This project does not have a strict release schedule. However, we would make a r
 * Manually test changes included in the new release.
 * Make sure documentation is up-to-date.
 
-## Update Changelog
+## Release Process
 
-### Prerequisite
+Our team will trigger the release pipeline which will update the [GitHub JenkinsCI Datadog Plugin Repository][1].
+It will create new a [GitHub tag and release][2] and push artifacts to the [Jenkins CI Org Repo][3] 
+See the [Jenkins Publishing Documentation][4] for more details about the process.
 
-- Install [datadog_checks_dev](https://datadog-checks-base.readthedocs.io/en/latest/datadog_checks_dev.cli.html#installation) using Python 3
+Once releases, the new version should be available in the [Update Center][5].
+Releases are merged to the [Jenkins-CI git repository for the Datadog-plugin][1], and represents the source used for plugin releases found in the [Update Center][5] in your Jenkins installation.
 
-### Commands
+### How to release
 
-- See changes ready for release by running `ddev release show changes .` at the root of this project. Add any missing labels to PRs if needed.
-- Run `ddev release changelog . <NEW_VERSION>` to update the `CHANGELOG.md` file at the root of this repository
-- Commit the changes to the repository in a release branch and get it approved/merged.
+To release a new version:
 
-## Release
+1. Change the project version in the [pom.xml][6] from `x.x.x-SNAPSHOT` to the updated version number you would like to see. 
+2. Add an entry for the new release number to the [CHANGELOG.md][7] file, and ensure that all changes are listed accurately. 
+3. Clone the repository and checkout the `master` branch with all above changes merged in.
+4. We will trigger our release pipeline. If completed successfully, the newly updated plugin should be available from the Jenkins [Update Center][5] within ~4 hours (plus mirror propagation time).
 
-Our team will trigger the release pipeline which will update the [jenkins repository](https://github.com/jenkinsci/datadog-plugin) 
-and push the maven artifact to [Maven repository](https://mvnrepository.com/artifact/org.datadog.jenkins.plugins/datadog?repo=jenkins-releases).
+[1]: https://github.com/jenkinsci/datadog-plugin
+[2]: https://github.com/jenkinsci/datadog-plugin/releases
+[3]: https://repo.jenkins-ci.org/releases/org/datadog/jenkins/plugins/datadog/
+[4]: https://jenkins.io/doc/developer/publishing/artifact-repository/
+[5]: https://wiki.jenkins-ci.org/display/JENKINS/Plugins#Plugins-Howtoinstallplugins
+[6]: https://github.com/jenkinsci/datadog-plugin/blob/master/pom.xml
+[7]: https://github.com/jenkinsci/datadog-plugin/blob/master/CHANGELOG.md
