@@ -97,3 +97,7 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
 2. Give a name to your logger - For example `datadog`
 3. Add entries for all `org.datadog.jenkins.plugins.datadog.*` packages with log Level `ALL`.
 4. If you now run a job and go back to http://localhost:8080/log/datadog/, you should see your logs
+
+## Continuous Integration
+
+Every commit to the repository triggers the [Jenkins Org CI pipeline](https://jenkins.io/doc/developer/publishing/continuous-integration/) defined in the `Jenkinsfile` at the root folder of the source code.

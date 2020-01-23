@@ -227,49 +227,24 @@ Build status `jenkins.job.status` with the default tags: : `job`, `node`, `branc
 
 **Note**: Git `branch` tag is available when using the [Git Plugin][7].
 
-## Release Process
-
-### Overview
-
-The [jenkinsci/datadog-plugin][8] repository handles the most up-to-date changes made to the Datadog Plugin, as well as issue tickets revolving around that work. 
-Releases are merged to the [Jenkins-CI git repository for the Datadog-plugin][9], and represents the source used for plugin releases found in the [Update Center][3] in your Jenkins installation.
-
-Every commit to the repository triggers the Jenkins Org CI pipeline defined in the `Jenkinsfile` at the root folder of the source code.
-
-A list of releases is available at [jenkinsci/datadog-plugin/releases][10].
-
-### How to release
-
-To release a new Datadog-plugin version:
-
-1. Change the project version in the [pom.xml][11] from `x.x.x-SNAPSHOT` to the updated version number you would like to see. 
-2. Add an entry for the new release number to the [CHANGELOG.md][12] file, and ensure that all changes are listed accurately. 
-3. Clone the repository and checkout the `master` branch.
-4. For repository admins only - Trigger the release by running the following command `mvn -DlocalCheckout=true release:prepare release:perform`.
-If the command completes successfully, then the newly updated plugin should be available from the Jenkins [Update Center][3] within ~4 hours (plus mirror propagation time).
-
 ## Issue Tracking
 
-GitHub's built-in issue tracking system is used to track all issues relating to this plugin: [jenkinsci/datadog-plugin/issues][13]. 
-However, given how Jenkins plugins are hosted, there may be issues that are posted to JIRA as well. You can check [this jenkins issue][14] for those issue postings.
+GitHub's built-in issue tracking system is used to track all issues relating to this plugin: [jenkinsci/datadog-plugin/issues][8]. 
+However, given how Jenkins plugins are hosted, there may be issues that are posted to JIRA as well. You can check [this jenkins issue][9] for those issue postings.
 
-**Note**: [Unresolved issues on JIRA mentioning Datadog][15].
+**Note**: [Unresolved issues on JIRA mentioning Datadog][10].
 
 ## Changes
 
-See the [CHANGELOG.md][12].
+See the [CHANGELOG.md][11].
 
 ## How to contribute code
 
-First of all and most importantly, **thank you** for sharing.
+First of all and most importantly, **thank you** for sharing.  
 
-If you want to submit code, fork this repository and submit pull requests against the `master` branch. For more information, checkout the [contributing guidelines][16] for the Datadog Agent.
+Checkout the [contributing guidelines][12] before you submit an issue or a pull request.  
+Checkout the [development document][13] for tips on spinning up a quick development environment locally.
 
-Check out the [development document][17] for tips on spinning up a quick development environment locally.
-
-## Manual testing
-
-To keep track of testing procedures for ensuring proper functionality of the Datadog Plugin on Jenkins, there is a [testing document][17].
 
 [1]: https://plugins.jenkins.io/datadog
 [2]: http://updates.jenkins-ci.org/download/war/1.580.1/jenkins.war
@@ -277,14 +252,10 @@ To keep track of testing procedures for ensuring proper functionality of the Dat
 [4]: https://app.datadoghq.com/account/settings#api
 [5]: https://github.com/jenkinsci/docker
 [6]: https://wiki.jenkins-ci.org/display/JENKINS/Logging
-[7]: https://wiki.jenkins.io/display/JENKINS/Git+Plugin
-[8]: https://github.com/jenkinsci/datadog-plugin
-[9]: https://github.com/jenkinsci/datadog-plugin
-[10]: https://github.com/jenkinsci/datadog-plugin/releases
-[11]: https://github.com/jenkinsci/datadog-plugin/blob/master/pom.xml
-[12]: https://github.com/jenkinsci/datadog-plugin/blob/master/CHANGELOG.md
-[13]: https://github.com/jenkinsci/datadog-plugin/issues
-[14]: https://issues.jenkins-ci.org/issues/?jql=project%20%3D%20JENKINS%20AND%20status%20in%20%28Open%2C%20%22In%20Progress%22%2C%20Reopened%29%20AND%20component%20%3D%20datadog-plugin%20ORDER%20BY%20updated%20DESC%2C%20priority%20DESC%2C%20created%20ASC
-[15]: https://issues.jenkins-ci.org/browse/INFRA-305?jql=status%20in%20%28Open%2C%20%22In%20Progress%22%2C%20Reopened%2C%20Verified%2C%20Untriaged%2C%20%22Fix%20Prepared%22%29%20AND%20text%20~%20%22datadog%22
-[16]: https://github.com/DataDog/datadog-agent/blob/master/CONTRIBUTING.md
-[17]: https://github.com/jenkinsci/datadog-plugin/blob/master/CONTRIBUTING.md
+[7]: https://plugins.jenkins.io/git
+[8]: https://github.com/jenkinsci/datadog-plugin/issues
+[9]: https://issues.jenkins-ci.org/issues/?jql=project%20%3D%20JENKINS%20AND%20status%20in%20%28Open%2C%20%22In%20Progress%22%2C%20Reopened%29%20AND%20component%20%3D%20datadog-plugin%20ORDER%20BY%20updated%20DESC%2C%20priority%20DESC%2C%20created%20ASC
+[10]: https://issues.jenkins-ci.org/browse/INFRA-305?jql=status%20in%20%28Open%2C%20%22In%20Progress%22%2C%20Reopened%2C%20Verified%2C%20Untriaged%2C%20%22Fix%20Prepared%22%29%20AND%20text%20~%20%22datadog%22
+[11]: https://github.com/jenkinsci/datadog-plugin/blob/master/CHANGELOG.md
+[12]: https://github.com/jenkinsci/datadog-plugin/blob/master/CONTRIBUTING.md
+[13]: https://github.com/jenkinsci/datadog-plugin/blob/master/DEVELOPMENT.md
