@@ -41,7 +41,7 @@ To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure S
 ##### DogStatsD forwarding {#dogstatsd-forwarding-plugin}
 
 1. Select the radio button next to **Use a DogStatsD Server to report to Datadog**.
-2. Specify your DogStatD server `hostname` and `port`.
+2. Specify your DogStatsD server `hostname` and `port`.
 3. Save your configuration.
 
 #### Groovy script
