@@ -14,6 +14,18 @@ This project does not have a strict release schedule. However, we would make a r
 * Manually test changes included in the new release.
 * Make sure documentation is up-to-date.
 
+## Update Changelog
+
+### Prerequisite
+
+- Install [datadog_checks_dev](https://datadog-checks-base.readthedocs.io/en/latest/datadog_checks_dev.cli.html#installation) using Python 3
+
+### Commands
+
+- See changes ready for release by running `ddev release show changes .` at the root of this project. Add any missing labels to PRs if needed.
+- Run `ddev release changelog . <NEW_VERSION>` to update the `CHANGELOG.md` file at the root of this repository
+- Commit the changes to the repository in a release branch and get it approved/merged.
+
 ## Release Process
 
 Our team will trigger the release pipeline which will update the [GitHub JenkinsCI Datadog Plugin Repository][1].
