@@ -1,6 +1,14 @@
 Changes
 =======
 
+# 1.0.2 / 01-27-2020
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-1.0.1...datadog-1.0.2
+
+### Changes
+* [IMPROVEMENT] Exception Logging improvements [#24](https://github.com/jenkinsci/datadog-plugin/pull/24)
+* [BUGFIX] Fix missing tags on service checks submission [#30](https://github.com/jenkinsci/datadog-plugin/pull/30)
+
 # 1.0.1 / 01-20-2020
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-1.0.0...datadog-1.0.1
