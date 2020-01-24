@@ -1,0 +1,3 @@
+Component,Origin,License,Copyright
+import, com.datadoghq, MIT, Copyright (c) 2012-Present Datadog, Inc <opensource@datadoghq.com>
+import (test), org.mockito, MIT, Copyright (c) 2007 Mockito contributors
