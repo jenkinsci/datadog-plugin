@@ -15,7 +15,7 @@
   <url>https://github.com/jenkinsci/datadog-plugin</url>
   <groupId>org.datadog.jenkins.plugins</groupId>
   <artifactId>datadog</artifactId>
-  <version>1.0.3-SNAPSHOT</version>
+  <version>1.0.2-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <properties>
@@ -73,26 +73,5 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <build>
-    <!-- To define the plugin version in your parent POM -->
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.jenkins-ci.tools</groupId>
-          <artifactId>maven-hpi-plugin</artifactId>
-          <version>3.11</version>
-        </plugin>
-      </plugins>
-    </pluginManagement>
-    <!-- To use the plugin goals in your POM or parent POM -->
-    <plugins>
-      <plugin>
-        <groupId>org.jenkins-ci.tools</groupId>
-        <artifactId>maven-hpi-plugin</artifactId>
-        <version>3.11</version>
-      </plugin>
-    </plugins>
-  </build>
 
 </project>
