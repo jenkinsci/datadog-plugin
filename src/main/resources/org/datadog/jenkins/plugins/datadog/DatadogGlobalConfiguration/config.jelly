@@ -21,6 +21,10 @@
           <f:textbox field="targetApiURL" default="${targetApiURL}" />
         </f:entry>
 
+        <f:entry title="Datadog Log Intake URL" field="targetLogIntakeURLEntry" description="URL which the plugin reports logs to." >
+          <f:textbox field="targetLogIntakeURL" default="${targetLogIntakeURL}" />
+        </f:entry>
+
         <f:entry title="Datadog API Key" field="targetApiKeyEntry">
           <f:password field="targetApiKey" default="${targetApiKey}" />
         </f:entry>
@@ -37,6 +41,10 @@
 
         <f:entry title="DogStatsD Port" field="targetPortEntry">
           <f:textbox field="targetPort" default="${targetPort}" />
+        </f:entry>
+
+        <f:entry title="Log Collection Port" field="targetLogCollectionPortEntry">
+          <f:textbox field="targetLogCollectionPort" default="${targetLogCollectionPort}" />
         </f:entry>
 
     </f:radioBlock>
@@ -61,7 +69,7 @@
           <f:textarea field="whitelist" optional="true" default="${whitelist}" />
         </f:entry>
 
-        <f:entry field="globalTagFileEntry" title="Global Tag File" description="Add tags from default file in workspace">
+        <f:entry field="globalTagFileEntry" title="Global Tag File" description="Add tags from default file in workspace.">
             <f:textbox field="globalTagFile" optional="true" default="${globalTagFile}"/>
         </f:entry>
 
@@ -74,12 +82,17 @@
         </f:entry>
 
         <f:entry description="Send security events like login, logout, login failure, configuration changes to jobs or changes to jenkins.">
-            <f:checkbox title="Send Security audit events" field="emitSecurityEvents" default="true"/>
+            <f:checkbox title="Send Security audit events" field="emitSecurityEvents" default="true" />
         </f:entry>
 
         <f:entry description="Send system events like Node changes of states.">
-            <f:checkbox title="Send System events" field="emitSystemEvents" default="true"/>
+            <f:checkbox title="Send System events" field="emitSystemEvents" default="true" />
         </f:entry>
+
+        <f:entry description="Enable Log Collection.">
+            <f:checkbox title="Enable Log Collection" field="collectBuildLogs" default="false" />
+        </f:entry>
+
     </f:advanced>
   </f:section>
 </j:jelly>

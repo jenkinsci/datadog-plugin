@@ -33,8 +33,8 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
-import javax.servlet.ServletException;
-import java.io.IOException;
+import java.io.*;
+import java.net.Socket;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -54,6 +54,7 @@ public class DogStatsDClient implements DatadogClient {
     private StatsDClient statsd;
     private String hostname;
     private int port = -1;
+    private int logCollectionPort = -1;
     private boolean isStopped = true;
 
     /**
@@ -61,21 +62,22 @@ public class DogStatsDClient implements DatadogClient {
      * This method is not recommended to be used because it misses some validations.
      * @param hostname - target hostname
      * @param port - target port
+     * @param logCollectionPort - target log collection port
      * @return an singleton instance of the DogStatsDClient.
      */
     @SuppressFBWarnings(value="DC_DOUBLECHECK")
-    public static DatadogClient getInstance(String hostname, int port){
+    public static DatadogClient getInstance(String hostname, Integer port, Integer logCollectionPort){
         if(enableValidations){
             if (hostname == null || hostname.isEmpty()) {
                 logger.severe("Datadog Target URL is not set properly");
-                throw new RuntimeException("Datadog Target URL is not set properly");
+                return null;
             }
         }
 
         if(instance == null){
             synchronized (DatadogHttpClient.class) {
                 if(instance == null){
-                    instance = new DogStatsDClient( hostname, port);
+                    instance = new DogStatsDClient(hostname, port, logCollectionPort);
                 }
             }
         }
@@ -87,12 +89,14 @@ public class DogStatsDClient implements DatadogClient {
             instance.setPort(port);
             ((DogStatsDClient)instance).reinitialize(true);
         }
+        instance.setLogCollectionPort(logCollectionPort);
         return instance;
     }
 
-    private DogStatsDClient(String hostname, Integer port) {
+    private DogStatsDClient(String hostname, Integer port, Integer logCollectionPort) {
         this.hostname = hostname;
         this.port = port;
+        this.logCollectionPort = logCollectionPort;
 
         reinitialize(true);
     }
@@ -150,13 +154,47 @@ public class DogStatsDClient implements DatadogClient {
         this.port = port;
     }
 
+    public int getLogCollectionPort() {
+        return logCollectionPort;
+    }
+
+    @Override
+    public void setLogCollectionPort(int logCollectionPort) {
+        this.logCollectionPort = logCollectionPort;
+    }
+
     @Override
     public void setUrl(String url) {
         // noop
     }
 
     @Override
+    public void setLogIntakeUrl(String logIntakeUrl) {
+        // noop
+    }
+
+    @Override
     public void setApiKey(Secret apiKey){
+        // noop
+    }
+
+    @Override
+    public boolean isDefaultIntakeConnectionBroken() {
+        return false;
+    }
+
+    @Override
+    public void setDefaultIntakeConnectionBroken(boolean defaultIntakeConnectionBroken) {
+        // noop
+    }
+
+    @Override
+    public boolean isLogIntakeConnectionBroken() {
+        return false;
+    }
+
+    @Override
+    public void setLogIntakeConnectionBroken(boolean logIntakeConnectionBroken) {
         // noop
     }
 
@@ -235,8 +273,43 @@ public class DogStatsDClient implements DatadogClient {
     }
 
     @Override
-    public boolean validate() throws IOException, ServletException {
-        return true;
+    public boolean sendLogs(String payload) throws IOException {
+        if(logCollectionPort == -1){
+            logger.severe("Datadog Log Collection Port is not set properly");
+            throw new RuntimeException("Datadog Log Collection Port not set properly");
+        }
+
+        try (Socket socket = new Socket(hostname, logCollectionPort)) {
+
+            OutputStream output = socket.getOutputStream();
+            OutputStreamWriter writer = new OutputStreamWriter(output, "utf-8");
+            writer.write(payload);
+
+            InputStream input = socket.getInputStream();
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(input, "utf-8"));
+            StringBuilder result = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                result.append(line);
+            }
+            reader.close();
+
+            if ("{}".equals(result.toString())) {
+                logger.fine(String.format("Logs API call was sent successfully!"));
+                logger.fine(String.format("Payload: %s", payload.toString()));
+                return true;
+            } else {
+                logger.severe(String.format("Logs API call failed!"));
+                logger.severe(String.format("Payload: %s", payload.toString()));
+                return false;
+            }
+        } catch (IOException e) {
+            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            reinitialize(true);
+            return false;
+        }
+
     }
 
 }

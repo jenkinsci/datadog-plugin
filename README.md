@@ -96,14 +96,16 @@ Configure your Datadog plugin using environment variables with the `DATADOG_JENK
 ##### HTTP forwarding {#http-forwarding-env}
 
 1. Set the `DATADOG_JENKINS_PLUGIN_REPORT_WITH` variable to `HTTP`.
-2. Set the `DATADOG_JENKINS_PLUGIN_TARGET_API_URL` variable, which specifies the Datadog API endpoint (defaults `https://api.datadoghq.com/api/`).
+2. Set the `DATADOG_JENKINS_PLUGIN_TARGET_API_URL` variable, which specifies the Datadog API endpoint (defaults to `https://api.datadoghq.com/api/`).
 3. Set the `DATADOG_JENKINS_PLUGIN_TARGET_API_KEY` variable, which specifies your [Datadog API key][4].
+4. (optional) Set the `DATADOG_JENKINS_PLUGIN_TARGET_LOG_INTAKE_URL` variable, which specifies the Datadog Log Intake URL (defaults to `https://http-intake.logs.datadoghq.com/v1/input/`).
 
 ##### DogStatsD forwarding {#dogstatsd-forwarding-env}
 
 1. Set the `DATADOG_JENKINS_PLUGIN_REPORT_WITH` variable to `DSD`.
 2. Set the `DATADOG_JENKINS_PLUGIN_TARGET_HOST` variable, which specifies the DogStatsD server host (defaults to `localhost`).
 3. Set the `DATADOG_JENKINS_PLUGIN_TARGET_PORT` variable, which specifies the DogStatsD server port (defaults to `8125`).
+4. (optional) Set the `DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT` variable, which specifies the Datadog Agent log collection port.
 
 #### Logging
 
@@ -124,6 +126,7 @@ From the global configuration page, at `Manage Jenkins -> Configure System` you 
 | Global job tags            | A comma separated list of regex to match a job and a list of tags to apply to that job. **Note**: Tags can reference match groups in the regex using the `$` symbol, for example: `(.*?)_job_(*?)_release, owner:$1, release_env:$2, optional:Tag3` | `DATADOG_JENKINS_PLUGIN_GLOBAL_JOB_TAGS`      |
 | Send security audit events | Submits the `Security Events Type` of events and metrics (enabled by default).                                                                                                                                                                | `DATADOG_JENKINS_PLUGIN_EMIT_SECURITY_EVENTS` |
 | Send system events         | Submits the `System Events Type` of events and metrics (enabled by default).                                                                                                                                                                  | `DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS`   |
+| Enable Log Collection      | Submits build logs (disabled by default).                                                                                                                                                                  | `DATADOG_JENKINS_PLUGIN_ENABLE_LOG_COLLECTION`   |
 
 ### Job customization
 

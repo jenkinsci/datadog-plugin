@@ -37,7 +37,6 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
-import javax.servlet.ServletException;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.Proxy;
@@ -63,12 +62,16 @@ public class DatadogHttpClient implements DatadogClient {
     private static final String VALIDATE = "v1/validate";
 
     private static final Integer HTTP_FORBIDDEN = 403;
+    private static final Integer BAD_REQUEST = 400;
 
     @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL")
     public static boolean enableValidations = true;
 
     private String url;
+    private String logIntakeUrl;
     private Secret apiKey;
+    private boolean defaultIntakeConnectionBroken = false;
+    private boolean logIntakeConnectionBroken = false;
 
     /**
      * NOTE: Use ClientFactory.getClient method to instantiate the client in the Jenkins Plugin
@@ -78,35 +81,42 @@ public class DatadogHttpClient implements DatadogClient {
      * @return an singleton instance of the DatadogHttpClient.
      */
     @SuppressFBWarnings(value="DC_DOUBLECHECK")
-    public static DatadogClient getInstance(String url, Secret apiKey){
+    public static DatadogClient getInstance(String url, String logIntakeUrl, Secret apiKey){
         if(enableValidations){
             if (url == null || url.isEmpty()) {
                 logger.severe("Datadog Target URL is not set properly");
-                throw new RuntimeException("Datadog Target URL is not set properly");
+                return null;
             }
             if (apiKey == null || Secret.toString(apiKey).isEmpty()){
                 logger.severe("Datadog API Key is not set properly");
-                throw new RuntimeException("Datadog API Key is not set properly");
+                return null;
+            }
+            if (logIntakeUrl == null || logIntakeUrl.isEmpty()){
+                logger.warning("Datadog Log Intake URL is not set properly");
             }
         }
 
         if(instance == null){
             synchronized (DatadogHttpClient.class) {
                 if(instance == null){
-                    instance = new DatadogHttpClient(url, apiKey);
+                    instance = new DatadogHttpClient(url, logIntakeUrl, apiKey);
                 }
             }
         }
 
-        // We reset param just in case we change values
+        // We reset params just in case we change values
+        // Note that we don't validate the connection at this point.
+        // Run validate to test teh connection instead.
         instance.setApiKey(apiKey);
         instance.setUrl(url);
+        instance.setLogIntakeUrl(logIntakeUrl);
         return instance;
     }
 
-    private DatadogHttpClient(String url, Secret apiKey) {
+    private DatadogHttpClient(String url, String logIntakeUrl, Secret apiKey) {
         this.url = url;
         this.apiKey = apiKey;
+        this.logIntakeUrl = logIntakeUrl;
     }
 
     public String getUrl() {
@@ -116,6 +126,11 @@ public class DatadogHttpClient implements DatadogClient {
     @Override
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    @Override
+    public void setLogIntakeUrl(String logIntakeUrl) {
+        this.logIntakeUrl = logIntakeUrl;
     }
 
     public Secret getApiKey() {
@@ -137,9 +152,39 @@ public class DatadogHttpClient implements DatadogClient {
         // noop
     }
 
+    @Override
+    public void setLogCollectionPort(int logCollectionPort) {
+        // noop
+    }
+
+    @Override
+    public boolean isDefaultIntakeConnectionBroken() {
+        return defaultIntakeConnectionBroken;
+    }
+
+    @Override
+    public void setDefaultIntakeConnectionBroken(boolean defaultIntakeConnectionBroken) {
+        this.defaultIntakeConnectionBroken = defaultIntakeConnectionBroken;
+    }
+
+    @Override
+    public boolean isLogIntakeConnectionBroken() {
+        return logIntakeConnectionBroken;
+    }
+
+    @Override
+    public void setLogIntakeConnectionBroken(boolean logIntakeConnectionBroken) {
+        this.logIntakeConnectionBroken = logIntakeConnectionBroken;
+    }
+
     public boolean event(DatadogEvent event) {
         logger.fine("Sending event");
-        boolean status;
+        boolean status = false;
+        if(this.defaultIntakeConnectionBroken){
+            logger.severe("Your client is not initialized properly");
+            return status;
+        }
+
         try {
             JSONObject payload = new JSONObject();
             payload.put("title", event.getTitle());
@@ -161,6 +206,10 @@ public class DatadogHttpClient implements DatadogClient {
 
     @Override
     public void incrementCounter(String name, String hostname, Map<String, Set<String>> tags) {
+        if(this.defaultIntakeConnectionBroken){
+            logger.severe("Your client is not initialized properly");
+            return;
+        }
         ConcurrentMetricCounters.getInstance().increment(name, hostname, tags);
     }
 
@@ -188,6 +237,11 @@ public class DatadogHttpClient implements DatadogClient {
     }
 
     private boolean postMetric(String name, float value, String hostname, Map<String, Set<String>> tags, String type) {
+        if(this.defaultIntakeConnectionBroken){
+            logger.severe("Your client is not initialized properly");
+            return false;
+        }
+
         int INTERVAL = 10;
 
         logger.fine(String.format("Sending metric '%s' with value %s", name, String.valueOf(value)));
@@ -265,6 +319,11 @@ public class DatadogHttpClient implements DatadogClient {
      * @throws IOException if HttpURLConnection fails to open connection
      */
     private boolean post(final JSONObject payload, final String type) {
+        if(this.defaultIntakeConnectionBroken){
+            logger.severe("Your client is not initialized properly");
+            return false;
+        }
+
         String urlParameters = "?api_key=" + Secret.toString(apiKey);
         HttpURLConnection conn = null;
         boolean status = true;
@@ -279,10 +338,13 @@ public class DatadogHttpClient implements DatadogClient {
             conn.setUseCaches(false);
             conn.setDoInput(true);
             conn.setDoOutput(true);
+
             OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream(), "utf-8");
             logger.finer("Writing to OutputStreamWriter...");
             wr.write(payload.toString());
             wr.close();
+
+            // Get response
             BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"));
             StringBuilder result = new StringBuilder();
             String line;
@@ -292,11 +354,11 @@ public class DatadogHttpClient implements DatadogClient {
             rd.close();
             JSONObject json = (JSONObject) JSONSerializer.toJSON(result.toString());
             if ("ok".equals(json.getString("status"))) {
-                logger.finer(String.format("API call of type '%s' was sent successfully!", type));
-                logger.finer(String.format("Payload: %s", payload));
-            } else {
-                logger.fine(String.format("API call of type '%s' failed!", type));
+                logger.fine(String.format("API call of type '%s' was sent successfully!", type));
                 logger.fine(String.format("Payload: %s", payload));
+            } else {
+                logger.severe(String.format("API call of type '%s' failed!", type));
+                logger.severe(String.format("Payload: %s", payload));
                 status = false;
             }
         } catch (Exception e) {
@@ -319,14 +381,13 @@ public class DatadogHttpClient implements DatadogClient {
         return status;
     }
 
-    @Override
-    public boolean validate() throws IOException, ServletException {
+    public static boolean validate(String apiUrl, String apiKey) throws IOException {
         String urlParameters = "?api_key=" + apiKey;
         HttpURLConnection conn = null;
         boolean status = true;
         try {
             // Make request
-            conn = getHttpURLConnection(new URL(url + VALIDATE + urlParameters));
+            conn = getHttpURLConnection(new URL(apiUrl + VALIDATE + urlParameters));
             conn.setRequestMethod("GET");
 
             // Get response
@@ -366,7 +427,7 @@ public class DatadogHttpClient implements DatadogClient {
      * @return a HttpURLConnection object.
      * @throws IOException if HttpURLConnection fails to open connection
      */
-    private HttpURLConnection getHttpURLConnection(final URL url) throws IOException {
+    private static HttpURLConnection getHttpURLConnection(final URL url) throws IOException {
         HttpURLConnection conn = null;
         ProxyConfiguration proxyConfig = null;
 
@@ -401,6 +462,82 @@ public class DatadogHttpClient implements DatadogClient {
         conn.setReadTimeout(timeoutMS);
 
         return conn;
+    }
+
+    /**
+     * Posts a given {@link JSONObject} payload to the Datadog API, using the
+     * user configured apiKey.
+     *
+     * @param payload - A JSONObject containing a specific subset of a builds metadata.
+     * @return a boolean to signify the success or failure of the HTTP POST request.
+     * @throws IOException if HttpURLConnection fails to open connection
+     */
+    public boolean sendLogs(String payload) throws IOException {
+        if(this.logIntakeConnectionBroken){
+            logger.severe("Your client is not initialized properly");
+            return false;
+        }
+
+        if(logIntakeUrl == null || logIntakeUrl.isEmpty()){
+            logger.severe("Datadog Log Intake URL is not set properly");
+            throw new RuntimeException("Datadog Log Collection Port not set properly");
+        }
+
+        HttpURLConnection conn = null;
+        URL logsEndpointURL = new URL(logIntakeUrl);
+
+        try {
+            logger.finer("Setting up HttpURLConnection...");
+            conn = getHttpURLConnection(logsEndpointURL);
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("DD-API-KEY", Secret.toString(apiKey));
+            conn.setUseCaches(false);
+            conn.setDoInput(true);
+            conn.setDoOutput(true);
+
+            OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream(), "utf-8");
+            logger.finer("Writing to OutputStreamWriter...");
+            wr.write(payload);
+            wr.close();
+
+            // Get response
+            BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"));
+            StringBuilder result = new StringBuilder();
+            String line;
+            while ((line = rd.readLine()) != null) {
+                result.append(line);
+            }
+            rd.close();
+
+            if ("{}".equals(result.toString())) {
+                logger.fine(String.format("Logs API call was sent successfully!"));
+                logger.fine(String.format("Payload: %s", payload.toString()));
+            } else {
+                logger.severe(String.format("Logs API call failed!"));
+                logger.severe(String.format("Payload: %s", payload.toString()));
+                this.logIntakeConnectionBroken = true;
+            }
+
+        } catch (Exception e) {
+            try {
+                if (conn != null && conn.getResponseCode() == BAD_REQUEST) {
+                    logger.severe("Hmmm, your API key or your Log Intake URL may be invalid. We received a 400 in response.");
+                    DatadogUtilities.severe(logger, e, null);
+                } else {
+                    DatadogUtilities.severe(logger, e, "Client error: ");
+                }
+            } catch (IOException ex) {
+                logger.fine(ex.toString());
+                throw ex;
+            }
+            this.logIntakeConnectionBroken = true;
+        } finally {
+            if (conn != null) {
+                conn.disconnect();
+            }
+        }
+        return !this.logIntakeConnectionBroken;
     }
 
 }

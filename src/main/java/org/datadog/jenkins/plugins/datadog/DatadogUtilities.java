@@ -78,10 +78,10 @@ public class DatadogUtilities {
      * Builds extraTags if any are configured in the Job.
      *
      * @param run      - Current build
-     * @param listener - Current listener
+     * @param envVars  - Environment Variables
      * @return A {@link HashMap} containing the key,value pairs of tags if any.
      */
-    public static Map<String, Set<String>> getBuildTags(Run run, @Nonnull TaskListener listener) {
+    public static Map<String, Set<String>> getBuildTags(Run run, EnvVars envVars) {
         Map<String, Set<String>> result = new HashMap<>();
         if(run == null){
             return result;
@@ -110,15 +110,10 @@ public class DatadogUtilities {
         if(workspaceTagFile == null){
             workspaceTagFile = datadogGlobalConfig.getGlobalTagFile();
         }
-        try {
-            final EnvVars envVars = run.getEnvironment(listener);
-            if (workspaceTagFile != null) {
-                result = TagsUtil.merge(result, computeTagListFromVarList(envVars, workspaceTagFile));
-            }
-            result = TagsUtil.merge(result, computeTagListFromVarList(envVars, tagProperties));
-        } catch (IOException | InterruptedException e) {
-            severe(logger, e, null);
+        if (workspaceTagFile != null) {
+            result = TagsUtil.merge(result, computeTagListFromVarList(envVars, workspaceTagFile));
         }
+        result = TagsUtil.merge(result, computeTagListFromVarList(envVars, tagProperties));
 
         result = TagsUtil.merge(result, getTagsFromGlobalJobTags(jobName, globalJobTags));
         return result;

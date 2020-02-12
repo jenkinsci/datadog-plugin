@@ -81,6 +81,9 @@ public class DatadogSCMListener extends SCMListener {
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
+            if(client == null){
+                return;
+            }
 
             // Collect Build Data
             BuildData buildData;
