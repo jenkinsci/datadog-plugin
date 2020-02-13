@@ -25,7 +25,9 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.clients;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
 import hudson.util.Secret;
+import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
@@ -35,6 +37,10 @@ public class ClientFactory {
     public static DatadogClient getClient(DatadogClient.ClientType type, String apiUrl, Secret apiKey, String host, Integer port){
         switch(type){
             case HTTP:
+                if (apiKey == null || StringUtils.isEmpty(apiKey.getPlainText())) {
+                    return null;
+                }
+
                 return DatadogHttpClient.getInstance(apiUrl, apiKey);
             case DSD:
                 return DogStatsDClient.getInstance(host, port);
@@ -43,11 +49,13 @@ public class ClientFactory {
         }
     }
 
+    @CheckForNull
     public static DatadogClient getClient() {
         DatadogGlobalConfiguration descriptor = DatadogUtilities.getDatadogGlobalDescriptor();
         String reportWith = null;
         String targetApiURL = null;
-        Secret targetApiKey = null;
+        Secret targetApiKey;
+        targetApiKey = null;
         String targetHost = null;
         Integer targetPort = null;
         if(descriptor != null){

@@ -72,6 +72,9 @@ public class DatadogBuildListener extends RunListener<Run>  {
 
             // Get Datadog Client Instance
             DatadogClient client = getDatadogClient();
+            if (client == null) {
+                return;
+            }
 
             // Collect Build Data
             BuildData buildData;
@@ -130,6 +133,9 @@ public class DatadogBuildListener extends RunListener<Run>  {
 
             // Get Datadog Client Instance
             DatadogClient client = getDatadogClient();
+            if (client == null) {
+                return;
+            }
 
             // Collect Build Data
             BuildData buildData;
@@ -205,6 +211,9 @@ public class DatadogBuildListener extends RunListener<Run>  {
 
             // Get Datadog Client Instance
             DatadogClient client = getDatadogClient();
+            if (client == null) {
+                return;
+            }
 
             // Collect Build Data
             BuildData buildData;

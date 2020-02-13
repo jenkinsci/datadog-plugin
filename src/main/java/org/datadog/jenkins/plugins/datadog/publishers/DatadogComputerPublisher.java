@@ -62,6 +62,9 @@ public class DatadogComputerPublisher extends PeriodicWork {
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
+            if (client == null) {
+                return;
+            }
             String hostname = DatadogUtilities.getHostname("null");
 
             long nodeCount = 0;

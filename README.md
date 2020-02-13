@@ -2,8 +2,6 @@
 
 A Jenkins plugin for automatically forwarding metrics, events, and service checks to a Datadog account.
 
-**Note**: The [Jenkins CI plugin page][1] for this plugin references this documentation.
-
 ## Setup
 
 ### Installation

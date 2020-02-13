@@ -61,6 +61,10 @@ public class DatadogQueuePublisher extends PeriodicWork {
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
+            if (client == null) {
+                return;
+            }
+
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
 
             long size = 0;

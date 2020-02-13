@@ -68,6 +68,9 @@ public class DatadogComputerListener extends ComputerListener {
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
+            if (client == null) {
+                return;
+            }
 
             // Get the list of tags to apply
             Map<String, Set<String>> tags = TagsUtil.merge(
@@ -99,6 +102,9 @@ public class DatadogComputerListener extends ComputerListener {
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
+            if (client == null) {
+                return;
+            }
 
             // Get the list of tags to apply
             Map<String, Set<String>> tags = TagsUtil.merge(
@@ -130,6 +136,9 @@ public class DatadogComputerListener extends ComputerListener {
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
+            if (client == null) {
+                return;
+            }
 
             // Get the list of tags to apply
             Map<String, Set<String>> tags = TagsUtil.merge(
@@ -161,6 +170,9 @@ public class DatadogComputerListener extends ComputerListener {
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
+            if (client == null) {
+                return;
+            }
 
             // Get the list of tags to apply
             Map<String, Set<String>> tags = TagsUtil.merge(
@@ -192,6 +204,9 @@ public class DatadogComputerListener extends ComputerListener {
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
+            if (client == null) {
+                return;
+            }
 
             // Get the list of tags to apply
             Map<String, Set<String>> tags = TagsUtil.merge(
