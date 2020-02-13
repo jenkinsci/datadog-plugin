@@ -54,7 +54,7 @@ public class DogStatsDClient implements DatadogClient {
     private StatsDClient statsd;
     private String hostname;
     private int port = -1;
-    private int logCollectionPort = -1;
+    private Integer logCollectionPort = -1;
     private boolean isStopped = true;
 
     /**
@@ -154,12 +154,12 @@ public class DogStatsDClient implements DatadogClient {
         this.port = port;
     }
 
-    public int getLogCollectionPort() {
+    public Integer getLogCollectionPort() {
         return logCollectionPort;
     }
 
     @Override
-    public void setLogCollectionPort(int logCollectionPort) {
+    public void setLogCollectionPort(Integer logCollectionPort) {
         this.logCollectionPort = logCollectionPort;
     }
 

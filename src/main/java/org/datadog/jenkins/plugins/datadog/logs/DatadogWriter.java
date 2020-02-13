@@ -81,8 +81,7 @@ public class DatadogWriter {
             }
             client.sendLogs(payload.toString());
         } catch (IOException | InterruptedException e){
-            String msg = "[datadog-plugin]: Failed to send log data.\n" +
-                    "[datadog-plugin]: No Further logs will be sent to Datadog.\n";
+            String msg = "Failed to send log data. No Further logs will be sent to Datadog.";
             DatadogUtilities.severe(logger, e, msg);
             try {
                 errorStream.write(msg.getBytes(charset));

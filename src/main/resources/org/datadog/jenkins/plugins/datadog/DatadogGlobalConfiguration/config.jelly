@@ -35,7 +35,7 @@
     <f:radioBlock title="Use a DogStatsD Server to report to Datadog" name="reportWith" value="DSD"
         checked="${instance.reportWithEquals('DSD')}" inline="true">
 
-        <f:entry title="DogStatsD Host" field="dsdHostEntry">
+        <f:entry title="DogStatsD Host" field="targetHostEntry">
           <f:textbox field="targetHost" default="${targetHost}" />
         </f:entry>
 

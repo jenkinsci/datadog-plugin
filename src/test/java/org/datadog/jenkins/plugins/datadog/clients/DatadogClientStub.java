@@ -70,7 +70,7 @@ public class DatadogClientStub implements DatadogClient {
     }
 
     @Override
-    public void setLogCollectionPort(int logCollectionPort) {
+    public void setLogCollectionPort(Integer logCollectionPort) {
 
     }
 

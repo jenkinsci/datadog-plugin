@@ -66,7 +66,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static String GLOBAL_JOB_TAGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_GLOBAL_JOB_TAGS";
     private static String EMIT_SECURITY_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_SECURITY_EVENTS";
     private static String EMIT_SYSTEM_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS";
-    private static String ENABLE_COLLECT_BUILD_LOGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS";
+    private static String COLLECT_BUILD_LOGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS";
 
     private static String DEFAULT_REPORT_WITH_VALUE = DatadogClient.ClientType.HTTP.name();
     private static String DEFAULT_TARGET_API_URL_VALUE = "https://api.datadoghq.com/api/";
@@ -76,7 +76,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static Integer DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE = null;
     private static boolean DEFAULT_EMIT_SECURITY_EVENTS_VALUE = true;
     private static boolean DEFAULT_EMIT_SYSTEM_EVENTS_VALUE = true;
-    private static boolean ENABLE_COLLECT_BUILD_LOGS_VALUE = false;
+    private static boolean COLLECT_BUILD_LOGS_VALUE = false;
 
     private String reportWith = DEFAULT_REPORT_WITH_VALUE;
     private String targetApiURL = DEFAULT_TARGET_API_URL_VALUE;
@@ -93,7 +93,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private String globalJobTags = null;
     private boolean emitSecurityEvents = DEFAULT_EMIT_SECURITY_EVENTS_VALUE;
     private boolean emitSystemEvents = DEFAULT_EMIT_SYSTEM_EVENTS_VALUE;
-    private boolean collectBuildLogs = ENABLE_COLLECT_BUILD_LOGS_VALUE;
+    private boolean collectBuildLogs = COLLECT_BUILD_LOGS_VALUE;
 
     @DataBoundConstructor
     public DatadogGlobalConfiguration() {
@@ -179,7 +179,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.emitSystemEvents = Boolean.valueOf(emitSystemEventsEnvVar);
         }
 
-        String collectBuildLogsEnvVar = System.getenv(ENABLE_COLLECT_BUILD_LOGS_PROPERTY);
+        String collectBuildLogsEnvVar = System.getenv(COLLECT_BUILD_LOGS_PROPERTY);
         if(StringUtils.isNotBlank(collectBuildLogsEnvVar)){
             this.collectBuildLogs = Boolean.valueOf(collectBuildLogsEnvVar);
         }
@@ -187,15 +187,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
     private boolean validateConnection(String apiUrl, Secret apiKey){
         try {
-            boolean status = DatadogHttpClient.validate(apiUrl, Secret.toString(apiKey));
-            if(status){
-                return true;
-            }
-            // If a client instance exist we set the connectionBroken attribute to true.
-            DatadogClient client = DatadogHttpClient.getInstance(apiUrl, this.getTargetLogIntakeURL(), apiKey);
-            if(client != null){
-                client.setDefaultIntakeConnectionBroken(true);
-            }
+            return DatadogHttpClient.validate(apiUrl, Secret.toString(apiKey));
+
         } catch (Exception e){
             //noop
         }
@@ -237,7 +230,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @throws ServletException if there is a servlet exception.
      */
     public FormValidation doTestHostname(@QueryParameter("hostname") final String hostname){
-        if (DatadogUtilities.isValidHostname(hostname)) {
+        if(DatadogUtilities.isValidHostname(hostname)) {
             return FormValidation.ok("Great! Your hostname is valid.");
         } else {
             return FormValidation.error("Your hostname is invalid, likely because"
@@ -285,6 +278,26 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         return FormValidation.ok("Valid URL");
     }
 
+    private boolean validateTargetHost(String targetHost) {
+        if(!DatadogClient.ClientType.DSD.name().equals(reportWith)) {
+            return true;
+        }
+
+        return StringUtils.isNotBlank(targetHost);
+    }
+
+    /**
+     * @param targetHost - The dogStatsD Host which the plugin will report to.
+     * @return a FormValidation object used to display a message to the user on the configuration
+     * screen.
+     */
+    public FormValidation doCheckTargetHost(@QueryParameter("targetHost") final String targetHost) {
+        if (!validateTargetHost(targetHost)) {
+            return FormValidation.error("Invalid Host");
+        }
+
+        return FormValidation.ok("Valid Host");
+    }
 
     private boolean validateTargetPort(String targetPort) {
         if(!DatadogClient.ClientType.DSD.name().equals(reportWith)) {
@@ -399,6 +412,14 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             if(DatadogClient.ClientType.HTTP.name().equals(this.getReportWith()) && (
                     !validateTargetApiURL(this.getTargetApiURL()) ||
                     !validateConnection(this.getTargetApiURL(), this.getTargetApiKey()))){
+
+                // If a client instance exist we set the connectionBroken attribute to true.
+                DatadogClient client = DatadogHttpClient.getInstance(this.getTargetApiURL(),
+                        this.getTargetLogIntakeURL(), this.getTargetApiKey());
+                if(client != null){
+                    client.setDefaultIntakeConnectionBroken(true);
+                }
+
                 return false;
             }
 

@@ -74,7 +74,7 @@ public interface DatadogClient {
 
     public void setPort(int port);
 
-    public void setLogCollectionPort(int logCollectionPort);
+    public void setLogCollectionPort(Integer logCollectionPort);
 
     public boolean isDefaultIntakeConnectionBroken();
 
