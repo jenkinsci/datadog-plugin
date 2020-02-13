@@ -53,8 +53,8 @@ public class DogStatsDClient implements DatadogClient {
 
     private StatsDClient statsd;
     private String hostname;
-    private int port = -1;
-    private Integer logCollectionPort = -1;
+    private Integer port = null;
+    private Integer logCollectionPort = null;
     private boolean isStopped = true;
 
     /**
@@ -71,6 +71,13 @@ public class DogStatsDClient implements DatadogClient {
             if (hostname == null || hostname.isEmpty()) {
                 logger.severe("Datadog Target URL is not set properly");
                 return null;
+            }
+            if (port == null) {
+                logger.severe("Datadog Target Port is not set properly");
+                return null;
+            }
+            if (logCollectionPort == null) {
+                logger.warning("Datadog Log Collection Port is not set properly");
             }
         }
 
@@ -274,7 +281,7 @@ public class DogStatsDClient implements DatadogClient {
 
     @Override
     public boolean sendLogs(String payload) throws IOException {
-        if(logCollectionPort == -1){
+        if(logCollectionPort == null){
             logger.severe("Datadog Log Collection Port is not set properly");
             throw new RuntimeException("Datadog Log Collection Port not set properly");
         }
@@ -297,11 +304,11 @@ public class DogStatsDClient implements DatadogClient {
 
             if ("{}".equals(result.toString())) {
                 logger.fine(String.format("Logs API call was sent successfully!"));
-                logger.fine(String.format("Payload: %s", payload.toString()));
+                logger.fine(String.format("Payload: %s", payload));
                 return true;
             } else {
                 logger.severe(String.format("Logs API call failed!"));
-                logger.severe(String.format("Payload: %s", payload.toString()));
+                logger.severe(String.format("Payload: %s", payload));
                 return false;
             }
         } catch (IOException e) {

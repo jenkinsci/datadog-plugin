@@ -34,6 +34,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogHttpClient;
+import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -76,7 +77,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static Integer DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE = null;
     private static boolean DEFAULT_EMIT_SECURITY_EVENTS_VALUE = true;
     private static boolean DEFAULT_EMIT_SYSTEM_EVENTS_VALUE = true;
-    private static boolean COLLECT_BUILD_LOGS_VALUE = false;
+    private static boolean DEFAULT_COLLECT_BUILD_LOGS_VALUE = false;
 
     private String reportWith = DEFAULT_REPORT_WITH_VALUE;
     private String targetApiURL = DEFAULT_TARGET_API_URL_VALUE;
@@ -93,7 +94,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private String globalJobTags = null;
     private boolean emitSecurityEvents = DEFAULT_EMIT_SECURITY_EVENTS_VALUE;
     private boolean emitSystemEvents = DEFAULT_EMIT_SYSTEM_EVENTS_VALUE;
-    private boolean collectBuildLogs = COLLECT_BUILD_LOGS_VALUE;
+    private boolean collectBuildLogs = DEFAULT_COLLECT_BUILD_LOGS_VALUE;
 
     @DataBoundConstructor
     public DatadogGlobalConfiguration() {
@@ -185,15 +186,15 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         }
     }
 
-    private boolean validateConnection(String apiUrl, Secret apiKey){
-        try {
-            return DatadogHttpClient.validate(apiUrl, Secret.toString(apiKey));
-
-        } catch (Exception e){
-            //noop
-        }
-        return false;
-    }
+//    private boolean validateConnection(String apiUrl, Secret apiKey){
+//        try {
+//            return DatadogHttpClient.validateDefaultIntakeConnection(apiUrl, Secret.toString(apiKey));
+//
+//        } catch (Exception e){
+//            //noop
+//        }
+//        return false;
+//    }
 
     /**
      * Tests the apiKey field from the configuration screen, to check its' validity.
@@ -209,7 +210,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      */
     public FormValidation doTestConnection(@QueryParameter("targetApiKey") final String targetApiKey)
             throws IOException, ServletException {
-        if (validateConnection(this.getTargetApiURL(), Secret.fromString(targetApiKey))) {
+        if (DatadogHttpClient.validateDefaultIntakeConnection(this.getTargetApiURL(), Secret.fromString(targetApiKey))) {
             return FormValidation.ok("Great! Your API key is valid.");
         } else {
             return FormValidation.error("Hmmm, your API key seems to be invalid.");
@@ -233,8 +234,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         if(DatadogUtilities.isValidHostname(hostname)) {
             return FormValidation.ok("Great! Your hostname is valid.");
         } else {
-            return FormValidation.error("Your hostname is invalid, likely because"
-                    + " it violates the format set in RFC 1123.");
+            return FormValidation.error("Your hostname is invalid, likely because it violates the format set in RFC 1123");
         }
     }
 
@@ -373,10 +373,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @throws FormException if the formData is invalid.
      */
     @Override
+    @SuppressFBWarnings("REC_CATCH_EXCEPTION")
     public boolean configure(final StaplerRequest req, final JSONObject formData) throws FormException {
-        Boolean status = super.configure(req, formData);
         try {
-            // Grab apiKey and hostname
+            Boolean status = super.configure(req, formData);
+
             this.setReportWith(formData.getString("reportWith"));
             this.setTargetApiURL(formData.getString("targetApiURL"));
             this.setTargetLogIntakeURL(formData.getString("targetLogIntakeURL"));
@@ -408,10 +409,28 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.setEmitSystemEvents(formData.getBoolean("emitSystemEvents"));
             this.setCollectBuildLogs(formData.getBoolean("collectBuildLogs"));
 
+            if(!validateTargetApiURL(this.getTargetApiURL())){
+                logger.severe("The field (targetApiURL) must be configured in the form <http|https>://<url>/");
+                return false;
+            }
+            if(!validateTargetLogIntakeURL(this.getTargetLogIntakeURL())){
+                logger.severe("The field (targetLogIntakeURL) must be configured in the form <http|https>://<url>/");
+                return false;
+            }
+            if(!validateTargetPort(portStr)){
+                logger.severe("Invalid Port");
+                return false;
+            }
+            if(!validateTargetLogCollectionPort(logCollectionPortStr)){
+                logger.severe("Invalid log collection port");
+                return false;
+            }
+            if(StringUtils.isNotBlank(this.getHostname()) && !DatadogUtilities.isValidHostname(this.getHostname())){
+                throw new FormException("Your hostname is invalid, likely because it violates the format set in RFC 1123", "hostname");
+            }
             // Run connection validation if applicable
-            if(DatadogClient.ClientType.HTTP.name().equals(this.getReportWith()) && (
-                    !validateTargetApiURL(this.getTargetApiURL()) ||
-                    !validateConnection(this.getTargetApiURL(), this.getTargetApiKey()))){
+            if(DatadogClient.ClientType.HTTP.name().equals(this.getReportWith()) &&
+                    !DatadogHttpClient.validateDefaultIntakeConnection(this.getTargetApiURL(), this.getTargetApiKey())){
 
                 // If a client instance exist we set the connectionBroken attribute to true.
                 DatadogClient client = DatadogHttpClient.getInstance(this.getTargetApiURL(),
@@ -419,26 +438,21 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                 if(client != null){
                     client.setDefaultIntakeConnectionBroken(true);
                 }
-
+                logger.severe("Connection broken, please double check both your API URL and Key");
                 return false;
             }
+            if(DatadogClient.ClientType.HTTP.name().equals(this.getReportWith()) &&
+                    !DatadogHttpClient.validateLogIntakeConnection(this.getTargetLogIntakeURL(), this.getTargetApiKey())){
 
-            // Run Field Validations
-            if(!validateTargetLogIntakeURL(this.getTargetLogIntakeURL()) ||
-                    !validateTargetPort(portStr) ||
-                    !validateTargetLogCollectionPort(logCollectionPortStr) ||
-                    (
-                            StringUtils.isNotBlank(this.getHostname()) &&
-                            !DatadogUtilities.isValidHostname(this.getHostname()))
-                    ){
+                // If a client instance exist we set the connectionBroken attribute to true.
+                DatadogClient client = DatadogHttpClient.getInstance(this.getTargetApiURL(),
+                        this.getTargetLogIntakeURL(), this.getTargetApiKey());
+                if(client != null){
+                    client.setLogIntakeConnectionBroken(true);
+                }
+                logger.severe("Connection broken, please double check both your Log Intake URL and Key");
                 return false;
             }
-
-            // Persist global configuration information
-            // Note that there is an edge case.
-            // If a client connection validation fails, the http client singleton will be updated anyway (malformed URL)
-            // even though the config is not saved below because of previous return statements.
-            save();
 
             //When form is saved....
             DatadogClient client = ClientFactory.getClient(DatadogClient.ClientType.valueOf(this.getReportWith()),
@@ -450,8 +464,17 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                 client.setDefaultIntakeConnectionBroken(false);
                 client.setLogIntakeConnectionBroken(false);
             }
+
+            // Persist global configuration information
+            save();
+
             return status;
         }catch(Exception e){
+            // Intercept all FormException instances.
+            if(e instanceof FormException){
+                throw (FormException)e;
+            }
+
             DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
             return false;
         }
