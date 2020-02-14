@@ -46,7 +46,7 @@ import java.util.logging.Logger;
 public class DogStatsDClient implements DatadogClient {
 
     private static DatadogClient instance;
-    private static final Logger logger = Logger.getLogger(DatadogHttpClient.class.getName());
+    private static final Logger logger = Logger.getLogger(DogStatsDClient.class.getName());
 
     @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL")
     public static boolean enableValidations = true;
