@@ -35,6 +35,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.events.ConfigChangedEventImpl;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -62,6 +63,10 @@ public class DatadogSaveableListener  extends SaveableListener {
 
             // Get the list of global tags to apply
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
+            // Add userId Tag
+            Set<String> userId = new HashSet<>();
+            userId.add(DatadogUtilities.getUserId());
+            tags.put("user_id", userId);
 
             // Send event
             DatadogEvent event = new ConfigChangedEventImpl(config, file, tags);

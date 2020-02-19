@@ -35,7 +35,9 @@ import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.events.ItemCRUDEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.ItemCopiedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.ItemLocationChangedEventImpl;
+import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -81,6 +83,10 @@ public class DatadogItemListener extends ItemListener {
 
             // Get the list of global tags to apply
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
+            // Add userId Tag
+            Set<String> userId = new HashSet<>();
+            userId.add(DatadogUtilities.getUserId());
+            tags.put("user_id", userId);
 
             // Send event
             DatadogEvent event = new ItemCRUDEventImpl(item, action, tags);
@@ -110,6 +116,10 @@ public class DatadogItemListener extends ItemListener {
 
             // Get the list of global tags to apply
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
+            // Add userId Tag
+            Set<String> userId = new HashSet<>();
+            userId.add(DatadogUtilities.getUserId());
+            tags.put("user_id", userId);
 
             // Send event
             DatadogEvent event = new ItemCopiedEventImpl(src, item, tags);
@@ -139,6 +149,10 @@ public class DatadogItemListener extends ItemListener {
 
             // Get the list of global tags to apply
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
+            // Add userId Tag
+            Set<String> userId = new HashSet<>();
+            userId.add(DatadogUtilities.getUserId());
+            tags.put("user_id", userId);
 
             // Send event
             DatadogEvent event = new ItemLocationChangedEventImpl(item, oldFullName, newFullName, tags);

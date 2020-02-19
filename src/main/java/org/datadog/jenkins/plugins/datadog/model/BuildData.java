@@ -187,6 +187,11 @@ public class BuildData {
             branchValues.add(getBranch("unknown"));
             additionalTags.put("branch", branchValues);
         }
+        if (userId != null) {
+            Set<String> userIdValue = new HashSet<>();
+            userIdValue.add(getUserId());
+            additionalTags.put("user_id", userIdValue);
+        }
         mergedTags = TagsUtil.merge(mergedTags, additionalTags);
 
         return mergedTags;

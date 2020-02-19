@@ -63,8 +63,9 @@ public class BuildFinishedEventTest {
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getAggregationKey().equals("unknown"));
         Assert.assertTrue(event.getDate() != 0);
-        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().size() == 2);
         Assert.assertTrue(event.getTags().get("job").contains("unknown"));
+        Assert.assertTrue(event.getTags().get("user_id").contains("anonymous"));
         Assert.assertTrue(event.getTitle().equals("Job unknown build #0 unknown on " + hostname));
         Assert.assertTrue(event.getText().contains("[Job unknown build #0](unknown) finished with status unknown (0.00 secs)"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.WARNING));
@@ -87,8 +88,9 @@ public class BuildFinishedEventTest {
         String hostname = DatadogUtilities.getHostname(null);
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getAggregationKey().equals("parentFullName/null"));
-        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().size() == 2);
         Assert.assertTrue(event.getTags().get("job").contains("parentFullName/null"));
+        Assert.assertTrue(event.getTags().get("user_id").contains("anonymous"));
         Assert.assertTrue(event.getTitle().equals("Job parentFullName/null build #0 unknown on " + hostname));
     }
 
@@ -108,8 +110,9 @@ public class BuildFinishedEventTest {
         String hostname = DatadogUtilities.getHostname(null);
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getAggregationKey().equals("parent/FullName/null"));
-        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().size() == 2);
         Assert.assertTrue(event.getTags().get("job").contains("parent/FullName/null"));
+        Assert.assertTrue(event.getTags().get("user_id").contains("anonymous"));
         Assert.assertTrue(event.getTitle().equals("Job parent/FullName/null build #0 unknown on " + hostname));
     }
 
@@ -130,8 +133,9 @@ public class BuildFinishedEventTest {
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("parentFullName/jobName"));
-        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().size() == 2);
         Assert.assertTrue(event.getTags().get("job").contains("parentFullName/jobName"));
+        Assert.assertTrue(event.getTags().get("user_id").contains("anonymous"));
         Assert.assertTrue(event.getTitle().equals("Job parentFullName/jobName build #0 unknown on " + hostname));
     }
 
@@ -152,9 +156,10 @@ public class BuildFinishedEventTest {
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("parentFullName/jobName"));
-        Assert.assertTrue(event.getTags().size() == 2);
+        Assert.assertTrue(event.getTags().size() == 3);
         Assert.assertTrue(event.getTags().get("job").contains("parentFullName/jobName"));
         Assert.assertTrue(event.getTags().get("result").contains("FAILURE"));
+        Assert.assertTrue(event.getTags().get("user_id").contains("anonymous"));
         Assert.assertTrue(event.getTitle().equals("Job parentFullName/jobName build #0 failure on " + hostname));
         Assert.assertTrue(event.getText().contains("[Job parentFullName/jobName build #0](unknown) finished with status failure (0.00 secs)"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.ERROR));
@@ -178,9 +183,10 @@ public class BuildFinishedEventTest {
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("parentFullName/jobName"));
-        Assert.assertTrue(event.getTags().size() == 2);
+        Assert.assertTrue(event.getTags().size() == 3);
         Assert.assertTrue(event.getTags().get("job").contains("parentFullName/jobName"));
         Assert.assertTrue(event.getTags().get("result").contains("UNSTABLE"));
+        Assert.assertTrue(event.getTags().get("user_id").contains("anonymous"));
         Assert.assertTrue(event.getTitle().equals("Job parentFullName/jobName build #0 unstable on " + hostname));
         Assert.assertTrue(event.getText().contains("[Job parentFullName/jobName build #0](unknown) finished with status unstable (0.00 secs)"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.WARNING));
@@ -210,11 +216,12 @@ public class BuildFinishedEventTest {
         Assert.assertTrue(event.getHost().equals("test-hostname-2"));
         Assert.assertTrue(event.getAggregationKey().equals("ParentFullName/JobName"));
         Assert.assertTrue(event.getDate() != 0);
-        Assert.assertTrue(event.getTags().size() == 4);
+        Assert.assertTrue(event.getTags().size() == 5);
         Assert.assertTrue(event.getTags().get("job").contains("ParentFullName/JobName"));
         Assert.assertTrue(event.getTags().get("result").contains("SUCCESS"));
         Assert.assertTrue(event.getTags().get("branch").contains("test-branch"));
         Assert.assertTrue(event.getTags().get("node").contains("test-node"));
+        Assert.assertTrue(event.getTags().get("user_id").contains("anonymous"));
         Assert.assertTrue(event.getTitle().equals("Job ParentFullName/JobName build #2 success on test-hostname-2"));
         Assert.assertTrue(event.getText().contains("[Job ParentFullName/JobName build #2](http://build_url.com) finished with status success (0.01 secs)"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.SUCCESS));
@@ -248,12 +255,13 @@ public class BuildFinishedEventTest {
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("ParentFullName/JobName"));
-        Assert.assertTrue(event.getTags().size() == 5);
+        Assert.assertTrue(event.getTags().size() == 6);
         Assert.assertTrue(event.getTags().get("job").contains("ParentFullName/JobName"));
         Assert.assertTrue(event.getTags().get("result").contains("SUCCESS"));
         Assert.assertTrue(event.getTags().get("tag1").contains("value1"));
         Assert.assertTrue(event.getTags().get("tag2").contains("value2"));
         Assert.assertTrue(event.getTags().get("branch").contains("csv-branch"));
+        Assert.assertTrue(event.getTags().get("user_id").contains("anonymous"));
         Assert.assertTrue(event.getTitle().equals("Job ParentFullName/JobName build #2 success on " + hostname));
         Assert.assertTrue(event.getText().contains("[Job ParentFullName/JobName build #2](http://build_url.com) finished with status success (0.01 secs)"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.SUCCESS));
