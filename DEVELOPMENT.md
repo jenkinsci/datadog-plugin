@@ -141,3 +141,13 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
 ## Continuous Integration
 
 Every commit to the repository triggers the [Jenkins Org CI pipeline](https://jenkins.io/doc/developer/publishing/continuous-integration/) defined in the `Jenkinsfile` at the root folder of the source code.
+
+## Troubleshooting
+
+### Header is too large
+
+When accessing your jenkins instance, you may run into the following warning
+```
+WARNING o.eclipse.jetty.http.HttpParser#parseFields: Header is too large 8193>8192
+```
+In this case, use your browser in incognito mode.

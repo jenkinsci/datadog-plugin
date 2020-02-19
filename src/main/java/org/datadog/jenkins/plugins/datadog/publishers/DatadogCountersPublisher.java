@@ -62,7 +62,7 @@ public class DatadogCountersPublisher extends AsyncPeriodicWork {
 
             client.flushCounters();
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
     }
 }

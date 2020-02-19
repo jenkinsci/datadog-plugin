@@ -31,6 +31,7 @@ import hudson.XmlFile;
 import hudson.model.*;
 import hudson.model.labels.LabelAtom;
 import jenkins.model.Jenkins;
+import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 import javax.annotation.Nonnull;
@@ -566,10 +567,18 @@ public class DatadogUtilities {
         }
     }
 
+    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH")
     public static void severe(Logger logger, Throwable e, String message){
-        message = (message == null) ? "" : message;
-        StringWriter sw = new StringWriter();
-        e.printStackTrace(new PrintWriter(sw));
-        logger.severe(message + sw.toString());
+        if(message == null){
+            message = e != null ? "An unexpected error occurred": "";
+        }
+        if(!message.isEmpty()) {
+            logger.severe(message);
+        }
+        if(e != null) {
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            logger.finer(message + ": " + sw.toString());
+        }
     }
 }

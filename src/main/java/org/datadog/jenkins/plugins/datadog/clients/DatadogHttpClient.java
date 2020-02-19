@@ -370,7 +370,7 @@ public class DatadogHttpClient implements DatadogClient {
                     logger.severe("Hmmm, your API key may be invalid. We received a 403 error.");
                     DatadogUtilities.severe(logger, e, null);
                 } else {
-                    DatadogUtilities.severe(logger, e, "Client error: ");
+                    DatadogUtilities.severe(logger, e, "Client error");
                 }
             } catch (IOException ex) {
                 DatadogUtilities.severe(logger, e, null);
@@ -452,7 +452,7 @@ public class DatadogHttpClient implements DatadogClient {
                 if (conn != null && conn.getResponseCode() == BAD_REQUEST) {
                     logger.severe("Hmmm, your API key or your Log Intake URL may be invalid. We received a 400 in response.");
                 } else {
-                    DatadogUtilities.severe(logger, e, "Client error: ");
+                    DatadogUtilities.severe(logger, e, "Client error");
                 }
             } catch (IOException ex) {
                 DatadogUtilities.severe(logger, ex, null);
@@ -537,7 +537,7 @@ public class DatadogHttpClient implements DatadogClient {
             if (conn != null && conn.getResponseCode() == HTTP_FORBIDDEN) {
                 logger.severe("Hmmm, your API key may be invalid. We received a 403 error.");
             } else {
-                DatadogUtilities.severe(logger, e, "Client error: ");
+                DatadogUtilities.severe(logger, e, "Client error");
             }
             status = false;
         } finally {
@@ -549,7 +549,7 @@ public class DatadogHttpClient implements DatadogClient {
     }
 
     public static boolean validateLogIntakeConnection(String url, Secret apiKey) throws IOException {
-        return postLogs(url, apiKey, "{\"message\":\"[datadog-plugin] Check connection\", \"ddsource\":\"Jenkins\", \"service\":\"Jenkins\"}");
+        return postLogs(url, apiKey, "{\"message\":\"[datadog-plugin] Check connection\", \"ddsource\":\"Jenkins\", \"service\":\"Jenkins\", \"hostname\":"+DatadogUtilities.getHostname(null)+"}");
     }
 
 }

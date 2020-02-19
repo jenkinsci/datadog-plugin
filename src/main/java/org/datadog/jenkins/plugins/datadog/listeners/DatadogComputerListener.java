@@ -82,12 +82,12 @@ public class DatadogComputerListener extends ComputerListener {
             client.event(event);
 
             // Submit counter
-            String hostname = DatadogUtilities.getHostname("null");
+            String hostname = DatadogUtilities.getHostname(null);
             client.incrementCounter("jenkins.computer.online", hostname, tags);
 
             logger.fine("End DatadogComputerListener#onOnline");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
     }
 
@@ -116,12 +116,12 @@ public class DatadogComputerListener extends ComputerListener {
             client.event(event);
 
             // Submit counter
-            String hostname = DatadogUtilities.getHostname("null");
+            String hostname = DatadogUtilities.getHostname(null);
             client.incrementCounter("jenkins.computer.offline", hostname, tags);
 
             logger.fine("End DatadogComputerListener#onOffline");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
     }
 
@@ -150,12 +150,12 @@ public class DatadogComputerListener extends ComputerListener {
             client.event(event);
 
             // Submit counter
-            String hostname = DatadogUtilities.getHostname("null");
+            String hostname = DatadogUtilities.getHostname(null);
             client.incrementCounter("jenkins.computer.temporarily_online", hostname, tags);
 
             logger.fine("End DatadogComputerListener#onTemporarilyOnline");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
     }
 
@@ -184,12 +184,12 @@ public class DatadogComputerListener extends ComputerListener {
             client.event(event);
 
             // Submit counter
-            String hostname = DatadogUtilities.getHostname("null");
+            String hostname = DatadogUtilities.getHostname(null);
             client.incrementCounter("jenkins.computer.temporarily_offline", hostname, tags);
 
             logger.fine("End DatadogComputerListener#onTemporarilyOffline");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
     }
 
@@ -218,12 +218,12 @@ public class DatadogComputerListener extends ComputerListener {
             client.event(event);
 
             // Submit counter
-            String hostname = DatadogUtilities.getHostname("null");
+            String hostname = DatadogUtilities.getHostname(null);
             client.incrementCounter("jenkins.computer.launch_failure", hostname, tags);
 
             logger.fine("End DatadogComputerListener#onLaunchFailure");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
     }
 

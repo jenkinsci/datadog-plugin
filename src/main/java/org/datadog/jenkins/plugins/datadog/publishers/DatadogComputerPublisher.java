@@ -66,7 +66,7 @@ public class DatadogComputerPublisher extends PeriodicWork {
                 return;
             }
 
-            String hostname = DatadogUtilities.getHostname("null");
+            String hostname = DatadogUtilities.getHostname(null);
 
             long nodeCount = 0;
             long nodeOffline = 0;
@@ -101,7 +101,7 @@ public class DatadogComputerPublisher extends PeriodicWork {
             client.gauge("jenkins.node.online", nodeOnline, hostname, globalTags);
 
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
 
     }

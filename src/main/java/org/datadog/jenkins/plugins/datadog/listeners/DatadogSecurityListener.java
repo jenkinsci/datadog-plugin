@@ -74,12 +74,12 @@ public class DatadogSecurityListener extends SecurityListener {
             client.event(event);
 
             // Submit counter
-            String hostname = DatadogUtilities.getHostname("null");
+            String hostname = DatadogUtilities.getHostname(null);
             client.incrementCounter("jenkins.user.authenticated", hostname, tags);
 
             logger.fine("End DatadogSecurityListener#authenticated");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
     }
 
@@ -106,12 +106,12 @@ public class DatadogSecurityListener extends SecurityListener {
             client.event(event);
 
             // Submit counter
-            String hostname = DatadogUtilities.getHostname("null");
+            String hostname = DatadogUtilities.getHostname(null);
             client.incrementCounter("jenkins.user.access_denied", hostname, tags);
 
             logger.fine("End DatadogSecurityListener#failedToAuthenticate");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
     }
 
@@ -148,12 +148,12 @@ public class DatadogSecurityListener extends SecurityListener {
             client.event(event);
 
             // Submit counter
-            String hostname = DatadogUtilities.getHostname("null");
+            String hostname = DatadogUtilities.getHostname(null);
             client.incrementCounter("jenkins.user.logout", hostname, tags);
 
             logger.fine("End DatadogSecurityListener#loggedOut");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
     }
 }

@@ -475,7 +475,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                 throw (FormException)e;
             }
 
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
             return false;
         }
     }

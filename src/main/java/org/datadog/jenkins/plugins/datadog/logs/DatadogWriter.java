@@ -79,7 +79,11 @@ public class DatadogWriter {
             if(client == null){
                 return;
             }
-            client.sendLogs(payload.toString());
+            boolean status = client.sendLogs(payload.toString());
+            if(!status){
+                // we try again in case a connection has to be re-established.
+                client.sendLogs(payload.toString());
+            }
         } catch (IOException | InterruptedException e){
             String msg = "Failed to send log data. No Further logs will be sent to Datadog.";
             DatadogUtilities.severe(logger, e, msg);
