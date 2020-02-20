@@ -37,7 +37,7 @@ public abstract class AbstractDatadogBuildEvent extends AbstractDatadogEvent {
 
     public AbstractDatadogBuildEvent(BuildData buildData) {
         this.buildData = buildData;
-        setHost(buildData.getHostname("unknown"));
+        setHost(buildData.getHostname(null));
         setAggregationKey(buildData.getJobName("unknown"));
         setDate(buildData.getEndTime(DatadogUtilities.currentTimeMillis()) / 1000);
         setTags(buildData.getTags());

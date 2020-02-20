@@ -186,16 +186,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         }
     }
 
-//    private boolean validateConnection(String apiUrl, Secret apiKey){
-//        try {
-//            return DatadogHttpClient.validateDefaultIntakeConnection(apiUrl, Secret.toString(apiKey));
-//
-//        } catch (Exception e){
-//            //noop
-//        }
-//        return false;
-//    }
-
     /**
      * Tests the apiKey field from the configuration screen, to check its' validity.
      * It is used in the config.jelly resource file. See method="testConnection"

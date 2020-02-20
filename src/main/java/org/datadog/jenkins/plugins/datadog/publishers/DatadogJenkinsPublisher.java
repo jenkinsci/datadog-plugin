@@ -65,7 +65,7 @@ public class DatadogJenkinsPublisher extends PeriodicWork {
                 return;
             }
 
-            String hostname = DatadogUtilities.getHostname(null);
+            String hostname = DatadogUtilities.getHostname("null");
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
             long projectCount = 0;
             try {

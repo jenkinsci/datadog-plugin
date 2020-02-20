@@ -421,6 +421,10 @@ public class DatadogHttpClient implements DatadogClient {
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("DD-API-KEY", Secret.toString(apiKey));
+            conn.setRequestProperty("User-Agent", String.format("Datadog/%s/jenkins Java/%s Jenkins/%s",
+                    DatadogUtilities.getDatadogPluginVersion(),
+                    DatadogUtilities.getJavaRuntimeVersion(),
+                    DatadogUtilities.getJenkinsVersion()));
             conn.setUseCaches(false);
             conn.setDoInput(true);
             conn.setDoOutput(true);
@@ -549,7 +553,7 @@ public class DatadogHttpClient implements DatadogClient {
     }
 
     public static boolean validateLogIntakeConnection(String url, Secret apiKey) throws IOException {
-        return postLogs(url, apiKey, "{\"message\":\"[datadog-plugin] Check connection\", \"ddsource\":\"Jenkins\", \"service\":\"Jenkins\", \"hostname\":"+DatadogUtilities.getHostname(null)+"}");
+        return postLogs(url, apiKey, "{\"message\":\"[datadog-plugin] Check connection\", \"ddsource\":\"Jenkins\", \"service\":\"Jenkins\", \"hostname\":\""+DatadogUtilities.getHostname(null)+"\"}");
     }
 
 }

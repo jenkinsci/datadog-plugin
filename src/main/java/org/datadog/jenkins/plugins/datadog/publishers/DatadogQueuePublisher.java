@@ -82,7 +82,7 @@ public class DatadogQueuePublisher extends PeriodicWork {
                     blocked++;
                 }
             }
-            String hostname = DatadogUtilities.getHostname(null);
+            String hostname = DatadogUtilities.getHostname("null");
             client.gauge("jenkins.queue.size", size, hostname, tags);
             client.gauge("jenkins.queue.buildable", buildable, hostname, tags);
             client.gauge("jenkins.queue.pending", pending, hostname, tags);

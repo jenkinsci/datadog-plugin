@@ -66,7 +66,7 @@ public class DatadogComputerPublisher extends PeriodicWork {
                 return;
             }
 
-            String hostname = DatadogUtilities.getHostname(null);
+            String hostname = DatadogUtilities.getHostname("null");
 
             long nodeCount = 0;
             long nodeOffline = 0;

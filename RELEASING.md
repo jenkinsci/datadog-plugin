@@ -20,6 +20,8 @@ This project does not have a strict release schedule. However, we would make a r
 * Make sure documentation is up-to-date.
 * [Update changelog](#update-changelog)
   - Create a distinct pull request.
+* **IMPORTANT**: Update Plugin version in this following method.
+  - `org.datadog.jenkins.plugins.datadog.DatadogUtilities.getDatadogPluginVersion`  
 
 ## Update Changelog
 

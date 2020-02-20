@@ -90,7 +90,7 @@ public class DatadogItemListener extends ItemListener {
             client.event(event);
 
             // Submit counter
-            String hostname = DatadogUtilities.getHostname(null);
+            String hostname = DatadogUtilities.getHostname("null");
             client.incrementCounter("jenkins.item." + action.toLowerCase(), hostname, tags);
 
             logger.fine("End DatadogItemListener#on" + action);
@@ -122,7 +122,7 @@ public class DatadogItemListener extends ItemListener {
             client.event(event);
 
             // Submit counter
-            String hostname = DatadogUtilities.getHostname(null);
+            String hostname = DatadogUtilities.getHostname("null");
             client.incrementCounter("jenkins.item.copied", hostname, tags);
 
             logger.fine("End DatadogItemListener#onCopied");
@@ -154,7 +154,7 @@ public class DatadogItemListener extends ItemListener {
             client.event(event);
 
             // Submit counter
-            String hostname = DatadogUtilities.getHostname(null);
+            String hostname = DatadogUtilities.getHostname("null");
             client.incrementCounter("jenkins.item.location_changed", hostname, tags);
 
             logger.fine("End DatadogItemListener#onLocationChanged");

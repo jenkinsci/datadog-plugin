@@ -71,7 +71,7 @@ public class DatadogSaveableListener  extends SaveableListener {
             client.event(event);
 
             // Submit counter
-            String hostname = DatadogUtilities.getHostname(null);
+            String hostname = DatadogUtilities.getHostname("null");
             client.incrementCounter("jenkins.config.changed", hostname, tags);
 
             logger.fine("End DatadogSaveableListener#onChange");
