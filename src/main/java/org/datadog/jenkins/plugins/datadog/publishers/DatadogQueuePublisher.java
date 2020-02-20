@@ -31,7 +31,9 @@ import hudson.model.Queue;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -62,6 +64,8 @@ public class DatadogQueuePublisher extends PeriodicWork {
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
+            // Add JenkinsUrl Tag
+            tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
 
             long size = 0;
             long buildable = queue.countBuildableItems();
@@ -78,7 +82,7 @@ public class DatadogQueuePublisher extends PeriodicWork {
                     blocked++;
                 }
             }
-            String hostname = DatadogUtilities.getHostname("null");
+            String hostname = DatadogUtilities.getHostname(null);
             client.gauge("jenkins.queue.size", size, hostname, tags);
             client.gauge("jenkins.queue.buildable", buildable, hostname, tags);
             client.gauge("jenkins.queue.pending", pending, hostname, tags);

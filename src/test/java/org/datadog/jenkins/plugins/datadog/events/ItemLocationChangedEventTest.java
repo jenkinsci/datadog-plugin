@@ -44,14 +44,17 @@ public class ItemLocationChangedEventTest {
     public void testWithNothingSet() throws IOException, InterruptedException {
         DatadogEvent event = new ItemLocationChangedEventImpl(null, null, null, null);
 
-        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        String hostname = DatadogUtilities.getHostname(null);
+        Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("unknown"));
         Assert.assertTrue(event.getTags() == null);
         Assert.assertTrue(event.getTitle().equals("User anonymous changed the location of the item unknown"));
-        Assert.assertTrue(event.getText().contains("User anonymous changed the location of the item unknown from null to null"));
+        Assert.assertTrue(event.getText(), event.getText().contains("User anonymous changed the location of the item unknown from null to null"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
     }
 
     @Test
@@ -62,14 +65,17 @@ public class ItemLocationChangedEventTest {
         DatadogEvent event = new ItemLocationChangedEventImpl(item, "from_loc", "to_loc",
                 new HashMap<String, Set<String>>());
 
-        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        String hostname = DatadogUtilities.getHostname(null);
+        Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("itemname"));
         Assert.assertTrue(event.getTags() != null);
         Assert.assertTrue(event.getTitle().equals("User anonymous changed the location of the item itemname"));
-        Assert.assertTrue(event.getText().contains("User anonymous changed the location of the item itemname from from_loc to to_loc"));
+        Assert.assertTrue(event.getText(), event.getText().contains("User anonymous changed the location of the item itemname from from_loc to to_loc"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
 
     }
 }

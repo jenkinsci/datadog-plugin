@@ -108,7 +108,7 @@ public class BuildData {
         // Set Build Number
         setBuildNumber(String.valueOf(run.getNumber()));
         // Set Hostname
-        setHostname(DatadogUtilities.getHostname(envVars == null ? null : envVars.get("HOSTNAME")));
+        setHostname(DatadogUtilities.getHostname(envVars));
         // Set Job Name
         String jobName = null;
         try {
@@ -116,9 +116,14 @@ public class BuildData {
         } catch(NullPointerException e){
             //noop
         }
-        setJobName(jobName == null ? null : jobName.
-                replaceAll("»", "/").
-                replaceAll(" ", ""));
+        setJobName(jobName == null ? null : jobName.replaceAll("»", "/").replaceAll(" ", ""));
+        // Set Jenkins Url
+        String jenkinsUrl = DatadogUtilities.getJenkinsUrl();
+        if("unknown".equals(jenkinsUrl) && envVars != null && envVars.get("JENKINS_URL") != null
+                && !envVars.get("JENKINS_URL").isEmpty()) {
+            jenkinsUrl = envVars.get("JENKINS_URL");
+        }
+        setJenkinsUrl(jenkinsUrl);
     }
 
     private void populateEnvVariables(EnvVars envVars){
@@ -129,7 +134,6 @@ public class BuildData {
         setBuildUrl(envVars.get("BUILD_URL"));
         setNodeName(envVars.get("NODE_NAME"));
         setBuildTag(envVars.get("BUILD_TAG"));
-        setJenkinsUrl(envVars.get("JENKINS_URL"));
         setExecutorNumber(envVars.get("EXECUTOR_NUMBER"));
         setJavaHome(envVars.get("JAVA_HOME"));
         setWorkspace(envVars.get("WORKSPACE"));
@@ -139,8 +143,6 @@ public class BuildData {
             setGitCommit(envVars.get("GIT_COMMIT"));
         } else if (envVars.get("CVS_BRANCH") != null) {
             setBranch(envVars.get("CVS_BRANCH"));
-        } else if (envVars.get("SVN_REVISION") != null) {
-            setBranch(envVars.get("SVN_REVISION"));
         }
         setPromotedUrl(envVars.get("PROMOTED_URL"));
         setPromotedJobName(envVars.get("PROMOTED_JOB_NAME"));
@@ -161,40 +163,29 @@ public class BuildData {
      * @return a map containing all tags values
      */
     public Map<String, Set<String>> getTags() {
-        Map<String, Set<String>> mergedTags = new HashMap<>();
+        Map<String, Set<String>> allTags = new HashMap<>();
         try {
-            mergedTags = DatadogUtilities.getTagsFromGlobalTags();
+            allTags = DatadogUtilities.getTagsFromGlobalTags();
         } catch(NullPointerException e){
             //noop
         }
-        mergedTags = TagsUtil.merge(mergedTags, tags);
-        Map<String, Set<String>> additionalTags = new HashMap<>();
-        Set<String> jobValues = new HashSet<>();
-        jobValues.add(getJobName("unknown"));
-        additionalTags.put("job", jobValues);
+        allTags = TagsUtil.merge(allTags, tags);
+        allTags = TagsUtil.addTagToTags(allTags, "job", getJobName("unknown"));
+
         if (nodeName != null) {
-            Set<String> nodeValues = new HashSet<>();
-            nodeValues.add(getNodeName("unknown"));
-            additionalTags.put("node", nodeValues);
+            allTags = TagsUtil.addTagToTags(allTags, "node", getNodeName("unknown"));
         }
         if (result != null) {
-            Set<String> resultValues = new HashSet<>();
-            resultValues.add(getResult("UNKNOWN"));
-            additionalTags.put("result", resultValues);
-        }
-        if (branch != null) {
-            Set<String> branchValues = new HashSet<>();
-            branchValues.add(getBranch("unknown"));
-            additionalTags.put("branch", branchValues);
+            allTags = TagsUtil.addTagToTags(allTags, "result", getResult("UNKNOWN"));
         }
         if (userId != null) {
-            Set<String> userIdValue = new HashSet<>();
-            userIdValue.add(getUserId());
-            additionalTags.put("user_id", userIdValue);
+            allTags = TagsUtil.addTagToTags(allTags, "user_id", getUserId());
         }
-        mergedTags = TagsUtil.merge(mergedTags, additionalTags);
+        if (jenkinsUrl != null) {
+            allTags = TagsUtil.addTagToTags(allTags, "jenkins_url", getJenkinsUrl("unknown"));
+        }
 
-        return mergedTags;
+        return allTags;
     }
 
     public void setTags(Map<String, Set<String>> tags) {

@@ -44,25 +44,30 @@ public class ComputerOfflineEventTest {
     public void testWithNothingSet() throws IOException, InterruptedException {
         DatadogEvent event = new ComputerOfflineEventImpl(null, null, null, false);
 
-        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        String hostname = DatadogUtilities.getHostname(null);
+        Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey() == null);
         Assert.assertTrue(event.getTags() == null);
         Assert.assertTrue(event.getTitle().equals("Jenkins node null is offline"));
-        Assert.assertTrue(event.getText().contains("Jenkins node null is offline"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Jenkins node null is offline"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.WARNING));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
 
         event = new ComputerOfflineEventImpl(null, null, null, true);
 
-        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey() == null);
         Assert.assertTrue(event.getTags() == null);
         Assert.assertTrue(event.getTitle().equals("Jenkins node null is temporarily offline"));
-        Assert.assertTrue(event.getText().contains("Jenkins node null is temporarily offline"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Jenkins node null is temporarily offline"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.WARNING));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
     }
 
     @Test
@@ -73,25 +78,30 @@ public class ComputerOfflineEventTest {
         DatadogEvent event = new ComputerOfflineEventImpl(computer, null,
                 new HashMap<String, Set<String>>(), false);
 
-        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        String hostname = DatadogUtilities.getHostname(null);
+        Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("computer"));
         Assert.assertTrue(event.getTags() != null);
         Assert.assertTrue(event.getTitle().equals("Jenkins node computer is offline"));
-        Assert.assertTrue(event.getText().contains("Jenkins node computer is offline"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Jenkins node computer is offline"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.WARNING));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
 
         event = new ComputerOfflineEventImpl(computer, null,
                 new HashMap<String, Set<String>>(), true);
 
-        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("computer"));
         Assert.assertTrue(event.getTags() != null);
         Assert.assertTrue(event.getTitle().equals("Jenkins node computer is temporarily offline"));
-        Assert.assertTrue(event.getText().contains("Jenkins node computer is temporarily offline"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Jenkins node computer is temporarily offline"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.WARNING));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
     }
 }

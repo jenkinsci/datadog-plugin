@@ -44,14 +44,17 @@ public class ComputerLaunchFailedEventTest {
     public void testWithNothingSet() throws IOException, InterruptedException {
         DatadogEvent event = new ComputerLaunchFailedEventImpl(null, null, null);
 
-        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        String hostname = DatadogUtilities.getHostname(null);
+        Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey() == null);
         Assert.assertTrue(event.getTags() == null);
         Assert.assertTrue(event.getTitle().equals("Jenkins node null failed to launch"));
-        Assert.assertTrue(event.getText().contains("Jenkins node null failed to launch"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Jenkins node null failed to launch"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.ERROR));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
     }
 
     @Test
@@ -62,13 +65,16 @@ public class ComputerLaunchFailedEventTest {
         DatadogEvent event = new ComputerLaunchFailedEventImpl(computer, null,
                 new HashMap<String, Set<String>>());
 
-        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        String hostname = DatadogUtilities.getHostname(null);
+        Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("computer"));
         Assert.assertTrue(event.getTags() != null);
         Assert.assertTrue(event.getTitle().equals("Jenkins node computer failed to launch"));
-        Assert.assertTrue(event.getText().contains("Jenkins node computer failed to launch"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Jenkins node computer failed to launch"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.ERROR));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
     }
 }

@@ -44,7 +44,7 @@ public class ItemLocationChangedEventImpl extends AbstractDatadogSimpleEvent {
         setTitle(title);
 
         String text = "%%% \nUser " + userId + " changed the location of the item " + itemName + " from " +
-                oldFullName + " to " + newFullName + " \n%%%";
+                oldFullName + " to " + newFullName + "\n" + super.getLocationDetails() + " \n%%%";
         setText(text);
 
         setPriority(Priority.NORMAL);

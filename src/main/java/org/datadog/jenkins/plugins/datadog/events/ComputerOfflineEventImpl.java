@@ -36,7 +36,6 @@ public class ComputerOfflineEventImpl extends AbstractDatadogSimpleEvent {
 
     public ComputerOfflineEventImpl(Computer computer, OfflineCause cause, Map<String, Set<String>> tags, boolean isTemporarily) {
         super(tags);
-
         String nodeName = DatadogUtilities.getNodeName(computer);
         setAggregationKey(nodeName);
 
@@ -44,8 +43,8 @@ public class ComputerOfflineEventImpl extends AbstractDatadogSimpleEvent {
         setTitle(title);
 
         // TODO: Add more info about the case in the event in message.
-        String text = "%%% \nJenkins node " + nodeName + " is" + (isTemporarily? " temporarily ": " ") +
-                "offline \n%%%";
+        String text = "%%% \nJenkins node " + nodeName + " is" + (isTemporarily? " temporarily ": " ") + "offline." +
+                "\n" + super.getLocationDetails() + " \n%%%";
         setText(text);
 
         setPriority(Priority.NORMAL);

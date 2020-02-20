@@ -44,7 +44,8 @@ public class ConfigChangedEventImpl extends AbstractDatadogSimpleEvent {
         String title = "User " + userId + " changed file " + fileName;
         setTitle(title);
 
-        String text = "%%% \nUser " + userId + " changed file " + fileName + " \n%%%";
+        String text = "%%% \nUser " + userId + " changed file " + fileName + "." +
+                "\n" + super.getLocationDetails() + " \n%%%";
         setText(text);
 
         setEnums(userId);

@@ -93,7 +93,7 @@ public class DatadogBuildListener extends RunListener<Run>  {
             Queue queue = getQueue();
             Queue.Item item = queue.getItem(run.getQueueId());
             Map<String, Set<String>> tags = buildData.getTags();
-            String hostname = buildData.getHostname("null");
+            String hostname = buildData.getHostname("unknown");
             try {
                 long waiting = (DatadogUtilities.currentTimeMillis() - item.getInQueueSince()) / 1000;
                 client.gauge("jenkins.job.waiting", waiting, hostname, tags);
@@ -146,7 +146,7 @@ public class DatadogBuildListener extends RunListener<Run>  {
 
             // Send a metric
             Map<String, Set<String>> tags = buildData.getTags();
-            String hostname = buildData.getHostname("null");
+            String hostname = buildData.getHostname("unknown");
             client.gauge("jenkins.job.duration", buildData.getDuration(0L) / 1000, hostname, tags);
 
             // Submit counter
@@ -216,7 +216,7 @@ public class DatadogBuildListener extends RunListener<Run>  {
             }
 
             // Get the list of global tags to apply
-            String hostname = buildData.getHostname("null");
+            String hostname = buildData.getHostname("unknown");
 
             // Send an event
             DatadogEvent event = new BuildAbortedEventImpl(buildData);

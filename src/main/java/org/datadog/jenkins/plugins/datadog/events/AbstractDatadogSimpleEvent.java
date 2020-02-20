@@ -34,6 +34,7 @@ public abstract class AbstractDatadogSimpleEvent extends AbstractDatadogEvent {
 
     public AbstractDatadogSimpleEvent(Map<String, Set<String>> tags) {
         setHost(DatadogUtilities.getHostname(null));
+        setJenkinsUrl(DatadogUtilities.getJenkinsUrl());
         setDate(DatadogUtilities.currentTimeMillis() / 1000);
         setTags(tags);
     }

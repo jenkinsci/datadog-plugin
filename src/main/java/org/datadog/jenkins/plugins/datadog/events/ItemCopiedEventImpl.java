@@ -44,7 +44,8 @@ public class ItemCopiedEventImpl extends AbstractDatadogSimpleEvent {
         String title = "User " + userId + " copied the item " + itemName + " from " + srcName;
         setTitle(title);
 
-        String text = "%%% \nUser " + userId + " copied the item " + itemName + " from " + srcName + " \n%%%";
+        String text = "%%% \nUser " + userId + " copied the item " + itemName + " from " + srcName +
+                "\n" + super.getLocationDetails() + " \n%%%";
         setText(text);
 
         setPriority(Priority.NORMAL);

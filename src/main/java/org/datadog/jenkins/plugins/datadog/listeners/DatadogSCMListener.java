@@ -96,7 +96,7 @@ public class DatadogSCMListener extends SCMListener {
             client.event(event);
 
             // Submit counter
-            String hostname = DatadogUtilities.getHostname("null");
+            String hostname = DatadogUtilities.getHostname(null);
             Map<String, Set<String>> tags = buildData.getTags();
             client.incrementCounter("jenkins.scm.checkout", hostname, tags);
 

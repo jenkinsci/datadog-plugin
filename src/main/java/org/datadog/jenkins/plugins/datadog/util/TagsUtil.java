@@ -88,4 +88,19 @@ public class TagsUtil {
         Collections.sort(result);
         return result.toArray(new String[0]);
     }
+
+    public static Map<String,Set<String>> addTagToTags(Map<String, Set<String>> tags, String name, String value) {
+        if(tags == null){
+            tags = new HashMap<>();
+        }
+        Set<String> values;
+        if(!tags.containsKey(name)){
+            values = new HashSet<>();
+        }else{
+            values = tags.get(name);
+        }
+        values.add(value);
+        tags.put(name, values);
+        return tags;
+    }
 }

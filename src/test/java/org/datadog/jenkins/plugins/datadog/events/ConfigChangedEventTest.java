@@ -42,14 +42,17 @@ public class ConfigChangedEventTest {
     public void testWithNothingSet() throws IOException, InterruptedException {
         DatadogEvent event = new ConfigChangedEventImpl(null, null, null);
 
-        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        String hostname = DatadogUtilities.getHostname(null);
+        Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("unknown"));
         Assert.assertTrue(event.getTags() == null);
         Assert.assertTrue(event.getTitle().equals("User anonymous changed file unknown"));
         Assert.assertTrue(event.getText(), event.getText().contains("User anonymous changed file unknown"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.WARNING));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
     }
 
     @Test
@@ -59,25 +62,30 @@ public class ConfigChangedEventTest {
 
         DatadogEvent event = new ConfigChangedEventImpl(null, xmlfile, new HashMap<String, Set<String>>());
 
-        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        String hostname = DatadogUtilities.getHostname(null);
+        Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("filename"));
         Assert.assertTrue(event.getTags() != null);
         Assert.assertTrue(event.getTitle().equals("User anonymous changed file filename"));
-        Assert.assertTrue(event.getText().contains("User anonymous changed file filename"));
+        Assert.assertTrue(event.getText(), event.getText().contains("User anonymous changed file filename"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.WARNING));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
 
         event = new ConfigChangedEventImpl(null, xmlfile, new HashMap<String, Set<String>>());
         ((ConfigChangedEventImpl)event).setEnums("SyStEm");
 
-        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("filename"));
         Assert.assertTrue(event.getTags() != null);
         Assert.assertTrue(event.getTitle().equals("User anonymous changed file filename"));
-        Assert.assertTrue(event.getText().contains("User anonymous changed file filename"));
+        Assert.assertTrue(event.getText(), event.getText().contains("User anonymous changed file filename"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.LOW));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
     }
 }

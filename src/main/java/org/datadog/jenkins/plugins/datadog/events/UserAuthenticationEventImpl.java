@@ -47,7 +47,8 @@ public class UserAuthenticationEventImpl extends AbstractDatadogSimpleEvent {
         String title = "User " + username + " " + action.toLowerCase();
         setTitle(title);
 
-        String text = "%%% \nUser " + username + " " + action.toLowerCase() +" \n%%%";
+        String text = "%%% \nUser " + username + " " + action.toLowerCase() +
+                "\n" + super.getLocationDetails() + " \n%%%";
         setText(text);
 
         if (LOGIN.equals(action) || LOGOUT.equals(action)){

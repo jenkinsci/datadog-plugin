@@ -44,25 +44,30 @@ public class ItemCRUDEventTest {
     public void testWithNothingSet() throws IOException, InterruptedException {
         DatadogEvent event = new ItemCRUDEventImpl(null, null, null);
 
-        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        String hostname = DatadogUtilities.getHostname(null);
+        Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("unknown"));
         Assert.assertTrue(event.getTags() == null);
         Assert.assertTrue(event.getTitle().equals("User anonymous did something with the item unknown"));
-        Assert.assertTrue(event.getText().contains("User anonymous did something with the item unknown"));
+        Assert.assertTrue(event.getText(), event.getText().contains("User anonymous did something with the item unknown"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
 
         event = new ItemCRUDEventImpl(null, "something", null);
 
-        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("unknown"));
         Assert.assertTrue(event.getTags() == null);
         Assert.assertTrue(event.getTitle().equals("User anonymous something the item unknown"));
-        Assert.assertTrue(event.getText().contains("User anonymous something the item unknown"));
+        Assert.assertTrue(event.getText(), event.getText().contains("User anonymous something the item unknown"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
     }
 
     @Test
@@ -72,36 +77,43 @@ public class ItemCRUDEventTest {
 
         DatadogEvent event = new ItemCRUDEventImpl(item, ItemCRUDEventImpl.CREATED, new HashMap<String, Set<String>>());
 
-        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        String hostname = DatadogUtilities.getHostname(null);
+        Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("itemname"));
         Assert.assertTrue(event.getTags() != null);
         Assert.assertTrue(event.getTitle().equals("User anonymous created the item itemname"));
-        Assert.assertTrue(event.getText().contains("User anonymous created the item itemname"));
+        Assert.assertTrue(event.getText(), event.getText().contains("User anonymous created the item itemname"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
 
         event = new ItemCRUDEventImpl(item, ItemCRUDEventImpl.UPDATED, new HashMap<String, Set<String>>());
 
-        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("itemname"));
         Assert.assertTrue(event.getTags() != null);
         Assert.assertTrue(event.getTitle().equals("User anonymous updated the item itemname"));
-        Assert.assertTrue(event.getText().contains("User anonymous updated the item itemname"));
+        Assert.assertTrue(event.getText(), event.getText().contains("User anonymous updated the item itemname"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
 
         event = new ItemCRUDEventImpl(item, ItemCRUDEventImpl.DELETED, new HashMap<String, Set<String>>());
 
-        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("itemname"));
         Assert.assertTrue(event.getTags() != null);
         Assert.assertTrue(event.getTitle().equals("User anonymous deleted the item itemname"));
-        Assert.assertTrue(event.getText().contains("User anonymous deleted the item itemname"));
+        Assert.assertTrue(event.getText(), event.getText().contains("User anonymous deleted the item itemname"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
 
     }
 }

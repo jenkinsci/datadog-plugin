@@ -43,7 +43,8 @@ public class ComputerLaunchFailedEventImpl extends AbstractDatadogSimpleEvent {
         String title = "Jenkins node " + nodeName + " failed to launch";
         setTitle(title);
 
-        String text = "%%% \nJenkins node " + nodeName + " failed to launch \n%%%";
+        String text = "%%% \nJenkins node " + nodeName + " failed to launch." +
+                "\n" + super.getLocationDetails() + " \n%%%";
         setText(text);
 
         setPriority(Priority.NORMAL);

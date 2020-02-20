@@ -34,6 +34,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -62,7 +63,7 @@ public class DatadogComputerPublisher extends PeriodicWork {
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
-            String hostname = DatadogUtilities.getHostname("null");
+            String hostname = DatadogUtilities.getHostname(null);
 
             long nodeCount = 0;
             long nodeOffline = 0;
@@ -73,6 +74,7 @@ public class DatadogComputerPublisher extends PeriodicWork {
                 computers = jenkins.getComputers();
             }
             final Map<String, Set<String>> globalTags = DatadogUtilities.getTagsFromGlobalTags();
+            String jenkinsUrl = DatadogUtilities.getJenkinsUrl();
             for (Computer computer : computers) {
                 nodeCount++;
                 if (computer.isOffline()) {
@@ -88,6 +90,9 @@ public class DatadogComputerPublisher extends PeriodicWork {
 
                 Map<String, Set<String>> tags = TagsUtil.merge(
                         DatadogUtilities.getComputerTags(computer), globalTags);
+                // Add JenkinsUrl Tag
+                tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
+
                 client.gauge("jenkins.executor.count", executorCount, hostname, tags);
                 client.gauge("jenkins.executor.in_use", inUse, hostname, tags);
                 client.gauge("jenkins.executor.free", free, hostname, tags);

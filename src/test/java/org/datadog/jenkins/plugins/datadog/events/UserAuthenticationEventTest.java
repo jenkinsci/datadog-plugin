@@ -48,6 +48,7 @@ public class UserAuthenticationEventTest {
         Assert.assertTrue(event.getText().contains("User anonymous did something"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.ERROR));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
 
         event = new UserAuthenticationEventImpl(null, "something", null);
 
@@ -59,42 +60,50 @@ public class UserAuthenticationEventTest {
         Assert.assertTrue(event.getText().contains("User anonymous something"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.ERROR));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
     }
 
     @Test
     public void testWithEverythingSet() throws IOException, InterruptedException {
         DatadogEvent event = new UserAuthenticationEventImpl("username", UserAuthenticationEventImpl.ACCESS_DENIED, new HashMap<String, Set<String>>());
 
-        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        String hostname = DatadogUtilities.getHostname(null);
+        Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("username"));
         Assert.assertTrue(event.getTags() != null);
         Assert.assertTrue(event.getTitle().equals("User username failed to authenticate"));
-        Assert.assertTrue(event.getText().contains("User username failed to authenticate"));
+        Assert.assertTrue(event.getText(), event.getText().contains("User username failed to authenticate"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.ERROR));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
 
         event = new UserAuthenticationEventImpl("username", UserAuthenticationEventImpl.LOGOUT, new HashMap<String, Set<String>>());
 
-        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("username"));
         Assert.assertTrue(event.getTags() != null);
         Assert.assertTrue(event.getTitle().equals("User username logout"));
-        Assert.assertTrue(event.getText().contains("User username logout"));
+        Assert.assertTrue(event.getText(), event.getText().contains("User username logout"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.SUCCESS));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.LOW));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
 
         event = new UserAuthenticationEventImpl("username", UserAuthenticationEventImpl.LOGIN, new HashMap<String, Set<String>>());
 
-        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("username"));
         Assert.assertTrue(event.getTags() != null);
         Assert.assertTrue(event.getTitle().equals("User username authenticated"));
-        Assert.assertTrue(event.getText().contains("User username authenticated"));
+        Assert.assertTrue(event.getText(), event.getText().contains("User username authenticated"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.SUCCESS));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.LOW));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
 
     }
 }

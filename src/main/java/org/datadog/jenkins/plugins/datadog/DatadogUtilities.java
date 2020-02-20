@@ -373,10 +373,10 @@ public class DatadogUtilities {
      * Unix hostname via `/bin/hostname -f`
      * Localhost hostname
      *
-     * @param envVarHostname - The Jenkins hostname environment variable
+     * @param envVars - The Jenkins environment variables
      * @return a human readable String for the hostname.
      */
-    public static String getHostname(String envVarHostname) {
+    public static String getHostname(EnvVars envVars) {
         String[] UNIX_OS = {"mac", "linux", "freebsd", "sunos"};
 
         // Check hostname configuration from Jenkins
@@ -392,8 +392,8 @@ public class DatadogUtilities {
         }
 
         // Check hostname using jenkins env variables
-        if (envVarHostname != null) {
-            hostname = envVarHostname;
+        if (envVars != null) {
+            hostname = envVars.get("HOSTNAME");
         }
         if (isValidHostname(hostname)) {
             logger.fine("Using hostname found in $HOSTNAME host environment variable. Hostname: " + hostname);
@@ -568,6 +568,19 @@ public class DatadogUtilities {
             return "unknown";
         } else {
             return file.getFile().getName();
+        }
+    }
+
+    public static String getJenkinsUrl() {
+        Jenkins jenkins = Jenkins.getInstance();
+        if(jenkins == null){
+            return "unknown";
+        }else{
+            try {
+                return jenkins.getRootUrl();
+            }catch(Exception e){
+                return "unknown";
+            }
         }
     }
 

@@ -35,6 +35,7 @@ public abstract class AbstractDatadogEvent implements DatadogEvent {
     private String title;
     private String text;
     private String host;
+    private String jenkinsUrl;
     private DatadogEvent.Priority priority;
     private DatadogEvent.AlertType alertType;
     private String aggregationKey;
@@ -57,6 +58,15 @@ public abstract class AbstractDatadogEvent implements DatadogEvent {
 
     public void setText(String text) {
         this.text = text;
+    }
+
+    @Override
+    public String getJenkinsUrl() {
+        return jenkinsUrl;
+    }
+
+    public void setJenkinsUrl(String jenkinsUrl) {
+        this.jenkinsUrl = jenkinsUrl;
     }
 
     @Override
@@ -111,5 +121,17 @@ public abstract class AbstractDatadogEvent implements DatadogEvent {
 
     public void setTags(Map<String, Set<String>> tags) {
         this.tags = tags;
+    }
+
+    protected String getLocationDetails(){
+        String hostMsg = "Host: unknown";
+        String instanceMsg = "Jenkins URL: unknown";
+        if(host != null && !host.isEmpty() && !"unknown".equals(host)){
+            hostMsg = "Host: " + host;
+        }
+        if(jenkinsUrl != null && !jenkinsUrl.isEmpty() && !"unknown".equals(jenkinsUrl)){
+            instanceMsg = "Jenkins URL: [instance](" + jenkinsUrl + ")";
+        }
+        return hostMsg + ", " + instanceMsg;
     }
 }
