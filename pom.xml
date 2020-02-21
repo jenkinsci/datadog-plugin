@@ -75,30 +75,6 @@
   </dependencies>
 
   <build>
-    <!--&lt;!&ndash; To define the plugin version in your parent POM &ndash;&gt;-->
-    <!--<pluginManagement>-->
-      <!--<plugins>-->
-        <!--<plugin>-->
-          <!--<groupId>org.apache.maven.plugins</groupId>-->
-          <!--<artifactId>maven-resources-plugin</artifactId>-->
-          <!--<version>3.1.0</version>-->
-        <!--</plugin>-->
-      <!--</plugins>-->
-    <!--</pluginManagement>-->
-    <!--&lt;!&ndash; To use the plugin goals in your POM or parent POM &ndash;&gt;-->
-    <!--<plugins>-->
-      <!--<plugin>-->
-        <!--<groupId>org.apache.maven.plugins</groupId>-->
-        <!--<artifactId>maven-resources-plugin</artifactId>-->
-        <!--<version>3.1.0</version>-->
-      <!--</plugin>-->
-    <!--</plugins>-->
-    <!--<resources>-->
-      <!--<resource>-->
-        <!--<directory>src/main/resources</directory>-->
-        <!--<filtering>true</filtering>-->
-      <!--</resource>-->
-    <!--</resources>-->
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
