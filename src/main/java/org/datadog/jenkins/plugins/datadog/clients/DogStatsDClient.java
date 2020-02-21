@@ -335,6 +335,9 @@ public class DogStatsDClient implements DatadogClient {
             this.ddLogger.info(payload);
 
             // We check for errors in our custom errorManager
+            if(this.ddLogger.getHandlers().length == 0){
+                return false;
+            }
             Handler handler = this.ddLogger.getHandlers()[0];
             DatadogErrorManager errorManager = (DatadogErrorManager)handler.getErrorManager();
             if(errorManager.hadReportedIssue()){
