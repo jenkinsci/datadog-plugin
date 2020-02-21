@@ -131,7 +131,7 @@ public class DatadogClientStub implements DatadogClient {
     }
 
     @Override
-    public boolean sendLogs(String payloadLogs) throws IOException {
+    public boolean sendLogs(String payloadLogs) {
         return false;
     }
 

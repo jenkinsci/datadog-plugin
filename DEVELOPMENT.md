@@ -77,7 +77,7 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
     #      - $JENKINS_PLUGIN/conf.yaml:/etc/datadog-agent/conf.d/jenkins.d/conf.yaml   
                
     ```
-1. If you wish to submit log using the Datadog Agent, you will have to configure the Datadog Agent properly by creating a conf.yaml file with the following content.
+1. If you wish to submit log using the Datadog Agent, you will have to configure the Datadog Agent properly by creating a `conf.yaml` file with the following content.
 
     ```
     logs:

@@ -318,7 +318,7 @@ public class DogStatsDClient implements DatadogClient {
     }
 
     @Override
-    public boolean sendLogs(String payload) throws IOException {
+    public boolean sendLogs(String payload) {
         if(logCollectionPort == null){
             logger.severe("Datadog Log Collection Port is not set properly");
             throw new RuntimeException("Datadog Log Collection Port not set properly");

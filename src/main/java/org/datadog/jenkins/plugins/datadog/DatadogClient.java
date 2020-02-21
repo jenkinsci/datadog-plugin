@@ -133,8 +133,7 @@ public interface DatadogClient {
      * Send log message.
      * @param payload log payload to submit JSON object as String
      * @return a boolean to signify the success or failure of the request.
-     * @throws IOException
      */
-    public boolean sendLogs(String payload) throws IOException;
+    public boolean sendLogs(String payload);
 
 }

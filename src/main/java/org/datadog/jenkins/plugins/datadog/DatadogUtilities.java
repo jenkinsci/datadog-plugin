@@ -50,18 +50,6 @@ public class DatadogUtilities {
 
     private static final Integer MAX_HOSTNAME_LEN = 255;
 
-    public static String getJavaRuntimeVersion(){
-        return System.getProperty("java.version");
-    }
-
-    public static String getDatadogPluginVersion(){
-        return "1.0.3-SNAPSHOT";
-    }
-
-    public static String getJenkinsVersion(){
-        return Jenkins.VERSION;
-    }
-
     /**
      * @return - The descriptor for the Datadog plugin. In this case the global configuration.
      */

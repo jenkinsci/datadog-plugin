@@ -43,6 +43,7 @@ import java.net.Proxy;
 import java.net.URL;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Logger;
@@ -66,6 +67,9 @@ public class DatadogHttpClient implements DatadogClient {
 
     @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL")
     public static boolean enableValidations = true;
+    private String jreVersion = null;
+    private String jenkinsVersion = null;
+    private String pluginVersion = null;
 
     private String url;
     private String logIntakeUrl;
@@ -321,7 +325,6 @@ public class DatadogHttpClient implements DatadogClient {
      * @param payload - A JSONObject containing a specific subset of a builds metadata.
      * @param type    - A String containing the URL subpath pertaining to the type of API post required.
      * @return a boolean to signify the success or failure of the HTTP POST request.
-     * @throws IOException if HttpURLConnection fails to open connection
      */
     private boolean post(final JSONObject payload, final String type) {
         if(this.isDefaultIntakeConnectionBroken()){
@@ -361,7 +364,7 @@ public class DatadogHttpClient implements DatadogClient {
                 logger.fine(String.format("Payload: %s", payload));
             } else {
                 logger.severe(String.format("API call of type '%s' failed!", type));
-                logger.severe(String.format("Payload: %s", payload));
+                logger.fine(String.format("Payload: %s", payload));
                 status = false;
             }
         } catch (Exception e) {
@@ -390,9 +393,8 @@ public class DatadogHttpClient implements DatadogClient {
      *
      * @param payload - A JSONObject containing a specific subset of a builds metadata.
      * @return a boolean to signify the success or failure of the HTTP POST request.
-     * @throws IOException if HttpURLConnection fails to open connection
      */
-    public boolean sendLogs(String payload) throws IOException {
+    public boolean sendLogs(String payload) {
         if(this.isLogIntakeConnectionBroken()){
             logger.severe("Your client is not initialized properly");
             return false;
@@ -406,25 +408,29 @@ public class DatadogHttpClient implements DatadogClient {
         return postLogs(this.getLogIntakeUrl(), getApiKey(), payload);
     }
 
-    private static boolean postLogs(String url, Secret apiKey, String payload) throws IOException {
+    @SuppressFBWarnings("REC_CATCH_EXCEPTION")
+    private boolean postLogs(String url, Secret apiKey, String payload) {
         if(payload == null){
             logger.fine("No payload to post");
             return true;
         }
 
         HttpURLConnection conn = null;
-        URL logsEndpointURL = new URL(url);
-
         try {
+            URL logsEndpointURL = new URL(url);
             logger.fine("Setting up HttpURLConnection...");
             conn = getHttpURLConnection(logsEndpointURL);
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("DD-API-KEY", Secret.toString(apiKey));
             conn.setRequestProperty("User-Agent", String.format("Datadog/%s/jenkins Java/%s Jenkins/%s",
-                    DatadogUtilities.getDatadogPluginVersion(),
-                    DatadogUtilities.getJavaRuntimeVersion(),
-                    DatadogUtilities.getJenkinsVersion()));
+                    getDatadogPluginVersion(),
+                    getJavaRuntimeVersion(),
+                    getJenkinsVersion()));
+            DatadogUtilities.severe(logger, null, String.format("Datadog/%s/jenkins Java/%s Jenkins/%s",
+                    getDatadogPluginVersion(),
+                    getJavaRuntimeVersion(),
+                    getJenkinsVersion()));
             conn.setUseCaches(false);
             conn.setDoInput(true);
             conn.setDoOutput(true);
@@ -448,7 +454,7 @@ public class DatadogHttpClient implements DatadogClient {
                 logger.fine(String.format("Payload: %s", payload));
             } else {
                 logger.severe(String.format("Logs API call failed!"));
-                logger.severe(String.format("Payload: %s", payload));
+                logger.fine(String.format("Payload: %s", payload));
                 return false;
             }
         } catch (Exception e) {
@@ -553,7 +559,31 @@ public class DatadogHttpClient implements DatadogClient {
     }
 
     public static boolean validateLogIntakeConnection(String url, Secret apiKey) throws IOException {
-        return postLogs(url, apiKey, "{\"message\":\"[datadog-plugin] Check connection\", \"ddsource\":\"Jenkins\", \"service\":\"Jenkins\", \"hostname\":\""+DatadogUtilities.getHostname(null)+"\"}");
+        DatadogHttpClient client = new DatadogHttpClient(null, url, apiKey);
+        return client.postLogs(url, apiKey, "{\"message\":\"[datadog-plugin] Check connection\", " +
+                "\"ddsource\":\"Jenkins\", \"service\":\"Jenkins\", " +
+                "\"hostname\":\""+DatadogUtilities.getHostname(null)+"\"}");
+    }
+
+    private String getJavaRuntimeVersion(){
+        if(this.jreVersion == null) {
+            this.jreVersion =  System.getProperty("java.version");
+        }
+        return this.jreVersion;
+    }
+
+    private String getDatadogPluginVersion(){
+        if(this.pluginVersion == null){
+            this.pluginVersion = this.getClass().getPackage().getImplementationVersion();
+        }
+        return this.pluginVersion;
+    }
+
+    private String getJenkinsVersion(){
+        if(this.jenkinsVersion == null) {
+            this.jenkinsVersion =  Jenkins.VERSION;
+        }
+        return this.jenkinsVersion;
     }
 
 }
