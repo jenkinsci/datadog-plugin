@@ -334,10 +334,14 @@ public class DogStatsDClient implements DatadogClient {
         try {
             this.ddLogger.info(payload);
 
-            // We check for errors in our custom errorManager
+            // Check if we have handler in our logger. This may happen when initialization fails
+            // ddLogger may not be null but may be mis-configured.
+            // Reset to null to reinitialize if needed
             if(this.ddLogger.getHandlers().length == 0){
+                this.ddLogger = null;
                 return false;
             }
+            // We check for errors in our custom errorManager
             Handler handler = this.ddLogger.getHandlers()[0];
             DatadogErrorManager errorManager = (DatadogErrorManager)handler.getErrorManager();
             if(errorManager.hadReportedIssue()){
