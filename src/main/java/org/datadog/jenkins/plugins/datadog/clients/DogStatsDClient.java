@@ -68,7 +68,7 @@ public class DogStatsDClient implements DatadogClient {
      * @param logCollectionPort - target log collection port
      * @return an singleton instance of the DogStatsDClient.
      */
-    @SuppressFBWarnings(value="DC_DOUBLECHECK")
+    @SuppressFBWarnings(value={"DC_DOUBLECHECK", "RC_REF_COMPARISON"})
     public static DatadogClient getInstance(String hostname, Integer port, Integer logCollectionPort){
         if(enableValidations){
             if (hostname == null || hostname.isEmpty()) {
@@ -146,6 +146,9 @@ public class DogStatsDClient implements DatadogClient {
         if(this.ddLogger != null && !force){
             return true;
         }
+        if(this.logCollectionPort == null){
+            return false;
+        }
         try {
             logger.info("Re/Initialize Datadog-Plugin Logger: hostname = " + this.hostname + ", logCollectionPort = " + this.logCollectionPort);
             this.ddLogger = Logger.getLogger("Datadog-Plugin Logger");
@@ -156,7 +159,7 @@ public class DogStatsDClient implements DatadogClient {
                 this.ddLogger.removeHandler(h);
             }
             //Add New Handler
-            SocketHandler socketHandler = new SocketHandler(hostname, logCollectionPort);
+            SocketHandler socketHandler = new SocketHandler(this.hostname, this.logCollectionPort);
             socketHandler.setFormatter(new DatadogFormatter());
             socketHandler.setErrorManager(new DatadogErrorManager());
             this.ddLogger.addHandler(socketHandler);
