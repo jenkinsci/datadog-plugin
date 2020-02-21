@@ -72,6 +72,9 @@ public class DatadogBuildListener extends RunListener<Run>  {
 
             // Get Datadog Client Instance
             DatadogClient client = getDatadogClient();
+            if(client == null){
+                return;
+            }
 
             // Collect Build Data
             BuildData buildData;
@@ -107,7 +110,7 @@ public class DatadogBuildListener extends RunListener<Run>  {
 
             logger.fine("End DatadogBuildListener#onStarted");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
     }
 
@@ -130,6 +133,9 @@ public class DatadogBuildListener extends RunListener<Run>  {
 
             // Get Datadog Client Instance
             DatadogClient client = getDatadogClient();
+            if(client == null){
+                return;
+            }
 
             // Collect Build Data
             BuildData buildData;
@@ -190,7 +196,7 @@ public class DatadogBuildListener extends RunListener<Run>  {
 
             logger.fine("End DatadogBuildListener#onCompleted");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
     }
 
@@ -205,6 +211,9 @@ public class DatadogBuildListener extends RunListener<Run>  {
 
             // Get Datadog Client Instance
             DatadogClient client = getDatadogClient();
+            if(client == null){
+                return;
+            }
 
             // Collect Build Data
             BuildData buildData;
@@ -228,7 +237,7 @@ public class DatadogBuildListener extends RunListener<Run>  {
 
             logger.fine("End DatadogBuildListener#onDeleted");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
     }
 

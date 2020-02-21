@@ -27,6 +27,7 @@ package org.datadog.jenkins.plugins.datadog;
 
 import com.timgroup.statsd.ServiceCheck;
 import hudson.util.Secret;
+import org.datadog.jenkins.plugins.datadog.logs.DatadogConsoleLogFilter;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
@@ -65,17 +66,29 @@ public interface DatadogClient {
 
     public void setUrl(String url);
 
+    public void setLogIntakeUrl(String logIntakeUrl);
+
     public void setApiKey(Secret apiKey);
 
     public void setHostname(String hostname);
 
     public void setPort(int port);
 
+    public void setLogCollectionPort(Integer logCollectionPort);
+
+    public boolean isDefaultIntakeConnectionBroken();
+
+    public void setDefaultIntakeConnectionBroken(boolean defaultIntakeConnectionBroken);
+
+    public boolean isLogIntakeConnectionBroken();
+
+    public void setLogIntakeConnectionBroken(boolean logIntakeConnectionBroken);
+
     /**
      * Sends an event to the Datadog API, including the event payload.
      *
      * @param event - a DatadogEvent object
-     * @return  a boolean to signify the success or failure of the HTTP POST request.
+     * @return a boolean to signify the success or failure of the HTTP POST request.
      */
     public boolean event(DatadogEvent event);
 
@@ -83,9 +96,9 @@ public interface DatadogClient {
      * Increment a counter for the given metrics.
      * NOTE: To submit all counters you need to execute the flushCounters method.
      * This is to aggregate counters and submit them in batch to Datadog in order to minimize network traffic.
-     * @param name - metric name
+     * @param name     - metric name
      * @param hostname - metric hostname
-     * @param tags - metric tags
+     * @param tags     - metric tags
      */
     public void incrementCounter(String name, String hostname, Map<String, Set<String>> tags);
 
@@ -109,7 +122,7 @@ public interface DatadogClient {
      * Sends a service check to the Datadog API, including the check name, and status.
      *
      * @param name     - A String with the name of the service check to record.
-     * @param status     - An Status with the status code to record for this service check.
+     * @param status   - An Status with the status code to record for this service check.
      * @param hostname - A String with the hostname to submit.
      * @param tags     - A Map containing the tags to submit.
      * @return a boolean to signify the success or failure of the HTTP POST request.
@@ -117,11 +130,10 @@ public interface DatadogClient {
     public boolean serviceCheck(String name, Status status, String hostname, Map<String, Set<String>> tags);
 
     /**
-     * Tests the apiKey is valid.
-     *
-     * @return a boolean to signify the success or failure of the HTTP GET request.
-     * @throws IOException      if there is an input/output exception.
-     * @throws ServletException if there is a servlet exception.
+     * Send log message.
+     * @param payload log payload to submit JSON object as String
+     * @return a boolean to signify the success or failure of the request.
      */
-    public boolean validate() throws IOException, ServletException;
+    public boolean sendLogs(String payload);
+
 }

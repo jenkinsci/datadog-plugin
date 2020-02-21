@@ -23,58 +23,44 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
  */
 
-package org.datadog.jenkins.plugins.datadog;
+package org.datadog.jenkins.plugins.datadog.logs;
 
-import com.timgroup.statsd.Event;
+import hudson.console.ConsoleNote;
+import hudson.console.LineTransformationOutputStream;
 
-import java.util.Map;
-import java.util.Set;
+import java.io.IOException;
+import java.io.OutputStream;
 
-/**
- * Interface for Datadog events.
- */
-public interface DatadogEvent {
+public class DatadogOutputStream extends LineTransformationOutputStream {
+    private OutputStream delegate;
+    private DatadogWriter writer;
 
-    public static enum AlertType {
-        ERROR,
-        WARNING,
-        INFO,
-        SUCCESS;
 
-        private AlertType() {
-        }
-
-        public Event.AlertType toEventAlertType(){
-            return Event.AlertType.valueOf(this.name());
-        }
+    public DatadogOutputStream(OutputStream delegate, DatadogWriter writer) {
+        super();
+        this.delegate = delegate;
+        this.writer = writer;
     }
 
-    public static enum Priority {
-        LOW,
-        NORMAL;
+    @Override
+    protected void eol(byte[] b, int len) throws IOException {
+        delegate.write(b, 0, len);
+        this.flush();
 
-        private Priority() {
-        }
-
-        public Event.Priority toEventPriority(){
-            return Event.Priority.valueOf(this.name());
-        }
+        String line = new String(b, 0, len, writer.getCharset());
+        line = ConsoleNote.removeNotes(line).trim();
+        writer.write(line);
     }
 
-    public String getTitle();
+    @Override
+    public void flush() throws IOException {
+        delegate.flush();
+        super.flush();
+    }
 
-    public String getText();
-
-    public String getHost();
-
-    public Priority getPriority();
-
-    public AlertType getAlertType();
-
-    public String getAggregationKey();
-
-    public Long getDate();
-
-    public Map<String, Set<String>> getTags();
-
+    @Override
+    public void close() throws IOException {
+        delegate.close();
+        super.close();
+    }
 }

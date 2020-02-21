@@ -68,6 +68,9 @@ public class DatadogComputerListener extends ComputerListener {
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
+            if(client == null){
+                return;
+            }
 
             // Get the list of tags to apply
             Map<String, Set<String>> tags = TagsUtil.merge(
@@ -84,7 +87,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             logger.fine("End DatadogComputerListener#onOnline");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
     }
 
@@ -99,6 +102,9 @@ public class DatadogComputerListener extends ComputerListener {
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
+            if(client == null){
+                return;
+            }
 
             // Get the list of tags to apply
             Map<String, Set<String>> tags = TagsUtil.merge(
@@ -115,7 +121,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             logger.fine("End DatadogComputerListener#onOffline");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
     }
 
@@ -130,6 +136,9 @@ public class DatadogComputerListener extends ComputerListener {
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
+            if(client == null){
+                return;
+            }
 
             // Get the list of tags to apply
             Map<String, Set<String>> tags = TagsUtil.merge(
@@ -146,7 +155,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             logger.fine("End DatadogComputerListener#onTemporarilyOnline");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
     }
 
@@ -161,6 +170,9 @@ public class DatadogComputerListener extends ComputerListener {
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
+            if(client == null){
+                return;
+            }
 
             // Get the list of tags to apply
             Map<String, Set<String>> tags = TagsUtil.merge(
@@ -177,7 +189,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             logger.fine("End DatadogComputerListener#onTemporarilyOffline");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
     }
 
@@ -192,6 +204,9 @@ public class DatadogComputerListener extends ComputerListener {
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
+            if(client == null){
+                return;
+            }
 
             // Get the list of tags to apply
             Map<String, Set<String>> tags = TagsUtil.merge(
@@ -208,7 +223,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             logger.fine("End DatadogComputerListener#onLaunchFailure");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
     }
 

@@ -29,14 +29,21 @@ import hudson.EnvVars;
 import hudson.model.*;
 import hudson.triggers.SCMTrigger;
 import hudson.triggers.TimerTrigger;
+import hudson.util.LogTaskListener;
+import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class BuildData {
+
+    private static final Logger LOGGER = Logger.getLogger(BuildData.class.getName());
 
     private String buildNumber;
     private String buildId;
@@ -78,11 +85,17 @@ public class BuildData {
         if (run == null) {
             return;
         }
-        EnvVars envVars = null;
+        EnvVars envVars;
+        String envVarHostname = null;
         if(listener != null){
             envVars = run.getEnvironment(listener);
-            setTags(DatadogUtilities.getBuildTags(run, listener));
+        }else{
+            envVars = run.getEnvironment(new LogTaskListener(LOGGER, Level.INFO));
         }
+        if(envVars != null) {
+            envVarHostname = envVars.get("HOSTNAME");
+        }
+        setTags(DatadogUtilities.getBuildTags(run, envVars));
 
         // Populate instance using environment variables.
         populateEnvVariables(envVars);
@@ -101,6 +114,11 @@ public class BuildData {
             setEndTime(endTimeInMs);
         }
 
+        // Set Jenkins Url
+        Jenkins jenkins = Jenkins.getInstance();
+        if(jenkins != null){
+            setJenkinsUrl(jenkins.getRootUrl());
+        }
         // Set UserId
         setUserId(getUserId(run));
         // Set Result
@@ -108,7 +126,7 @@ public class BuildData {
         // Set Build Number
         setBuildNumber(String.valueOf(run.getNumber()));
         // Set Hostname
-        setHostname(DatadogUtilities.getHostname(envVars == null ? null : envVars.get("HOSTNAME")));
+        setHostname(DatadogUtilities.getHostname(envVarHostname));
         // Set Job Name
         String jobName = null;
         try {
@@ -469,6 +487,69 @@ public class BuildData {
             }
         }
         return null;
+    }
+
+    public JSONObject addLogAttributes(JSONObject payload){
+        JSONObject build = new JSONObject();
+        build.put("number", this.buildNumber);
+        build.put("id", this.buildId);
+        build.put("url", this.buildUrl);
+        payload.put("build", build);
+
+        JSONObject http = new JSONObject();
+        http.put("url", this.jenkinsUrl);
+        payload.put("http", http);
+
+        JSONObject jenkins = new JSONObject();
+        jenkins.put("node_name", this.nodeName);
+        jenkins.put("job_name", this.jobName);
+        jenkins.put("build_tag", this.buildTag);
+        jenkins.put("executor_number", this.executorNumber);
+        jenkins.put("java_home", this.javaHome);
+        jenkins.put("workspace", this.workspace);
+
+        JSONObject promoted = new JSONObject();
+        jenkins.put("promoted", promoted);
+        if(promotedUrl != null){
+            jenkins.put("url", this.promotedUrl);
+        }
+        if(promotedJobName != null){
+            jenkins.put("job_name", this.promotedJobName);
+        }
+        if(promotedNumber != null){
+            jenkins.put("number", this.promotedNumber);
+        }
+        if(promotedId != null){
+            jenkins.put("id", this.promotedId);
+        }
+        if(promotedTimestamp != null){
+            jenkins.put("timestamp", this.promotedTimestamp);
+        }
+        if(promotedUserName != null){
+            jenkins.put("user_name", this.promotedUserName);
+        }
+        if(promotedUserId != null){
+            jenkins.put("user_id", this.promotedUserId);
+        }
+        if(promotedJobFullName != null){
+            jenkins.put("job_full_name", this.promotedJobFullName);
+        }
+        jenkins.put("result", this.result);
+
+        payload.put("jenkins", jenkins);
+
+        JSONObject scm = new JSONObject();
+        scm.put("branch", this.branch);
+        scm.put("git_url", this.gitUrl);
+        scm.put("git_commit", this.gitCommit);
+        payload.put("scm", scm);
+
+        JSONObject user = new JSONObject();
+        user.put("id", this.userId);
+        payload.put("usr", user);
+
+        payload.put("hostname", this.hostname);
+        return payload;
     }
 
 }

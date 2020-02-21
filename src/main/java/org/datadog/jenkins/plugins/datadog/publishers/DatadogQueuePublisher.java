@@ -61,6 +61,10 @@ public class DatadogQueuePublisher extends PeriodicWork {
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
+            if(client == null){
+                return;
+            }
+
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
 
             long size = 0;
@@ -86,7 +90,7 @@ public class DatadogQueuePublisher extends PeriodicWork {
             client.gauge("jenkins.queue.blocked", blocked, hostname, tags);
 
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
 
     }

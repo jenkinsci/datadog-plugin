@@ -50,6 +50,11 @@ public class DatadogClientStub implements DatadogClient {
     }
 
     @Override
+    public void setLogIntakeUrl(String logIntakeUrl) {
+        // noop
+    }
+
+    @Override
     public void setApiKey(Secret apiKey) {
         // noop
     }
@@ -61,6 +66,31 @@ public class DatadogClientStub implements DatadogClient {
 
     @Override
     public void setPort(int port) {
+        // noop
+    }
+
+    @Override
+    public void setLogCollectionPort(Integer logCollectionPort) {
+
+    }
+
+    @Override
+    public boolean isDefaultIntakeConnectionBroken() {
+        return false;
+    }
+
+    @Override
+    public void setDefaultIntakeConnectionBroken(boolean defaultIntakeConnectionBroken) {
+        // noop
+    }
+
+    @Override
+    public boolean isLogIntakeConnectionBroken() {
+        return false;
+    }
+
+    @Override
+    public void setLogIntakeConnectionBroken(boolean logIntakeConnectionBroken) {
         // noop
     }
 
@@ -101,8 +131,8 @@ public class DatadogClientStub implements DatadogClient {
     }
 
     @Override
-    public boolean validate() throws IOException, ServletException {
-        return true;
+    public boolean sendLogs(String payloadLogs) {
+        return false;
     }
 
     public boolean assertMetric(String name, double value, String hostname, String[] tags) {

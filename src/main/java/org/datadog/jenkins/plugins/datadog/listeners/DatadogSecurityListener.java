@@ -61,6 +61,9 @@ public class DatadogSecurityListener extends SecurityListener {
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
+            if(client == null){
+                return;
+            }
 
             // Get the list of global tags to apply
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
@@ -76,7 +79,7 @@ public class DatadogSecurityListener extends SecurityListener {
 
             logger.fine("End DatadogSecurityListener#authenticated");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
     }
 
@@ -91,6 +94,9 @@ public class DatadogSecurityListener extends SecurityListener {
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
+            if(client == null){
+                return;
+            }
 
             // Get the list of global tags to apply
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
@@ -105,7 +111,7 @@ public class DatadogSecurityListener extends SecurityListener {
 
             logger.fine("End DatadogSecurityListener#failedToAuthenticate");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
     }
 
@@ -130,6 +136,9 @@ public class DatadogSecurityListener extends SecurityListener {
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
+            if(client == null){
+                return;
+            }
 
             // Get the list of global tags to apply
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
@@ -144,7 +153,7 @@ public class DatadogSecurityListener extends SecurityListener {
 
             logger.fine("End DatadogSecurityListener#loggedOut");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
     }
 }
