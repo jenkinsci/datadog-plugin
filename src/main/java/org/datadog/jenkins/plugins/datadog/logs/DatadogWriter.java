@@ -57,16 +57,14 @@ public class DatadogWriter {
         return charset;
     }
 
-    /**
-     * Write a list of lines to the indexer as one Logstash payload.
-     */
     public void write(String line) {
-        if (!StringUtils.isNotEmpty(line)) {
-            return;
-        }
-
-        JSONObject payload = new JSONObject();
         try {
+            if (!StringUtils.isNotEmpty(line)) {
+                return;
+            }
+
+            JSONObject payload = new JSONObject();
+
             BuildData buildData = new BuildData(this.run, null);
             payload.put("ddtags", String.join(",", TagsUtil.convertTagsToArray(buildData.getTags())));
             payload = buildData.addLogAttributes(payload);
@@ -84,7 +82,7 @@ public class DatadogWriter {
                 // we try again in case a connection has to be re-established.
                 client.sendLogs(payload.toString());
             }
-        } catch (IOException | InterruptedException e){
+        } catch (Exception e){
             DatadogUtilities.severe(logger, e, null);
         }
     }
