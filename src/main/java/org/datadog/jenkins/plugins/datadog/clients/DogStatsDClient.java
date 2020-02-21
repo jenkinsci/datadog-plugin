@@ -55,7 +55,7 @@ public class DogStatsDClient implements DatadogClient {
     private Logger ddLogger;
     private String previousPayload;
 
-    private String hostname;
+    private String hostname = null;
     private Integer port = null;
     private Integer logCollectionPort = null;
     private boolean isStopped = true;
@@ -100,7 +100,7 @@ public class DogStatsDClient implements DatadogClient {
             ((DogStatsDClient)instance).reinitialize(true);
         }
         if(!hostname.equals(((DogStatsDClient)instance).getHostname()) ||
-                !logCollectionPort.equals(((DogStatsDClient) instance).getLogCollectionPort())) {
+                ((DogStatsDClient)instance).getLogCollectionPort() != logCollectionPort) {
             instance.setLogCollectionPort(logCollectionPort);
             ((DogStatsDClient)instance).reinitializeLogger(true);
         }
@@ -330,17 +330,17 @@ public class DogStatsDClient implements DatadogClient {
                 return false;
             }
         }
+        // Check if we have handlers in our logger. This may happen when ddLogger initialization fails
+        // ddLogger may not be null but may be mis-configured.
+        // Reset to null to reinitialize if needed.
+        if(this.ddLogger.getHandlers().length == 0){
+            this.ddLogger = null;
+            return false;
+        }
 
         try {
             this.ddLogger.info(payload);
 
-            // Check if we have handlers in our logger. This may happen when ddLogger initialization fails
-            // ddLogger may not be null but may be mis-configured.
-            // Reset to null to reinitialize if needed.
-            if(this.ddLogger.getHandlers().length == 0){
-                this.ddLogger = null;
-                return false;
-            }
             // We check for errors in our custom errorManager
             Handler handler = this.ddLogger.getHandlers()[0];
             DatadogErrorManager errorManager = (DatadogErrorManager)handler.getErrorManager();
