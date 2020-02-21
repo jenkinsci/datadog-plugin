@@ -79,7 +79,7 @@ public class DogStatsDClient implements DatadogClient {
                 logger.severe("Datadog Target Port is not set properly");
                 return null;
             }
-            if (logCollectionPort == null) {
+            if (isCollectBuildLogEnabled() && logCollectionPort == null) {
                 logger.warning("Datadog Log Collection Port is not set properly");
             }
         }
@@ -146,7 +146,7 @@ public class DogStatsDClient implements DatadogClient {
         if(this.ddLogger != null && !force){
             return true;
         }
-        if(this.logCollectionPort == null){
+        if(!isCollectBuildLogEnabled() || this.logCollectionPort == null){
             return false;
         }
         try {
@@ -324,7 +324,7 @@ public class DogStatsDClient implements DatadogClient {
     public boolean sendLogs(String payload) {
         if(logCollectionPort == null){
             logger.severe("Datadog Log Collection Port is not set properly");
-            throw new RuntimeException("Datadog Log Collection Port not set properly");
+            return false;
         }
 
         if(this.ddLogger == null) {
@@ -365,6 +365,11 @@ public class DogStatsDClient implements DatadogClient {
             return false;
         }
         return true;
+    }
+
+    private static boolean isCollectBuildLogEnabled(){
+        return DatadogUtilities.getDatadogGlobalDescriptor() != null &&
+                DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs();
     }
 
 }
