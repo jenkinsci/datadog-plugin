@@ -76,8 +76,9 @@ public class DatadogComputerPublisher extends PeriodicWork {
             if(jenkins != null){
                 computers = jenkins.getComputers();
             }
-            final Map<String, Set<String>> globalTags = DatadogUtilities.getTagsFromGlobalTags();
-            String jenkinsUrl = DatadogUtilities.getJenkinsUrl();
+            Map<String, Set<String>> globalTags = DatadogUtilities.getTagsFromGlobalTags();
+            // Add JenkinsUrl Tag
+            globalTags = TagsUtil.addTagToTags(globalTags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
             for (Computer computer : computers) {
                 nodeCount++;
                 if (computer.isOffline()) {
@@ -93,9 +94,7 @@ public class DatadogComputerPublisher extends PeriodicWork {
 
                 Map<String, Set<String>> tags = TagsUtil.merge(
                         DatadogUtilities.getComputerTags(computer), globalTags);
-                // Add JenkinsUrl Tag
-                tags = TagsUtil.addTagToTags(tags, "jenkins_url", jenkinsUrl);
-
+                
                 client.gauge("jenkins.executor.count", executorCount, hostname, tags);
                 client.gauge("jenkins.executor.in_use", inUse, hostname, tags);
                 client.gauge("jenkins.executor.free", free, hostname, tags);
