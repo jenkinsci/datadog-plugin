@@ -64,6 +64,10 @@ public class DatadogJenkinsPublisher extends PeriodicWork {
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
             String hostname = DatadogUtilities.getHostname(null);
+            if(client == null){
+                return;
+            }
+
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
             // Add JenkinsUrl Tag
             tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
@@ -84,7 +88,7 @@ public class DatadogJenkinsPublisher extends PeriodicWork {
             client.gauge("jenkins.plugin.count", pluginCount, hostname, tags);
 
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
 
     }

@@ -165,7 +165,7 @@ public class DatadogJobProperty<T extends Job<?, ?>> extends JobProperty<T> {
                 }
             }
         } catch (IOException | InterruptedException | NullPointerException e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
         return s;
     }

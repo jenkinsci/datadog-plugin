@@ -32,12 +32,13 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 
 public class ClientFactory {
 
-    public static DatadogClient getClient(DatadogClient.ClientType type, String apiUrl, Secret apiKey, String host, Integer port){
+    public static DatadogClient getClient(DatadogClient.ClientType type, String apiUrl, String logIntakeUrl,
+                                          Secret apiKey, String host, Integer port, Integer logCollectionPort){
         switch(type){
             case HTTP:
-                return DatadogHttpClient.getInstance(apiUrl, apiKey);
+                return DatadogHttpClient.getInstance(apiUrl, logIntakeUrl, apiKey);
             case DSD:
-                return DogStatsDClient.getInstance(host, port);
+                return DogStatsDClient.getInstance(host, port, logCollectionPort);
             default:
                 return null;
         }
@@ -47,17 +48,21 @@ public class ClientFactory {
         DatadogGlobalConfiguration descriptor = DatadogUtilities.getDatadogGlobalDescriptor();
         String reportWith = null;
         String targetApiURL = null;
+        String targetLogIntakeURL = null;
         Secret targetApiKey = null;
         String targetHost = null;
         Integer targetPort = null;
+        Integer targetLogCollectionPort = null;
         if(descriptor != null){
             reportWith = descriptor.getReportWith();
             targetApiURL = descriptor.getTargetApiURL();
+            targetLogIntakeURL = descriptor.getTargetLogIntakeURL();
             targetApiKey = descriptor.getTargetApiKey();
             targetHost = descriptor.getTargetHost();
             targetPort = descriptor.getTargetPort();
+            targetLogCollectionPort = descriptor.getTargetLogCollectionPort();
         }
-        return ClientFactory.getClient(DatadogClient.ClientType.valueOf(reportWith),
-                targetApiURL, targetApiKey, targetHost, targetPort);
+        return ClientFactory.getClient(DatadogClient.ClientType.valueOf(reportWith), targetApiURL, targetLogIntakeURL,
+                targetApiKey, targetHost, targetPort, targetLogCollectionPort);
     }
 }

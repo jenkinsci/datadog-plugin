@@ -81,6 +81,9 @@ public class DatadogSCMListener extends SCMListener {
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
+            if(client == null){
+                return;
+            }
 
             // Collect Build Data
             BuildData buildData;
@@ -102,7 +105,7 @@ public class DatadogSCMListener extends SCMListener {
 
             logger.fine("End DatadogSCMListener#onCheckout");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
     }
 

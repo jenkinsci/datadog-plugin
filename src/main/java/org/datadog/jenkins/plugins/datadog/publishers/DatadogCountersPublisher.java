@@ -56,9 +56,13 @@ public class DatadogCountersPublisher extends AsyncPeriodicWork {
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
+            if(client == null){
+                return;
+            }
+
             client.flushCounters();
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
     }
 }

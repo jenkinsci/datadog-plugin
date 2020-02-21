@@ -40,7 +40,7 @@ public class DatadogClientTest {
     @Test
     public void testIncrementCountAndFlush() throws IOException, InterruptedException {
         DatadogHttpClient.enableValidations = false;
-        DatadogClient client = DatadogHttpClient.getInstance("test", null);
+        DatadogClient client = DatadogHttpClient.getInstance("test", null, null);
         Map<String, Set<String>> tags1 = new HashMap<>();
         tags1 = DatadogClientStub.addTagToMap(tags1, "tag1", "value");
         tags1 = DatadogClientStub.addTagToMap(tags1, "tag2", "value");
@@ -101,7 +101,7 @@ public class DatadogClientTest {
             public void run() {
                 // We use a new instance of a client on every run.
                 DatadogHttpClient.enableValidations = false;
-                DatadogClient client = DatadogHttpClient.getInstance("test", null);
+                DatadogClient client = DatadogHttpClient.getInstance("test", null, null);
                 Map<String, Set<String>> tags = new HashMap<>();
                 tags = DatadogClientStub.addTagToMap(tags, "tag1", "value");
                 tags = DatadogClientStub.addTagToMap(tags, "tag2", "value");
@@ -130,7 +130,7 @@ public class DatadogClientTest {
             public void run() {
                 // We use a new instance of a client on every run.
                 DatadogHttpClient.enableValidations = false;
-                DatadogClient client = DatadogHttpClient.getInstance("test", null);
+                DatadogClient client = DatadogHttpClient.getInstance("test", null, null);
                 Map<String, Set<String>> tags = new HashMap<>();
                 tags = DatadogClientStub.addTagToMap(tags, "tag1", "value");
                 tags = DatadogClientStub.addTagToMap(tags, "tag2", "value");
@@ -170,7 +170,7 @@ public class DatadogClientTest {
         ExecutorService executor = Executors.newFixedThreadPool(2);
         // We only have one instance of the client used by all threads
         DatadogHttpClient.enableValidations = false;
-        final DatadogClient client = DatadogHttpClient.getInstance("test", null);
+        final DatadogClient client = DatadogHttpClient.getInstance("test", null, null);
         Runnable increment = new Runnable() {
             @Override
             public void run() {

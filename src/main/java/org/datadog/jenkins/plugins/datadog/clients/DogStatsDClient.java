@@ -33,11 +33,10 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
-import javax.servlet.ServletException;
-import java.io.IOException;
+import java.io.*;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
+import java.util.logging.*;
 
 /**
  * This class is used to collect all methods that has to do with transmitting
@@ -46,14 +45,19 @@ import java.util.logging.Logger;
 public class DogStatsDClient implements DatadogClient {
 
     private static DatadogClient instance;
-    private static final Logger logger = Logger.getLogger(DatadogHttpClient.class.getName());
+
+    private static final Logger logger = Logger.getLogger(DogStatsDClient.class.getName());
 
     @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL")
     public static boolean enableValidations = true;
 
     private StatsDClient statsd;
+    private Logger ddLogger;
+    private String previousPayload;
+
     private String hostname;
-    private int port = -1;
+    private Integer port = null;
+    private Integer logCollectionPort = null;
     private boolean isStopped = true;
 
     /**
@@ -61,21 +65,29 @@ public class DogStatsDClient implements DatadogClient {
      * This method is not recommended to be used because it misses some validations.
      * @param hostname - target hostname
      * @param port - target port
+     * @param logCollectionPort - target log collection port
      * @return an singleton instance of the DogStatsDClient.
      */
     @SuppressFBWarnings(value="DC_DOUBLECHECK")
-    public static DatadogClient getInstance(String hostname, int port){
+    public static DatadogClient getInstance(String hostname, Integer port, Integer logCollectionPort){
         if(enableValidations){
             if (hostname == null || hostname.isEmpty()) {
                 logger.severe("Datadog Target URL is not set properly");
-                throw new RuntimeException("Datadog Target URL is not set properly");
+                return null;
+            }
+            if (port == null) {
+                logger.severe("Datadog Target Port is not set properly");
+                return null;
+            }
+            if (logCollectionPort == null) {
+                logger.warning("Datadog Log Collection Port is not set properly");
             }
         }
 
         if(instance == null){
             synchronized (DatadogHttpClient.class) {
                 if(instance == null){
-                    instance = new DogStatsDClient( hostname, port);
+                    instance = new DogStatsDClient(hostname, port, logCollectionPort);
                 }
             }
         }
@@ -87,18 +99,25 @@ public class DogStatsDClient implements DatadogClient {
             instance.setPort(port);
             ((DogStatsDClient)instance).reinitialize(true);
         }
+        if(!hostname.equals(((DogStatsDClient)instance).getHostname()) ||
+                !logCollectionPort.equals(((DogStatsDClient) instance).getLogCollectionPort())) {
+            instance.setLogCollectionPort(logCollectionPort);
+            ((DogStatsDClient)instance).reinitializeLogger(true);
+        }
         return instance;
     }
 
-    private DogStatsDClient(String hostname, Integer port) {
+    private DogStatsDClient(String hostname, Integer port, Integer logCollectionPort) {
         this.hostname = hostname;
         this.port = port;
+        this.logCollectionPort = logCollectionPort;
 
         reinitialize(true);
+        reinitializeLogger(true);
     }
 
     /**
-     * reinitialize the dogStasDClient
+     * reinitialize the dogStatsD Client
      * @param force - force to reinitialize
      * @return true if reinitialized properly otherwise false
      */
@@ -108,14 +127,44 @@ public class DogStatsDClient implements DatadogClient {
                 return true;
             }
             this.stop();
-            logger.severe("Re/Initialize DogStatsD Client: hostname: " + this.hostname + " port = " + this.port);
+            logger.info("Re/Initialize DogStatsD Client: hostname = " + this.hostname + ", port = " + this.port);
             this.statsd = new NonBlockingStatsDClient(null, this.hostname, this.port);
             this.isStopped = false;
         } catch (Exception e){
-            DatadogUtilities.severe(logger, e, "Failed to reinitialize DogStatsD Client: ");
+            DatadogUtilities.severe(logger, e, "Failed to reinitialize DogStatsD Client");
             this.stop();
         }
         return !isStopped;
+    }
+
+    /**
+     * reinitialize the Logger Client
+     * @param force - force to reinitialize
+     * @return true if reinitialized properly otherwise false
+     */
+    private boolean reinitializeLogger(boolean force) {
+        if(this.ddLogger != null && !force){
+            return true;
+        }
+        try {
+            logger.info("Re/Initialize Datadog-Plugin Logger: hostname = " + this.hostname + ", logCollectionPort = " + this.logCollectionPort);
+            this.ddLogger = Logger.getLogger("Datadog-Plugin Logger");
+            this.ddLogger.setUseParentHandlers(false);
+            //Remove all existing Handlers
+            Handler[] handlers = this.ddLogger.getHandlers();
+            for(Handler h : handlers){
+                this.ddLogger.removeHandler(h);
+            }
+            //Add New Handler
+            SocketHandler socketHandler = new SocketHandler(hostname, logCollectionPort);
+            socketHandler.setFormatter(new DatadogFormatter());
+            socketHandler.setErrorManager(new DatadogErrorManager());
+            this.ddLogger.addHandler(socketHandler);
+        } catch (Exception e){
+            DatadogUtilities.severe(logger, e, "Failed to reinitialize Datadog-Plugin Logger");
+            return false;
+        }
+        return true;
     }
 
     private boolean stop(){
@@ -123,7 +172,7 @@ public class DogStatsDClient implements DatadogClient {
             try{
                 this.statsd.stop();
             }catch(Exception e){
-                DatadogUtilities.severe(logger, e, "Failed to stop DogStatsD Client: ");
+                DatadogUtilities.severe(logger, e, "Failed to stop DogStatsD Client");
                 return false;
             }
             this.statsd = null;
@@ -150,13 +199,47 @@ public class DogStatsDClient implements DatadogClient {
         this.port = port;
     }
 
+    public Integer getLogCollectionPort() {
+        return logCollectionPort;
+    }
+
+    @Override
+    public void setLogCollectionPort(Integer logCollectionPort) {
+        this.logCollectionPort = logCollectionPort;
+    }
+
     @Override
     public void setUrl(String url) {
         // noop
     }
 
     @Override
+    public void setLogIntakeUrl(String logIntakeUrl) {
+        // noop
+    }
+
+    @Override
     public void setApiKey(Secret apiKey){
+        // noop
+    }
+
+    @Override
+    public boolean isDefaultIntakeConnectionBroken() {
+        return false;
+    }
+
+    @Override
+    public void setDefaultIntakeConnectionBroken(boolean defaultIntakeConnectionBroken) {
+        // noop
+    }
+
+    @Override
+    public boolean isLogIntakeConnectionBroken() {
+        return false;
+    }
+
+    @Override
+    public void setLogIntakeConnectionBroken(boolean logIntakeConnectionBroken) {
         // noop
     }
 
@@ -177,7 +260,7 @@ public class DogStatsDClient implements DatadogClient {
             this.statsd.recordEvent(ev, TagsUtil.convertTagsToArray(event.getTags()));
             return true;
         } catch(Exception e){
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
             reinitialize(true);
             return false;
         }
@@ -190,7 +273,7 @@ public class DogStatsDClient implements DatadogClient {
             logger.fine("increment counter with dogStatD client");
             this.statsd.incrementCounter(name, TagsUtil.convertTagsToArray(tags));
         } catch(Exception e){
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
             reinitialize(true);
         }
     }
@@ -208,7 +291,7 @@ public class DogStatsDClient implements DatadogClient {
             this.statsd.gauge(name, value, TagsUtil.convertTagsToArray(tags));
             return true;
         } catch(Exception e){
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
             reinitialize(true);
             return false;
         }
@@ -228,14 +311,49 @@ public class DogStatsDClient implements DatadogClient {
             this.statsd.serviceCheck(sc);
             return true;
         } catch(Exception e){
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
             reinitialize(true);
             return false;
         }
     }
 
     @Override
-    public boolean validate() throws IOException, ServletException {
+    public boolean sendLogs(String payload) {
+        if(logCollectionPort == null){
+            logger.severe("Datadog Log Collection Port is not set properly");
+            throw new RuntimeException("Datadog Log Collection Port not set properly");
+        }
+
+        if(this.ddLogger == null) {
+            boolean status = reinitializeLogger(true);
+            if(!status) {
+                return false;
+            }
+        }
+
+        try {
+            this.ddLogger.info(payload);
+
+            // We check for errors in our custom errorManager
+            Handler handler = this.ddLogger.getHandlers()[0];
+            DatadogErrorManager errorManager = (DatadogErrorManager)handler.getErrorManager();
+            if(errorManager.hadReportedIssue()){
+                reinitializeLogger(true);
+                // NOTE: After a socket timeout, the first message to be sent get lost, it is only the second message
+                // that gets reported as an error in the errorManager.
+                // For this reason, we always keep the previousPayload in order to resubmit it.
+                this.ddLogger.info(previousPayload);
+                previousPayload = payload;
+                // we return false so that we retry to send the current payload message that still didn't get submitted.
+                return false;
+            }
+            previousPayload = payload;
+        }catch(Exception e){
+            DatadogUtilities.severe(logger, e, null);
+            reinitialize(true);
+            previousPayload = payload;
+            return false;
+        }
         return true;
     }
 

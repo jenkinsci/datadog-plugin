@@ -64,6 +64,9 @@ public class DatadogComputerPublisher extends PeriodicWork {
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
             String hostname = DatadogUtilities.getHostname(null);
+            if(client == null){
+                return;
+            }
 
             long nodeCount = 0;
             long nodeOffline = 0;
@@ -91,7 +94,7 @@ public class DatadogComputerPublisher extends PeriodicWork {
                 Map<String, Set<String>> tags = TagsUtil.merge(
                         DatadogUtilities.getComputerTags(computer), globalTags);
                 // Add JenkinsUrl Tag
-                tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
+                tags = TagsUtil.addTagToTags(tags, "jenkins_url", jenkinsUrl);
 
                 client.gauge("jenkins.executor.count", executorCount, hostname, tags);
                 client.gauge("jenkins.executor.in_use", inUse, hostname, tags);
@@ -102,7 +105,7 @@ public class DatadogComputerPublisher extends PeriodicWork {
             client.gauge("jenkins.node.online", nodeOnline, hostname, globalTags);
 
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "An unexpected error occurred: ");
+            DatadogUtilities.severe(logger, e, null);
         }
 
     }
