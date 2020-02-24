@@ -99,8 +99,9 @@ public interface DatadogClient {
      * @param name     - metric name
      * @param hostname - metric hostname
      * @param tags     - metric tags
+     * @return a boolean to signify the success or failure of increment submission.
      */
-    public void incrementCounter(String name, String hostname, Map<String, Set<String>> tags);
+    public boolean incrementCounter(String name, String hostname, Map<String, Set<String>> tags);
 
     /**
      * Submit all your counters as rate with 10 seconds intervals.

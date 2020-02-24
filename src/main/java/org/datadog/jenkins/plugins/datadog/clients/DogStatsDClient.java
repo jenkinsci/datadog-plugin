@@ -34,6 +34,8 @@ import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 import java.io.*;
+import java.net.ConnectException;
+import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.*;
@@ -55,7 +57,7 @@ public class DogStatsDClient implements DatadogClient {
     private Logger ddLogger;
     private String previousPayload;
 
-    private String hostname;
+    private String hostname = null;
     private Integer port = null;
     private Integer logCollectionPort = null;
     private boolean isStopped = true;
@@ -68,7 +70,7 @@ public class DogStatsDClient implements DatadogClient {
      * @param logCollectionPort - target log collection port
      * @return an singleton instance of the DogStatsDClient.
      */
-    @SuppressFBWarnings(value="DC_DOUBLECHECK")
+    @SuppressFBWarnings(value={"DC_DOUBLECHECK", "RC_REF_COMPARISON"})
     public static DatadogClient getInstance(String hostname, Integer port, Integer logCollectionPort){
         if(enableValidations){
             if (hostname == null || hostname.isEmpty()) {
@@ -79,7 +81,7 @@ public class DogStatsDClient implements DatadogClient {
                 logger.severe("Datadog Target Port is not set properly");
                 return null;
             }
-            if (logCollectionPort == null) {
+            if (isCollectBuildLogEnabled() && logCollectionPort == null) {
                 logger.warning("Datadog Log Collection Port is not set properly");
             }
         }
@@ -100,7 +102,7 @@ public class DogStatsDClient implements DatadogClient {
             ((DogStatsDClient)instance).reinitialize(true);
         }
         if(!hostname.equals(((DogStatsDClient)instance).getHostname()) ||
-                !logCollectionPort.equals(((DogStatsDClient) instance).getLogCollectionPort())) {
+                ((DogStatsDClient)instance).getLogCollectionPort() != logCollectionPort) {
             instance.setLogCollectionPort(logCollectionPort);
             ((DogStatsDClient)instance).reinitializeLogger(true);
         }
@@ -146,6 +148,9 @@ public class DogStatsDClient implements DatadogClient {
         if(this.ddLogger != null && !force){
             return true;
         }
+        if(!isCollectBuildLogEnabled() || this.logCollectionPort == null){
+            return false;
+        }
         try {
             logger.info("Re/Initialize Datadog-Plugin Logger: hostname = " + this.hostname + ", logCollectionPort = " + this.logCollectionPort);
             this.ddLogger = Logger.getLogger("Datadog-Plugin Logger");
@@ -156,12 +161,18 @@ public class DogStatsDClient implements DatadogClient {
                 this.ddLogger.removeHandler(h);
             }
             //Add New Handler
-            SocketHandler socketHandler = new SocketHandler(hostname, logCollectionPort);
+            SocketHandler socketHandler = new SocketHandler(this.hostname, this.logCollectionPort);
             socketHandler.setFormatter(new DatadogFormatter());
             socketHandler.setErrorManager(new DatadogErrorManager());
             this.ddLogger.addHandler(socketHandler);
         } catch (Exception e){
-            DatadogUtilities.severe(logger, e, "Failed to reinitialize Datadog-Plugin Logger");
+            if(e instanceof UnknownHostException){
+                DatadogUtilities.severe(logger, e, "Failed to reinitialize Datadog-Plugin Logger, Unknown Host " + this.hostname);
+            }else if(e instanceof ConnectException){
+                DatadogUtilities.severe(logger, e, "Failed to reinitialize Datadog-Plugin Logger, Connection exception. This may be because your port is incorrect " + this.logCollectionPort);
+            }else{
+                DatadogUtilities.severe(logger, e, "Failed to reinitialize Datadog-Plugin Logger");
+            }
             return false;
         }
         return true;
@@ -246,7 +257,10 @@ public class DogStatsDClient implements DatadogClient {
     @Override
     public boolean event(DatadogEvent event) {
         try {
-            reinitialize(false);
+            boolean status = reinitialize(false);
+            if(!status){
+                return false;
+            }
             logger.fine("Sending event");
             Event ev = Event.builder()
                     .withTitle(event.getTitle())
@@ -267,14 +281,19 @@ public class DogStatsDClient implements DatadogClient {
     }
 
     @Override
-    public void incrementCounter(String name, String hostname, Map<String, Set<String>> tags) {
+    public boolean incrementCounter(String name, String hostname, Map<String, Set<String>> tags) {
         try {
-            reinitialize(false);
+            boolean status = reinitialize(false);
+            if(!status){
+                return false;
+            }
             logger.fine("increment counter with dogStatD client");
             this.statsd.incrementCounter(name, TagsUtil.convertTagsToArray(tags));
+            return true;
         } catch(Exception e){
             DatadogUtilities.severe(logger, e, null);
             reinitialize(true);
+            return false;
         }
     }
 
@@ -286,7 +305,10 @@ public class DogStatsDClient implements DatadogClient {
     @Override
     public boolean gauge(String name, long value, String hostname, Map<String, Set<String>> tags) {
         try {
-            reinitialize(false);
+            boolean status = reinitialize(false);
+            if(!status){
+                return false;
+            }
             logger.fine("Submit gauge with dogStatD client");
             this.statsd.gauge(name, value, TagsUtil.convertTagsToArray(tags));
             return true;
@@ -300,7 +322,10 @@ public class DogStatsDClient implements DatadogClient {
     @Override
     public boolean serviceCheck(String name, Status status, String hostname, Map<String, Set<String>> tags) {
         try {
-            reinitialize(false);
+            boolean initStatus = reinitialize(false);
+            if(!initStatus){
+                return false;
+            }
             logger.fine(String.format("Sending service check '%s' with status %s", name, status));
 
             ServiceCheck sc = ServiceCheck.builder()
@@ -321,7 +346,7 @@ public class DogStatsDClient implements DatadogClient {
     public boolean sendLogs(String payload) {
         if(logCollectionPort == null){
             logger.severe("Datadog Log Collection Port is not set properly");
-            throw new RuntimeException("Datadog Log Collection Port not set properly");
+            return false;
         }
 
         if(this.ddLogger == null) {
@@ -329,6 +354,13 @@ public class DogStatsDClient implements DatadogClient {
             if(!status) {
                 return false;
             }
+        }
+        // Check if we have handlers in our logger. This may happen when ddLogger initialization fails
+        // ddLogger may not be null but may be mis-configured.
+        // Reset to null to reinitialize if needed.
+        if(this.ddLogger.getHandlers().length == 0){
+            this.ddLogger = null;
+            return false;
         }
 
         try {
@@ -355,6 +387,11 @@ public class DogStatsDClient implements DatadogClient {
             return false;
         }
         return true;
+    }
+
+    private static boolean isCollectBuildLogEnabled(){
+        return DatadogUtilities.getDatadogGlobalDescriptor() != null &&
+                DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs();
     }
 
 }

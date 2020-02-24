@@ -39,7 +39,7 @@ import java.util.logging.Logger;
 @Extension
 public class DatadogConsoleLogFilter extends ConsoleLogFilter implements Serializable {
 
-    private static final Logger LOGGER = Logger.getLogger(DatadogConsoleLogFilter.class.getName());
+    private static final Logger logger = Logger.getLogger(DatadogConsoleLogFilter.class.getName());
     public transient Run<?, ?> run;
     private static final long serialVersionUID = 1L;
 
@@ -51,21 +51,26 @@ public class DatadogConsoleLogFilter extends ConsoleLogFilter implements Seriali
     }
 
     public OutputStream decorateLogger(Run build, OutputStream outputStream) throws IOException, InterruptedException {
-        if (DatadogUtilities.getDatadogGlobalDescriptor() == null ||
-                !DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs()) {
-            LOGGER.fine("Log Collection disabled");
-            return outputStream;
-        }
+        try {
+            if (DatadogUtilities.getDatadogGlobalDescriptor() == null ||
+                    !DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs()) {
+                logger.fine("Log Collection disabled");
+                return outputStream;
+            }
 
-        if (build != null) {
-            DatadogWriter writer = new DatadogWriter(build, outputStream, build.getCharset());
-            return new DatadogOutputStream(outputStream, writer);
-        } else if (run != null) {
-            DatadogWriter writer = new DatadogWriter(run, outputStream, run.getCharset());
-            return new DatadogOutputStream(outputStream, writer);
-        } else {
-            return outputStream;
+            if (build != null) {
+                DatadogWriter writer = new DatadogWriter(build, outputStream, build.getCharset());
+                return new DatadogOutputStream(outputStream, writer);
+            } else if (run != null) {
+                DatadogWriter writer = new DatadogWriter(run, outputStream, run.getCharset());
+                return new DatadogOutputStream(outputStream, writer);
+            } else {
+                return outputStream;
+            }
+        } catch (Exception e){
+            DatadogUtilities.severe(logger, e, null);
         }
+        return outputStream;
     }
 
     @Override
