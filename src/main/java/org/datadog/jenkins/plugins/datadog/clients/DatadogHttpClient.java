@@ -213,12 +213,13 @@ public class DatadogHttpClient implements DatadogClient {
     }
 
     @Override
-    public void incrementCounter(String name, String hostname, Map<String, Set<String>> tags) {
+    public boolean incrementCounter(String name, String hostname, Map<String, Set<String>> tags) {
         if(this.isDefaultIntakeConnectionBroken()){
             logger.severe("Your client is not initialized properly");
-            return;
+            return false;
         }
         ConcurrentMetricCounters.getInstance().increment(name, hostname, tags);
+        return true;
     }
 
     @Override
@@ -373,7 +374,7 @@ public class DatadogHttpClient implements DatadogClient {
                     logger.severe("Hmmm, your API key may be invalid. We received a 403 error.");
                     DatadogUtilities.severe(logger, e, null);
                 } else {
-                    DatadogUtilities.severe(logger, e, "Client error");
+                    DatadogUtilities.severe(logger, e, "Unknown client error, please check your config");
                 }
             } catch (IOException ex) {
                 DatadogUtilities.severe(logger, e, null);
@@ -462,7 +463,7 @@ public class DatadogHttpClient implements DatadogClient {
                 if (conn != null && conn.getResponseCode() == BAD_REQUEST) {
                     logger.severe("Hmmm, your API key or your Log Intake URL may be invalid. We received a 400 in response.");
                 } else {
-                    DatadogUtilities.severe(logger, e, "Client error");
+                    DatadogUtilities.severe(logger, e, "Unknown client error, please check your config");
                 }
             } catch (IOException ex) {
                 DatadogUtilities.severe(logger, ex, null);
@@ -547,7 +548,7 @@ public class DatadogHttpClient implements DatadogClient {
             if (conn != null && conn.getResponseCode() == HTTP_FORBIDDEN) {
                 logger.severe("Hmmm, your API key may be invalid. We received a 403 error.");
             } else {
-                DatadogUtilities.severe(logger, e, "Client error");
+                DatadogUtilities.severe(logger, e, "Unknown client error, please check your config");
             }
             status = false;
         } finally {

@@ -67,6 +67,7 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
     #    environment:
     #      - DD_API_KEY=$JENKINS_PLUGIN_DATADOG_API_KEY
     #      - DD_LOGS_ENABLED=true
+    #      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true 
     #     ports:
     #       - 8125:8125
     #       - 10518:10518
