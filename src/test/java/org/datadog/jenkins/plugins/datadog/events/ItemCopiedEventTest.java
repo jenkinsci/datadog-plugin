@@ -44,14 +44,17 @@ public class ItemCopiedEventTest {
     public void testWithNothingSet() throws IOException, InterruptedException {
         DatadogEvent event = new ItemCopiedEventImpl(null, null, null);
 
-        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));;
+        String hostname = DatadogUtilities.getHostname(null);
+        Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("unknown"));
         Assert.assertTrue(event.getTags() == null);
         Assert.assertTrue(event.getTitle().equals("User anonymous copied the item unknown from unknown"));
-        Assert.assertTrue(event.getText().contains("User anonymous copied the item unknown from unknown"));
+        Assert.assertTrue(event.getText(), event.getText().contains("User anonymous copied the item unknown from unknown"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
     }
 
     @Test
@@ -63,14 +66,17 @@ public class ItemCopiedEventTest {
 
         DatadogEvent event = new ItemCopiedEventImpl(src, item, new HashMap<String, Set<String>>());
 
-        Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
+        String hostname = DatadogUtilities.getHostname(null);
+        Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("itemname"));
         Assert.assertTrue(event.getTags() != null);
         Assert.assertTrue(event.getTitle().equals("User anonymous copied the item itemname from srcname"));
-        Assert.assertTrue(event.getText().contains("User anonymous copied the item itemname from srcname"));
+        Assert.assertTrue(event.getText(), event.getText().contains("User anonymous copied the item itemname from srcname"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
 
     }
 }

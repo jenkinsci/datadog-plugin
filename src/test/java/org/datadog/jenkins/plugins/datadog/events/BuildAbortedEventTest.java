@@ -57,19 +57,25 @@ public class BuildAbortedEventTest {
         Run run = new BuildStub(job, null, null, null, 0L, 0, null, 0L, null);
 
         TaskListener listener = mock(TaskListener.class);
-        BuildData bd = new BuildData(run, listener);
-        DatadogEvent event = new BuildAbortedEventImpl(bd);
 
         String hostname = DatadogUtilities.getHostname(null);
+        BuildData bd = new BuildData(run, listener);
+        bd.setHostname(hostname);
+        DatadogEvent event = new BuildAbortedEventImpl(bd);
+
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("unknown"));
-        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().size() == 3);
         Assert.assertTrue(event.getTags().get("job").contains("unknown"));
+        Assert.assertTrue(event.getTags().get("user_id").contains("anonymous"));
+        Assert.assertTrue(event.getTags().get("jenkins_url").contains("unknown"));
         Assert.assertTrue(event.getTitle().equals("Job unknown build #0 aborted on " + hostname));
         Assert.assertTrue(event.getText(), event.getText().contains("User anonymous aborted the [job unknown build #0](unknown) (0.00 secs)"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.LOW));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
     }
 
     @Test
@@ -83,19 +89,25 @@ public class BuildAbortedEventTest {
 
 
         TaskListener listener = mock(TaskListener.class);
-        BuildData bd = new BuildData(run, listener);
-        DatadogEvent event = new BuildAbortedEventImpl(bd);
 
         String hostname = DatadogUtilities.getHostname(null);
+        BuildData bd = new BuildData(run, listener);
+        bd.setHostname(hostname);
+        DatadogEvent event = new BuildAbortedEventImpl(bd);
+
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("parentFullName/null"));
-        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().size() == 3);
         Assert.assertTrue(event.getTags().get("job").contains("parentFullName/null"));
+        Assert.assertTrue(event.getTags().get("user_id").contains("anonymous"));
+        Assert.assertTrue(event.getTags().get("jenkins_url").contains("unknown"));
         Assert.assertTrue(event.getTitle().equals("Job parentFullName/null build #0 aborted on " + hostname));
         Assert.assertTrue(event.getText(), event.getText().contains("User anonymous aborted the [job parentFullName/null build #0](unknown) (0.00 secs)"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.LOW));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
     }
 
     @Test
@@ -108,19 +120,25 @@ public class BuildAbortedEventTest {
         Run run = new BuildStub(job, null, null, null, 0L, 0, null, 0L, null);
 
         TaskListener listener = mock(TaskListener.class);
-        BuildData bd = new BuildData(run, listener);
-        DatadogEvent event = new BuildAbortedEventImpl(bd);
 
         String hostname = DatadogUtilities.getHostname(null);
+        BuildData bd = new BuildData(run, listener);
+        bd.setHostname(hostname);
+        DatadogEvent event = new BuildAbortedEventImpl(bd);
+
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("parent/FullName/null"));
-        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().size() == 3);
         Assert.assertTrue(event.getTags().get("job").contains("parent/FullName/null"));
+        Assert.assertTrue(event.getTags().get("user_id").contains("anonymous"));
+        Assert.assertTrue(event.getTags().get("jenkins_url").contains("unknown"));
         Assert.assertTrue(event.getTitle().equals("Job parent/FullName/null build #0 aborted on " + hostname));
         Assert.assertTrue(event.getText(), event.getText().contains("User anonymous aborted the [job parent/FullName/null build #0](unknown) (0.00 secs)"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.LOW));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
     }
 
     @Test
@@ -133,19 +151,25 @@ public class BuildAbortedEventTest {
         Run run = new BuildStub(job, null, null, null, 0L, 0, null, 0L, null);
 
         TaskListener listener = mock(TaskListener.class);
-        BuildData bd = new BuildData(run, listener);
-        DatadogEvent event = new BuildAbortedEventImpl(bd);
 
         String hostname = DatadogUtilities.getHostname(null);
+        BuildData bd = new BuildData(run, listener);
+        bd.setHostname(hostname);
+        DatadogEvent event = new BuildAbortedEventImpl(bd);
+
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey(), event.getAggregationKey().equals("parentFullName/jobName"));
-        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().size() == 3);
         Assert.assertTrue(event.getTags().get("job").contains("parentFullName/jobName"));
+        Assert.assertTrue(event.getTags().get("user_id").contains("anonymous"));
+        Assert.assertTrue(event.getTags().get("jenkins_url").contains("unknown"));
         Assert.assertTrue(event.getTitle().equals("Job parentFullName/jobName build #0 aborted on " + hostname));
         Assert.assertTrue(event.getText(), event.getText().contains("User anonymous aborted the [job parentFullName/jobName build #0](unknown) (0.00 secs)"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.LOW));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
     }
 
     @Test
@@ -158,20 +182,25 @@ public class BuildAbortedEventTest {
         Run run = new BuildStub(job, Result.FAILURE, null, null, 0L, 0, null, 0L, null);
 
         TaskListener listener = mock(TaskListener.class);
+        String hostname = DatadogUtilities.getHostname(null);
         BuildData bd = new BuildData(run, listener);
+        bd.setHostname(hostname);
         DatadogEvent event = new BuildAbortedEventImpl(bd);
 
-        String hostname = DatadogUtilities.getHostname(null);
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("parentFullName/jobName"));
-        Assert.assertTrue(event.getTags().size() == 2);
+        Assert.assertTrue(event.getTags().size() == 4);
         Assert.assertTrue(event.getTags().get("job").contains("parentFullName/jobName"));
         Assert.assertTrue(event.getTags().get("result").contains("FAILURE"));
+        Assert.assertTrue(event.getTags().get("user_id").contains("anonymous"));
+        Assert.assertTrue(event.getTags().get("jenkins_url").contains("unknown"));
         Assert.assertTrue(event.getTitle().equals("Job parentFullName/jobName build #0 aborted on " + hostname));
         Assert.assertTrue(event.getText(), event.getText().contains("User anonymous aborted the [job parentFullName/jobName build #0](unknown) (0.00 secs)"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.LOW));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
     }
 
     @Test
@@ -192,19 +221,25 @@ public class BuildAbortedEventTest {
         TaskListener listener = mock(TaskListener.class);
 
         BuildData bd = new BuildData(run, listener);
+        bd.setHostname("test-hostname-2");
+        bd.setJenkinsUrl("https://jenkins.com");
         DatadogEvent event = new BuildAbortedEventImpl(bd);
 
         Assert.assertTrue(event.getHost().equals("test-hostname-2"));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("ParentFullName/JobName"));
-        Assert.assertTrue(event.getTags().size() == 3);
+        Assert.assertTrue(event.getTags().size() == 4);
         Assert.assertTrue(event.getTags().get("job").contains("ParentFullName/JobName"));
         Assert.assertTrue(event.getTags().get("node").contains("test-node"));
-        Assert.assertTrue(event.getTags().get("branch").contains("test-branch"));
+        Assert.assertTrue(event.getTags().get("user_id").contains("anonymous"));
+        Assert.assertTrue(event.getTags().get("jenkins_url").contains("https://jenkins.com"));
         Assert.assertTrue(event.getTitle().equals("Job ParentFullName/JobName build #2 aborted on test-hostname-2"));
         Assert.assertTrue(event.getText(), event.getText().contains("User anonymous aborted the [job ParentFullName/JobName build #2](http://build_url.com) (0.01 secs)"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: test-hostname-2, Jenkins URL: [instance](https://jenkins.com)"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.LOW));
+        Assert.assertTrue(event.getJenkinsUrl().equals("https://jenkins.com"));
+
     }
 
     @Test
@@ -217,31 +252,34 @@ public class BuildAbortedEventTest {
         EnvVars envVars = new EnvVars();
         envVars.put("BUILD_URL", "http://build_url.com");
         envVars.put("CVS_BRANCH", "csv-branch");
-        envVars.put("SVN_BRANCH", "svn-branch");
 
         Run run = new BuildStub(job, null, envVars, null, 10L, 2, null, 0L, null);
 
         TaskListener listener = mock(TaskListener.class);
 
+        String hostname = DatadogUtilities.getHostname(null);
         BuildData bd = new BuildData(run, listener);
         Map<String, Set<String>> tags = new HashMap<>();
         tags = DatadogClientStub.addTagToMap(tags, "tag1", "value1");
         tags = DatadogClientStub.addTagToMap(tags, "tag2", "value2");
         bd.setTags(tags);
+        bd.setHostname(hostname);
         DatadogEvent event = new BuildAbortedEventImpl(bd);
 
-        String hostname = DatadogUtilities.getHostname(null);
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("ParentFullName/JobName"));
-        Assert.assertTrue(event.getTags().size() == 4);
+        Assert.assertTrue(event.getTags().size() == 5);
         Assert.assertTrue(event.getTags().get("job").contains("ParentFullName/JobName"));
         Assert.assertTrue(event.getTags().get("tag1").contains("value1"));
         Assert.assertTrue(event.getTags().get("tag2").contains("value2"));
-        Assert.assertTrue(event.getTags().get("branch").contains("csv-branch"));
+        Assert.assertTrue(event.getTags().get("user_id").contains("anonymous"));
+        Assert.assertTrue(event.getTags().get("jenkins_url").contains("unknown"));
         Assert.assertTrue(event.getTitle().equals("Job ParentFullName/JobName build #2 aborted on " + hostname));
         Assert.assertTrue(event.getText(), event.getText().contains("User anonymous aborted the [job ParentFullName/JobName build #2](http://build_url.com) (0.01 secs)"));
+        Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.LOW));
+        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
     }
 }

@@ -35,7 +35,9 @@ import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.events.ItemCRUDEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.ItemCopiedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.ItemLocationChangedEventImpl;
+import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -84,13 +86,16 @@ public class DatadogItemListener extends ItemListener {
 
             // Get the list of global tags to apply
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
+            // Add userId and JenkinsUrl Tags
+            tags = TagsUtil.addTagToTags(tags, "user_id", DatadogUtilities.getUserId());
+            tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
 
             // Send event
             DatadogEvent event = new ItemCRUDEventImpl(item, action, tags);
             client.event(event);
 
             // Submit counter
-            String hostname = DatadogUtilities.getHostname("null");
+            String hostname = DatadogUtilities.getHostname(null);
             client.incrementCounter("jenkins.item." + action.toLowerCase(), hostname, tags);
 
             logger.fine("End DatadogItemListener#on" + action);
@@ -116,13 +121,16 @@ public class DatadogItemListener extends ItemListener {
 
             // Get the list of global tags to apply
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
+            // Add userId and JenkinsUrl Tags
+            tags = TagsUtil.addTagToTags(tags, "user_id", DatadogUtilities.getUserId());
+            tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
 
             // Send event
             DatadogEvent event = new ItemCopiedEventImpl(src, item, tags);
             client.event(event);
 
             // Submit counter
-            String hostname = DatadogUtilities.getHostname("null");
+            String hostname = DatadogUtilities.getHostname(null);
             client.incrementCounter("jenkins.item.copied", hostname, tags);
 
             logger.fine("End DatadogItemListener#onCopied");
@@ -148,13 +156,16 @@ public class DatadogItemListener extends ItemListener {
 
             // Get the list of global tags to apply
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
+            // Add userId and JenkinsUrl Tags
+            tags = TagsUtil.addTagToTags(tags, "user_id", DatadogUtilities.getUserId());
+            tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
 
             // Send event
             DatadogEvent event = new ItemLocationChangedEventImpl(item, oldFullName, newFullName, tags);
             client.event(event);
 
             // Submit counter
-            String hostname = DatadogUtilities.getHostname("null");
+            String hostname = DatadogUtilities.getHostname(null);
             client.incrementCounter("jenkins.item.location_changed", hostname, tags);
 
             logger.fine("End DatadogItemListener#onLocationChanged");

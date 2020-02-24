@@ -51,7 +51,8 @@ public class ItemCRUDEventImpl extends AbstractDatadogSimpleEvent {
         String title = "User " + userId + " " + action.toLowerCase() + " the item " + itemName;
         setTitle(title);
 
-        String text = "%%% \nUser " + userId + " " + action.toLowerCase() + " the item " + itemName + " \n%%%";
+        String text = "%%% \nUser " + userId + " " + action.toLowerCase() + " the item " + itemName +
+                "\n" + super.getLocationDetails() + " \n%%%";
         setText(text);
 
         setPriority(Priority.NORMAL);

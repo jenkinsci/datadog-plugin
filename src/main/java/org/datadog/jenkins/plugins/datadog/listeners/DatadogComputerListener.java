@@ -82,7 +82,7 @@ public class DatadogComputerListener extends ComputerListener {
             client.event(event);
 
             // Submit counter
-            String hostname = DatadogUtilities.getHostname("null");
+            String hostname = DatadogUtilities.getHostname(null);
             client.incrementCounter("jenkins.computer.online", hostname, tags);
 
             logger.fine("End DatadogComputerListener#onOnline");
@@ -116,7 +116,7 @@ public class DatadogComputerListener extends ComputerListener {
             client.event(event);
 
             // Submit counter
-            String hostname = DatadogUtilities.getHostname("null");
+            String hostname = DatadogUtilities.getHostname(null);
             client.incrementCounter("jenkins.computer.offline", hostname, tags);
 
             logger.fine("End DatadogComputerListener#onOffline");
@@ -150,7 +150,7 @@ public class DatadogComputerListener extends ComputerListener {
             client.event(event);
 
             // Submit counter
-            String hostname = DatadogUtilities.getHostname("null");
+            String hostname = DatadogUtilities.getHostname(null);
             client.incrementCounter("jenkins.computer.temporarily_online", hostname, tags);
 
             logger.fine("End DatadogComputerListener#onTemporarilyOnline");
@@ -184,7 +184,7 @@ public class DatadogComputerListener extends ComputerListener {
             client.event(event);
 
             // Submit counter
-            String hostname = DatadogUtilities.getHostname("null");
+            String hostname = DatadogUtilities.getHostname(null);
             client.incrementCounter("jenkins.computer.temporarily_offline", hostname, tags);
 
             logger.fine("End DatadogComputerListener#onTemporarilyOffline");
@@ -218,7 +218,7 @@ public class DatadogComputerListener extends ComputerListener {
             client.event(event);
 
             // Submit counter
-            String hostname = DatadogUtilities.getHostname("null");
+            String hostname = DatadogUtilities.getHostname(null);
             client.incrementCounter("jenkins.computer.launch_failure", hostname, tags);
 
             logger.fine("End DatadogComputerListener#onLaunchFailure");

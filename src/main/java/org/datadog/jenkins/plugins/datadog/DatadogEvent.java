@@ -67,6 +67,8 @@ public interface DatadogEvent {
 
     public String getHost();
 
+    public String getJenkinsUrl();
+
     public Priority getPriority();
 
     public AlertType getAlertType();

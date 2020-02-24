@@ -35,17 +35,20 @@ public class SCMCheckoutCompletedEventImpl extends AbstractDatadogBuildEvent {
         String buildNumber = buildData.getBuildNumber("unknown");
         String jobName = buildData.getJobName("unknown");
         String buildUrl = buildData.getBuildUrl("unknown");
-        String hostname = buildData.getHostname("unknown");
+        String branch = buildData.getBranch("unknown");
+        String nodeName = buildData.getNodeName("unknown");
 
         // Build title
         // eg: `job_name build #1 checkout finished hostname`
-        String title = "Job " + jobName + " build #" + buildNumber + " checkout finished on " + hostname;
+        String title = "Job " + jobName + " build #" + buildNumber + " checkout finished on " + super.getHost();
         setTitle(title);
 
         // Build Text
         // eg: `[Job <jobName> with build number #<buildNumber>] checkout successfully (1sec)`
         String text = "%%% \n[Job " + jobName + " build #" + buildNumber + "](" + buildUrl +
-                ") checkout finished successfully on " + hostname + " " + getFormattedDuration() + " \n%%%";
+                ") checkout (branch: " + branch + " ) finished successfully on host " + super.getHost() +
+                " (node: " + nodeName + " )" + getFormattedDuration() +
+                "\n" + super.getLocationDetails() + " \n%%%";
         setText(text);
 
         setPriority(Priority.LOW);

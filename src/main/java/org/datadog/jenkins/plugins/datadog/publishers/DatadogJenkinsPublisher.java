@@ -32,7 +32,9 @@ import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -61,12 +63,15 @@ public class DatadogJenkinsPublisher extends PeriodicWork {
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
+            String hostname = DatadogUtilities.getHostname(null);
             if(client == null){
                 return;
             }
 
-            String hostname = DatadogUtilities.getHostname("null");
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
+            // Add JenkinsUrl Tag
+            tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
+
             long projectCount = 0;
             try {
                 projectCount = Jenkins.getInstance().getAllItems(Project.class).size();

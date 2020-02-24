@@ -37,17 +37,17 @@ public class BuildFinishedEventImpl extends AbstractDatadogBuildEvent {
         String buildResult = buildData.getResult("UNKNOWN");
         String jobName = buildData.getJobName("unknown");
         String buildUrl = buildData.getBuildUrl("unknown");
-        String hostname = buildData.getHostname("unknown");
 
         // Build title
         // eg: `job_name build #1 success on hostname`
-        String title = "Job " + jobName + " build #" + buildNumber + " " + buildResult.toLowerCase() + " on " + hostname;
+        String title = "Job " + jobName + " build #" + buildNumber + " " + buildResult.toLowerCase() + " on " + super.getHost();
         setTitle(title);
 
         // Build Text
         // eg: `[Job <jobName> with build number #<buildNumber>] finished with status <buildResult> (1sec)`
         String text = "%%% \n[Job " + jobName + " build #" + buildNumber + "](" + buildUrl +
-                ") finished with status " + buildResult.toLowerCase() + " " + getFormattedDuration() + " \n%%%";
+                ") finished with status " + buildResult.toLowerCase() + " " + getFormattedDuration() +
+                "\n" + super.getLocationDetails() + " \n%%%";
         setText(text);
 
         if (Result.SUCCESS.toString().equals(buildResult)) {
