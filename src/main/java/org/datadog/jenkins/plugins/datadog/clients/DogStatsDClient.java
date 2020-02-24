@@ -34,6 +34,8 @@ import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 import java.io.*;
+import java.net.ConnectException;
+import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.*;
@@ -164,7 +166,13 @@ public class DogStatsDClient implements DatadogClient {
             socketHandler.setErrorManager(new DatadogErrorManager());
             this.ddLogger.addHandler(socketHandler);
         } catch (Exception e){
-            DatadogUtilities.severe(logger, e, "Failed to reinitialize Datadog-Plugin Logger");
+            if(e instanceof UnknownHostException){
+                DatadogUtilities.severe(logger, e, "Failed to reinitialize Datadog-Plugin Logger, Unknown Host " + this.hostname);
+            }else if(e instanceof ConnectException){
+                DatadogUtilities.severe(logger, e, "Failed to reinitialize Datadog-Plugin Logger, Connection exception. This may be because your port is incorrect " + this.logCollectionPort);
+            }else{
+                DatadogUtilities.severe(logger, e, "Failed to reinitialize Datadog-Plugin Logger");
+            }
             return false;
         }
         return true;
@@ -249,7 +257,10 @@ public class DogStatsDClient implements DatadogClient {
     @Override
     public boolean event(DatadogEvent event) {
         try {
-            reinitialize(false);
+            boolean status = reinitialize(false);
+            if(!status){
+                return false;
+            }
             logger.fine("Sending event");
             Event ev = Event.builder()
                     .withTitle(event.getTitle())
@@ -270,14 +281,19 @@ public class DogStatsDClient implements DatadogClient {
     }
 
     @Override
-    public void incrementCounter(String name, String hostname, Map<String, Set<String>> tags) {
+    public boolean incrementCounter(String name, String hostname, Map<String, Set<String>> tags) {
         try {
-            reinitialize(false);
+            boolean status = reinitialize(false);
+            if(!status){
+                return false;
+            }
             logger.fine("increment counter with dogStatD client");
             this.statsd.incrementCounter(name, TagsUtil.convertTagsToArray(tags));
+            return true;
         } catch(Exception e){
             DatadogUtilities.severe(logger, e, null);
             reinitialize(true);
+            return false;
         }
     }
 
@@ -289,7 +305,10 @@ public class DogStatsDClient implements DatadogClient {
     @Override
     public boolean gauge(String name, long value, String hostname, Map<String, Set<String>> tags) {
         try {
-            reinitialize(false);
+            boolean status = reinitialize(false);
+            if(!status){
+                return false;
+            }
             logger.fine("Submit gauge with dogStatD client");
             this.statsd.gauge(name, value, TagsUtil.convertTagsToArray(tags));
             return true;
@@ -303,7 +322,10 @@ public class DogStatsDClient implements DatadogClient {
     @Override
     public boolean serviceCheck(String name, Status status, String hostname, Map<String, Set<String>> tags) {
         try {
-            reinitialize(false);
+            boolean initStatus = reinitialize(false);
+            if(!initStatus){
+                return false;
+            }
             logger.fine(String.format("Sending service check '%s' with status %s", name, status));
 
             ServiceCheck sc = ServiceCheck.builder()
