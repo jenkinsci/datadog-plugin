@@ -93,14 +93,10 @@ public class TagsUtil {
         if(tags == null){
             tags = new HashMap<>();
         }
-        Set<String> values;
         if(!tags.containsKey(name)){
-            values = new HashSet<>();
-        }else{
-            values = tags.get(name);
+            tags.put(name, new HashSet<>());
         }
-        values.add(value);
-        tags.put(name, values);
+        tags.get(name).add(value);
         return tags;
     }
 }
