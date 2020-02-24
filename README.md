@@ -221,7 +221,7 @@ This plugin is collecting the following [events](#events), [metrics](#metrics), 
 | `jenkins.queue.pending`                | Number of Pending item in Queue.                               | `jenkins_url`                                             |
 | `jenkins.queue.stuck`                  | Number of Stuck item in Queue.                                 | `jenkins_url`                                             |
 | `jenkins.queue.blocked`                | Number of Blocked item in Queue.                               | `jenkins_url`                                             |
-| `jenkins.scm.checkout`                 | Rate of SCM checkouts.                                         | `jenkins_url`, `branch`, `job`, `node`, `user_id`         |
+| `jenkins.scm.checkout`                 | Rate of SCM checkouts.                                         | `jenkins_url`, `job`, `node`, `user_id`                   |
 | `jenkins.user.access_denied`           | Rate of users failing to authenticate.                         | `jenkins_url`, `user_id`                                  |
 | `jenkins.user.authenticated`           | Rate of users authenticating.                                  | `jenkins_url`, `user_id`                                  |
 | `jenkins.user.logout`                  | Rate of users logging out.                                     | `jenkins_url`, `user_id`                                  |
