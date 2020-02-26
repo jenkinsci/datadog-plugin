@@ -25,9 +25,14 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.listeners;
 
+import datadog.trace.api.DDTags;
+import io.opentracing.util.GlobalTracer;
+import io.opentracing.Tracer;
 import hudson.Extension;
 import hudson.model.*;
 import hudson.model.listeners.RunListener;
+import io.opentracing.Scope;
+import io.opentracing.Span;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
@@ -36,6 +41,7 @@ import org.datadog.jenkins.plugins.datadog.events.BuildAbortedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildFinishedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildStartedEventImpl;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.trace.DatadogTraceCache;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -108,6 +114,9 @@ public class DatadogBuildListener extends RunListener<Run>  {
             // Submit counter
             client.incrementCounter("jenkins.job.started", hostname, tags);
 
+            // Start Tracing
+            startTrace(buildData);
+
             logger.fine("End DatadogBuildListener#onStarted");
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, null);
@@ -124,6 +133,8 @@ public class DatadogBuildListener extends RunListener<Run>  {
 
     @Override
     public void onCompleted(Run run, @Nonnull TaskListener listener) {
+        // Collect Build Data
+        BuildData buildData = null;
         try {
             // Process only if job in NOT in blacklist and is in whitelist
             if (!DatadogUtilities.isJobTracked(run.getParent().getFullName())) {
@@ -138,7 +149,6 @@ public class DatadogBuildListener extends RunListener<Run>  {
             }
 
             // Collect Build Data
-            BuildData buildData;
             try {
                 buildData = new BuildData(run, listener);
             } catch (IOException | InterruptedException e) {
@@ -197,11 +207,14 @@ public class DatadogBuildListener extends RunListener<Run>  {
             logger.fine("End DatadogBuildListener#onCompleted");
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, null);
+        } finally {
+            endTrace(buildData);
         }
     }
 
     @Override
     public void onDeleted(Run run) {
+        BuildData buildData = null;
         try {
             // Process only if job is NOT in blacklist and is in whitelist
             if (!DatadogUtilities.isJobTracked(run.getParent().getFullName())) {
@@ -216,7 +229,6 @@ public class DatadogBuildListener extends RunListener<Run>  {
             }
 
             // Collect Build Data
-            BuildData buildData;
             try {
                 buildData = new BuildData(run, null);
             } catch (IOException | InterruptedException e) {
@@ -238,6 +250,8 @@ public class DatadogBuildListener extends RunListener<Run>  {
             logger.fine("End DatadogBuildListener#onDeleted");
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, null);
+        } finally {
+            endTrace(buildData);
         }
     }
 
@@ -275,6 +289,37 @@ public class DatadogBuildListener extends RunListener<Run>  {
         return 0;
     }
 
+    private void startTrace(BuildData buildData){
+        if(buildData == null){
+            return;
+        }
+        Tracer tracer = GlobalTracer.get();
+        try (Scope scope = tracer.buildSpan("JenkinsBuild").startActive(false)) {
+            final Span span = scope.span();
+            span.setTag(DDTags.SERVICE_NAME, "jenkins");
+            // Add span to cache in order to retrieve it in the endTrace method.
+            DatadogUtilities.severe(logger, null, "startTrace - Cache key: " + buildData.getBuildId(null));
+            DatadogTraceCache.cache.put(buildData.getBuildId(null), span);
+        }
+    }
+
+    private void endTrace(BuildData buildData){
+        if(buildData == null){
+            return;
+        }
+        Tracer tracer = GlobalTracer.get();
+        DatadogUtilities.severe(logger, null, "endTrace - Cache key: " + buildData.getBuildId(null));
+        Span span = DatadogTraceCache.cache.get(buildData.getBuildId(null));
+        if (span != null) {
+            Scope scope = tracer.scopeManager().activate(span, false);
+            span.finish(); // TODO: Should i make this call?
+            scope.close();
+            // Remove span from global cache
+             DatadogTraceCache.cache.remove(buildData.getBuildId(null));
+        } else {
+            //TODO error
+        }
+    }
 
     private boolean isFailedBuild(Run<?, ?> run) {
         return run != null && run.getResult() != Result.SUCCESS;

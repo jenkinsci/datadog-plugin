@@ -25,10 +25,12 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog;
 
+import datadog.opentracing.DDTracer;
 import hudson.Extension;
 import hudson.model.AbstractProject;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
+import io.opentracing.util.GlobalTracer;
 import jenkins.model.GlobalConfiguration;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;

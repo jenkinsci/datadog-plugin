@@ -578,7 +578,7 @@ public class DatadogUtilities {
         if(e != null) {
             StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
-            logger.finer(message + ": " + sw.toString());
+            logger.severe(message + ": " + sw.toString());
         }
     }
 }

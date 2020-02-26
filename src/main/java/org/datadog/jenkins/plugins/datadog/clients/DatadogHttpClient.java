@@ -428,10 +428,6 @@ public class DatadogHttpClient implements DatadogClient {
                     getDatadogPluginVersion(),
                     getJavaRuntimeVersion(),
                     getJenkinsVersion()));
-            DatadogUtilities.severe(logger, null, String.format("Datadog/%s/jenkins Java/%s Jenkins/%s",
-                    getDatadogPluginVersion(),
-                    getJavaRuntimeVersion(),
-                    getJenkinsVersion()));
             conn.setUseCaches(false);
             conn.setDoInput(true);
             conn.setDoOutput(true);

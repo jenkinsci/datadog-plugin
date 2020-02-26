@@ -34,7 +34,6 @@ import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.logging.Logger;
@@ -43,12 +42,10 @@ public class DatadogWriter {
 
     private static final Logger logger = Logger.getLogger(DatadogWriter.class.getName());
 
-    private OutputStream errorStream;
     private Charset charset;
     private Run<?, ?> run;
 
-    public DatadogWriter(Run<?, ?> run, OutputStream error, Charset charset) {
-        this.errorStream = error != null ? error : System.err;
+    public DatadogWriter(Run<?, ?> run, Charset charset) {
         this.charset = charset;
         this.run = run;
     }
@@ -64,7 +61,7 @@ public class DatadogWriter {
             }
 
             JSONObject payload = new JSONObject();
-
+            // TODO - correlate log and trace - https://docs.datadoghq.com/tracing/connect_logs_and_traces/java/?tab=log4j2
             BuildData buildData = new BuildData(this.run, null);
             payload.put("ddtags", String.join(",", TagsUtil.convertTagsToArray(buildData.getTags())));
             payload = buildData.addLogAttributes(payload);

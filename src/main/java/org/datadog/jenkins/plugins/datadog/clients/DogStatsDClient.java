@@ -26,7 +26,9 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.clients;
 
 import com.timgroup.statsd.*;
+import datadog.opentracing.DDTracer;
 import hudson.util.Secret;
+import io.opentracing.util.GlobalTracer;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
@@ -136,6 +138,8 @@ public class DogStatsDClient implements DatadogClient {
             DatadogUtilities.severe(logger, e, "Failed to reinitialize DogStatsD Client");
             this.stop();
         }
+        // Initialize the Tracer
+        initializeTracer();
         return !isStopped;
     }
 
@@ -176,6 +180,16 @@ public class DogStatsDClient implements DatadogClient {
             return false;
         }
         return true;
+    }
+
+    private void initializeTracer() {
+        if (!GlobalTracer.isRegistered()){
+            // Initialize the tracer from environment variables or system properties
+            DDTracer tracer = new DDTracer();
+            GlobalTracer.register(tracer);
+            // register the same tracer with the Datadog API
+            datadog.trace.api.GlobalTracer.registerIfAbsent(tracer);
+        }
     }
 
     private boolean stop(){

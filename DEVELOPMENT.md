@@ -45,12 +45,15 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
         volumes:
           - $JENKINS_PLUGIN/target/:/var/jenkins_home/plugins
     ## Uncomment environment variables based on your needs. Everything can be configured in jenkins /configure page as well. 
-    #      - DATADOG_JENKINS_PLUGIN_REPORT_WITH=DSD
+    #      - DATADOG_JENKINS_PLUGIN_REPORT_WITH=DSD 
     #      - DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS=false
     ## Set `DATADOG_JENKINS_PLUGIN_TARGET_HOST` to `dogstatsd` or `datadog` based on the container you wish to use.
     #      - DATADOG_JENKINS_PLUGIN_TARGET_HOST=dogstatsd
+    ## Set `DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT` to `10518` or `8989` based on the container you wish to use.
     #      - DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT=10518
     #      - DATADOG_JENKINS_PLUGIN_TARGET_API_KEY=$JENKINS_PLUGIN_DATADOG_API_KEY
+    #      - DD_SERVICE_NAME="jenkins"
+    #      - DD_TRACE_AGENT_PORT=8126 # Default
       
     ## Uncomment the section below to use the standalone DogStatsD server to send metrics to Datadog
     #  dogstatsd:
@@ -58,7 +61,7 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
     #    environment:
     #      - DD_API_KEY=$JENKINS_PLUGIN_DATADOG_API_KEY
     #    ports:
-    #      - 8125:8125
+    #      - 8989:8125
     
     ## Uncomment the section below to use the whole Datadog Agent to send metrics (and logs) to Datadog. 
     ## Note that it contains a DogStatsD server as well.
@@ -68,8 +71,11 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
     #      - DD_API_KEY=$JENKINS_PLUGIN_DATADOG_API_KEY
     #      - DD_LOGS_ENABLED=true
     #      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true 
+    #      - DD_APM_ENABLED=true
+    #      - DD_APM_NON_LOCAL_TRAFFIC=true
     #     ports:
     #       - 8125:8125
+    #       - 8126:8126
     #       - 10518:10518
     #    volumes:
     #      - /var/run/docker.sock:/var/run/docker.sock:ro
