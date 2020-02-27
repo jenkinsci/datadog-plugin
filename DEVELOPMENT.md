@@ -53,6 +53,7 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
     #      - DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT=10518
     #      - DATADOG_JENKINS_PLUGIN_TARGET_API_KEY=$JENKINS_PLUGIN_DATADOG_API_KEY
     #      - DD_SERVICE_NAME="jenkins"
+    #      - DD_AGENT_HOST=datadog
     #      - DD_TRACE_AGENT_PORT=8126 # Default
       
     ## Uncomment the section below to use the standalone DogStatsD server to send metrics to Datadog
