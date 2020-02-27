@@ -69,7 +69,7 @@
     <dependency>
       <groupId>com.datadoghq</groupId>
       <artifactId>dd-trace-ot</artifactId>
-      <version>0.30.0</version>
+      <version>0.32.0</version>
     </dependency>
 
     <!-- https://mvnrepository.com/artifact/org.mockito/mockito-core -->
