@@ -25,6 +25,7 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.listeners;
 
+import datadog.trace.api.CorrelationIdentifier;
 import datadog.trace.api.DDTags;
 import io.opentracing.util.GlobalTracer;
 import io.opentracing.Tracer;
@@ -91,6 +92,10 @@ public class DatadogBuildListener extends RunListener<Run>  {
                 return;
             }
 
+            // TODO in order to trace all log properly I should not rely on creating the buildData object and rather get the unique build id from env Variables
+            // Start Tracing
+            startTrace(buildData);
+
             // Send an event
             DatadogEvent event = new BuildStartedEventImpl(buildData);
             client.event(event);
@@ -113,9 +118,6 @@ public class DatadogBuildListener extends RunListener<Run>  {
 
             // Submit counter
             client.incrementCounter("jenkins.job.started", hostname, tags);
-
-            // Start Tracing
-            startTrace(buildData);
 
             logger.fine("End DatadogBuildListener#onStarted");
         } catch (Exception e) {
@@ -295,10 +297,14 @@ public class DatadogBuildListener extends RunListener<Run>  {
         }
         Tracer tracer = GlobalTracer.get();
         Span span = tracer.buildSpan("JenkinsBuild").withTag(DDTags.SERVICE_NAME, "jenkins").start();
+        // TODO: Why are both traceId and spanId equal to 0?
+        String traceId = CorrelationIdentifier.getTraceId();
+        String spanId = CorrelationIdentifier.getSpanId();
+        DatadogUtilities.severe(logger, null, "traceId: " + traceId + " | spanId: " + spanId);
         span.setTag(DDTags.SERVICE_NAME, "jenkins");
         // Add span to cache in order to retrieve it in the endTrace method.
         DatadogUtilities.severe(logger, null, "startTrace - Cache key: " + buildData.getBuildId(null));
-        DatadogTraceCache.cache.put(buildData.getBuildId(null), span);
+        DatadogTraceCache.cache.put(buildData.getBuildId(null), new DatadogTraceCache.AugmentedSpan(span, traceId, spanId));
     }
 
     private void endTrace(BuildData buildData){
@@ -306,9 +312,14 @@ public class DatadogBuildListener extends RunListener<Run>  {
             return;
         }
         DatadogUtilities.severe(logger, null, "endTrace - Cache key: " + buildData.getBuildId(null));
-        Span span = DatadogTraceCache.cache.remove(buildData.getBuildId(null));
-        if (span != null) {
-            span.finish();
+        DatadogTraceCache.AugmentedSpan augmentedSpan = DatadogTraceCache.cache.remove(buildData.getBuildId(null));
+        if(augmentedSpan != null) {
+            Span span = augmentedSpan.span;
+            if (span != null) {
+                span.finish();
+            } else {
+                //TODO debug log message.
+            }
         } else {
             //TODO debug log message.
         }

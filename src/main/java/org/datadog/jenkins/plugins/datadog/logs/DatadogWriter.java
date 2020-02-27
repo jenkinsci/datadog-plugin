@@ -26,12 +26,14 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.logs;
 
 import hudson.model.Run;
+import io.opentracing.Span;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.trace.DatadogTraceCache;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 import java.io.OutputStream;
@@ -61,14 +63,18 @@ public class DatadogWriter {
             }
 
             JSONObject payload = new JSONObject();
-            // TODO - correlate log and trace - https://docs.datadoghq.com/tracing/connect_logs_and_traces/java/?tab=log4j2
             BuildData buildData = new BuildData(this.run, null);
             payload.put("ddtags", String.join(",", TagsUtil.convertTagsToArray(buildData.getTags())));
             payload = buildData.addLogAttributes(payload);
             payload.put("message", line);
             payload.put("ddsource", "jenkins");
             payload.put("service", "jenkins");
-
+            DatadogTraceCache.AugmentedSpan augmentedSpan = DatadogTraceCache.cache.get(buildData.getBuildId(null));
+            // TODO: Is this a valid way to correlate traces?
+            if(augmentedSpan != null) {
+                payload.put("trace_id", augmentedSpan.traceId);
+                payload.put("span_id", augmentedSpan.spanId);
+            }
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
             if(client == null){
