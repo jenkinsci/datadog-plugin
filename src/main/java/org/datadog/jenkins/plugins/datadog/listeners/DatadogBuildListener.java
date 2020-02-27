@@ -294,30 +294,23 @@ public class DatadogBuildListener extends RunListener<Run>  {
             return;
         }
         Tracer tracer = GlobalTracer.get();
-        try (Scope scope = tracer.buildSpan("JenkinsBuild").startActive(false)) {
-            final Span span = scope.span();
-            span.setTag(DDTags.SERVICE_NAME, "jenkins");
-            // Add span to cache in order to retrieve it in the endTrace method.
-            DatadogUtilities.severe(logger, null, "startTrace - Cache key: " + buildData.getBuildId(null));
-            DatadogTraceCache.cache.put(buildData.getBuildId(null), span);
-        }
+        Span span = tracer.buildSpan("JenkinsBuild").withTag(DDTags.SERVICE_NAME, "jenkins").start();
+        span.setTag(DDTags.SERVICE_NAME, "jenkins");
+        // Add span to cache in order to retrieve it in the endTrace method.
+        DatadogUtilities.severe(logger, null, "startTrace - Cache key: " + buildData.getBuildId(null));
+        DatadogTraceCache.cache.put(buildData.getBuildId(null), span);
     }
 
     private void endTrace(BuildData buildData){
         if(buildData == null){
             return;
         }
-        Tracer tracer = GlobalTracer.get();
         DatadogUtilities.severe(logger, null, "endTrace - Cache key: " + buildData.getBuildId(null));
-        Span span = DatadogTraceCache.cache.get(buildData.getBuildId(null));
+        Span span = DatadogTraceCache.cache.remove(buildData.getBuildId(null));
         if (span != null) {
-            Scope scope = tracer.scopeManager().activate(span, false);
-            span.finish(); // TODO: Should i make this call?
-            scope.close();
-            // Remove span from global cache
-             DatadogTraceCache.cache.remove(buildData.getBuildId(null));
+            span.finish();
         } else {
-            //TODO error
+            //TODO debug log message.
         }
     }
 

@@ -65,26 +65,6 @@
       <version>2.9.0</version>
     </dependency>
 
-    <!--<dependency>-->
-      <!--<groupId>io.opentracing</groupId>-->
-      <!--<artifactId>opentracing-api</artifactId>-->
-      <!--<version>0.33.0</version>-->
-    <!--</dependency>-->
-
-    <!-- OpenTracing API -->
-    <dependency>
-      <groupId>io.opentracing</groupId>
-      <artifactId>opentracing-api</artifactId>
-      <version>0.31.0</version>
-    </dependency>
-
-    <!-- OpenTracing Util -->
-    <dependency>
-      <groupId>io.opentracing</groupId>
-      <artifactId>opentracing-util</artifactId>
-      <version>0.31.0</version>
-    </dependency>
-
     <!-- Datadog Tracer (only needed if you do not use dd-java-agent) -->
     <dependency>
       <groupId>com.datadoghq</groupId>
