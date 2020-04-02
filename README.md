@@ -147,41 +147,42 @@ This plugin is collecting the following [events](#events), [metrics](#metrics), 
 
 #### Default events type
 
-| Event name      | Triggered on              | Default tags                                      | Associated RATE metric  |
-|-----------------|---------------------------|---------------------------------------------------|-------------------------|
-| Build started   | `RunListener#onStarted`   | `jenkins_url`, `job`, `node`, `user_id`           | `jenkins.job.started`   |
-| Build aborted   | `RunListener#onDeleted`   | `jenkins_url`, `job`, `node`, `user_id`           | `jenkins.job.aborted`   |
-| Build completed | `RunListener#onCompleted` | `jenkins_url`, `job`, `node`, `result`, `user_id` | `jenkins.job.completed` |
+| Event name      | Triggered on              | Default tags                                                    | Associated RATE metric  |
+|-----------------|---------------------------|-----------------------------------------------------------------|-------------------------|
+| Build started   | `RunListener#onStarted`   | `event_type`, `jenkins_url`, `job`, `node`, `user_id`           | `jenkins.job.started`   |
+| Build aborted   | `RunListener#onDeleted`   | `event_type`, `jenkins_url`, `job`, `node`, `user_id`           | `jenkins.job.aborted`   |
+| Build completed | `RunListener#onCompleted` | `event_type`, `jenkins_url`, `job`, `node`, `result`, `user_id` | `jenkins.job.completed` |
+| SCM checkout    | `SCMListener#onCheckout`  | `event_type`, `jenkins_url`, `job`, `node`, `user_id`           | `jenkins.scm.checkout`  |
 
-#### Source control management events type
-
-| Event name   | Triggered on             | Default tags                             | Associated RATE metric |
-|--------------|--------------------------|-----------------------------------------|------------------------|
-| SCM checkout | `SCMListener#onCheckout` | `jenkins_url`, `job`, `node`, `user_id` | `jenkins.scm.checkout` |
+NOTE: `event_type` is always set to `default` for above events and metrics.
 
 #### Systems events type
 
-| Event name                   | Triggered on                            | Default tags                       | Associated RATE metric                 |
-|------------------------------|-----------------------------------------|------------------------------------|----------------------------------------|
-| Computer Online              | `ComputerListener#onOnline`             | `jenkins_url`                      | `jenkins.computer.online`              |
-| Computer Offline             | `ComputerListener#onOffline`            | `jenkins_url`                      | `jenkins.computer.online`              |
-| Computer TemporarilyOnline   | `ComputerListener#onTemporarilyOnline`  | `jenkins_url`                      | `jenkins.computer.temporarily_online`  |
-| Computer TemporarilyOffline  | `ComputerListener#onTemporarilyOffline` | `jenkins_url`                      | `jenkins.computer.temporarily_offline` |
-| Computer LaunchFailure       | `ComputerListener#onLaunchFailure`      | `jenkins_url`                      | `jenkins.computer.launch_failure`      |
-| Item Created                 | `ItemListener#onCreated`                | `jenkins_url`, `user_id`           | `jenkins.item.created`                 |
-| Item Deleted                 | `ItemListener#onDeleted`                | `jenkins_url`, `user_id`           | `jenkins.item.deleted`                 |
-| Item Updated                 | `ItemListener#onUpdated`                | `jenkins_url`, `user_id`           | `jenkins.item.updated`                 |
-| Item Copied                  | `ItemListener#onCopied`                 | `jenkins_url`, `user_id`           | `jenkins.item.copied`                  |
-| Item Location Changed        | `ItemListener#onLocationChanged`        | `jenkins_url`, `user_id`           | `jenkins.item.location_changed`        |
-| Config Changed               | `SaveableListener#onChange`             | `jenkins_url`, `user_id`           | `jenkins.config.changed`               |
+| Event name                   | Triggered on                            | Default tags                                                            | Associated RATE metric                 |
+|------------------------------|-----------------------------------------|-------------------------------------------------------------------------|----------------------------------------|
+| Computer Online              | `ComputerListener#onOnline`             | `event_type`, `jenkins_url`, `node_hostname`, `node_name`, `node_label` | `jenkins.computer.online`              |
+| Computer Offline             | `ComputerListener#onOffline`            | `event_type`, `jenkins_url`, `node_hostname`, `node_name`, `node_label` | `jenkins.computer.offline`             |
+| Computer TemporarilyOnline   | `ComputerListener#onTemporarilyOnline`  | `event_type`, `jenkins_url`, `node_hostname`, `node_name`, `node_label` | `jenkins.computer.temporarily_online`  |
+| Computer TemporarilyOffline  | `ComputerListener#onTemporarilyOffline` | `event_type`, `jenkins_url`, `node_hostname`, `node_name`, `node_label` | `jenkins.computer.temporarily_offline` |
+| Computer LaunchFailure       | `ComputerListener#onLaunchFailure`      | `event_type`, `jenkins_url`, `node_hostname`, `node_name`, `node_label` | `jenkins.computer.launch_failure`      |
+| Item Created                 | `ItemListener#onCreated`                | `event_type`, `jenkins_url`, `user_id`                                  | `jenkins.item.created`                 |
+| Item Deleted                 | `ItemListener#onDeleted`                | `event_type`, `jenkins_url`, `user_id`                                  | `jenkins.item.deleted`                 |
+| Item Updated                 | `ItemListener#onUpdated`                | `event_type`, `jenkins_url`, `user_id`                                  | `jenkins.item.updated`                 |
+| Item Copied                  | `ItemListener#onCopied`                 | `event_type`, `jenkins_url`, `user_id`                                  | `jenkins.item.copied`                  |
+| Item Location Changed        | `ItemListener#onLocationChanged`        | `event_type`, `jenkins_url`, `user_id`                                  | `jenkins.item.location_changed`        |
+| Config Changed               | `SaveableListener#onChange`             | `event_type`, `jenkins_url`, `user_id`                                  | `jenkins.config.changed`               |
+
+NOTE: `event_type` is always set to `system` for above events and metrics.
 
 #### Security events type
 
-| Event name                  | Triggered on                            | Default tags                       | Associated RATE metric       |
-|-----------------------------|-----------------------------------------|------------------------------------|------------------------------|
-| User Authenticated          | `SecurityListener#authenticated`        | `jenkins_url`, `user_id`           | `jenkins.user.authenticated` |
-| User failed To Authenticate | `SecurityListener#failedToAuthenticate` | `jenkins_url`, `user_id`           | `jenkins.user.access_denied` |
-| User loggedOut              | `SecurityListener#loggedOut`            | `jenkins_url`, `user_id`           | `jenkins.user.logout`        |
+| Event name                  | Triggered on                            | Default tags                                     | Associated RATE metric       |
+|-----------------------------|-----------------------------------------|--------------------------------------------------|------------------------------|
+| User Authenticated          | `SecurityListener#authenticated`        | `event_type`, `jenkins_url`, `user_id`           | `jenkins.user.authenticated` |
+| User failed To Authenticate | `SecurityListener#failedToAuthenticate` | `event_type`, `jenkins_url`, `user_id`           | `jenkins.user.access_denied` |
+| User loggedOut              | `SecurityListener#loggedOut`            | `event_type`, `jenkins_url`, `user_id`           | `jenkins.user.logout`        |
+
+NOTE: `event_type` is always set to `security` for above events and metrics.
 
 ### Metrics
 

@@ -30,7 +30,6 @@ import hudson.model.*;
 import hudson.triggers.SCMTrigger;
 import hudson.triggers.TimerTrigger;
 import hudson.util.LogTaskListener;
-import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
@@ -156,6 +155,8 @@ public class BuildData {
             setGitCommit(envVars.get("GIT_COMMIT"));
         } else if (envVars.get("CVS_BRANCH") != null) {
             setBranch(envVars.get("CVS_BRANCH"));
+        } else if (envVars.get("SVN_REVISION") != null) {
+            setBranch(envVars.get("SVN_REVISION"));
         }
         setPromotedUrl(envVars.get("PROMOTED_URL"));
         setPromotedJobName(envVars.get("PROMOTED_JOB_NAME"));
@@ -196,6 +197,9 @@ public class BuildData {
         }
         if (jenkinsUrl != null) {
             allTags = TagsUtil.addTagToTags(allTags, "jenkins_url", getJenkinsUrl("unknown"));
+        }
+        if (branch != null) {
+            allTags = TagsUtil.addTagToTags(allTags, "branch", getBranch("unknown"));
         }
 
         return allTags;

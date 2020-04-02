@@ -26,6 +26,7 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.events;
 
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 import java.util.Map;
 import java.util.Set;
@@ -36,7 +37,7 @@ public abstract class AbstractDatadogSimpleEvent extends AbstractDatadogEvent {
         setHost(DatadogUtilities.getHostname(null));
         setJenkinsUrl(DatadogUtilities.getJenkinsUrl());
         setDate(DatadogUtilities.currentTimeMillis() / 1000);
-        setTags(tags);
+        setTags(TagsUtil.merge(TagsUtil.addTagToTags(null, "event_type", SYSTEM_EVENT_TYPE), tags));
     }
 
 }
