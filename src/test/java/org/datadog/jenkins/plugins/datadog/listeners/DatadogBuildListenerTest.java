@@ -97,23 +97,25 @@ public class DatadogBuildListenerTest {
                 124000L, 4, previousFailedRun2, 4000000L, null);
 
         datadogBuildListener.onCompleted(previousSuccessfulRun, mock(TaskListener.class));
-        String[] expectedTags1 = new String[5];
+        String[] expectedTags1 = new String[6];
         expectedTags1[0] = "job:ParentFullName/JobName";
         expectedTags1[1] = "node:test-node";
         expectedTags1[2] = "result:SUCCESS";
         expectedTags1[3] = "user_id:anonymous";
         expectedTags1[4] = "jenkins_url:unknown";
+        expectedTags1[5] = "branch:test-branch";
         client.assertMetric("jenkins.job.duration", 121, "test-hostname-2", expectedTags1);
         client.assertMetric("jenkins.job.leadtime", 121, "test-hostname-2", expectedTags1);
         client.assertServiceCheck("jenkins.job.status", 0, "test-hostname-2", expectedTags1);
 
         datadogBuildListener.onCompleted(previousFailedRun1, mock(TaskListener.class));
-        String[] expectedTags2 = new String[5];
+        String[] expectedTags2 = new String[6];
         expectedTags2[0] = "job:ParentFullName/JobName";
         expectedTags2[1] = "node:test-node";
         expectedTags2[2] = "result:FAILURE";
         expectedTags2[3] = "user_id:anonymous";
         expectedTags2[4] = "jenkins_url:unknown";
+        expectedTags2[5] = "branch:test-branch";
         client.assertMetric("jenkins.job.duration", 122, "test-hostname-2", expectedTags2);
         client.assertMetric("jenkins.job.feedbacktime", 122, "test-hostname-2", expectedTags2);
         client.assertServiceCheck("jenkins.job.status", 2, "test-hostname-2", expectedTags2);
@@ -158,12 +160,13 @@ public class DatadogBuildListenerTest {
                 124000L, 2, null, 2000000L, previousSuccessfulRun);;
 
         datadogBuildListener.onCompleted(previousSuccessfulRun, mock(TaskListener.class));
-        String[] expectedTags1 = new String[5];
+        String[] expectedTags1 = new String[6];
         expectedTags1[0] = "job:ParentFullName/JobName";
         expectedTags1[1] = "node:test-node";
         expectedTags1[2] = "result:SUCCESS";
         expectedTags1[3] = "user_id:anonymous";
         expectedTags1[4] = "jenkins_url:unknown";
+        expectedTags1[5] = "branch:test-branch";
         client.assertMetric("jenkins.job.duration", 123, "test-hostname-2", expectedTags1);
         client.assertMetric("jenkins.job.leadtime", 123, "test-hostname-2", expectedTags1);
         client.assertMetric("jenkins.job.completed", 1, "test-hostname-2", expectedTags1);
@@ -171,12 +174,13 @@ public class DatadogBuildListenerTest {
         client.assertedAllMetricsAndServiceChecks();
 
         datadogBuildListener.onCompleted(failedRun, mock(TaskListener.class));
-        String[] expectedTags2 = new String[5];
+        String[] expectedTags2 = new String[6];
         expectedTags2[0] = "job:ParentFullName/JobName";
         expectedTags2[1] = "node:test-node";
         expectedTags2[2] = "result:FAILURE";
         expectedTags2[3] = "user_id:anonymous";
         expectedTags2[4] = "jenkins_url:unknown";
+        expectedTags2[5] = "branch:test-branch";
         client.assertMetric("jenkins.job.duration", 124, "test-hostname-2", expectedTags2);
         client.assertMetric("jenkins.job.mtbf", 1000, "test-hostname-2", expectedTags2);
         client.assertMetric("jenkins.job.feedbacktime", 124, "test-hostname-2", expectedTags2);
@@ -214,12 +218,13 @@ public class DatadogBuildListenerTest {
                 123000L, 1, null, 1000000L, null);
 
         datadogBuildListener.onStarted(run, mock(TaskListener.class));
-        String[] expectedTags = new String[5];
+        String[] expectedTags = new String[6];
         expectedTags[0] = "job:ParentFullName/JobName";
         expectedTags[1] = "node:test-node";
         expectedTags[2] = "result:SUCCESS";
         expectedTags[3] = "user_id:anonymous";
         expectedTags[4] = "jenkins_url:unknown";
+        expectedTags[5] = "branch:test-branch";
         client.assertMetric("jenkins.job.started", 1, "test-hostname-2", expectedTags);
         Assert.assertTrue(client.metrics.size() == 1);
         DatadogMetric metric = client.metrics.get(0);

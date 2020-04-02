@@ -25,6 +25,8 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.events;
 
+import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
+
 import java.util.Map;
 import java.util.Set;
 
@@ -36,6 +38,8 @@ public class UserAuthenticationEventImpl extends AbstractDatadogSimpleEvent {
 
     public UserAuthenticationEventImpl(String username, String action, Map<String, Set<String>> tags) {
         super(tags);
+        // Overriding tags set in parent class
+        setTags(TagsUtil.merge(TagsUtil.addTagToTags(null, "event_type", SECURITY_EVENT_TYPE), tags));
 
         if(action == null){
             action = "did something";

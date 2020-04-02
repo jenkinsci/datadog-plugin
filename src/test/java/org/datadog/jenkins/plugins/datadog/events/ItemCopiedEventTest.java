@@ -48,7 +48,8 @@ public class ItemCopiedEventTest {
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("unknown"));
-        Assert.assertTrue(event.getTags() == null);
+        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().get("event_type").contains("system"));
         Assert.assertTrue(event.getTitle().equals("User anonymous copied the item unknown from unknown"));
         Assert.assertTrue(event.getText(), event.getText().contains("User anonymous copied the item unknown from unknown"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
@@ -70,7 +71,8 @@ public class ItemCopiedEventTest {
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("itemname"));
-        Assert.assertTrue(event.getTags() != null);
+        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().get("event_type").contains("system"));
         Assert.assertTrue(event.getTitle().equals("User anonymous copied the item itemname from srcname"));
         Assert.assertTrue(event.getText(), event.getText().contains("User anonymous copied the item itemname from srcname"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));

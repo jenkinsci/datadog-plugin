@@ -35,6 +35,10 @@ import java.util.Set;
  */
 public interface DatadogEvent {
 
+    public static final String DEFAULT_EVENT_TYPE = "default";
+    public static final String SECURITY_EVENT_TYPE = "security";
+    public static final String SYSTEM_EVENT_TYPE = "system";
+
     public static enum AlertType {
         ERROR,
         WARNING,

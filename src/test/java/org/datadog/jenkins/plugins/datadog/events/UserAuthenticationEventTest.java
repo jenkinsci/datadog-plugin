@@ -43,7 +43,8 @@ public class UserAuthenticationEventTest {
         Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("anonymous"));
-        Assert.assertTrue(event.getTags() == null);
+        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().get("event_type").contains("security"));
         Assert.assertTrue(event.getTitle().equals("User anonymous did something"));
         Assert.assertTrue(event.getText().contains("User anonymous did something"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.ERROR));
@@ -55,7 +56,8 @@ public class UserAuthenticationEventTest {
         Assert.assertTrue(event.getHost().equals(DatadogUtilities.getHostname(null)));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("anonymous"));
-        Assert.assertTrue(event.getTags() == null);
+        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().get("event_type").contains("security"));
         Assert.assertTrue(event.getTitle().equals("User anonymous something"));
         Assert.assertTrue(event.getText().contains("User anonymous something"));
         Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.ERROR));
@@ -71,7 +73,8 @@ public class UserAuthenticationEventTest {
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("username"));
-        Assert.assertTrue(event.getTags() != null);
+        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().get("event_type").contains("security"));
         Assert.assertTrue(event.getTitle().equals("User username failed to authenticate"));
         Assert.assertTrue(event.getText(), event.getText().contains("User username failed to authenticate"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
@@ -84,7 +87,8 @@ public class UserAuthenticationEventTest {
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("username"));
-        Assert.assertTrue(event.getTags() != null);
+        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().get("event_type").contains("security"));
         Assert.assertTrue(event.getTitle().equals("User username logout"));
         Assert.assertTrue(event.getText(), event.getText().contains("User username logout"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
@@ -97,7 +101,8 @@ public class UserAuthenticationEventTest {
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("username"));
-        Assert.assertTrue(event.getTags() != null);
+        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().get("event_type").contains("security"));
         Assert.assertTrue(event.getTitle().equals("User username authenticated"));
         Assert.assertTrue(event.getText(), event.getText().contains("User username authenticated"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));

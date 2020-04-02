@@ -27,6 +27,7 @@ package org.datadog.jenkins.plugins.datadog.events;
 
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 public abstract class AbstractDatadogBuildEvent extends AbstractDatadogEvent {
 
@@ -41,7 +42,7 @@ public abstract class AbstractDatadogBuildEvent extends AbstractDatadogEvent {
         setJenkinsUrl(buildData.getJenkinsUrl("unknown"));
         setAggregationKey(buildData.getJobName("unknown"));
         setDate(buildData.getEndTime(DatadogUtilities.currentTimeMillis()) / 1000);
-        setTags(buildData.getTags());
+        setTags(TagsUtil.merge(TagsUtil.addTagToTags(null, "event_type", DEFAULT_EVENT_TYPE), buildData.getTags()));
     }
 
     protected String getFormattedDuration() {

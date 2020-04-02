@@ -48,7 +48,8 @@ public class ComputerOfflineEventTest {
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey() == null);
-        Assert.assertTrue(event.getTags() == null);
+        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().get("event_type").contains("system"));
         Assert.assertTrue(event.getTitle().equals("Jenkins node null is offline"));
         Assert.assertTrue(event.getText(), event.getText().contains("Jenkins node null is offline"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
@@ -61,7 +62,8 @@ public class ComputerOfflineEventTest {
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey() == null);
-        Assert.assertTrue(event.getTags() == null);
+        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().get("event_type").contains("system"));
         Assert.assertTrue(event.getTitle().equals("Jenkins node null is temporarily offline"));
         Assert.assertTrue(event.getText(), event.getText().contains("Jenkins node null is temporarily offline"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
@@ -82,7 +84,8 @@ public class ComputerOfflineEventTest {
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("computer"));
-        Assert.assertTrue(event.getTags() != null);
+        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().get("event_type").contains("system"));
         Assert.assertTrue(event.getTitle().equals("Jenkins node computer is offline"));
         Assert.assertTrue(event.getText(), event.getText().contains("Jenkins node computer is offline"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
@@ -96,7 +99,8 @@ public class ComputerOfflineEventTest {
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("computer"));
-        Assert.assertTrue(event.getTags() != null);
+        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().get("event_type").contains("system"));
         Assert.assertTrue(event.getTitle().equals("Jenkins node computer is temporarily offline"));
         Assert.assertTrue(event.getText(), event.getText().contains("Jenkins node computer is temporarily offline"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));

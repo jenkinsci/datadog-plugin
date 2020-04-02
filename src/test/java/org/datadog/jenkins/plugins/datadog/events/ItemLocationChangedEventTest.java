@@ -48,7 +48,8 @@ public class ItemLocationChangedEventTest {
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("unknown"));
-        Assert.assertTrue(event.getTags() == null);
+        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().get("event_type").contains("system"));
         Assert.assertTrue(event.getTitle().equals("User anonymous changed the location of the item unknown"));
         Assert.assertTrue(event.getText(), event.getText().contains("User anonymous changed the location of the item unknown from null to null"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
@@ -69,7 +70,8 @@ public class ItemLocationChangedEventTest {
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("itemname"));
-        Assert.assertTrue(event.getTags() != null);
+        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().get("event_type").contains("system"));
         Assert.assertTrue(event.getTitle().equals("User anonymous changed the location of the item itemname"));
         Assert.assertTrue(event.getText(), event.getText().contains("User anonymous changed the location of the item itemname from from_loc to to_loc"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
