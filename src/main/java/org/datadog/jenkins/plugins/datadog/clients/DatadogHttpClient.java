@@ -81,6 +81,7 @@ public class DatadogHttpClient implements DatadogClient {
      * NOTE: Use ClientFactory.getClient method to instantiate the client in the Jenkins Plugin
      * This method is not recommended to be used because it misses some validations.
      * @param url - target url
+     * @param logIntakeUrl - log intake url
      * @param apiKey - Secret api Key
      * @return an singleton instance of the DatadogHttpClient.
      */
