@@ -1,9 +1,9 @@
 Changes
 =======
 
-# 1.0.3 / 04-02-2020
+# 1.1.0 / 04-02-2020
 ### Details
-https://github.com/jenkinsci/datadog-plugin/compare/datadog-1.0.1...datadog-1.0.3
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-1.0.2...datadog-1.1.0
 
 ### Changes
 * [IMPROVEMENT] Add log collection [#44](https://github.com/jenkinsci/datadog-plugin/pull/44)
