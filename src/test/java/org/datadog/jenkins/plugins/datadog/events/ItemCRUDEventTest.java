@@ -48,7 +48,8 @@ public class ItemCRUDEventTest {
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("unknown"));
-        Assert.assertTrue(event.getTags() == null);
+        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().get("event_type").contains("system"));
         Assert.assertTrue(event.getTitle().equals("User anonymous did something with the item unknown"));
         Assert.assertTrue(event.getText(), event.getText().contains("User anonymous did something with the item unknown"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
@@ -61,7 +62,8 @@ public class ItemCRUDEventTest {
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("unknown"));
-        Assert.assertTrue(event.getTags() == null);
+        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().get("event_type").contains("system"));
         Assert.assertTrue(event.getTitle().equals("User anonymous something the item unknown"));
         Assert.assertTrue(event.getText(), event.getText().contains("User anonymous something the item unknown"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
@@ -81,7 +83,8 @@ public class ItemCRUDEventTest {
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("itemname"));
-        Assert.assertTrue(event.getTags() != null);
+        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().get("event_type").contains("system"));
         Assert.assertTrue(event.getTitle().equals("User anonymous created the item itemname"));
         Assert.assertTrue(event.getText(), event.getText().contains("User anonymous created the item itemname"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
@@ -94,7 +97,8 @@ public class ItemCRUDEventTest {
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("itemname"));
-        Assert.assertTrue(event.getTags() != null);
+        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().get("event_type").contains("system"));
         Assert.assertTrue(event.getTitle().equals("User anonymous updated the item itemname"));
         Assert.assertTrue(event.getText(), event.getText().contains("User anonymous updated the item itemname"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
@@ -107,7 +111,8 @@ public class ItemCRUDEventTest {
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
         Assert.assertTrue(event.getAggregationKey().equals("itemname"));
-        Assert.assertTrue(event.getTags() != null);
+        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertTrue(event.getTags().get("event_type").contains("system"));
         Assert.assertTrue(event.getTitle().equals("User anonymous deleted the item itemname"));
         Assert.assertTrue(event.getText(), event.getText().contains("User anonymous deleted the item itemname"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
