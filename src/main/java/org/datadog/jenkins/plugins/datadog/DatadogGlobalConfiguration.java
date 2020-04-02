@@ -217,8 +217,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      *                     Datadog API.
      * @return a FormValidation object used to display a message to the user on the configuration
      * screen.
-     * @throws IOException      if there is an input/output exception.
-     * @throws ServletException if there is a servlet exception.
      */
     public FormValidation doTestHostname(@QueryParameter("hostname") final String hostname){
         if(DatadogUtilities.isValidHostname(hostname)) {
