@@ -203,6 +203,7 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 | `jenkins.item.location_changed`        | Rate of items being moved.                                     | `jenkins_url`, `user_id`                                    |
 | `jenkins.item.updated`                 | Rate of items being updated.                                   | `jenkins_url`, `user_id`                                    |
 | `jenkins.job.aborted`                  | Rate of aborted jobs.                                          | `branch`, `jenkins_url`, `job`, `node`, `user_id`           |
+| `jenkins.job.buildduration`            | Build duration without pause (in seconds).                     | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
 | `jenkins.job.completed`                | Rate of completed jobs.                                        | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
 | `jenkins.job.cycletime`                | Build Cycle Time.                                              | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
 | `jenkins.job.duration`                 | Build duration (in seconds).                                   | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
@@ -210,6 +211,7 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 | `jenkins.job.leadtime`                 | Build Lead Time.                                               | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
 | `jenkins.job.mtbf`                     | MTBF, time between last successful job and current failed job. | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
 | `jenkins.job.mttr`                     | MTTR: time between last failed job and current successful job. | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
+| `jenkins.job.pauseduration`            | Pause duration of build job (in seconds).                      | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
 | `jenkins.job.started`                  | Rate of started jobs.                                          | `branch`, `jenkins_url`, `job`, `node`, `user_id`           |
 | `jenkins.job.waiting`                  | Time spent waiting for job to run (in milliseconds).           | `branch`, `jenkins_url`, `job`, `node`, `user_id`           |
 | `jenkins.node.count`                   | Total number of node.                                          | `jenkins_url`                                               |
