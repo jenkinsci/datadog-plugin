@@ -163,9 +163,19 @@ public class DatadogBuildListener extends RunListener<Run>  {
             if (run instanceof WorkflowRun) {
                 RunExt extRun = RunExt.create((WorkflowRun) run);
                 long pauseduration = 0;
+                long checkoutduration = 0;
                 for (StageNodeExt stage : extRun.getStages()) {
                     pauseduration += stage.getPauseDurationMillis();
+                    if (stage.getName().contains("Checkout SCM")) {
+                        checkoutduration += stage.getDurationMillis();
+                    }
                 }
+                client.gauge("jenkins.job.checkoutduration",
+                        checkoutduration / 1000,
+                        hostname,
+                        tags);
+                logger.fine(String.format("[%s]: Checkout Duration: %s", buildData.getJobName(null), toTimeString(checkoutduration)));
+
                 client.gauge("jenkins.job.pauseduration",
                         pauseduration / 1000,
                         hostname,
