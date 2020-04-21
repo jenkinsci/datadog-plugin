@@ -168,13 +168,13 @@ public class DatadogBuildListener extends RunListener<Run>  {
                 }
                 client.gauge("jenkins.job.pauseduration",
                         pauseduration / 1000,
-                        buildData.getHostname("null"),
+                        hostname,
                         tags);
                 logger.fine(String.format("[%s]: Pause Duration: %s", buildData.getJobName(null), toTimeString(pauseduration)));
                 long buildduration = run.getDuration() - pauseduration;
                 client.gauge("jenkins.job.buildduration",
                         buildduration / 1000,
-                        buildData.getHostname("null"),
+                        hostname,
                         tags);
                 logger.fine(String.format("[%s]: Build Duration (without pause): %s", buildData.getJobName(null), toTimeString(buildduration)));
             }
