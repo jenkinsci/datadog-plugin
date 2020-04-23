@@ -65,7 +65,7 @@ public class DatadogClientStub implements DatadogClient {
     }
 
     @Override
-    public void setPort(int port) {
+    public void setPort(Integer port) {
         // noop
     }
 

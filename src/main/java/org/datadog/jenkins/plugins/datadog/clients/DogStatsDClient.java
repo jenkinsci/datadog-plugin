@@ -32,6 +32,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
+import org.apache.commons.lang.StringUtils;
 
 import java.io.*;
 import java.net.ConnectException;
@@ -46,7 +47,8 @@ import java.util.logging.*;
  */
 public class DogStatsDClient implements DatadogClient {
 
-    private static DatadogClient instance;
+    private static DatadogClient instance = null;
+    private static DogStatsDClient lastInstance = null;
 
     private static final Logger logger = Logger.getLogger(DogStatsDClient.class.getName());
 
@@ -72,41 +74,25 @@ public class DogStatsDClient implements DatadogClient {
      */
     @SuppressFBWarnings(value={"DC_DOUBLECHECK", "RC_REF_COMPARISON"})
     public static DatadogClient getInstance(String hostname, Integer port, Integer logCollectionPort){
-        if(enableValidations){
-            if (hostname == null || hostname.isEmpty()) {
-                logger.severe("Datadog Target URL is not set properly");
-                return null;
-            }
-            if (port == null) {
-                logger.severe("Datadog Target Port is not set properly");
-                return null;
-            }
-            if (isCollectBuildLogEnabled() && logCollectionPort == null) {
-                logger.warning("Datadog Log Collection Port is not set properly");
-            }
-        }
-
-        if(instance == null){
-            synchronized (DatadogHttpClient.class) {
-                if(instance == null){
-                    instance = new DogStatsDClient(hostname, port, logCollectionPort);
+        // If the configuration has not changed, return the current instance without validation
+        // since we've already validated and/or errored about the data
+        if ((lastInstance != null && StringUtils.equals(hostname, lastInstance.getHostname())
+         && (((port == null) && (lastInstance.getPort() == null)) || (null != port && port.equals(lastInstance.getPort())))
+         && (((logCollectionPort == null) && (lastInstance.getLogCollectionPort() == null)) || (null != logCollectionPort && logCollectionPort.equals(lastInstance.getLogCollectionPort()))))){
+            return instance;
+        } else {
+            DogStatsDClient.lastInstance = new DogStatsDClient(hostname, port, logCollectionPort);
+            if(enableValidations){
+                try {
+                    validateCongiguration(hostname, port, logCollectionPort);
+                } catch(RuntimeException e){
+                    logger.severe(e.getMessage());
+                    return null;
                 }
             }
+            instance = lastInstance;
+            return instance;
         }
-
-        // We reset param just in case we change values
-        if(!hostname.equals(((DogStatsDClient)instance).getHostname()) ||
-                ((DogStatsDClient)instance).getPort() != port) {
-            instance.setHostname(hostname);
-            instance.setPort(port);
-            ((DogStatsDClient)instance).reinitialize(true);
-        }
-        if(!hostname.equals(((DogStatsDClient)instance).getHostname()) ||
-                ((DogStatsDClient)instance).getLogCollectionPort() != logCollectionPort) {
-            instance.setLogCollectionPort(logCollectionPort);
-            ((DogStatsDClient)instance).reinitializeLogger(true);
-        }
-        return instance;
     }
 
     private DogStatsDClient(String hostname, Integer port, Integer logCollectionPort) {
@@ -116,6 +102,22 @@ public class DogStatsDClient implements DatadogClient {
 
         reinitialize(true);
         reinitializeLogger(true);
+    }
+
+    public static void validateCongiguration(String hostname, Integer port, Integer logCollectionPort) throws RuntimeException {
+        if (hostname == null || hostname.isEmpty()) {
+            throw new RuntimeException("Datadog Target URL is not set properly");
+        }
+        if (!DatadogUtilities.isValidHostname(hostname)) {
+            logger.severe("Invalid Hostname. Your hostname is invalid, likely because it violates the format set in RFC 1123.");
+        }
+        if (port == null) {
+            throw new RuntimeException("Datadog Target Port is not set properly");
+        }
+        if (DogStatsDClient.isCollectBuildLogEnabled() && logCollectionPort == null) {
+            throw new RuntimeException("Datadog Log Collection Port is not set properly");
+        }
+        return;
     }
 
     /**
@@ -201,12 +203,12 @@ public class DogStatsDClient implements DatadogClient {
         this.hostname = hostname;
     }
 
-    public int getPort() {
+    public Integer getPort() {
         return port;
     }
 
     @Override
-    public void setPort(int port) {
+    public void setPort(Integer port) {
         this.port = port;
     }
 

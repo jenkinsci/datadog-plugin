@@ -28,6 +28,8 @@ package org.datadog.jenkins.plugins.datadog.clients;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -36,6 +38,49 @@ import java.util.Set;
 import java.util.concurrent.*;
 
 public class DatadogClientTest {
+
+    @Rule
+    public ExpectedException exceptionRule = ExpectedException.none();
+
+    @Test
+    public void testHttpClientGetInstanceApiKey() throws IOException {
+        //validateCongiguration throws an error when given an invalid API key when the urls are valid
+        exceptionRule.expect(RuntimeException.class);
+        exceptionRule.expectMessage("Datadog API Key is not set properly");
+        DatadogHttpClient.validateCongiguration("http", "test", null);
+    }
+
+    @Test
+    public void testHttpClientGetInstanceApiUrl() throws IOException {
+        // validateCongiguration throws an error when given an invalid url
+        exceptionRule.expect(RuntimeException.class);
+        exceptionRule.expectMessage("Datadog Target URL is not set properly");
+        DatadogHttpClient.validateCongiguration("", "test", null);
+    }
+
+    @Test
+    public void testHttpClientGetInstanceEnableValidations() throws IOException {
+        // calling getInstance with invalid data returns null
+        DatadogHttpClient.enableValidations = true;
+        DatadogClient client = DatadogHttpClient.getInstance("https", null, null);
+        Assert.assertEquals(client, null);
+    }
+
+    @Test
+    public void testDogstatsDClientGetInstanceTargetPort() throws IOException {
+        // validateCongiguration throws an error when given an invalid port
+        exceptionRule.expect(RuntimeException.class);
+        exceptionRule.expectMessage("Datadog Target Port is not set properly");
+        DogStatsDClient.validateCongiguration("test", null, null);
+    }
+
+    @Test
+    public void testDogstatsDClientGetInstanceEnableValidations() throws IOException {
+        // calling getInstance with invalid data returns null
+        DogStatsDClient.enableValidations = true;
+        DatadogClient client = DogStatsDClient.getInstance("https", null, null);
+        Assert.assertEquals(client, null);
+    }
 
     @Test
     public void testIncrementCountAndFlush() throws IOException, InterruptedException {
@@ -91,6 +136,7 @@ public class DatadogClientTest {
         Assert.assertTrue(check1 + " " + check2 + " " + check3 + " " + check4,
                 check1 && check2 && check3 && check4);
     }
+
 
     @Test
     public void testIncrementCountAndFlushThreadedEnv() throws IOException, InterruptedException {

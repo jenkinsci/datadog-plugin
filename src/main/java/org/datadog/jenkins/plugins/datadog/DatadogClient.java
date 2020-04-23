@@ -72,7 +72,7 @@ public interface DatadogClient {
 
     public void setHostname(String hostname);
 
-    public void setPort(int port);
+    public void setPort(Integer port);
 
     public void setLogCollectionPort(Integer logCollectionPort);
 

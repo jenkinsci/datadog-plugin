@@ -36,6 +36,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
+import org.apache.commons.lang.StringUtils;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -54,7 +55,8 @@ import java.util.logging.Logger;
  */
 public class DatadogHttpClient implements DatadogClient {
 
-    private static DatadogClient instance;
+    private static DatadogClient instance = null;
+    private static DatadogHttpClient lastInstance = null;
     private static final Logger logger = Logger.getLogger(DatadogHttpClient.class.getName());
 
     private static final String EVENT = "v1/events";
@@ -71,9 +73,10 @@ public class DatadogHttpClient implements DatadogClient {
     private String jenkinsVersion = null;
     private String pluginVersion = null;
 
-    private String url;
-    private String logIntakeUrl;
-    private Secret apiKey;
+
+    private String url = null;
+    private String logIntakeUrl = null;
+    private Secret apiKey = null;
     private boolean defaultIntakeConnectionBroken = false;
     private boolean logIntakeConnectionBroken = false;
 
@@ -87,41 +90,62 @@ public class DatadogHttpClient implements DatadogClient {
      */
     @SuppressFBWarnings(value="DC_DOUBLECHECK")
     public static DatadogClient getInstance(String url, String logIntakeUrl, Secret apiKey){
-        if(enableValidations){
-            if (url == null || url.isEmpty()) {
-                logger.severe("Datadog Target URL is not set properly");
-                return null;
-            }
-            if (apiKey == null || Secret.toString(apiKey).isEmpty()){
-                logger.severe("Datadog API Key is not set properly");
-                return null;
-            }
-            if (logIntakeUrl == null || logIntakeUrl.isEmpty()){
-                logger.warning("Datadog Log Intake URL is not set properly");
-            }
-        }
-
-        if(instance == null){
-            synchronized (DatadogHttpClient.class) {
-                if(instance == null){
-                    instance = new DatadogHttpClient(url, logIntakeUrl, apiKey);
+        // If the configuration has not changed, return the current instance without validation
+        // since we've already validated and/or errored about the data
+        if (lastInstance != null && (StringUtils.equals(lastInstance.getLogIntakeUrl(), logIntakeUrl))
+        && (StringUtils.equals(lastInstance.getUrl(), url)
+        && ((lastInstance.getApiKey() == null && apiKey == null) || lastInstance.getApiKey().equals(apiKey)))){
+            return instance;
+        } else {
+            DatadogHttpClient.lastInstance = new DatadogHttpClient(url, logIntakeUrl, apiKey);
+            if (enableValidations) {
+                try {
+                    validateCongiguration(url, logIntakeUrl, apiKey);
+                } catch(Exception e){
+                    logger.severe(e.getMessage());
+                    return null;
                 }
             }
+            instance = lastInstance;
+            return instance;
         }
-
-        // We reset params just in case we change values
-        // Note that we don't validate the connection at this point.
-        // Run validate to test the connection instead.
-        instance.setApiKey(apiKey);
-        instance.setUrl(url);
-        instance.setLogIntakeUrl(logIntakeUrl);
-        return instance;
     }
 
     private DatadogHttpClient(String url, String logIntakeUrl, Secret apiKey) {
         this.url = url;
         this.apiKey = apiKey;
         this.logIntakeUrl = logIntakeUrl;
+    }
+
+    public static void validateCongiguration(String url, String logIntakeUrl, Secret apiKey) throws RuntimeException, IOException {
+        if (url == null || url.isEmpty() || !validateTargetURL(url)) {
+            throw new RuntimeException("Datadog Target URL is not set properly");
+        }
+        if (apiKey == null || Secret.toString(apiKey).isEmpty()){
+            throw new RuntimeException("Datadog API Key is not set properly");
+        }
+        if (validateTargetURL(url)) {
+            throw new RuntimeException("Datadog Target URL must be configured in the form <http|https>://<url>/");
+        }
+        if (DatadogHttpClient.isCollectBuildLogEnabled() && (logIntakeUrl == null || logIntakeUrl.isEmpty())){
+            logger.warning("Datadog Log Intake URL is not set properly");
+        }
+        if (DatadogHttpClient.isCollectBuildLogEnabled() && !validateTargetURL(logIntakeUrl)) {
+            logger.warning("Datadog Target Log Intake URL must be configured in the form <http|https>://<url>/");
+        }
+        if (!validateDefaultIntakeConnection(url, apiKey)) {
+            instance.setDefaultIntakeConnectionBroken(true);
+            logger.severe("Connection broken, please double check both your API URL and Key");
+        }
+        if (!validateLogIntakeConnection(logIntakeUrl, apiKey)) {
+            instance.setLogIntakeConnectionBroken(true);
+            logger.severe("Connection broken, please double check both your Log Intake URL and Key");
+        }
+        return;
+    }
+
+    public static boolean validateTargetURL(String targetApiURL) {
+        return targetApiURL.contains("http");
     }
 
     public String getUrl() {
@@ -157,7 +181,7 @@ public class DatadogHttpClient implements DatadogClient {
     }
 
     @Override
-    public void setPort(int port) {
+    public void setPort(Integer port) {
         // noop
     }
 
@@ -586,6 +610,11 @@ public class DatadogHttpClient implements DatadogClient {
             this.jenkinsVersion =  Jenkins.VERSION;
         }
         return this.jenkinsVersion;
+    }
+
+    private static boolean isCollectBuildLogEnabled(){
+        return DatadogUtilities.getDatadogGlobalDescriptor() != null &&
+                DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs();
     }
 
 }
