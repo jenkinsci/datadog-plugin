@@ -44,7 +44,6 @@ import java.net.Proxy;
 import java.net.URL;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Logger;
@@ -56,7 +55,8 @@ import java.util.logging.Logger;
 public class DatadogHttpClient implements DatadogClient {
 
     private static DatadogClient instance = null;
-    private static DatadogHttpClient lastInstance = null;
+    private static boolean failedLastValidation = false;
+
     private static final Logger logger = Logger.getLogger(DatadogHttpClient.class.getName());
 
     private static final String EVENT = "v1/events";
@@ -92,23 +92,28 @@ public class DatadogHttpClient implements DatadogClient {
     public static DatadogClient getInstance(String url, String logIntakeUrl, Secret apiKey){
         // If the configuration has not changed, return the current instance without validation
         // since we've already validated and/or errored about the data
-        if (lastInstance != null && (StringUtils.equals(lastInstance.getLogIntakeUrl(), logIntakeUrl))
-        && (StringUtils.equals(lastInstance.getUrl(), url)
-        && ((lastInstance.getApiKey() == null && apiKey == null) || lastInstance.getApiKey().equals(apiKey)))){
+
+        DatadogHttpClient newInstance = new DatadogHttpClient(url, logIntakeUrl, apiKey);
+        DatadogHttpClient httpInstance = (DatadogHttpClient) instance;
+        if (httpInstance != null && httpInstance.equals(newInstance)) {
+            if (DatadogHttpClient.failedLastValidation) {
+                return null;
+            }
             return instance;
-        } else {
-            DatadogHttpClient.lastInstance = new DatadogHttpClient(url, logIntakeUrl, apiKey);
-            if (enableValidations) {
+        }
+        if (enableValidations) {
+            synchronized (DatadogHttpClient.class) {
+                DatadogHttpClient.instance = newInstance;
                 try {
                     validateCongiguration(url, logIntakeUrl, apiKey);
                 } catch(Exception e){
                     logger.severe(e.getMessage());
+                    DatadogHttpClient.failedLastValidation = true;
                     return null;
                 }
             }
-            instance = lastInstance;
-            return instance;
         }
+        return instance;
     }
 
     private DatadogHttpClient(String url, String logIntakeUrl, Secret apiKey) {
@@ -147,6 +152,27 @@ public class DatadogHttpClient implements DatadogClient {
     public static boolean validateTargetURL(String targetApiURL) {
         return targetApiURL.contains("http");
     }
+
+    @Override
+    public boolean equals(Object object) {
+        if (object == this) {
+            return true;
+        }
+        if (!(object instanceof DatadogClient)) {
+            return false;
+        }
+
+        DatadogHttpClient newInstance = (DatadogHttpClient) object;
+        DatadogHttpClient httpInstance = (DatadogHttpClient) instance;
+
+        if ((StringUtils.equals(httpInstance.getLogIntakeUrl(), newInstance.getLogIntakeUrl()))
+        && (StringUtils.equals(httpInstance.getUrl(), newInstance.getUrl())
+        && ((newInstance.getApiKey() == null && httpInstance.getApiKey() == null) || newInstance.getApiKey().equals(httpInstance.getApiKey())))){
+            return true;
+        }
+        return false;
+    }
+
 
     public String getUrl() {
         return url;

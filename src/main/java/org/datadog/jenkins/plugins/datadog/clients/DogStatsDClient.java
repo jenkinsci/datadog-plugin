@@ -48,7 +48,7 @@ import java.util.logging.*;
 public class DogStatsDClient implements DatadogClient {
 
     private static DatadogClient instance = null;
-    private static DogStatsDClient lastInstance = null;
+    private static boolean failedLastValidation = false;
 
     private static final Logger logger = Logger.getLogger(DogStatsDClient.class.getName());
 
@@ -76,32 +76,36 @@ public class DogStatsDClient implements DatadogClient {
     public static DatadogClient getInstance(String hostname, Integer port, Integer logCollectionPort){
         // If the configuration has not changed, return the current instance without validation
         // since we've already validated and/or errored about the data
-        if ((lastInstance != null && StringUtils.equals(hostname, lastInstance.getHostname())
-         && (((port == null) && (lastInstance.getPort() == null)) || (null != port && port.equals(lastInstance.getPort())))
-         && (((logCollectionPort == null) && (lastInstance.getLogCollectionPort() == null)) || (null != logCollectionPort && logCollectionPort.equals(lastInstance.getLogCollectionPort()))))){
+
+        DogStatsDClient newInstance = new DogStatsDClient(hostname, port, logCollectionPort);
+        DogStatsDClient httpInstance = (DogStatsDClient) instance;
+        if (httpInstance != null && httpInstance.equals(newInstance)) {
+            if (DogStatsDClient.failedLastValidation) {
+                return null;
+            }
             return instance;
-        } else {
-            DogStatsDClient.lastInstance = new DogStatsDClient(hostname, port, logCollectionPort);
-            if(enableValidations){
+        }
+        if (enableValidations) {
+            synchronized (DogStatsDClient.class) {
+                DogStatsDClient.instance = newInstance;
                 try {
                     validateCongiguration(hostname, port, logCollectionPort);
-                } catch(RuntimeException e){
+                } catch(Exception e){
                     logger.severe(e.getMessage());
+                    DogStatsDClient.failedLastValidation = true;
                     return null;
                 }
             }
-            instance = lastInstance;
-            return instance;
         }
+        httpInstance.reinitialize(true);
+        httpInstance.reinitializeLogger(true);
+        return instance;
     }
 
     private DogStatsDClient(String hostname, Integer port, Integer logCollectionPort) {
         this.hostname = hostname;
         this.port = port;
         this.logCollectionPort = logCollectionPort;
-
-        reinitialize(true);
-        reinitializeLogger(true);
     }
 
     public static void validateCongiguration(String hostname, Integer port, Integer logCollectionPort) throws RuntimeException {
@@ -118,6 +122,27 @@ public class DogStatsDClient implements DatadogClient {
             throw new RuntimeException("Datadog Log Collection Port is not set properly");
         }
         return;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (object == this) {
+            return true;
+        }
+        if (!(object instanceof DatadogClient)) {
+            return false;
+        }
+
+        DogStatsDClient newInstance = (DogStatsDClient) object;
+        DogStatsDClient httpInstance = (DogStatsDClient) instance;
+
+        if ((StringUtils.equals(httpInstance.getHostname(), newInstance.getHostname())
+        && (((httpInstance.getPort() == null) && (newInstance.getPort() == null)) || (null != httpInstance.getPort() && port.equals(newInstance.getPort())))
+        && (((httpInstance.getLogCollectionPort() == null) && (newInstance.getLogCollectionPort() == null)) || (null != httpInstance.getLogCollectionPort() && logCollectionPort.equals(newInstance.getLogCollectionPort()))))){
+           return true;
+        }
+
+        return false;
     }
 
     /**
