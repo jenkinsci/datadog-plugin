@@ -43,7 +43,7 @@ public class DatadogClientTest {
     public ExpectedException exceptionRule = ExpectedException.none();
 
     @Test
-    public void testHttpClientGetInstanceApiKey() throws IOException {
+    public void testHttpClientGetInstanceApiKey() {
         //validateCongiguration throws an error when given an invalid API key when the urls are valid
         exceptionRule.expect(RuntimeException.class);
         exceptionRule.expectMessage("Datadog API Key is not set properly");
@@ -51,7 +51,7 @@ public class DatadogClientTest {
     }
 
     @Test
-    public void testHttpClientGetInstanceApiUrl() throws IOException {
+    public void testHttpClientGetInstanceApiUrl() {
         // validateCongiguration throws an error when given an invalid url
         exceptionRule.expect(RuntimeException.class);
         exceptionRule.expectMessage("Datadog Target URL is not set properly");
@@ -59,7 +59,7 @@ public class DatadogClientTest {
     }
 
     @Test
-    public void testHttpClientGetInstanceEnableValidations() throws IOException {
+    public void testHttpClientGetInstanceEnableValidations() {
         // calling getInstance with invalid data returns null
         DatadogHttpClient.enableValidations = true;
         DatadogClient client = DatadogHttpClient.getInstance("https", null, null);
@@ -67,7 +67,7 @@ public class DatadogClientTest {
     }
 
     @Test
-    public void testDogstatsDClientGetInstanceTargetPort() throws IOException {
+    public void testDogstatsDClientGetInstanceTargetPort() {
         // validateCongiguration throws an error when given an invalid port
         exceptionRule.expect(RuntimeException.class);
         exceptionRule.expectMessage("Datadog Target Port is not set properly");
@@ -75,7 +75,7 @@ public class DatadogClientTest {
     }
 
     @Test
-    public void testDogstatsDClientGetInstanceEnableValidations() throws IOException {
+    public void testDogstatsDClientGetInstanceEnableValidations() {
         // calling getInstance with invalid data returns null
         DogStatsDClient.enableValidations = true;
         DatadogClient client = DogStatsDClient.getInstance("https", null, null);

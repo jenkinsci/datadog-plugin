@@ -106,7 +106,7 @@ public class DatadogHttpClient implements DatadogClient {
                 DatadogHttpClient.instance = newInstance;
                 try {
                     validateCongiguration(url, logIntakeUrl, apiKey);
-                } catch(Exception e){
+                } catch(RuntimeException e){
                     logger.severe(e.getMessage());
                     DatadogHttpClient.failedLastValidation = true;
                     return null;
@@ -122,7 +122,7 @@ public class DatadogHttpClient implements DatadogClient {
         this.logIntakeUrl = logIntakeUrl;
     }
 
-    public static void validateCongiguration(String url, String logIntakeUrl, Secret apiKey) throws RuntimeException, IOException {
+    public static void validateCongiguration(String url, String logIntakeUrl, Secret apiKey) throws RuntimeException {
         if (url == null || url.isEmpty()) {
             throw new RuntimeException("Datadog Target URL is not set properly");
         }
@@ -132,15 +132,27 @@ public class DatadogHttpClient implements DatadogClient {
         if (DatadogHttpClient.isCollectBuildLogEnabled() && (logIntakeUrl == null || logIntakeUrl.isEmpty())){
             throw new RuntimeException("Datadog Log Intake URL is not set properly");
         }
-        if (!validateDefaultIntakeConnection(url, apiKey)) {
+        try {
+            boolean intakeConnection = validateDefaultIntakeConnection(url, apiKey);
+            if (!intakeConnection) {
+                instance.setDefaultIntakeConnectionBroken(true);
+
+                throw new RuntimeException("Connection broken, please double check both your API URL and Key");
+            }
+        } catch (IOException e) {
             instance.setDefaultIntakeConnectionBroken(true);
             throw new RuntimeException("Connection broken, please double check both your API URL and Key");
         }
-        if (!validateLogIntakeConnection(logIntakeUrl, apiKey)) {
+        try {
+            boolean logConnection = validateLogIntakeConnection(url, apiKey);
+            if (!logConnection) {
+                instance.setLogIntakeConnectionBroken(true);
+                throw new RuntimeException("Connection broken, please double check both your Log Intake URL and Key");
+            }
+        } catch (IOException e) {
             instance.setLogIntakeConnectionBroken(true);
             throw new RuntimeException("Connection broken, please double check both your Log Intake URL and Key");
         }
-        return;
     }
 
     @Override
