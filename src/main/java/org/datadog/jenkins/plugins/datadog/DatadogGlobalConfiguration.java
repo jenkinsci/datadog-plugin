@@ -43,14 +43,12 @@ import org.kohsuke.stapler.verb.POST;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
-import java.util.logging.Logger;
 
 import static hudson.Util.fixEmptyAndTrim;
 
 @Extension
 public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
-    private static final Logger logger = Logger.getLogger(DatadogGlobalConfiguration.class.getName());
     private static final String DISPLAY_NAME = "Datadog Plugin";
 
     private static String REPORT_WITH_PROPERTY = "DATADOG_JENKINS_PLUGIN_REPORT_WITH";
@@ -388,8 +386,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             client.setDefaultIntakeConnectionBroken(false);
             client.setLogIntakeConnectionBroken(false);
         } else {
-            // Display some error
-            return false;
+            throw new FormException("Cannot connect to Datadog. Please check your configuration.", "reportWith");
         }
 
         // Persist global configuration information
