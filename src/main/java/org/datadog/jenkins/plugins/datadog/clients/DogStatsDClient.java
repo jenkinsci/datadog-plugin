@@ -97,8 +97,10 @@ public class DogStatsDClient implements DatadogClient {
                 }
             }
         }
-        httpInstance.reinitialize(true);
-        httpInstance.reinitializeLogger(true);
+        if (httpInstance != null){
+            httpInstance.reinitialize(true);
+            httpInstance.reinitializeLogger(true);
+        }
         return instance;
     }
 
@@ -143,6 +145,14 @@ public class DogStatsDClient implements DatadogClient {
         }
 
         return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = hostname != null ? hostname.hashCode() : 0;
+        result = 47 * result + (port != null ? port.hashCode() : 0);
+        result = 47 * result + (logCollectionPort != null ? logCollectionPort.hashCode() : 0);
+        return result;
     }
 
     /**

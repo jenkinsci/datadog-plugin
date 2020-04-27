@@ -123,20 +123,14 @@ public class DatadogHttpClient implements DatadogClient {
     }
 
     public static void validateCongiguration(String url, String logIntakeUrl, Secret apiKey) throws RuntimeException, IOException {
-        if (url == null || url.isEmpty() || !validateTargetURL(url)) {
+        if (url == null || url.isEmpty()) {
             throw new RuntimeException("Datadog Target URL is not set properly");
         }
         if (apiKey == null || Secret.toString(apiKey).isEmpty()){
             throw new RuntimeException("Datadog API Key is not set properly");
         }
-        if (validateTargetURL(url)) {
-            throw new RuntimeException("Datadog Target URL must be configured in the form <http|https>://<url>/");
-        }
         if (DatadogHttpClient.isCollectBuildLogEnabled() && (logIntakeUrl == null || logIntakeUrl.isEmpty())){
             logger.warning("Datadog Log Intake URL is not set properly");
-        }
-        if (DatadogHttpClient.isCollectBuildLogEnabled() && !validateTargetURL(logIntakeUrl)) {
-            logger.warning("Datadog Target Log Intake URL must be configured in the form <http|https>://<url>/");
         }
         if (!validateDefaultIntakeConnection(url, apiKey)) {
             instance.setDefaultIntakeConnectionBroken(true);
@@ -147,10 +141,6 @@ public class DatadogHttpClient implements DatadogClient {
             logger.severe("Connection broken, please double check both your Log Intake URL and Key");
         }
         return;
-    }
-
-    public static boolean validateTargetURL(String targetApiURL) {
-        return targetApiURL.contains("http");
     }
 
     @Override
@@ -171,6 +161,14 @@ public class DatadogHttpClient implements DatadogClient {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = apiKey != null ? apiKey.hashCode() : 0;
+        result = 43 * result + (url != null ? url.hashCode() : 0);
+        result = 43 * result + (logIntakeUrl != null ? logIntakeUrl.hashCode() : 0);
+        return result;
     }
 
 

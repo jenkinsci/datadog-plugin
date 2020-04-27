@@ -18,15 +18,15 @@
         checked="${instance.reportWithEquals('DSD')}" inline="true">
 
         <f:entry title="DogStatsD Host" field="targetHostEntry">
-          <f:textbox field="targetHost" default="${targetHost}" />
+          <f:textbox field="targetHost" default="${targetHost}" checkMethod="post" />
         </f:entry>
 
         <f:entry title="DogStatsD Port" field="targetPortEntry">
-          <f:textbox field="targetPort" default="${targetPort}" />
+          <f:textbox field="targetPort" default="${targetPort}" checkMethod="post" />
         </f:entry>
 
         <f:entry title="Log Collection Port" field="targetLogCollectionPortEntry">
-          <f:textbox field="targetLogCollectionPort" default="${targetLogCollectionPort}" />
+          <f:textbox field="targetLogCollectionPort" default="${targetLogCollectionPort}" checkMethod="post" />
         </f:entry>
 
     </f:radioBlock>
@@ -35,15 +35,15 @@
         checked="${instance.reportWithEquals('HTTP')}" inline="true">
 
         <f:entry title="Datadog API URL" field="targetApiURLEntry" description="URL which the plugin reports to." >
-          <f:textbox field="targetApiURL" default="${targetApiURL}" />
+          <f:textbox field="targetApiURL" default="${targetApiURL}" checkMethod="post" />
         </f:entry>
 
         <f:entry title="Datadog Log Intake URL" field="targetLogIntakeURLEntry" description="URL which the plugin reports logs to." >
-          <f:textbox field="targetLogIntakeURL" default="${targetLogIntakeURL}" />
+          <f:textbox field="targetLogIntakeURL" default="${targetLogIntakeURL}" checkMethod="post" />
         </f:entry>
 
         <f:entry title="Datadog API Key" field="targetApiKeyEntry">
-          <f:password field="targetApiKey" default="${targetApiKey}" />
+          <f:password field="targetApiKey" default="${targetApiKey}" checkMethod="post" />
         </f:entry>
         <f:validateButton title="${%Test Key}" progress="${%Testing...}" method="testConnection" with="targetApiKey" />
 
