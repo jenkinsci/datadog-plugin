@@ -130,15 +130,15 @@ public class DatadogHttpClient implements DatadogClient {
             throw new RuntimeException("Datadog API Key is not set properly");
         }
         if (DatadogHttpClient.isCollectBuildLogEnabled() && (logIntakeUrl == null || logIntakeUrl.isEmpty())){
-            logger.warning("Datadog Log Intake URL is not set properly");
+            throw new RuntimeException("Datadog Log Intake URL is not set properly");
         }
         if (!validateDefaultIntakeConnection(url, apiKey)) {
             instance.setDefaultIntakeConnectionBroken(true);
-            logger.severe("Connection broken, please double check both your API URL and Key");
+            throw new RuntimeException("Connection broken, please double check both your API URL and Key");
         }
         if (!validateLogIntakeConnection(logIntakeUrl, apiKey)) {
             instance.setLogIntakeConnectionBroken(true);
-            logger.severe("Connection broken, please double check both your Log Intake URL and Key");
+            throw new RuntimeException("Connection broken, please double check both your Log Intake URL and Key");
         }
         return;
     }
