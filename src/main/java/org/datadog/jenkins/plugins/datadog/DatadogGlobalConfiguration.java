@@ -222,7 +222,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      */
     @POST
     public FormValidation doTestHostname(@QueryParameter("hostname") final String hostname){
-        if(DatadogUtilities.isValidHostname(hostname)) {
+        if(StringUtils.isNotBlank(hostname) && DatadogUtilities.isValidHostname(hostname)) {
             return FormValidation.ok("Great! Your hostname is valid.");
         } else {
             return FormValidation.error("Your hostname is invalid, likely because it violates the format set in RFC 1123");
@@ -357,18 +357,14 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         this.setTargetApiKey(formData.getString("targetApiKey"));
         this.setTargetHost(formData.getString("targetHost"));
         String portStr = formData.getString("targetPort");
-        if(StringUtils.isNotBlank(portStr)){
-            if(StringUtils.isNumeric(portStr)) {
-                this.setTargetPort(formData.getInt("targetPort"));
-            }
-        }else{
+        if (validatePort(portStr)) {
+            this.setTargetPort(formData.getInt("targetPort"));
+        } else {
             this.setTargetPort(null);
         }
         String logCollectionPortStr = formData.getString("targetLogCollectionPort");
-        if(StringUtils.isNotBlank(logCollectionPortStr)){
-            if(StringUtils.isNumeric(logCollectionPortStr)){
-                this.setTargetLogCollectionPort(formData.getInt("targetLogCollectionPort"));
-            }
+        if(validatePort(logCollectionPortStr)){
+            this.setTargetLogCollectionPort(formData.getInt("targetLogCollectionPort"));
         }else{
             this.setTargetLogCollectionPort(null);
         }
@@ -381,10 +377,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         this.setEmitSecurityEvents(formData.getBoolean("emitSecurityEvents"));
         this.setEmitSystemEvents(formData.getBoolean("emitSystemEvents"));
         this.setCollectBuildLogs(formData.getBoolean("collectBuildLogs"));
-
-        if(StringUtils.isNotBlank(this.getHostname()) && !DatadogUtilities.isValidHostname(this.getHostname())){
-            throw new FormException("Your hostname is invalid, likely because it violates the format set in RFC 1123", "hostname");
-        }
 
         //When form is saved....
         DatadogClient client = ClientFactory.getClient(DatadogClient.ClientType.valueOf(this.getReportWith()),
