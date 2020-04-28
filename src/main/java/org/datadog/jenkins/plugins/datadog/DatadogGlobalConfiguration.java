@@ -284,7 +284,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @return a FormValidation object used to display a message to the user on the configuration
      * screen.
      */
-=    public FormValidation doCheckTargetPort(@QueryParameter("targetPort") final String targetPort) {
+    public FormValidation doCheckTargetPort(@QueryParameter("targetPort") final String targetPort) {
         if (!validatePort(targetPort)) {
             return FormValidation.error("Invalid Port");
         }
