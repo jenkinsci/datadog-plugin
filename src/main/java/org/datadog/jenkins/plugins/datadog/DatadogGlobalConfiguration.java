@@ -276,7 +276,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     }
 
     public static boolean validatePort(String targetPort) {
-        return StringUtils.isNotBlank(targetPort) && StringUtils.isNumeric(targetPort) && Integer.parseInt(targetPort) != 0;
+        return StringUtils.isNotBlank(targetPort) && StringUtils.isNumeric(targetPort);
     }
 
     /**
