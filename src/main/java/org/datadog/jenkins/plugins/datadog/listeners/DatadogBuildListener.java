@@ -161,7 +161,7 @@ public class DatadogBuildListener extends RunListener<Run>  {
             logger.fine(String.format("[%s]: Duration: %s", buildData.getJobName(null), toTimeString(buildData.getDuration(0L))));
 
             if (run instanceof WorkflowRun) {
-                RunExt extRun = RunExt.create((WorkflowRun) run);
+                RunExt extRun = getRunExtForRun((WorkflowRun) run);
                 long pauseduration = 0;
                 long checkoutduration = 0;
                 for (StageNodeExt stage : extRun.getStages()) {
@@ -324,6 +324,10 @@ public class DatadogBuildListener extends RunListener<Run>  {
 
     private boolean isFailedBuild(Run<?, ?> run) {
         return run != null && run.getResult() != Result.SUCCESS;
+    }
+
+    public RunExt getRunExtForRun(WorkflowRun run) {
+        return RunExt.create(run);
     }
 
     public Queue getQueue(){
