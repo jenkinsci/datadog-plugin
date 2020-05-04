@@ -55,6 +55,8 @@ import java.util.logging.Logger;
 public class DatadogHttpClient implements DatadogClient {
 
     private static DatadogClient instance = null;
+    // Used to determine if the instance failed last validation last time, so
+    // we do not keep retrying to create the instance and logging the same error
     private static boolean failedLastValidation = false;
 
     private static final Logger logger = Logger.getLogger(DatadogHttpClient.class.getName());
@@ -101,12 +103,12 @@ public class DatadogHttpClient implements DatadogClient {
             }
             return instance;
         }
-        if (enableValidations) {
-            synchronized (DatadogHttpClient.class) {
+        synchronized (DatadogHttpClient.class) {
+            if (enableValidations) {
                 DatadogHttpClient.instance = newInstance;
                 try {
-                    validateCongiguration(url, logIntakeUrl, apiKey);
-                } catch(RuntimeException e){
+                    newInstance.validateConfiguration(url, logIntakeUrl, apiKey);
+                } catch(IllegalArgumentException e){
                     logger.severe(e.getMessage());
                     DatadogHttpClient.failedLastValidation = true;
                     return null;
@@ -122,36 +124,36 @@ public class DatadogHttpClient implements DatadogClient {
         this.logIntakeUrl = logIntakeUrl;
     }
 
-    public static void validateCongiguration(String url, String logIntakeUrl, Secret apiKey) throws RuntimeException {
+    public void validateConfiguration(String url, String logIntakeUrl, Secret apiKey) throws IllegalArgumentException {
         if (url == null || url.isEmpty()) {
-            throw new RuntimeException("Datadog Target URL is not set properly");
+            throw new IllegalArgumentException("Datadog Target URL is not set properly");
         }
         if (apiKey == null || Secret.toString(apiKey).isEmpty()){
-            throw new RuntimeException("Datadog API Key is not set properly");
+            throw new IllegalArgumentException("Datadog API Key is not set properly");
         }
         if (DatadogHttpClient.isCollectBuildLogEnabled() && (logIntakeUrl == null || logIntakeUrl.isEmpty())){
-            throw new RuntimeException("Datadog Log Intake URL is not set properly");
+            throw new IllegalArgumentException("Datadog Log Intake URL is not set properly");
         }
         try {
             boolean intakeConnection = validateDefaultIntakeConnection(url, apiKey);
             if (!intakeConnection) {
                 instance.setDefaultIntakeConnectionBroken(true);
 
-                throw new RuntimeException("Connection broken, please double check both your API URL and Key");
+                throw new IllegalArgumentException("Connection broken, please double check both your API URL and Key");
             }
         } catch (IOException e) {
             instance.setDefaultIntakeConnectionBroken(true);
-            throw new RuntimeException("Connection broken, please double check both your API URL and Key");
+            throw new IllegalArgumentException("Connection broken, please double check both your API URL and Key");
         }
         try {
             boolean logConnection = validateLogIntakeConnection(url, apiKey);
             if (!logConnection) {
                 instance.setLogIntakeConnectionBroken(true);
-                throw new RuntimeException("Connection broken, please double check both your Log Intake URL and Key");
+                throw new IllegalArgumentException("Connection broken, please double check both your Log Intake URL and Key");
             }
         } catch (IOException e) {
             instance.setLogIntakeConnectionBroken(true);
-            throw new RuntimeException("Connection broken, please double check both your Log Intake URL and Key");
+            throw new IllegalArgumentException("Connection broken, please double check both your Log Intake URL and Key");
         }
     }
 

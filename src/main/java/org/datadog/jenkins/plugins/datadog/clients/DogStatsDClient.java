@@ -34,7 +34,6 @@ import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.apache.commons.lang.StringUtils;
 
-import java.io.*;
 import java.net.ConnectException;
 import java.net.UnknownHostException;
 import java.util.Map;
@@ -48,6 +47,8 @@ import java.util.logging.*;
 public class DogStatsDClient implements DatadogClient {
 
     private static DatadogClient instance = null;
+    // Used to determine if the instance failed last validation last time, so
+    // we do not keep retrying to create the instance and logging the same error
     private static boolean failedLastValidation = false;
 
     private static final Logger logger = Logger.getLogger(DogStatsDClient.class.getName());
@@ -78,28 +79,29 @@ public class DogStatsDClient implements DatadogClient {
         // since we've already validated and/or errored about the data
 
         DogStatsDClient newInstance = new DogStatsDClient(hostname, port, logCollectionPort);
-        DogStatsDClient httpInstance = (DogStatsDClient) instance;
-        if (httpInstance != null && httpInstance.equals(newInstance)) {
+        DogStatsDClient dogstatsdInstance = (DogStatsDClient) instance;
+        if (dogstatsdInstance != null && dogstatsdInstance.equals(newInstance)) {
             if (DogStatsDClient.failedLastValidation) {
                 return null;
             }
             return instance;
         }
-        if (enableValidations) {
-            synchronized (DogStatsDClient.class) {
-                DogStatsDClient.instance = newInstance;
+
+        synchronized (DogStatsDClient.class) {
+            DogStatsDClient.instance = newInstance;
+            if (enableValidations) {
                 try {
-                    validateCongiguration(hostname, port, logCollectionPort);
-                } catch(Exception e){
+                    newInstance.validateConfiguration(hostname, port, logCollectionPort);
+                } catch(IllegalArgumentException e){
                     logger.severe(e.getMessage());
                     DogStatsDClient.failedLastValidation = true;
                     return null;
                 }
             }
         }
-        if (httpInstance != null){
-            httpInstance.reinitialize(true);
-            httpInstance.reinitializeLogger(true);
+        if (dogstatsdInstance != null){
+            dogstatsdInstance.reinitialize(true);
+            dogstatsdInstance.reinitializeLogger(true);
         }
         return instance;
     }
@@ -110,18 +112,18 @@ public class DogStatsDClient implements DatadogClient {
         this.logCollectionPort = logCollectionPort;
     }
 
-    public static void validateCongiguration(String hostname, Integer port, Integer logCollectionPort) throws RuntimeException {
+    public void validateConfiguration(String hostname, Integer port, Integer logCollectionPort) throws IllegalArgumentException {
         if (hostname == null || hostname.isEmpty()) {
-            throw new RuntimeException("Datadog Target URL is not set properly");
+            throw new IllegalArgumentException("Datadog Target URL is not set properly");
         }
         if (!DatadogUtilities.isValidHostname(hostname)) {
-            throw new RuntimeException("Invalid Hostname. Your hostname is invalid, likely because it violates the format set in RFC 1123.");
+            throw new IllegalArgumentException("Invalid Hostname. Your hostname is invalid, likely because it violates the format set in RFC 1123.");
         }
         if (port == null) {
-            throw new RuntimeException("Datadog Target Port is not set properly");
+            throw new IllegalArgumentException("Datadog Target Port is not set properly");
         }
         if (DogStatsDClient.isCollectBuildLogEnabled() && logCollectionPort == null) {
-            throw new RuntimeException("Datadog Log Collection Port is not set properly");
+            throw new IllegalArgumentException("Datadog Log Collection Port is not set properly");
         }
         return;
     }

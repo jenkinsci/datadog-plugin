@@ -39,23 +39,35 @@ import java.util.concurrent.*;
 
 public class DatadogClientTest {
 
-    @Rule
-    public ExpectedException exceptionRule = ExpectedException.none();
-
     @Test
     public void testHttpClientGetInstanceApiKey() {
         //validateCongiguration throws an error when given an invalid API key when the urls are valid
-        exceptionRule.expect(RuntimeException.class);
-        exceptionRule.expectMessage("Datadog API Key is not set properly");
-        DatadogHttpClient.validateCongiguration("http", "test", null);
+        Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> {
+            DatadogHttpClient.enableValidations = false;
+            DatadogHttpClient client = (DatadogHttpClient) DatadogHttpClient.getInstance(null, null, null);
+            client.validateConfiguration("http", "test", null);
+
+        });
+
+        String expectedMessage = "Datadog API Key is not set properly";
+        String actualMessage = exception.getMessage();
+        Assert.assertTrue(actualMessage.contains(expectedMessage));
     }
 
     @Test
     public void testHttpClientGetInstanceApiUrl() {
         // validateCongiguration throws an error when given an invalid url
-        exceptionRule.expect(RuntimeException.class);
-        exceptionRule.expectMessage("Datadog Target URL is not set properly");
-        DatadogHttpClient.validateCongiguration("", "test", null);
+
+        Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> {
+            DatadogHttpClient.enableValidations = false;
+            DatadogHttpClient client = (DatadogHttpClient) DatadogHttpClient.getInstance("", "test", null);
+            client.validateConfiguration("", "test", null);
+
+        });
+
+        String expectedMessage = "Datadog Target URL is not set properly";
+        String actualMessage = exception.getMessage();
+        Assert.assertTrue(actualMessage.contains(expectedMessage));
     }
 
     @Test
@@ -69,9 +81,15 @@ public class DatadogClientTest {
     @Test
     public void testDogstatsDClientGetInstanceTargetPort() {
         // validateCongiguration throws an error when given an invalid port
-        exceptionRule.expect(RuntimeException.class);
-        exceptionRule.expectMessage("Datadog Target Port is not set properly");
-        DogStatsDClient.validateCongiguration("test", null, null);
+        Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> {
+            DogStatsDClient.enableValidations = false;
+            DogStatsDClient client = (DogStatsDClient) DogStatsDClient.getInstance("test", null, null);
+            client.validateConfiguration("test", null, null);
+        });
+
+        String expectedMessage = "Datadog Target Port is not set properly";
+        String actualMessage = exception.getMessage();
+        Assert.assertTrue(actualMessage.contains(expectedMessage));
     }
 
     @Test
