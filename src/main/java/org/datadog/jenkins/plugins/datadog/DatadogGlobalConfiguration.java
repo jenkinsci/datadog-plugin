@@ -43,11 +43,14 @@ import org.kohsuke.stapler.StaplerRequest;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.util.logging.Logger;
 
 import static hudson.Util.fixEmptyAndTrim;
 
 @Extension
 public class DatadogGlobalConfiguration extends GlobalConfiguration {
+
+    private static final Logger logger = Logger.getLogger(DatadogGlobalConfiguration.class.getName());
 
     private static final String DISPLAY_NAME = "Datadog Plugin";
 
@@ -340,54 +343,63 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @Override
     @SuppressFBWarnings("REC_CATCH_EXCEPTION")
     public boolean configure(final StaplerRequest req, final JSONObject formData) throws FormException {
-        Boolean status = super.configure(req, formData);
+        try {
 
-        this.setReportWith(formData.getString("reportWith"));
-        this.setTargetApiURL(formData.getString("targetApiURL"));
-        this.setTargetLogIntakeURL(formData.getString("targetLogIntakeURL"));
-        this.setTargetApiKey(formData.getString("targetApiKey"));
-        this.setTargetHost(formData.getString("targetHost"));
-        String portStr = formData.getString("targetPort");
-        if (validatePort(portStr)) {
-            this.setTargetPort(formData.getInt("targetPort"));
-        } else {
-            this.setTargetPort(null);
-        }
-        String logCollectionPortStr = formData.getString("targetLogCollectionPort");
-        if(validatePort(logCollectionPortStr)){
-            this.setTargetLogCollectionPort(formData.getInt("targetLogCollectionPort"));
-        }else{
-            this.setTargetLogCollectionPort(null);
-        }
-        this.setHostname(formData.getString("hostname"));
-        this.setBlacklist(formData.getString("blacklist"));
-        this.setWhitelist(formData.getString("whitelist"));
-        this.setGlobalTagFile(formData.getString("globalTagFile"));
-        this.setGlobalTags(formData.getString("globalTags"));
-        this.setGlobalJobTags(formData.getString("globalJobTags"));
-        this.setEmitSecurityEvents(formData.getBoolean("emitSecurityEvents"));
-        this.setEmitSystemEvents(formData.getBoolean("emitSystemEvents"));
-        this.setCollectBuildLogs(formData.getBoolean("collectBuildLogs"));
+            if(!super.configure(req, formData)){
+                return false;
+            }
 
-        //When form is saved....
-        DatadogClient client = ClientFactory.getClient(DatadogClient.ClientType.valueOf(this.getReportWith()),
-                this.getTargetApiURL(), this.getTargetLogIntakeURL(), this.getTargetApiKey(), this.getTargetHost(),
-                this.getTargetPort(), this.getTargetLogCollectionPort());
-            // ...reinitialize the DatadogClient
-        if(client != null) {
-            // There are no reasons at this point client should be null.
+            this.setReportWith(formData.getString("reportWith"));
+            this.setTargetApiURL(formData.getString("targetApiURL"));
+            this.setTargetLogIntakeURL(formData.getString("targetLogIntakeURL"));
+            this.setTargetApiKey(formData.getString("targetApiKey"));
+            this.setTargetHost(formData.getString("targetHost"));
+            String portStr = formData.getString("targetPort");
+            if (validatePort(portStr)) {
+                this.setTargetPort(formData.getInt("targetPort"));
+            } else {
+                this.setTargetPort(null);
+            }
+            String logCollectionPortStr = formData.getString("targetLogCollectionPort");
+            if(validatePort(logCollectionPortStr)){
+                this.setTargetLogCollectionPort(formData.getInt("targetLogCollectionPort"));
+            }else{
+                this.setTargetLogCollectionPort(null);
+            }
+            this.setHostname(formData.getString("hostname"));
+            this.setBlacklist(formData.getString("blacklist"));
+            this.setWhitelist(formData.getString("whitelist"));
+            this.setGlobalTagFile(formData.getString("globalTagFile"));
+            this.setGlobalTags(formData.getString("globalTags"));
+            this.setGlobalJobTags(formData.getString("globalJobTags"));
+            this.setEmitSecurityEvents(formData.getBoolean("emitSecurityEvents"));
+            this.setEmitSystemEvents(formData.getBoolean("emitSystemEvents"));
+            this.setCollectBuildLogs(formData.getBoolean("collectBuildLogs"));
+
+            //When form is saved....
+            DatadogClient client = ClientFactory.getClient(DatadogClient.ClientType.valueOf(this.getReportWith()),
+                    this.getTargetApiURL(), this.getTargetLogIntakeURL(), this.getTargetApiKey(), this.getTargetHost(),
+                    this.getTargetPort(), this.getTargetLogCollectionPort());
+                // ...reinitialize the DatadogClient
+            if(client == null) {
+                return false;
+            }
             client.setDefaultIntakeConnectionBroken(false);
             client.setLogIntakeConnectionBroken(false);
-        } else {
+            // Persist global configuration information
+            save();
+            return true;
+        }catch(Exception e){
+            // Intercept all FormException instances.
+            if(e instanceof FormException){
+                throw (FormException)e;
+            }
+
+            DatadogUtilities.severe(logger, e, null);
             return false;
         }
 
-        // Persist global configuration information
-        save();
-
-        return status;
     }
-
     public boolean reportWithEquals(String value){
         return this.reportWith.equals(value);
     }
