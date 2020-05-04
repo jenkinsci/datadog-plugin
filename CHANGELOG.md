@@ -1,6 +1,13 @@
 Changes
 =======
 
+# 1.1.1 / 05-02-2020
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-1.1.0...datadog-1.1.1
+
+### Changes
+* [IMPROVEMENT] Set hpi.compatibleSinceVersion to 1.0.0 [#58](https://github.com/jenkinsci/datadog-plugin/pull/58)
+
 # 1.1.0 / 04-02-2020
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-1.0.2...datadog-1.1.0
