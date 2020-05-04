@@ -1,7 +1,7 @@
 Changes
 =======
 
-# 1.1.1 / 05-02-2020
+# 1.1.1 / 05-04-2020
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-1.1.0...datadog-1.1.1
 
