@@ -91,7 +91,7 @@ public class DogStatsDClient implements DatadogClient {
             DogStatsDClient.instance = newInstance;
             if (enableValidations) {
                 try {
-                    newInstance.validateConfiguration(hostname, port, logCollectionPort);
+                    newInstance.validateConfiguration();
                 } catch(IllegalArgumentException e){
                     logger.severe(e.getMessage());
                     DogStatsDClient.failedLastValidation = true;
@@ -112,7 +112,7 @@ public class DogStatsDClient implements DatadogClient {
         this.logCollectionPort = logCollectionPort;
     }
 
-    public void validateConfiguration(String hostname, Integer port, Integer logCollectionPort) throws IllegalArgumentException {
+    public void validateConfiguration() throws IllegalArgumentException {
         if (hostname == null || hostname.isEmpty()) {
             throw new IllegalArgumentException("Datadog Target URL is not set properly");
         }

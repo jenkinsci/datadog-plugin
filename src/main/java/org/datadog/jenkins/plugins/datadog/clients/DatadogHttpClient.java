@@ -104,10 +104,10 @@ public class DatadogHttpClient implements DatadogClient {
             return instance;
         }
         synchronized (DatadogHttpClient.class) {
+            DatadogHttpClient.instance = newInstance;
             if (enableValidations) {
-                DatadogHttpClient.instance = newInstance;
                 try {
-                    newInstance.validateConfiguration(url, logIntakeUrl, apiKey);
+                    newInstance.validateConfiguration();
                 } catch(IllegalArgumentException e){
                     logger.severe(e.getMessage());
                     DatadogHttpClient.failedLastValidation = true;
@@ -124,7 +124,7 @@ public class DatadogHttpClient implements DatadogClient {
         this.logIntakeUrl = logIntakeUrl;
     }
 
-    public void validateConfiguration(String url, String logIntakeUrl, Secret apiKey) throws IllegalArgumentException {
+    public void validateConfiguration() throws IllegalArgumentException {
         if (url == null || url.isEmpty()) {
             throw new IllegalArgumentException("Datadog Target URL is not set properly");
         }
