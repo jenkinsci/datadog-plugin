@@ -177,7 +177,6 @@ public class DatadogClientTest {
         stop(executor);
 
         // Check counter is reset as expected
-        DatadogHttpClient.resetConfigTesting();
         ConcurrentMap<CounterMetric, Integer> counters = ConcurrentMetricCounters.getInstance().getAndReset();
         Assert.assertTrue("size = " + counters.size(), counters.size() == 1);
         Assert.assertTrue("counters.values() = " + counters.values(), counters.values().contains(10000));
