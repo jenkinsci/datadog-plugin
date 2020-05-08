@@ -98,6 +98,7 @@ public class DatadogClientTest {
 
     @Test
     public void testIncrementCountAndFlush() throws IOException, InterruptedException {
+        DatadogHttpClient.resetConfigTesting();
         DatadogHttpClient.enableValidations = false;
         DatadogClient client = DatadogHttpClient.getInstance("test", null, null);
         Map<String, Set<String>> tags1 = new HashMap<>();
@@ -161,7 +162,6 @@ public class DatadogClientTest {
             public void run() {
                 // We use a new instance of a client on every run.
                 DatadogHttpClient.enableValidations = false;
-                DatadogClient client1 = DatadogHttpClient.getInstance("test1", null, null);
                 DatadogClient client = DatadogHttpClient.getInstance("test2", null, null);
                 Map<String, Set<String>> tags = new HashMap<>();
                 tags = DatadogClientStub.addTagToMap(tags, "tag1", "value");
@@ -177,6 +177,7 @@ public class DatadogClientTest {
         stop(executor);
 
         // Check counter is reset as expected
+        DatadogHttpClient.resetConfigTesting();
         ConcurrentMap<CounterMetric, Integer> counters = ConcurrentMetricCounters.getInstance().getAndReset();
         Assert.assertTrue("size = " + counters.size(), counters.size() == 1);
         Assert.assertTrue("counters.values() = " + counters.values(), counters.values().contains(10000));
@@ -191,7 +192,6 @@ public class DatadogClientTest {
             public void run() {
                 // We use a new instance of a client on every run.
                 DatadogHttpClient.enableValidations = false;
-                DatadogClient client1 = DatadogHttpClient.getInstance("test2", null, null);
                 DatadogClient client = DatadogHttpClient.getInstance("test3", null, null);
                 Map<String, Set<String>> tags = new HashMap<>();
                 tags = DatadogClientStub.addTagToMap(tags, "tag1", "value");
@@ -212,6 +212,7 @@ public class DatadogClientTest {
             @Override
             public Boolean call() throws Exception {
                 // Check counter is reset as expected
+                DatadogHttpClient.resetConfigTesting();
                 ConcurrentMap<CounterMetric, Integer> counters = ConcurrentMetricCounters.getInstance().getAndReset();
                 Assert.assertTrue("size = " + counters.size(), counters.size() == 1);
                 Assert.assertTrue("counters.values() = " + counters.values(), counters.values().contains(10000));

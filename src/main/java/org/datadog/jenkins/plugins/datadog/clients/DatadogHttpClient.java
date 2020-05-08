@@ -655,4 +655,9 @@ public class DatadogHttpClient implements DatadogClient {
                 DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs();
     }
 
+    public static void resetConfigTesting(){
+        DatadogHttpClient.instance = null;
+        DatadogHttpClient.failedLastValidation = false;
+    }
+
 }
