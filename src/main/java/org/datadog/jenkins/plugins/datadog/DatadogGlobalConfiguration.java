@@ -366,6 +366,9 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             }else{
                 this.setTargetLogCollectionPort(null);
             }
+            if(StringUtils.isNotBlank(this.getHostname()) && !DatadogUtilities.isValidHostname(this.getHostname())){
+                throw new FormException("Your hostname is invalid, likely because it violates the format set in RFC 1123", "hostname");
+            }
             this.setHostname(formData.getString("hostname"));
             this.setBlacklist(formData.getString("blacklist"));
             this.setWhitelist(formData.getString("whitelist"));
