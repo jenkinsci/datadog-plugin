@@ -103,9 +103,9 @@ public class DatadogHttpClient implements DatadogClient {
             }
             return instance;
         }
-        synchronized (DatadogHttpClient.class) {
-            DatadogHttpClient.instance = newInstance;
-            if (enableValidations) {
+        if (enableValidations) {
+            synchronized (DatadogHttpClient.class) {
+                DatadogHttpClient.instance = newInstance;
                 try {
                     newInstance.validateConfiguration();
                 } catch(IllegalArgumentException e){
@@ -115,7 +115,7 @@ public class DatadogHttpClient implements DatadogClient {
                 }
             }
         }
-        return instance;
+        return newInstance;
     }
 
     private DatadogHttpClient(String url, String logIntakeUrl, Secret apiKey) {
@@ -653,11 +653,6 @@ public class DatadogHttpClient implements DatadogClient {
     private static boolean isCollectBuildLogEnabled(){
         return DatadogUtilities.getDatadogGlobalDescriptor() != null &&
                 DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs();
-    }
-
-    public static void resetConfigTesting(){
-        DatadogHttpClient.instance = null;
-        DatadogHttpClient.failedLastValidation = false;
     }
 
 }

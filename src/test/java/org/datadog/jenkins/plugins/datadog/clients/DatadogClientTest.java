@@ -98,7 +98,6 @@ public class DatadogClientTest {
 
     @Test
     public void testIncrementCountAndFlush() throws IOException, InterruptedException {
-        DatadogHttpClient.resetConfigTesting();
         DatadogHttpClient.enableValidations = false;
         DatadogClient client = DatadogHttpClient.getInstance("test", null, null);
         Map<String, Set<String>> tags1 = new HashMap<>();
@@ -211,7 +210,6 @@ public class DatadogClientTest {
             @Override
             public Boolean call() throws Exception {
                 // Check counter is reset as expected
-                DatadogHttpClient.resetConfigTesting();
                 ConcurrentMap<CounterMetric, Integer> counters = ConcurrentMetricCounters.getInstance().getAndReset();
                 Assert.assertTrue("size = " + counters.size(), counters.size() == 1);
                 Assert.assertTrue("counters.values() = " + counters.values(), counters.values().contains(10000));
