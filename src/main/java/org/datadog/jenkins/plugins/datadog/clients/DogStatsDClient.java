@@ -116,9 +116,6 @@ public class DogStatsDClient implements DatadogClient {
         if (hostname == null || hostname.isEmpty()) {
             throw new IllegalArgumentException("Datadog Target URL is not set properly");
         }
-        if (!DatadogUtilities.isValidHostname(hostname)) {
-            throw new IllegalArgumentException("Invalid Hostname. Your hostname is invalid, likely because it violates the format set in RFC 1123.");
-        }
         if (port == null) {
             throw new IllegalArgumentException("Datadog Target Port is not set properly");
         }
