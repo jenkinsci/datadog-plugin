@@ -195,7 +195,6 @@ public class DatadogBuildListenerTest {
                 "branch:test-branch"
         };
         client.assertMetric("jenkins.job.duration", totalDuration / 1000, "test-hostname-2", expectedTags);
-        client.assertMetric("jenkins.job.checkoutduration", stageDuration / 1000, "test-hostname-2", expectedTags);
         client.assertMetric("jenkins.job.pauseduration", pauseDuration / 1000, "test-hostname-2", expectedTags);
         client.assertMetric("jenkins.job.buildduration", buildDuration / 1000, "test-hostname-2", expectedTags);
         client.assertMetric("jenkins.job.completed", 1, "test-hostname-2", expectedTags);
