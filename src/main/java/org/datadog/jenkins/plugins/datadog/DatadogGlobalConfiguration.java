@@ -284,7 +284,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @return a FormValidation object used to display a message to the user on the configuration
      * screen.
      */
-
     @POST
     public FormValidation doCheckTargetHost(@QueryParameter("targetHost") final String targetHost) {
         if (!validateTargetHost(targetHost)) {
