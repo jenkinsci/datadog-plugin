@@ -51,7 +51,6 @@ import static hudson.Util.fixEmptyAndTrim;
 public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
     private static final Logger logger = Logger.getLogger(DatadogGlobalConfiguration.class.getName());
-
     private static final String DISPLAY_NAME = "Datadog Plugin";
 
     private static String REPORT_WITH_PROPERTY = "DATADOG_JENKINS_PLUGIN_REPORT_WITH";
