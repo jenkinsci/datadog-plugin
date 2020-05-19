@@ -29,7 +29,6 @@ import hudson.Extension;
 import hudson.model.*;
 import java.util.logging.Level;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
-import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 
@@ -53,10 +52,6 @@ public class DatadogCountersPublisher extends AsyncPeriodicWork {
 
     @Override
     protected void execute(TaskListener taskListener) throws IOException, InterruptedException {
-        DatadogGlobalConfiguration datadogGlobalDescriptor = DatadogUtilities.getDatadogGlobalDescriptor();
-        if (datadogGlobalDescriptor != null && datadogGlobalDescriptor.getTargetApiKey() == null) {
-            return;
-        }
         try {
             logger.fine("Execute called: Publishing counters");
 
