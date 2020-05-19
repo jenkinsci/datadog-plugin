@@ -62,6 +62,9 @@ public class ClientFactory {
             targetPort = descriptor.getTargetPort();
             targetLogCollectionPort = descriptor.getTargetLogCollectionPort();
         }
+        if (targetApiKey == null) {
+            return null;
+        }
         return ClientFactory.getClient(DatadogClient.ClientType.valueOf(reportWith), targetApiURL, targetLogIntakeURL,
                 targetApiKey, targetHost, targetPort, targetLogCollectionPort);
     }
