@@ -20,6 +20,7 @@
 
   <properties>
     <java.level>8</java.level>
+    <jenkins.version>1.580.1</jenkins.version>
     <hpi.compatibleSinceVersion>1.0.0</hpi.compatibleSinceVersion>
   </properties>
 
