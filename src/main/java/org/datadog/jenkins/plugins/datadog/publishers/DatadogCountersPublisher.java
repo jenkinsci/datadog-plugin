@@ -27,6 +27,7 @@ package org.datadog.jenkins.plugins.datadog.publishers;
 
 import hudson.Extension;
 import hudson.model.*;
+import java.util.logging.Level;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
@@ -64,5 +65,10 @@ public class DatadogCountersPublisher extends AsyncPeriodicWork {
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, null);
         }
+    }
+
+    @Override
+    protected Level getNormalLoggingLevel() {
+        return Level.FINE;
     }
 }
