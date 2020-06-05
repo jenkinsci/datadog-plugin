@@ -117,7 +117,7 @@ Logging is done by utilizing the `java.util.Logger`, which follows the [best log
 
 ### Global customization
 
-From the global configuration page, at `Manage Jenkins -> Configure System` you can customize your configuration with:
+To customize your global configuration, in Jenkins navigate to `Manage Jenkins -> Configure System` then click the **Advanced** button. The following options are available:
 
 | Customization              | Description                                                                                                                                                                                                                                 | Environment variable                          |
 |----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|
