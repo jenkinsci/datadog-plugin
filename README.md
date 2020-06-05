@@ -21,7 +21,7 @@ This plugin can be installed from the [Update Center][3] (found at `Manage Jenki
 
     -type: tcp 
      port: 10518 
-     service: jenkins 
+     service: <SERVICE>
      source: jenkins
   ```
   
