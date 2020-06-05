@@ -14,7 +14,18 @@ This plugin can be installed from the [Update Center][3] (found at `Manage Jenki
 
 1. Select the `Available` tab, search for `Datadog`, and select the checkbox next to `Datadog Plugin`.
 2. Install the plugin by using one of the two install buttons at the bottom of the screen.
-3. To verify the plugin is installed, search for `Datadog Plugin` on the `Installed` tab. After the plugin is installed successfully, continue to the configuration section below.
+3. To verify the plugin is installed, search for `Datadog Plugin` on the `Installed` tab. 
+4. Create a [custom log source file][13]: create a `conf.yaml` inside `conf.d/jenkins.d` with the following:
+  ```
+  logs:
+
+    -type: tcp 
+     port: 10518 
+     service: <SERVICE>
+     source: jenkins
+  ```
+  
+  Continue below for configuration.
 
 **Note**: If you see an unexpected version of the `Datadog Plugin`, run `Check Now` from the `Manage Jenkins -> Manage Plugins` screen.
 
@@ -262,3 +273,4 @@ Checkout the [development document][12] for tips on spinning up a quick developm
 [10]: https://github.com/jenkinsci/datadog-plugin/blob/master/CHANGELOG.md
 [11]: https://github.com/jenkinsci/datadog-plugin/blob/master/CONTRIBUTING.md
 [12]: https://github.com/jenkinsci/datadog-plugin/blob/master/DEVELOPMENT.md
+[13]: https://docs.datadoghq.com/agent/logs/?tab=tcpudp#custom-log-collection
