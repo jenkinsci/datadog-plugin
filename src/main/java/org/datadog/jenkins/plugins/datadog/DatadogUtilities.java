@@ -568,7 +568,7 @@ public class DatadogUtilities {
     }
 
     public static String getJenkinsUrl() {
-        Jenkins jenkins = Jenkins.getInstance();
+        Jenkins jenkins = Jenkins.getInstanceOrNull();
         if(jenkins == null){
             return "unknown";
         }else{
