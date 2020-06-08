@@ -13,7 +13,6 @@ def customConfigurations = [
     //Test with java 11
     [ platform: "linux", jdk: "11", jenkins: "2.238", javaLevel: "8" ],
     [ platform: "windows", jdk: "11", jenkins: "2.238", javaLevel: "8" ],
-    [ platform: "windows", jdk: "11", jenkins: "2.238", javaLevel: "11" ],
 ]
 
 buildPlugin(configurations: buildPlugin.recommendedConfigurations() + customConfigurations)
