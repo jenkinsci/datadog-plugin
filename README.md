@@ -251,7 +251,7 @@ Checkout the [development document][12] for tips on spinning up a quick developm
 
 
 [1]: https://plugins.jenkins.io/datadog
-[2]: http://updates.jenkins-ci.org/download/war/1.580.1/jenkins.war
+[2]: http://updates.jenkins-ci.org/download/war/1.632/jenkins.war
 [3]: https://wiki.jenkins-ci.org/display/JENKINS/Plugins#Plugins-Howtoinstallplugins
 [4]: https://app.datadoghq.com/account/settings#api
 [5]: https://github.com/jenkinsci/docker
