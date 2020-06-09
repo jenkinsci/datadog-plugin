@@ -77,31 +77,37 @@ public class DatadogComputerPublisher extends PeriodicWork {
                 computers = jenkins.getComputers();
             }
             Map<String, Set<String>> globalTags = DatadogUtilities.getTagsFromGlobalTags();
+            Map<String, Set<String>> onlineTags = DatadogUtilities.getTagsFromGlobalTags();
+            Map<String, Set<String>> offlineTags = DatadogUtilities.getTagsFromGlobalTags();
             // Add JenkinsUrl Tag
             globalTags = TagsUtil.addTagToTags(globalTags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
             for (Computer computer : computers) {
+                Map<String, Set<String>> tags = TagsUtil.merge(
+                        DatadogUtilities.getComputerTags(computer), globalTags);
+                
                 nodeCount++;
                 if (computer.isOffline()) {
                     nodeOffline++;
+                    offlineTags = TagsUtil.merge(tags, offlineTags);
                 }
                 if (computer.isOnline()) {
                     nodeOnline++;
+                    onlineTags = TagsUtil.merge(tags, onlineTags);
                 }
 
                 int executorCount = computer.countExecutors();
                 int inUse = computer.countBusy();
                 int free = computer.countIdle();
 
-                Map<String, Set<String>> tags = TagsUtil.merge(
-                        DatadogUtilities.getComputerTags(computer), globalTags);
-                
                 client.gauge("jenkins.executor.count", executorCount, hostname, tags);
                 client.gauge("jenkins.executor.in_use", inUse, hostname, tags);
                 client.gauge("jenkins.executor.free", free, hostname, tags);
             }
-            client.gauge("jenkins.node.count", nodeCount, hostname, globalTags);
-            client.gauge("jenkins.node.offline", nodeOffline, hostname, globalTags);
-            client.gauge("jenkins.node.online", nodeOnline, hostname, globalTags);
+            
+            Map<String, Set<String>> allTags = TagsUtil.merge(offlineTags, onlineTags);
+            client.gauge("jenkins.node.count", nodeCount, hostname, allTags);
+            client.gauge("jenkins.node.offline", nodeOffline, hostname, onlineTags);
+            client.gauge("jenkins.node.online", nodeOnline, hostname, offlineTags);
 
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, null);
