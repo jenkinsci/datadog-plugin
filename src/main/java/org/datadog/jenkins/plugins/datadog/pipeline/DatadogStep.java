@@ -12,7 +12,9 @@ import javax.annotation.Nonnull;
 
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.log.LogStorage;
+import org.jenkinsci.plugins.workflow.log.TaskListenerDecorator;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepExecutionImpl;
 import org.jenkinsci.plugins.workflow.steps.BodyExecutionCallback;
 import org.jenkinsci.plugins.workflow.steps.BodyInvoker;
@@ -56,24 +58,25 @@ public class DatadogStep extends Step {
             StepContext context = getContext();
             BodyInvoker invoker = context.newBodyInvoker().withCallback(BodyExecutionCallback.wrap(context));
             context.get(TaskListener.class).getLogger().println("Starting DatadogStep");
+            Run<?, ?> run = context.get(Run.class);
+            invoker.withContext(TaskListenerDecorator.merge(context.get(TaskListenerDecorator.class), new DatadogDecorator((WorkflowRun) run)));
             invoker.start();
 
             TaskListener listener = context.get(TaskListener.class);
             PrintStream stream = listener.getLogger();
-            Run<?,?> run = context.get(Run.class);
-            EnvVars vars = context.get(EnvVars.class);
-            for(Entry<String, String> set : vars.entrySet()){
-                //listener.getLogger().println("DatadogStep: " + set.getKey() + ":" + set.getValue());
-            }
-//            FlowNode node = context.get(FlowNode.class);
-//            LogStorage ls = LogStorage.of(node.getExecution().getOwner());
-//            for(FlowNode n : node.getExecution().iterateEnclosingBlocks(node)){
-//                BufferedReader r = new BufferedReader(ls.stepLog(node, true).readAll());
-//                String line;
-//                while ((line = r.readLine()) != null) {
-//                    context.get(TaskListener.class).getLogger().println("Buffered: " + line);
-//                }
+//            EnvVars vars = context.get(EnvVars.class);
+//            for(Entry<String, String> set : vars.entrySet()){
+//                //listener.getLogger().println("DatadogStep: " + set.getKey() + ":" + set.getValue());
 //            }
+            FlowNode node = context.get(FlowNode.class);
+            LogStorage ls = LogStorage.of(node.getExecution().getOwner());
+            for(FlowNode n : node.getExecution().iterateEnclosingBlocks(node)){
+                BufferedReader r = new BufferedReader(ls.stepLog(node, true).readAll());
+                String line;
+                while ((line = r.readLine()) != null) {
+                    context.get(TaskListener.class).getLogger().println("Buffered: " + line);
+                }
+            }
 
             return false;
         }
