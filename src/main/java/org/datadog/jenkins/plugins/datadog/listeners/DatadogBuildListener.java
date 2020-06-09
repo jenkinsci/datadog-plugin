@@ -25,9 +25,13 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.listeners;
 
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.*;
 import hudson.model.listeners.RunListener;
+import java.io.BufferedReader;
+import java.util.List;
+import java.util.Map.Entry;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
@@ -42,6 +46,8 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
+import org.jenkinsci.plugins.workflow.support.actions.EnvironmentAction;
+import org.jenkinsci.plugins.workflow.support.steps.build.RunWrapper;
 
 
 /**
@@ -137,6 +143,11 @@ public class DatadogBuildListener extends RunListener<Run>  {
                 return;
             }
 
+            BufferedReader bf = new BufferedReader(run.getLogReader());
+            String s;
+            while((s = bf.readLine()) != null){
+                listener.getLogger().println("[ECHO]: " + s);
+            }
             // Collect Build Data
             BuildData buildData;
             try {
