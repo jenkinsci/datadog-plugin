@@ -1,6 +1,15 @@
 Changes
 =======
 
+# 1.1.2 / 06-09-2020
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-1.1.1...datadog-1.1.2
+
+### Changes
+* [IMPROVEMENT] Remove debugging log line [#65](https://github.com/jenkinsci/datadog-plugin/pull/65)
+* [IMPROVEMENT] Override `getNormalLoggingLevel` to set log `Level.Fine` [#63](https://github.com/jenkinsci/datadog-plugin/pull/63) Thanks [@jetersen](https://github.com/jetersen)
+* [IMPROVEMENT] Add minimum jenkins version [#67](https://github.com/jenkinsci/datadog-plugin/pull/67)
+
 # 1.1.1 / 05-04-2020
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-1.1.0...datadog-1.1.1
