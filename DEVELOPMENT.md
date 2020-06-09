@@ -45,6 +45,7 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
         volumes:
           - $JENKINS_PLUGIN/target/:/var/jenkins_home/plugins
     ## Uncomment environment variables based on your needs. Everything can be configured in jenkins /configure page as well. 
+    #   environment:
     #      - DATADOG_JENKINS_PLUGIN_REPORT_WITH=DSD
     #      - DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS=false
     ## Set `DATADOG_JENKINS_PLUGIN_TARGET_HOST` to `dogstatsd` or `datadog` based on the container you wish to use.
