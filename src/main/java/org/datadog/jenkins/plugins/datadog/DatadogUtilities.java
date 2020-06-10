@@ -43,7 +43,7 @@ import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
+import java.io.StringWriter;
 public class DatadogUtilities {
 
     private static final Logger logger = Logger.getLogger(DatadogUtilities.class.getName());
@@ -581,8 +581,11 @@ public class DatadogUtilities {
     }
 
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH")
-    public static void severe(Logger logger, Throwable e, String message){
+    public static void severe(Logger logger, Throwable e, String message){        
         if(message == null){
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            logger.severe(sw.toString());
             message = e.toString();
         }
         if(!message.isEmpty()) {
