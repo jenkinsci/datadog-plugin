@@ -18,9 +18,22 @@ This project does not have a strict release schedule. However, we would make a r
   - Locally and in the continuous integration system.
 * Manually test changes included in the new release.
 * Make sure documentation is up-to-date.
-* Update Changelog
+* [Update changelog](#update-changelog)
   - Create a distinct pull request. 
   
+## Update Changelog
+
+### Prerequisite
+
+- Install [datadog_checks_dev](https://datadoghq.dev/integrations-core/setup/#stable) using Python 3
+
+### Commands
+
+- See changes ready for release by running `ddev -x release show changes --tag-pattern "datadog-\d+\.\d+\.\d+" --tag-prefix "datadog-" --organization jenkinsci .` at the root of this project. Add any missing labels to PRs if needed.
+- Run `ddev -x release changelog --tag-prefix "datadog-" --organization jenkinsci . <VERSION>` to update the `CHANGELOG.md` file at the root of this repository.
+- Commit the changes to the repository in a release branch and get it approved/merged.
+
+
 ## Release Process
 
 Our team will trigger the release pipeline which will update the [GitHub Jenkins CI Datadog Plugin Repository][1].
