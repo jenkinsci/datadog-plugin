@@ -29,14 +29,12 @@ import hudson.Extension;
 import hudson.model.PeriodicWork;
 import hudson.model.Job;
 import hudson.model.Queue;
-import hudson.model.Queue.Task;
 
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -79,18 +77,14 @@ public class DatadogQueuePublisher extends PeriodicWork {
             long pending = queue.getPendingItems().size();
             long stuck = 0;
             long blocked = 0;
-            logger.warning("TEST ");
 
             final Queue.Item[] items = queue.getItems();
             for (Queue.Item item : items) {
-                try {
-                    Task task = item.task;
-                    String jobName = ((Job) task).getFullName();
+                Queue.Task task = item.task;
+                if (task instanceof Job<?, ?>){
+                    String jobName = ((Job<?, ?>) task).getFullName();
                     tags = TagsUtil.addTagToTags(tags, "job_name", jobName);
-                    logger.warning(jobName);
-                } catch (Exception e) {
-                    logger.warning("Could not collect job name: " + e.toString());
-                }
+                }              
                 size++;
                 if(item.isStuck()){
                     stuck++;
