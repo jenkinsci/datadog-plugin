@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>3.57</version> <!-- or whatever the newest version available is -->
+    <version>4.2</version> <!-- or whatever the newest version available is -->
     <!--Check https://mvnrepository.com/artifact/org.jenkins-ci.plugins/plugin?repo=jenkins-releases-->
     <relativePath />
   </parent>
@@ -20,7 +20,7 @@
 
   <properties>
     <java.level>8</java.level>
-    <jenkins.version>2.150.2</jenkins.version>
+    <jenkins.version>2.164.3</jenkins.version>
     <hpi.compatibleSinceVersion>1.0.0</hpi.compatibleSinceVersion>
   </properties>
 
@@ -64,8 +64,8 @@
     <dependencies>
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
-        <artifactId>bom</artifactId>
-        <version>${jenkins.version}</version>
+        <artifactId>bom-2.164.x</artifactId>
+        <version>10</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>
