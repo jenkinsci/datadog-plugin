@@ -5,7 +5,6 @@ import hudson.model.Queue;
 import hudson.model.Run;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.Serializable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nonnull;
@@ -15,9 +14,8 @@ import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.log.TaskListenerDecorator;
 
-public class DatadogDecorator extends TaskListenerDecorator implements Serializable {
+public class DatadogDecorator extends TaskListenerDecorator {
 
-    private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(DatadogDecorator.class.getName());
     private transient Run<?, ?> run;
 
