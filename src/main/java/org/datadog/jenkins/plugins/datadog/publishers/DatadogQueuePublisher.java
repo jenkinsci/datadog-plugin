@@ -79,12 +79,17 @@ public class DatadogQueuePublisher extends PeriodicWork {
             long pending = queue.getPendingItems().size();
             long stuck = 0;
             long blocked = 0;
+            logger.warning("TEST ");
+
             final Queue.Item[] items = queue.getItems();
             for (Queue.Item item : items) {
-                Task task = item.task;
-                if (item.task instanceof Job) {
+                try {
+                    Task task = item.task;
                     String jobName = ((Job) task).getFullName();
                     tags = TagsUtil.addTagToTags(tags, "job_name", jobName);
+                    logger.warning(jobName);
+                } catch (Exception e) {
+                    logger.warning("Could not collect job name: " + e.toString());
                 }
                 size++;
                 if(item.isStuck()){
