@@ -27,7 +27,10 @@ package org.datadog.jenkins.plugins.datadog.publishers;
 
 import hudson.Extension;
 import hudson.model.PeriodicWork;
+import hudson.model.Job;
 import hudson.model.Queue;
+import hudson.model.Queue.Task;
+
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
@@ -78,6 +81,11 @@ public class DatadogQueuePublisher extends PeriodicWork {
             long blocked = 0;
             final Queue.Item[] items = queue.getItems();
             for (Queue.Item item : items) {
+                Task task = item.task;
+                if (item.task instanceof Job) {
+                    String jobName = ((Job) task).getFullName();
+                    tags = TagsUtil.addTagToTags(tags, "job_name", jobName);
+                }
                 size++;
                 if(item.isStuck()){
                     stuck++;

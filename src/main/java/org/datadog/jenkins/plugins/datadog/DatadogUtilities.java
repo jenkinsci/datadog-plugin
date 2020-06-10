@@ -583,7 +583,7 @@ public class DatadogUtilities {
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH")
     public static void severe(Logger logger, Throwable e, String message){
         if(message == null){
-            message = e != null ? "An unexpected error occurred": "";
+            message = e.toString();
         }
         if(!message.isEmpty()) {
             logger.severe(message);
