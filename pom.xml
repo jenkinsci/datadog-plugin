@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>3.56</version> <!-- or whatever the newest version available is -->
+    <version>3.57</version> <!-- or whatever the newest version available is -->
     <!--Check https://mvnrepository.com/artifact/org.jenkins-ci.plugins/plugin?repo=jenkins-releases-->
     <relativePath />
   </parent>
@@ -20,7 +20,7 @@
 
   <properties>
     <java.level>8</java.level>
-    <jenkins.version>1.632</jenkins.version>
+    <jenkins.version>2.138.1</jenkins.version>
     <hpi.compatibleSinceVersion>1.0.0</hpi.compatibleSinceVersion>
   </properties>
 
@@ -60,6 +60,18 @@
     </pluginRepository>
   </pluginRepositories>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.jenkins.tools.bom</groupId>
+        <artifactId>bom</artifactId>
+        <version>${jenkins.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
     <dependency>
       <groupId>com.datadoghq</groupId>
@@ -73,6 +85,10 @@
       <artifactId>mockito-core</artifactId>
       <version>3.2.4</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins.workflow</groupId>
+      <artifactId>workflow-job</artifactId>
     </dependency>
   </dependencies>
 
