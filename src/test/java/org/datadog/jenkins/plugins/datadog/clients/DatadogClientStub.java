@@ -26,6 +26,8 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.clients;
 
 import hudson.util.Secret;
+import net.sf.json.JSON;
+import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.junit.Assert;
@@ -36,12 +38,14 @@ import java.util.*;
 
 public class DatadogClientStub implements DatadogClient {
 
-    public List<DatadogMetric> metrics = new ArrayList<>();
-    public List<DatadogMetric> serviceChecks = new ArrayList<>();
+    public List<DatadogMetric> metrics;
+    public List<DatadogMetric> serviceChecks;
+    public List<String> logLines;
 
     public DatadogClientStub() {
         this.metrics = new ArrayList<>();
         this.serviceChecks = new ArrayList<>();
+        this.logLines = new ArrayList<>();
     }
 
     @Override
@@ -133,7 +137,9 @@ public class DatadogClientStub implements DatadogClient {
 
     @Override
     public boolean sendLogs(String payloadLogs) {
-        return false;
+        JSONObject payload = JSONObject.fromObject(payloadLogs);
+        this.logLines.add(payload.get("message").toString());
+        return true;
     }
 
     public boolean assertMetric(String name, double value, String hostname, String[] tags) {
