@@ -28,6 +28,9 @@ package org.datadog.jenkins.plugins.datadog.publishers;
 import hudson.Extension;
 import hudson.model.PeriodicWork;
 import hudson.model.Queue;
+import hudson.model.Run;
+
+import hudson.model.FreeStyleProject;
 
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
@@ -49,7 +52,7 @@ public class DatadogQueuePublisher extends PeriodicWork {
     private static final Logger logger = Logger.getLogger(DatadogQueuePublisher.class.getName());
 
     private static final long RECURRENCE_PERIOD = TimeUnit.MINUTES.toMillis(1);
-    private static final Queue queue = Queue.getInstance();
+    //public Queue queue = getQueue();
 
     @Override
     public long getRecurrencePeriod() {
@@ -62,7 +65,7 @@ public class DatadogQueuePublisher extends PeriodicWork {
             logger.fine("doRun called: Computing queue metrics");
 
             // Get Datadog Client Instance
-            DatadogClient client = ClientFactory.getClient();
+            DatadogClient client = getDatadogClient();
             if(client == null){
                 return;
             }
@@ -70,20 +73,27 @@ public class DatadogQueuePublisher extends PeriodicWork {
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
             // Add JenkinsUrl Tag
             tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
-
+            Queue queue = getQueue();
             long size = 0;
             long buildable = queue.countBuildableItems();
             long pending = queue.getPendingItems().size();
             long stuck = 0;
             long blocked = 0;
-            
+            String hostname = DatadogUtilities.getHostname(null);
+            Queue queues = queue;
             final Queue.Item[] items = queue.getItems();
             for (Queue.Item item : items) {
-                // Get the name of the task for job_name tag
-                Queue.Task task = item.task;
-                String display_name = task.getFullDisplayName();
-                tags = TagsUtil.addTagToTags(tags, "job_name", display_name);
-                
+                // Get the name of Run's parent for the tag (so it can work for builds and pipelines)
+                Run task = (Run) item.task;
+                String display_name = task.getParent().getFullName();
+                Map<String, Set<String>> job_tags  = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
+                TagsUtil.addTagToTags(job_tags, "job_name", display_name);
+                client.gauge("jenkins.queue.job.size", 1, hostname, job_tags);
+                client.gauge("jenkins.queue.job.buildable", 1, hostname, job_tags);
+                client.gauge("jenkins.queue.job.pending", 1, hostname, job_tags);
+                client.gauge("jenkins.queue.job.stuck", 1, hostname, job_tags);
+                client.gauge("jenkins.queue.job.blocked", 1, hostname, job_tags);
+                logger.severe(queues.toString());
                 size++;
                 if(item.isStuck()){
                     stuck++;
@@ -92,9 +102,9 @@ public class DatadogQueuePublisher extends PeriodicWork {
                     blocked++;
                 }
             }
-            String hostname = DatadogUtilities.getHostname(null);
+
             client.gauge("jenkins.queue.size", size, hostname, tags);
-            client.gauge("jenkins.queue.buildable", buildable, hostname, tags);
+            client.gauge("jenkins.queue.buildableqqq", buildable, hostname, tags);
             client.gauge("jenkins.queue.pending", pending, hostname, tags);
             client.gauge("jenkins.queue.stuck", stuck, hostname, tags);
             client.gauge("jenkins.queue.blocked", blocked, hostname, tags);
@@ -102,6 +112,14 @@ public class DatadogQueuePublisher extends PeriodicWork {
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, null);
         }
-
     }
+    
+    public DatadogClient getDatadogClient(){
+        return ClientFactory.getClient();
+    }
+    
+    public Queue getQueue(){
+        return Queue.getInstance();
+    }
+
 }
