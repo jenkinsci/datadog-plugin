@@ -83,8 +83,10 @@ public class DatadogComputerPublisher extends PeriodicWork {
                         DatadogUtilities.getComputerTags(computer), globalTags);
                 nodeCount++;
                 int isOnline = 1;
+                int isOffline = 0;
                 if (computer.isOffline()) {
                     isOnline = 0;
+                    isOffline = 1;
                     nodeOffline++;
                 }
                 if (computer.isOnline()) {
@@ -96,7 +98,7 @@ public class DatadogComputerPublisher extends PeriodicWork {
                 int free = computer.countIdle();
                 
                 client.gauge("jenkins.node_status.online", isOnline, hostname, tags);
-                client.gauge("jenkins.node_status.offline", isOnline, hostname, tags);
+                client.gauge("jenkins.node_status.offline", isOffline, hostname, tags);
                 client.gauge("jenkins.node_status.count", 1, hostname, tags);
                 
                 client.gauge("jenkins.executor.count", executorCount, hostname, tags);
