@@ -82,17 +82,17 @@ public class DatadogComputerPublisher extends PeriodicWork {
                 Map<String, Set<String>> tags = TagsUtil.merge(
                         DatadogUtilities.getComputerTags(computer), globalTags);
                 nodeCount++;
-                int isOnline = 1;
-                int isOffline = 0;
+                boolean online = true;
                 if (computer.isOffline()) {
-                    isOnline = 0;
-                    isOffline = 1;
+                    online = false;
                     nodeOffline++;
                 }
                 if (computer.isOnline()) {
                     nodeOnline++;
                 }
 
+                int isOnline = online ? 1 : 0;
+                int isOffline = !online ? 1 : 0;
                 int executorCount = computer.countExecutors();
                 int inUse = computer.countBusy();
                 int free = computer.countIdle();
