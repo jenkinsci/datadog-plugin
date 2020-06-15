@@ -98,7 +98,6 @@ public class DatadogQueuePublisher extends PeriodicWork {
                 boolean isBlocked = false;
                 boolean isPending = false;
                 
-                logger.severe(queues.toString());
                 size++;
                 if(item.isStuck()){
                     isStuck = true;
@@ -137,5 +136,9 @@ public class DatadogQueuePublisher extends PeriodicWork {
     
     public DatadogClient getDatadogClient(){
         return ClientFactory.getClient();
+    }
+    
+    public Queue getQueue(){
+        return Queue.getInstance();
     }
 }
