@@ -8,7 +8,7 @@ A Jenkins plugin for automatically forwarding metrics, events, and service check
 
 ### Installation
 
-_This plugin requires Java 8+ and [Jenkins 1.632][2] or newer._
+_This plugin requires [Jenkins 2.164.1][2] or newer._
 
 This plugin can be installed from the [Update Center][3] (found at `Manage Jenkins -> Manage Plugins`) in your Jenkins installation:
 
