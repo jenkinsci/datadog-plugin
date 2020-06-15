@@ -226,6 +226,9 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 | `jenkins.node.count`                   | Total number of node.                                          | `jenkins_url`                                               |
 | `jenkins.node.offline`                 | Offline nodes count.                                           | `jenkins_url`                                               |
 | `jenkins.node.online`                  | Online nodes count.                                            | `jenkins_url`                                               |
+| `jenkins.node_status.count`                   | If this node is present.                                          | `jenkins_url`, `node_hostname`, `node_name`, `node_label`                                               |
+| `jenkins.node_status.offline`                 | If a given node is offline.                                           | `jenkins_url`, `node_hostname`, `node_name`, `node_label`                                               |
+| `jenkins.node_status.online`                  | If a given node is online.                                            | `jenkins_url`, `node_hostname`, `node_name`, `node_label`                                               |
 | `jenkins.plugin.count`                 | Plugins count.                                                 | `jenkins_url`                                               |
 | `jenkins.project.count`                | Project count.                                                 | `jenkins_url`                                               |
 | `jenkins.queue.size`                   | Queue Size.                                                    | `jenkins_url`                                               |

@@ -30,8 +30,6 @@ import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.junit.Assert;
 
-import javax.servlet.ServletException;
-import java.io.IOException;
 import java.util.*;
 
 public class DatadogClientStub implements DatadogClient {
@@ -144,6 +142,18 @@ public class DatadogClientStub implements DatadogClient {
         }
         Assert.fail("metric { " + m.toString() + " does not exist. " +
                 "metrics: {" + this.metrics.toString() + " }");
+        return false;
+    }
+    
+    public boolean assertMetricValues(String name, double value, String hostname, int count) {
+        DatadogMetric m = new DatadogMetric(name, value, hostname, new ArrayList<>());
+        
+        // remove tags so metrics of the same value are considered the sam
+        long timesSeen = this.metrics.stream().filter(x -> x.sameNoTags(m)).count();
+        if (timesSeen == count){
+            return true;
+        }
+        Assert.fail("metric { " + m.toString() + " found " + timesSeen + " times, not " + count);
         return false;
     }
 
