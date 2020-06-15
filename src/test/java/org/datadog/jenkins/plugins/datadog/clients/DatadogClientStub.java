@@ -145,6 +145,9 @@ public class DatadogClientStub implements DatadogClient {
         return false;
     }
     
+    /*
+     * Asserts that the metric of a given value is submitted a given number of times.
+     */
     public boolean assertMetricValues(String name, double value, String hostname, int count) {
         DatadogMetric m = new DatadogMetric(name, value, hostname, new ArrayList<>());
         
