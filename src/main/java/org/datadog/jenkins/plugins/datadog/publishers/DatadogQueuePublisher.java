@@ -52,8 +52,8 @@ public class DatadogQueuePublisher extends PeriodicWork {
     private static final Logger logger = Logger.getLogger(DatadogQueuePublisher.class.getName());
 
     private static final long RECURRENCE_PERIOD = TimeUnit.MINUTES.toMillis(1);
-    public Queue queue = getQueue();
-
+    private final Queue queue = Queue.getInstance();
+    
     @Override
     public long getRecurrencePeriod() {
         return RECURRENCE_PERIOD;
@@ -116,7 +116,7 @@ public class DatadogQueuePublisher extends PeriodicWork {
                     pending++;
                 }
                 
-                client.gauge("jenkins.queue.job.queued", 1, hostname, job_tags);
+                client.gauge("jenkins.queue.job.size", 1, hostname, job_tags);
                 client.gauge("jenkins.queue.job.buildable", DatadogUtilities.toInt(isBuildable), hostname, job_tags);
                 client.gauge("jenkins.queue.job.pending", DatadogUtilities.toInt(isPending), hostname, job_tags);
                 client.gauge("jenkins.queue.job.stuck", DatadogUtilities.toInt(isStuck), hostname, job_tags);

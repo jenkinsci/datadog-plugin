@@ -39,7 +39,7 @@ public class DatadogQueuePublisherTest {
         expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
         expectedTags[1] = "job_name:" + displayName;
         queuePublisher.doRun();
-        client.assertMetric("jenkins.queue.job.queued", 1, hostname, expectedTags);
+        client.assertMetric("jenkins.queue.job.size", 1, hostname, expectedTags);
     
     }
 }
