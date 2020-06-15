@@ -39,7 +39,7 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.log.TaskListenerDecorator;
 
 public class DatadogDecorator extends TaskListenerDecorator {
-
+    private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(DatadogDecorator.class.getName());
     private transient Run<?, ?> run;
 
