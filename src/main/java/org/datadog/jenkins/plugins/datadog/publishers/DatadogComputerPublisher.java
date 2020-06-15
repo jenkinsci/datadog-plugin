@@ -56,7 +56,7 @@ public class DatadogComputerPublisher extends PeriodicWork {
     }
 
     @Override
-    public void doRun() throws Exception {
+    protected void doRun() throws Exception {
         try {
             logger.fine("doRun called: Computing Node metrics");
 

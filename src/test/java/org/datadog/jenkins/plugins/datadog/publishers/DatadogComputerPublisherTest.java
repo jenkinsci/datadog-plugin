@@ -1,10 +1,9 @@
-package org.datadog.jenkins.plugins.publishers;
+package org.datadog.jenkins.plugins.datadog.publishers;
 
 import java.util.Arrays;
 
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
-import org.datadog.jenkins.plugins.datadog.publishers.DatadogComputerPublisher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -18,7 +17,7 @@ public class DatadogComputerPublisherTest {
     @Test
     public void testJenkinsNodeMetrics() throws Exception {
         DatadogClientStub client = new DatadogClientStub();
-        DatadogComputerPublisher computerPublisher = new DatadogComputerPublisherTestWrapper();
+        DatadogComputerPublisherTestWrapper computerPublisher = new DatadogComputerPublisherTestWrapper();
         ((DatadogComputerPublisherTestWrapper)computerPublisher).setDatadogClient(client);
         
         String url = jenkins.getURL().toString();

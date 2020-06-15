@@ -1,7 +1,6 @@
-package org.datadog.jenkins.plugins.publishers;
+package org.datadog.jenkins.plugins.datadog.publishers;
 
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
-import org.datadog.jenkins.plugins.datadog.publishers.DatadogComputerPublisher;
 
 public class DatadogComputerPublisherTestWrapper extends DatadogComputerPublisher {
     DatadogClient client;
