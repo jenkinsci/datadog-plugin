@@ -52,7 +52,7 @@ public class DatadogQueuePublisher extends PeriodicWork {
     private static final Logger logger = Logger.getLogger(DatadogQueuePublisher.class.getName());
 
     private static final long RECURRENCE_PERIOD = TimeUnit.MINUTES.toMillis(1);
-    //public Queue queue = getQueue();
+    public Queue queue = getQueue();
 
     @Override
     public long getRecurrencePeriod() {
@@ -73,14 +73,12 @@ public class DatadogQueuePublisher extends PeriodicWork {
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
             // Add JenkinsUrl Tag
             tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
-            Queue queue = getQueue();
             long size = 0;
             long buildable = queue.countBuildableItems();
             long pending = queue.getPendingItems().size();
             long stuck = 0;
             long blocked = 0;
             String hostname = DatadogUtilities.getHostname(null);
-            Queue queues = queue;
             final Queue.Item[] items = queue.getItems();
             for (Queue.Item item : items) {
                 Map<String, Set<String>> job_tags = DatadogUtilities.getTagsFromGlobalTags();
@@ -139,9 +137,5 @@ public class DatadogQueuePublisher extends PeriodicWork {
     
     public DatadogClient getDatadogClient(){
         return ClientFactory.getClient();
-    }
-    
-    public Queue getQueue(){
-        return Queue.getInstance();
     }
 }
