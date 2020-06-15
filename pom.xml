@@ -20,7 +20,7 @@
 
   <properties>
     <java.level>8</java.level>
-    <jenkins.version>2.164.3</jenkins.version>
+    <jenkins.version>2.164.1</jenkins.version>
     <hpi.compatibleSinceVersion>1.0.0</hpi.compatibleSinceVersion>
   </properties>
 
@@ -65,7 +65,7 @@
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
         <artifactId>bom-2.164.x</artifactId>
-        <version>10</version>
+        <version>8</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>
