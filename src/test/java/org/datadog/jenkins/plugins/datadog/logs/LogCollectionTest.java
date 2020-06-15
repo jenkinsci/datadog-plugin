@@ -67,9 +67,6 @@ public class LogCollectionTest {
             p.getBuildersList().add(new BatchFile("echo foo"));
         }
         p.scheduleBuild2(0).get();
-        for(String l : stubClient.logLines) {
-            LOGGER.severe(l);
-        }
         Assert.assertTrue(stubClient.logLines.contains("foo"));
     }
 
