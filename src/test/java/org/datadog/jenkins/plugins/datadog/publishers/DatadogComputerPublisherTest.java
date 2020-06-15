@@ -35,11 +35,12 @@ public class DatadogComputerPublisherTest {
         expectedTags[1] = "node_label:master";
         expectedTags[2] = "jenkins_url:" + url;
         
-        // The CI sets a hostname but we cannot set a hostname locally 
+        // The CI sets a hostname but we cannot set a hostname locally: https://javadoc.jenkins-ci.org/hudson/model/Computer.html#getHostName--
         if (nodeHostname != null) {
             expectedTags = Arrays.copyOf(expectedTags, 4);
             expectedTags[3] = "node_hostname:" + nodeHostname;
         }
+        
         computerPublisher.doRun();
         
         client.assertMetric("jenkins.node_status.count", 1, hostname, expectedTags);
