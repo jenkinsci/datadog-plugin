@@ -26,11 +26,11 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.publishers;
 
 import hudson.Extension;
+import hudson.model.FreeStyleProject;
 import hudson.model.PeriodicWork;
 import hudson.model.Queue;
 import hudson.model.Run;
-
-import hudson.model.FreeStyleProject;
+import hudson.model.Queue.Task;
 
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
@@ -83,28 +83,51 @@ public class DatadogQueuePublisher extends PeriodicWork {
             Queue queues = queue;
             final Queue.Item[] items = queue.getItems();
             for (Queue.Item item : items) {
-                // Get the name of Run's parent for the tag (so it can work for builds and pipelines)
-                Run task = (Run) item.task;
-                String display_name = task.getParent().getFullName();
-                Map<String, Set<String>> job_tags  = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
-                TagsUtil.addTagToTags(job_tags, "job_name", display_name);
-                client.gauge("jenkins.queue.job.size", 1, hostname, job_tags);
-                client.gauge("jenkins.queue.job.buildable", 1, hostname, job_tags);
-                client.gauge("jenkins.queue.job.pending", 1, hostname, job_tags);
-                client.gauge("jenkins.queue.job.stuck", 1, hostname, job_tags);
-                client.gauge("jenkins.queue.job.blocked", 1, hostname, job_tags);
+                Map<String, Set<String>> job_tags = DatadogUtilities.getTagsFromGlobalTags();
+                job_tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
+                
+                String job_name;
+                Task task = item.task;
+                if (task instanceof Run){ 
+                    job_name = ((Run)task).getParent().getFullName();
+                } else {
+                    job_name = task.getFullDisplayName();
+                }
+                TagsUtil.addTagToTags(job_tags, "job_name", job_name);
+                
+                boolean isStuck = false;
+                boolean isBuildable = false;
+                boolean isBlocked = false;
+                boolean isPending = false;
+                
                 logger.severe(queues.toString());
                 size++;
                 if(item.isStuck()){
+                    isStuck = true;
                     stuck++;
                 }
+                if (item.isBuildable()){
+                    isBuildable = true;
+                    buildable++;
+                }
                 if(item.isBlocked()){
+                    isBlocked = true;
                     blocked++;
                 }
+                if(queue.isPending(task)){
+                    isPending = true;
+                    pending++;
+                }
+                
+                client.gauge("jenkins.queue.job.queued", 1, hostname, job_tags);
+                client.gauge("jenkins.queue.job.buildable", DatadogUtilities.toInt(isBuildable), hostname, job_tags);
+                client.gauge("jenkins.queue.job.pending", DatadogUtilities.toInt(isPending), hostname, job_tags);
+                client.gauge("jenkins.queue.job.stuck", DatadogUtilities.toInt(isStuck), hostname, job_tags);
+                client.gauge("jenkins.queue.job.blocked", DatadogUtilities.toInt(isBlocked), hostname, job_tags);
             }
 
             client.gauge("jenkins.queue.size", size, hostname, tags);
-            client.gauge("jenkins.queue.buildableqqq", buildable, hostname, tags);
+            client.gauge("jenkins.queue.buildable", buildable, hostname, tags);
             client.gauge("jenkins.queue.pending", pending, hostname, tags);
             client.gauge("jenkins.queue.stuck", stuck, hostname, tags);
             client.gauge("jenkins.queue.blocked", blocked, hostname, tags);
@@ -121,5 +144,4 @@ public class DatadogQueuePublisher extends PeriodicWork {
     public Queue getQueue(){
         return Queue.getInstance();
     }
-
 }
