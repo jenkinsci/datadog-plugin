@@ -21,14 +21,11 @@ public class DatadogComputerPublisherTest {
     public void testJenkinsNodeMetrics() throws Exception {
         DatadogClientStub client = new DatadogClientStub();
         DatadogComputerPublisherTestWrapper computerPublisher = new DatadogComputerPublisherTestWrapper();
-        ((DatadogComputerPublisherTestWrapper)computerPublisher).setDatadogClient(client);
+        computerPublisher.setDatadogClient(client);
         
         String url = jenkins.getURL().toString();
         String hostname = DatadogUtilities.getHostname(null);
-        String nodeHostname = null;
-        for (Computer computer: jenkins.jenkins.getComputers()){
-            nodeHostname = computer.getHostName();
-        }
+        String nodeHostname = jenkins.jenkins.getComputer("").getHostName();;
         
         String[] expectedTags = new String[3];
         expectedTags[0] = "node_name:master";
@@ -80,11 +77,9 @@ public class DatadogComputerPublisherTest {
         expectedTags1[2] = "jenkins_url:" + url;
         
         // The CI sets a hostname but we cannot set a hostname locally 
-        String nodeHostname = null;
+        String nodeHostname = jenkins.jenkins.getComputer("").getHostName();
         String hostname = DatadogUtilities.getHostname(null);
-        for (Computer computer: jenkins.jenkins.getComputers()){
-            nodeHostname = computer.getHostName();
-        }
+     
         if (nodeHostname != null) {
             expectedTags = Arrays.copyOf(expectedTags, 4);
             expectedTags1 = Arrays.copyOf(expectedTags1, 4);
@@ -128,11 +123,9 @@ public class DatadogComputerPublisherTest {
         expectedTagsGlobal[0] = "jenkins_url:" + url;
     
         // The CI sets a hostname but we cannot set a hostname locally 
-        String nodeHostname = null;
+        String nodeHostname = jenkins.jenkins.getComputer("").getHostName();
         String hostname = DatadogUtilities.getHostname(null);
-        for (Computer computer: jenkins.jenkins.getComputers()){
-            nodeHostname = computer.getHostName();
-        }
+    
         if (nodeHostname != null) {
             expectedTags = Arrays.copyOf(expectedTags, 4);
             expectedTags1 = Arrays.copyOf(expectedTags1, 4);
