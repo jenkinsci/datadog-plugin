@@ -44,8 +44,7 @@ public class DatadogComputerPublisherTest {
         computerPublisher.doRun();
         
         client.assertMetric("jenkins.node_status.count", 1, hostname, expectedTags);
-        client.assertMetric("jenkins.node_status.offline", 0, hostname, expectedTags);
-        client.assertMetric("jenkins.node_status.online", 1, hostname, expectedTags);
+        client.assertMetric("jenkins.node_status.up", 1, hostname, expectedTags);
         
         // if we set the computer to offline, the metrics should reflect that
         for (Computer computer: jenkins.jenkins.getComputers()){
@@ -53,8 +52,7 @@ public class DatadogComputerPublisherTest {
         }
         computerPublisher.doRun();
         client.assertMetric("jenkins.node_status.count", 1, hostname, expectedTags);
-        client.assertMetric("jenkins.node_status.offline", 1, hostname, expectedTags);
-        client.assertMetric("jenkins.node_status.online", 0, hostname, expectedTags);
+        client.assertMetric("jenkins.node_status.up", 0, hostname, expectedTags);
         
     }
     
@@ -97,12 +95,10 @@ public class DatadogComputerPublisherTest {
         computerPublisher.doRun();
         
         client.assertMetric("jenkins.node_status.count", 1, hostname, expectedTags);
-        client.assertMetric("jenkins.node_status.offline", 1, hostname, expectedTags);
-        client.assertMetric("jenkins.node_status.online", 0, hostname, expectedTags);
+        client.assertMetric("jenkins.node_status.up", 0, hostname, expectedTags);
         
         client.assertMetric("jenkins.node_status.count", 1, hostname, expectedTags1);
-        client.assertMetric("jenkins.node_status.offline", 1, hostname, expectedTags1);
-        client.assertMetric("jenkins.node_status.online", 0, hostname, expectedTags1);
+        client.assertMetric("jenkins.node_status.up", 0, hostname, expectedTags1);
     }
     
     @Test
@@ -152,13 +148,10 @@ public class DatadogComputerPublisherTest {
         client.assertMetric("jenkins.node.count", numComputers, hostname, expectedTagsGlobal);
         client.assertMetricValues("jenkins.node_status.count", 1, hostname, numComputers);
         
-        client.assertMetric("jenkins.node.offline", numComputersOffline, hostname, expectedTagsGlobal);
-        client.assertMetricValues("jenkins.node_status.offline", 1, hostname, numComputersOffline);
-        client.assertMetricValues("jenkins.node_status.offline", 0, hostname, numComputersOnline);
         
         client.assertMetric("jenkins.node.online", numComputersOnline, hostname, expectedTagsGlobal);
-        client.assertMetricValues("jenkins.node_status.online", 1, hostname, numComputersOnline);
-        client.assertMetricValues("jenkins.node_status.online", 0, hostname, numComputersOffline);
+        client.assertMetricValues("jenkins.node_status.up", 1, hostname, numComputersOnline);
+        client.assertMetricValues("jenkins.node_status.up", 0, hostname, numComputersOffline);
 
     }
 }
