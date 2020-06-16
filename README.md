@@ -233,11 +233,11 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 | `jenkins.queue.pending`                | Number of Pending item in Queue.                               | `jenkins_url`                                               |
 | `jenkins.queue.stuck`                  | Number of Stuck item in Queue.                                 | `jenkins_url`                                               |
 | `jenkins.queue.blocked`                | Number of Blocked item in Queue.                               | `jenkins_url`                                               |
-| `jenkins.queue.job.size`                   | Number of times a Job has bee in a Queue.                                                     | `jenkins_url`                                               |
-| `jenkins.queue.job.buildable`              | Number of times a Job has been Buildable in a Queue.                             | `jenkins_url`                                               |
-| `jenkins.queue.job.pending`                | Number of times a Job has been Pending in a Queue.                             | `jenkins_url`                                               |
-| `jenkins.queue.job.stuck`                  | Number of times a Job has been Stuck in a Queue.                                  | `jenkins_url`                                               |
-| `jenkins.queue.job.blocked`                | Number of times a Job has been Blocked in a Queue.                           | `jenkins_url`                                               |
+| `jenkins.queue.job.size`                   | Number of times a Job has bee in a Queue.                                                     | `jenkins_url`, `job_name`                                               |
+| `jenkins.queue.job.buildable`              | Number of times a Job has been Buildable in a Queue.                             | `jenkins_url`, `job_name`                                               |
+| `jenkins.queue.job.pending`                | Number of times a Job has been Pending in a Queue.                             | `jenkins_url`, `job_name`                                               |
+| `jenkins.queue.job.stuck`                  | Number of times a Job has been Stuck in a Queue.                                  | `jenkins_url`, `job_name`                                               |
+| `jenkins.queue.job.blocked`                | Number of times a Job has been Blocked in a Queue.                           | `jenkins_url`, `job_name`                                               |
 | `jenkins.scm.checkout`                 | Rate of SCM checkouts.                                         | `branch`, `jenkins_url`, `job`, `node`, `user_id`           |
 | `jenkins.user.access_denied`           | Rate of users failing to authenticate.                         | `jenkins_url`, `user_id`                                    |
 | `jenkins.user.authenticated`           | Rate of users authenticating.                                  | `jenkins_url`, `user_id`                                    |
