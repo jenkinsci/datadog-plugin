@@ -122,6 +122,10 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
   - You can set your machine `hostname`.
   - You can set Global Tag. For example `.*, owner:$1, release_env:$2, optional:Tag3`.
   
+#### Manual Testing without an Agent
+
+Alternatively, you can manually test the plugin by running the command `mvn hpi:run`, which will spin up a local development environment without the agent. This allows you to test using the HTTP client without needing docker. See the [jenkins documentation](https://jenkinsci.github.io/maven-hpi-plugin/run-mojo.html) for more details and options.
+
 ### Create your first job
 
 1. On jenkins Home page, click on "Create a new Job" 
