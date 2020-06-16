@@ -26,7 +26,6 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.publishers;
 
 import hudson.Extension;
-import hudson.model.FreeStyleProject;
 import hudson.model.PeriodicWork;
 import hudson.model.Queue;
 import hudson.model.Run;

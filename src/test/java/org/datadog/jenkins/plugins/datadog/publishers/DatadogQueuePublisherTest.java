@@ -58,7 +58,7 @@ public class DatadogQueuePublisherTest {
             project.scheduleBuild(0, new Cause.RemoteCause("host",String.valueOf(i)), new ParametersAction(new StringParameterValue("param", String.valueOf(i))));
         }
 
-        // set all the computers offline so they can't execute any buils, filling up the queue
+        // set all the computers offline so they can't execute any builds, filling up the queue
         for (Computer computer: jenkins.jenkins.getComputers()){
             computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
         }
@@ -89,7 +89,7 @@ public class DatadogQueuePublisherTest {
             project.scheduleBuild(0, new Cause.RemoteCause("host",String.valueOf(i)), new ParametersAction(new StringParameterValue("param", String.valueOf(i))));
         }
 
-        // set all the computers offline so they can't execute any buils, filling up the queue
+        // set all the computers offline so they can't execute any builds, filling up the queue
         for (Computer computer: jenkins.jenkins.getComputers()){
             computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
         }
