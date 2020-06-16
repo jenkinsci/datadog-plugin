@@ -82,7 +82,7 @@ public class DatadogQueuePublisher extends PeriodicWork {
             final Queue.Item[] items = queue.getItems();
             for (Queue.Item item : items) {
                 Map<String, Set<String>> job_tags = DatadogUtilities.getTagsFromGlobalTags();
-                job_tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
+                job_tags = TagsUtil.addTagToTags(job_tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
                 
                 String job_name;
                 Task task = item.task;
