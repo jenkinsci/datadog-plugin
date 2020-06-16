@@ -233,7 +233,7 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 | `jenkins.queue.pending`                | Number of Pending item in Queue.                               | `jenkins_url`                                               |
 | `jenkins.queue.stuck`                  | Number of Stuck item in Queue.                                 | `jenkins_url`                                               |
 | `jenkins.queue.blocked`                | Number of Blocked item in Queue.                               | `jenkins_url`                                               |
-| `jenkins.queue.job.size`                   | Number of times a Job has bee in a Queue. Size.                                                    | `jenkins_url`                                               |
+| `jenkins.queue.job.size`                   | Number of times a Job has bee in a Queue.                                                     | `jenkins_url`                                               |
 | `jenkins.queue.job.buildable`              | Number of Buildable item in Queue.                             | `jenkins_url`                                               |
 | `jenkins.queue.job.pending`                | Number of Pending item in Queue.                               | `jenkins_url`                                               |
 | `jenkins.queue.job.stuck`                  | Number of Stuck item in Queue.                                 | `jenkins_url`                                               |
