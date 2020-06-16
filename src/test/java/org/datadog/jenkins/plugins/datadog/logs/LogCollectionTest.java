@@ -1,10 +1,9 @@
 package org.datadog.jenkins.plugins.datadog.logs;
 
-import static org.mockito.Mockito.when;
-
 import hudson.ExtensionList;
 import hudson.model.Computer;
 import hudson.model.FreeStyleProject;
+import hudson.model.labels.LabelAtom;
 import hudson.tasks.BatchFile;
 import hudson.tasks.Shell;
 import java.util.logging.Logger;
@@ -14,38 +13,28 @@ import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.BlockJUnit4ClassRunner;
 import org.jvnet.hudson.test.JenkinsRule;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
-import org.powermock.modules.junit4.PowerMockRunnerDelegate;
 
-@RunWith(PowerMockRunner.class)
-@PowerMockIgnore({"javax.crypto.*", "javax.xml.*", "java.xml.*", "jdk.xml.*" })
-@PowerMockRunnerDelegate(BlockJUnit4ClassRunner.class)
-@PrepareForTest(ClientFactory.class)
 public class LogCollectionTest {
-    private static final Logger LOGGER = Logger.getLogger(LogCollectionTest.class.getName());
 
     @ClassRule
     public static JenkinsRule j = new JenkinsRule();
-    private DatadogClientStub stubClient = new DatadogClientStub();
+    private static DatadogClientStub stubClient = new DatadogClientStub();
 
-    @Before
-    public void setup()
-    {
-        PowerMockito.mockStatic(ClientFactory.class);
-        when(ClientFactory.getClient()).thenReturn(stubClient);
+    @BeforeClass
+    public static void setup() throws Exception {
+        ClientFactory.setTestClient(stubClient);
         DatadogGlobalConfiguration cfg = ExtensionList.lookup(DatadogGlobalConfiguration.class).get(0);
+        ExtensionList.clearLegacyInstances();
         cfg.setCollectBuildLogs(true);
+        j.createOnlineSlave(new LabelAtom("test"));
     }
+
 
     @Test
     public void testFreeStyleProject() throws Exception {
@@ -72,9 +61,18 @@ public class LogCollectionTest {
 
     @Test
     public void testPipeline() throws Exception {
-        WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "p");
+        WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "pipeline");
         p.setDefinition(new CpsFlowDefinition("echo 'foo'\n", true));
         p.scheduleBuild2(0).get();
         Assert.assertTrue(stubClient.logLines.contains("foo"));
     }
+
+    @Test
+    public void testPipelineOnSlave() throws Exception {
+        WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "pipelineOnSlave");
+        p.setDefinition(new CpsFlowDefinition("node('test') {echo 'foo'}\n", true));
+        p.scheduleBuild2(0).get();
+        Assert.assertTrue(stubClient.logLines.contains("foo"));
+    }
+
 }
