@@ -25,7 +25,7 @@ public class DatadogComputerPublisherTest {
         
         String url = jenkins.getURL().toString();
         String hostname = DatadogUtilities.getHostname(null);
-        String nodeHostname = jenkins.jenkins.getComputer("").getHostName();;
+        String nodeHostname = jenkins.jenkins.getComputers()[0].getHostName();
         
         String[] expectedTags = new String[3];
         expectedTags[0] = "node_name:master";
@@ -57,7 +57,7 @@ public class DatadogComputerPublisherTest {
     public void testJenkinsMultipleNodes() throws Exception {
         DatadogClientStub client = new DatadogClientStub();
         DatadogComputerPublisherTestWrapper computerPublisher = new DatadogComputerPublisherTestWrapper();
-        ((DatadogComputerPublisherTestWrapper)computerPublisher).setDatadogClient(client);
+        computerPublisher.setDatadogClient(client);
         
         String url = jenkins.getURL().toString();
         
@@ -77,7 +77,7 @@ public class DatadogComputerPublisherTest {
         expectedTags1[2] = "jenkins_url:" + url;
         
         // The CI sets a hostname but we cannot set a hostname locally 
-        String nodeHostname = jenkins.jenkins.getComputer("").getHostName();
+        String nodeHostname = jenkins.jenkins.getComputers()[0].getHostName();
         String hostname = DatadogUtilities.getHostname(null);
      
         if (nodeHostname != null) {
@@ -100,7 +100,7 @@ public class DatadogComputerPublisherTest {
     public void testNodeStatusCountAreSame() throws Exception {
         DatadogClientStub client = new DatadogClientStub();
         DatadogComputerPublisherTestWrapper computerPublisher = new DatadogComputerPublisherTestWrapper();
-        ((DatadogComputerPublisherTestWrapper)computerPublisher).setDatadogClient(client);
+        computerPublisher.setDatadogClient(client);
         
         String url = jenkins.getURL().toString();
         
@@ -123,7 +123,7 @@ public class DatadogComputerPublisherTest {
         expectedTagsGlobal[0] = "jenkins_url:" + url;
     
         // The CI sets a hostname but we cannot set a hostname locally 
-        String nodeHostname = jenkins.jenkins.getComputer("").getHostName();
+        String nodeHostname = jenkins.jenkins.getComputers()[0].getHostName();
         String hostname = DatadogUtilities.getHostname(null);
     
         if (nodeHostname != null) {
