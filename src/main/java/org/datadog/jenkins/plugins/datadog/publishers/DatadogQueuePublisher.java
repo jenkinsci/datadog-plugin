@@ -136,8 +136,4 @@ public class DatadogQueuePublisher extends PeriodicWork {
     public DatadogClient getDatadogClient(){
         return ClientFactory.getClient();
     }
-    
-    public Queue getQueue(){
-        return Queue.getInstance();
-    }
 }
