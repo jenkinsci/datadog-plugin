@@ -25,7 +25,6 @@ public class DatadogComputerPublisherTest {
         
         String url = jenkins.getURL().toString();
         String hostname = DatadogUtilities.getHostname(null);
-        String nodeHostname = jenkins.jenkins.getComputers()[0].getHostName();
         
         String[] expectedTags = new String[3];
         expectedTags[0] = "node_name:master";
@@ -33,6 +32,7 @@ public class DatadogComputerPublisherTest {
         expectedTags[2] = "jenkins_url:" + url;
         
         // The CI sets a hostname but we cannot set a hostname locally: https://javadoc.jenkins-ci.org/hudson/model/Computer.html#getHostName--
+        String nodeHostname = jenkins.jenkins.getComputer("").getHostName();
         if (nodeHostname != null) {
             expectedTags = Arrays.copyOf(expectedTags, 4);
             expectedTags[3] = "node_hostname:" + nodeHostname;
@@ -76,16 +76,7 @@ public class DatadogComputerPublisherTest {
         expectedTags1[1] = "node_label:test1";
         expectedTags1[2] = "jenkins_url:" + url;
         
-        // The CI sets a hostname but we cannot set a hostname locally 
-        String nodeHostname = jenkins.jenkins.getComputers()[0].getHostName();
         String hostname = DatadogUtilities.getHostname(null);
-     
-        if (nodeHostname != null) {
-            expectedTags = Arrays.copyOf(expectedTags, 4);
-            expectedTags1 = Arrays.copyOf(expectedTags1, 4);
-            expectedTags[3] = "node_hostname:" + nodeHostname;
-            expectedTags1[3] = "node_hostname:" + nodeHostname;
-        }
         
         computerPublisher.doRun();
         
@@ -122,16 +113,7 @@ public class DatadogComputerPublisherTest {
         String[] expectedTagsGlobal = new String[1];
         expectedTagsGlobal[0] = "jenkins_url:" + url;
     
-        // The CI sets a hostname but we cannot set a hostname locally 
-        String nodeHostname = jenkins.jenkins.getComputers()[0].getHostName();
         String hostname = DatadogUtilities.getHostname(null);
-    
-        if (nodeHostname != null) {
-            expectedTags = Arrays.copyOf(expectedTags, 4);
-            expectedTags1 = Arrays.copyOf(expectedTags1, 4);
-            expectedTags[3] = "node_hostname:" + nodeHostname;
-            expectedTags1[3] = "node_hostname:" + nodeHostname;
-        }
         
         computerPublisher.doRun();
         
