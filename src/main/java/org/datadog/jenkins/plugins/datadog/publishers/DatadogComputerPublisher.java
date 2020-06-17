@@ -61,7 +61,7 @@ public class DatadogComputerPublisher extends PeriodicWork {
             logger.fine("doRun called: Computing Node metrics");
 
             // Get Datadog Client Instance
-            DatadogClient client = getDatadogClient();
+            DatadogClient client = ClientFactory.getClient();
             String hostname = DatadogUtilities.getHostname(null);
             if(client == null){
                 return;
@@ -82,21 +82,20 @@ public class DatadogComputerPublisher extends PeriodicWork {
                 Map<String, Set<String>> tags = TagsUtil.merge(
                         DatadogUtilities.getComputerTags(computer), globalTags);
                 nodeCount++;
-                boolean online = true;
                 if (computer.isOffline()) {
-                    online = false;
                     nodeOffline++;
+                    client.gauge("jenkins.node_status.up", 0, hostname, tags);
                 }
+                
                 if (computer.isOnline()) {
                     nodeOnline++;
+                    client.gauge("jenkins.node_status.up", 1, hostname, tags);
                 }
-
-                int isOnline = online ? 1 : 0;
+                
                 int executorCount = computer.countExecutors();
                 int inUse = computer.countBusy();
                 int free = computer.countIdle();
                 
-                client.gauge("jenkins.node_status.up", isOnline, hostname, tags);
                 client.gauge("jenkins.node_status.count", 1, hostname, tags);
                 
                 client.gauge("jenkins.executor.count", executorCount, hostname, tags);
@@ -107,13 +106,10 @@ public class DatadogComputerPublisher extends PeriodicWork {
             client.gauge("jenkins.node.count", nodeCount, hostname, globalTags);
             client.gauge("jenkins.node.offline", nodeOffline, hostname, globalTags);
             client.gauge("jenkins.node.online", nodeOnline, hostname, globalTags);
+            
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, null);
         }
     }
     
-    public DatadogClient getDatadogClient(){
-        return ClientFactory.getClient();
-    }
-
 }

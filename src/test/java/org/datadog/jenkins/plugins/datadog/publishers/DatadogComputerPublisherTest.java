@@ -3,8 +3,10 @@ package org.datadog.jenkins.plugins.datadog.publishers;
 import java.util.Arrays;
 
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
-import org.junit.Rule;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 
@@ -14,14 +16,18 @@ import hudson.model.Computer;
 import hudson.slaves.OfflineCause;
 
 public class DatadogComputerPublisherTest {
-    @Rule 
-    public JenkinsRule jenkins = new JenkinsRule();
+    @ClassRule 
+    public static JenkinsRule jenkins = new JenkinsRule();
+    private static DatadogClientStub client = new DatadogClientStub();
+    
+    @BeforeClass
+    public static void setup() throws Exception {
+        ClientFactory.setTestClient(client);
+    }
     
     @Test
     public void testJenkinsNodeMetrics() throws Exception {
-        DatadogClientStub client = new DatadogClientStub();
-        DatadogComputerPublisherTestWrapper computerPublisher = new DatadogComputerPublisherTestWrapper();
-        computerPublisher.setDatadogClient(client);
+        DatadogComputerPublisher computerPublisher = new DatadogComputerPublisher();
         
         String url = jenkins.getURL().toString();
         String hostname = DatadogUtilities.getHostname(null);
@@ -55,12 +61,10 @@ public class DatadogComputerPublisherTest {
     
     @Test
     public void testJenkinsMultipleNodes() throws Exception {
-        DatadogClientStub client = new DatadogClientStub();
-        DatadogComputerPublisherTestWrapper computerPublisher = new DatadogComputerPublisherTestWrapper();
-        computerPublisher.setDatadogClient(client);
+        DatadogComputerPublisher computerPublisher = new DatadogComputerPublisher();
         
         String url = jenkins.getURL().toString();
-        
+                
         EnvVars envVars = new EnvVars();
         envVars.put("HOSTNAME", "test-hostname-2");
         jenkins.createSlave("test", "test", envVars);
@@ -89,12 +93,10 @@ public class DatadogComputerPublisherTest {
     
     @Test
     public void testNodeStatusCountAreSame() throws Exception {
-        DatadogClientStub client = new DatadogClientStub();
-        DatadogComputerPublisherTestWrapper computerPublisher = new DatadogComputerPublisherTestWrapper();
-        computerPublisher.setDatadogClient(client);
-        
+        DatadogComputerPublisher computerPublisher = new DatadogComputerPublisher();
         String url = jenkins.getURL().toString();
-        
+        jenkins.jenkins.getComputer("").setTemporarilyOffline(false, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
+
         EnvVars envVars = new EnvVars();
         envVars.put("HOSTNAME", "test-hostname-2");
         jenkins.createSlave("test", "test", envVars);
@@ -122,7 +124,6 @@ public class DatadogComputerPublisherTest {
         int numComputersOffline = 2;
         client.assertMetric("jenkins.node.count", numComputers, hostname, expectedTagsGlobal);
         client.assertMetricValues("jenkins.node_status.count", 1, hostname, numComputers);
-        
         
         client.assertMetric("jenkins.node.online", numComputersOnline, hostname, expectedTagsGlobal);
         client.assertMetricValues("jenkins.node_status.up", 1, hostname, numComputersOnline);
