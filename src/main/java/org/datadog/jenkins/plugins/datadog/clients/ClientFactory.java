@@ -31,9 +31,19 @@ import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 
 public class ClientFactory {
+    private static DatadogClient testClient;
+
+    public static void setTestClient(DatadogClient testClient){
+        // Only used for tests
+        ClientFactory.testClient = testClient;
+    }
 
     public static DatadogClient getClient(DatadogClient.ClientType type, String apiUrl, String logIntakeUrl,
                                           Secret apiKey, String host, Integer port, Integer logCollectionPort){
+        if(testClient != null){
+            // Only used for tests
+            return testClient;
+        }
         switch(type){
             case HTTP:
                 return DatadogHttpClient.getInstance(apiUrl, logIntakeUrl, apiKey);
