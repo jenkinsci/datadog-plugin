@@ -151,7 +151,7 @@ public class DatadogClientStub implements DatadogClient {
     public boolean assertMetricValues(String name, double value, String hostname, int count) {
         DatadogMetric m = new DatadogMetric(name, value, hostname, new ArrayList<>());
         
-        // remove tags so metrics of the same value are considered the same.
+        // compare without tags so metrics of the same value are considered the same.
         long timesSeen = this.metrics.stream().filter(x -> x.sameNoTags(m)).count();
         if (timesSeen == count){
             return true;
