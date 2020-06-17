@@ -49,7 +49,7 @@ public class DatadogQueuePublisherTest {
         expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
         expectedTags[1] = "job_name:" + displayName;
         queuePublisher.doRun();
-        client.assertMetric("jenkins.queue.job.size", 1, hostname, expectedTags);
+        client.assertMetric("jenkins.queue.job.in_queue", 1, hostname, expectedTags);
     
     }
     
@@ -76,9 +76,9 @@ public class DatadogQueuePublisherTest {
         queuePublisher.doRun();
         
         // Since the same job is in the queue multiple times, then its metric should be submitted multiple times
-        client.assertMetric("jenkins.queue.job.size", 1, hostname, expectedTags);
-        client.assertMetric("jenkins.queue.job.size", 1, hostname, expectedTags);
-        client.assertMetric("jenkins.queue.job.size", 1, hostname, expectedTags);
+        client.assertMetric("jenkins.queue.job.in_queue", 1, hostname, expectedTags);
+        client.assertMetric("jenkins.queue.job.in_queue", 1, hostname, expectedTags);
+        client.assertMetric("jenkins.queue.job.in_queue", 1, hostname, expectedTags);
     }
     
     @Test
@@ -112,9 +112,9 @@ public class DatadogQueuePublisherTest {
         
         queuePublisher.doRun();
         // Make sure metrics are submitted for all jobs when there are multiple jobs.
-        client.assertMetric("jenkins.queue.job.size", 1, hostname, expectedTags);
-        client.assertMetric("jenkins.queue.job.size", 1, hostname, expectedTags1);
-        client.assertMetric("jenkins.queue.job.size", 1, hostname, expectedTags2);
+        client.assertMetric("jenkins.queue.job.in_queue", 1, hostname, expectedTags);
+        client.assertMetric("jenkins.queue.job.in_queue", 1, hostname, expectedTags1);
+        client.assertMetric("jenkins.queue.job.in_queue", 1, hostname, expectedTags2);
         
         client.assertMetric("jenkins.queue.job.pending", 0, hostname, expectedTags);
         client.assertMetric("jenkins.queue.job.pending", 0, hostname, expectedTags1);

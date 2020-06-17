@@ -115,7 +115,7 @@ public class DatadogQueuePublisher extends PeriodicWork {
                     pending++;
                 }
                 
-                client.gauge("jenkins.queue.job.size", 1, hostname, job_tags);
+                client.gauge("jenkins.queue.job.in_queue", 1, hostname, job_tags);
                 client.gauge("jenkins.queue.job.buildable", DatadogUtilities.toInt(isBuildable), hostname, job_tags);
                 client.gauge("jenkins.queue.job.pending", DatadogUtilities.toInt(isPending), hostname, job_tags);
                 client.gauge("jenkins.queue.job.stuck", DatadogUtilities.toInt(isStuck), hostname, job_tags);
