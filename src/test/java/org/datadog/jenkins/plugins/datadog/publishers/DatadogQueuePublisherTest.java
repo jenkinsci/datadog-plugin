@@ -1,6 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.publishers;
 
-import org.junit.Rule;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.SleepBuilder;
@@ -8,6 +9,7 @@ import org.jvnet.hudson.test.SleepBuilder;
 import java.util.Arrays;
 
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 
 import hudson.model.Messages;
@@ -19,8 +21,14 @@ import hudson.model.FreeStyleProject;
 import hudson.slaves.OfflineCause;
 
 public class DatadogQueuePublisherTest {
-    @Rule 
-    public JenkinsRule jenkins = new JenkinsRule();
+    @ClassRule 
+    public static JenkinsRule jenkins = new JenkinsRule();
+    private static DatadogClientStub client = new DatadogClientStub();
+    
+    @BeforeClass
+    public static void setup() throws Exception {
+        ClientFactory.setTestClient(client);
+    }
 
     @Test
     public void testQueueMetrics() throws Exception {
@@ -35,9 +43,7 @@ public class DatadogQueuePublisherTest {
         for (Computer computer: jenkins.jenkins.getComputers()){
             computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
         }
-        DatadogClientStub client = new DatadogClientStub();
-        DatadogQueuePublisherTestWrapper queuePublisher = new DatadogQueuePublisherTestWrapper();
-        queuePublisher.setDatadogClient(client);
+        DatadogQueuePublisher queuePublisher = new DatadogQueuePublisher();
 
         final String[] expectedTags = new String[2];
         expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
@@ -62,10 +68,8 @@ public class DatadogQueuePublisherTest {
         for (Computer computer: jenkins.jenkins.getComputers()){
             computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
         }
-        DatadogClientStub client = new DatadogClientStub();
-        DatadogQueuePublisherTestWrapper queuePublisher = new DatadogQueuePublisherTestWrapper();
-        queuePublisher.setDatadogClient(client);
-
+        
+        DatadogQueuePublisher queuePublisher = new DatadogQueuePublisher();
         final String[] expectedTags = new String[2];
         expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
         expectedTags[1] = "job_name:" + displayName;
@@ -93,10 +97,9 @@ public class DatadogQueuePublisherTest {
         for (Computer computer: jenkins.jenkins.getComputers()){
             computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
         }
-        DatadogClientStub client = new DatadogClientStub();
-        DatadogQueuePublisherTestWrapper queuePublisher = new DatadogQueuePublisherTestWrapper();
-        queuePublisher.setDatadogClient(client);
-
+        
+        DatadogQueuePublisher queuePublisher = new DatadogQueuePublisher();
+        
         final String[] expectedTags = new String[2];
         expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
         expectedTags[1] = "job_name:test7";

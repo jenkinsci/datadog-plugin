@@ -64,7 +64,7 @@ public class DatadogQueuePublisher extends PeriodicWork {
             logger.fine("doRun called: Computing queue metrics");
 
             // Get Datadog Client Instance
-            DatadogClient client = getDatadogClient();
+            DatadogClient client = ClientFactory.getClient();
             if(client == null){
                 return;
             }
@@ -131,9 +131,5 @@ public class DatadogQueuePublisher extends PeriodicWork {
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, null);
         }
-    }
-    
-    public DatadogClient getDatadogClient(){
-        return ClientFactory.getClient();
     }
 }
