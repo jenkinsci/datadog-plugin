@@ -107,6 +107,7 @@ public class DatadogComputerPublisher extends PeriodicWork {
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, null);
         }
+        
     }
-    
+
 }
