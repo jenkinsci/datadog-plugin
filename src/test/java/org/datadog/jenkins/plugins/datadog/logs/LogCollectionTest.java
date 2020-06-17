@@ -68,7 +68,7 @@ public class LogCollectionTest {
     }
 
     @Test
-    public void testPipelineOnSlave() throws Exception {
+    public void testPipelineOnWorkerNode() throws Exception {
         WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "pipelineOnSlave");
         p.setDefinition(new CpsFlowDefinition("node('test') {echo 'foo'}\n", true));
         p.scheduleBuild2(0).get();
