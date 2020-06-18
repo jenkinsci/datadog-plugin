@@ -26,14 +26,11 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.clients;
 
 import hudson.util.Secret;
-import net.sf.json.JSON;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.junit.Assert;
 
-import javax.servlet.ServletException;
-import java.io.IOException;
 import java.util.*;
 
 public class DatadogClientStub implements DatadogClient {
@@ -149,6 +146,18 @@ public class DatadogClientStub implements DatadogClient {
             return true;
         }
         Assert.fail("metric { " + m.toString() + " does not exist. " +
+                "metrics: {" + this.metrics.toString() + " }");
+        return false;
+    }
+
+    public boolean assertMetric(String name, String hostname, String[] tags) {
+        DatadogMetric m = new DatadogMetric(name, 0, hostname, Arrays.asList(tags));
+        Optional<DatadogMetric> match = this.metrics.stream().filter(t -> t.same(m)).findFirst();
+        if(match.isPresent()){
+            this.metrics.remove(match.get());
+            return true;
+        }
+        Assert.fail("metric { " + m.toString() + " does not exist (ignoring value). " +
                 "metrics: {" + this.metrics.toString() + " }");
         return false;
     }
