@@ -25,7 +25,7 @@ This plugin can be installed from the [Update Center][3] (found at `Manage Jenki
 There are two ways to configure your plugin to submit data to Datadog:
 
 * **RECOMMENDED**: Using a DogStatsD server / Datadog Agent that acts as a forwarder between Jenkins and Datadog.
-  - Build Logs collection only works with a full Datadog Agent installed.
+  - [Build Logs collection](#forwarding-logs) only works with a full Datadog Agent installed.
 * Sending data directly to Datadog through HTTP.
   - The HTTP client implementation used is blocking with a timeout duration of 1 minute. If there is a connection problem with Datadog, it may slow your Jenkins instance down.
 
@@ -47,16 +47,7 @@ To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure S
 1. Select the radio button next to **Use the Datadog Agent to report to Datadog**.
 2. Specify your DogStatsD server `hostname` and `port`.
 3. Save your configuration.
-4. If you want to forward logs to Datadog, create a [custom log source file][13] by creating a `conf.yaml` inside `conf.d/jenkins.d` with the following:
-  ```
-  logs:
 
-    -type: tcp 
-     port: 10518 
-     service: <SERVICE>
-     source: jenkins
-  ```
-  
 #### Groovy script
 
 Configure your Datadog plugin to forward data through HTTP or DogStatsD using the Groovy scripts below. Configuring the plugin this way might be useful if you're running your Jenkins Master in a Docker container using the [official Jenkins Docker image][5] or any derivative that supports `plugins.txt` and Groovy init scripts.
@@ -119,6 +110,21 @@ Configure your Datadog plugin using environment variables with the `DATADOG_JENK
 2. Set the `DATADOG_JENKINS_PLUGIN_TARGET_HOST` variable, which specifies the DogStatsD server host (defaults to `localhost`).
 3. Set the `DATADOG_JENKINS_PLUGIN_TARGET_PORT` variable, which specifies the DogStatsD server port (defaults to `8125`).
 4. (optional) Set the `DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT` variable, which specifies the Datadog Agent log collection port.
+
+#### Forwarding Logs {#forwarding-logs}
+
+**Note**: This configuration only applies to those using the [Datadog Agent configuration](#dogstatsd-forwarding-plugin).
+
+
+If you want to forward logs to Datadog, create a [custom log source file][13] by creating a `conf.yaml` inside `conf.d/jenkins.d` with the following:
+  ```
+  logs:
+
+    -type: tcp 
+     port: 10518 
+     service: <SERVICE>
+     source: jenkins
+  ```
 
 #### Logging
 
