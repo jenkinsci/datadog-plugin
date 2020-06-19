@@ -242,14 +242,14 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 
 
 2. To collect Jenkins logs, create a [custom log source file][13] for your Agent by creating a `conf.yaml` inside `conf.d/jenkins.d` with the following:
-  ```
-  logs:
+    ```
+    logs:
 
-    -type: tcp 
-     port: 10518 
-     service: <SERVICE>
-     source: jenkins
-  ```
+      -type: tcp 
+      port: 10518 
+      service: <SERVICE>
+      source: jenkins
+    ```
   
 3. [Restart the Agent][14].
 
