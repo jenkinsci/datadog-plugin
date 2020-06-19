@@ -25,7 +25,7 @@ This plugin can be installed from the [Update Center][3] (found at `Manage Jenki
 There are two ways to configure your plugin to submit data to Datadog:
 
 * **RECOMMENDED**: Using a DogStatsD server / Datadog Agent that acts as a forwarder between Jenkins and Datadog.
-  - [Build Logs collection](#forwarding-logs) only works with a full Datadog Agent installed.
+  - [Build Logs collection](#log-collection) only works with a full Datadog Agent installed.
 * Sending data directly to Datadog through HTTP.
   - The HTTP client implementation used is blocking with a timeout duration of 1 minute. If there is a connection problem with Datadog, it may slow your Jenkins instance down.
 
@@ -110,21 +110,6 @@ Configure your Datadog plugin using environment variables with the `DATADOG_JENK
 2. Set the `DATADOG_JENKINS_PLUGIN_TARGET_HOST` variable, which specifies the DogStatsD server host (defaults to `localhost`).
 3. Set the `DATADOG_JENKINS_PLUGIN_TARGET_PORT` variable, which specifies the DogStatsD server port (defaults to `8125`).
 4. (optional) Set the `DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT` variable, which specifies the Datadog Agent log collection port.
-
-#### Forwarding Logs {#forwarding-logs}
-
-**Note**: This configuration only applies to those using the [Datadog Agent configuration](#dogstatsd-forwarding-plugin).
-
-
-If you want to forward logs to Datadog, create a [custom log source file][13] by creating a `conf.yaml` inside `conf.d/jenkins.d` with the following:
-  ```
-  logs:
-
-    -type: tcp 
-     port: 10518 
-     service: <SERVICE>
-     source: jenkins
-  ```
 
 #### Logging
 
@@ -244,6 +229,31 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 | `jenkins.user.authenticated`           | Rate of users authenticating.                                  | `jenkins_url`, `user_id`                                    |
 | `jenkins.user.logout`                  | Rate of users logging out.                                     | `jenkins_url`, `user_id`                                    |
 
+
+#### Log Collection {#log-collection}
+
+**Note**: This configuration only applies to those using the [Datadog Agent configuration](#dogstatsd-forwarding-plugin).
+
+1. Collecting logs is disabled by default in the Datadog Agent, enable it in your `datadog.yaml` file:
+
+   ```yaml
+   logs_enabled: true
+   ```
+
+
+2. To collect Jenkins logs, create a [custom log source file][13] for your Agent by creating a `conf.yaml` inside `conf.d/jenkins.d` with the following:
+  ```
+  logs:
+
+    -type: tcp 
+     port: 10518 
+     service: <SERVICE>
+     source: jenkins
+  ```
+  
+3. [Restart the Agent][14].
+
+
 ### Service checks
 
 Build status `jenkins.job.status` with the default tags: : `jenkins_url`, `job`, `node`, `result`, `user_id`
@@ -280,3 +290,4 @@ Checkout the [development document][12] for tips on spinning up a quick developm
 [11]: https://github.com/jenkinsci/datadog-plugin/blob/master/CONTRIBUTING.md
 [12]: https://github.com/jenkinsci/datadog-plugin/blob/master/DEVELOPMENT.md
 [13]: https://docs.datadoghq.com/agent/logs/?tab=tcpudp#custom-log-collection
+[14]: https://docs.datadoghq.com/agent/guide/agent-commands/#start-stop-and-restart-the-agent
