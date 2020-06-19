@@ -25,9 +25,20 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.listeners;
 
+import com.cloudbees.workflow.rest.external.RunExt;
+import com.cloudbees.workflow.rest.external.StageNodeExt;
 import hudson.Extension;
-import hudson.model.*;
+import hudson.model.Queue;
+import hudson.model.Result;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
+import javax.annotation.Nonnull;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
@@ -36,12 +47,7 @@ import org.datadog.jenkins.plugins.datadog.events.BuildAbortedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildFinishedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildStartedEventImpl;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-
-import javax.annotation.Nonnull;
-import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Logger;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 
 /**
@@ -50,16 +56,16 @@ import java.util.logging.Logger;
  * - When a build finishes, the {@link #onCompleted(Run, TaskListener)} method will be invoked.
  */
 @Extension
-public class DatadogBuildListener extends RunListener<Run>  {
+public class DatadogBuildListener extends RunListener<Run> {
 
     private static final Logger logger = Logger.getLogger(DatadogBuildListener.class.getName());
 
     /**
      * Called when a build is first started.
      *
-     * @param run      - A Run object representing a particular execution of Job.
+     * @param run - A Run object representing a particular execution of Job.
      * @param listener - A TaskListener object which receives events that happen during some
-     *                 operation.
+     * operation.
      */
     @Override
     public void onStarted(Run run, TaskListener listener) {
@@ -72,7 +78,7 @@ public class DatadogBuildListener extends RunListener<Run>  {
 
             // Get Datadog Client Instance
             DatadogClient client = getDatadogClient();
-            if(client == null){
+            if (client == null) {
                 return;
             }
 
@@ -117,9 +123,9 @@ public class DatadogBuildListener extends RunListener<Run>  {
     /**
      * Called when a build is completed.
      *
-     * @param run      - A Run object representing a particular execution of Job.
+     * @param run - A Run object representing a particular execution of Job.
      * @param listener - A TaskListener object which receives events that happen during some
-     *                 operation.
+     * operation.
      */
 
     @Override
@@ -133,7 +139,7 @@ public class DatadogBuildListener extends RunListener<Run>  {
 
             // Get Datadog Client Instance
             DatadogClient client = getDatadogClient();
-            if(client == null){
+            if (client == null) {
                 return;
             }
 
@@ -154,6 +160,21 @@ public class DatadogBuildListener extends RunListener<Run>  {
             Map<String, Set<String>> tags = buildData.getTags();
             String hostname = buildData.getHostname("unknown");
             client.gauge("jenkins.job.duration", buildData.getDuration(0L) / 1000, hostname, tags);
+            logger.fine(String.format("[%s]: Duration: %s", buildData.getJobName(null), toTimeString(buildData.getDuration(0L))));
+
+            if (run instanceof WorkflowRun) {
+                RunExt extRun = getRunExtForRun((WorkflowRun) run);
+                long pauseDuration = 0;
+                for (StageNodeExt stage : extRun.getStages()) {
+                    pauseDuration += stage.getPauseDurationMillis();
+                }
+                client.gauge("jenkins.job.pauseduration", pauseDuration / 1000, hostname, tags);
+                logger.fine(String.format("[%s]: Pause Duration: %s", buildData.getJobName(null), toTimeString(pauseDuration)));
+                long buildDuration = run.getDuration() - pauseDuration;
+                client.gauge("jenkins.job.buildduration", buildDuration / 1000, hostname, tags);
+                logger.fine(
+                        String.format("[%s]: Build Duration (without pause): %s", buildData.getJobName(null), toTimeString(buildDuration)));
+            }
 
             // Submit counter
             client.incrementCounter("jenkins.job.completed", hostname, tags);
@@ -178,19 +199,24 @@ public class DatadogBuildListener extends RunListener<Run>  {
                 long leadTime = run.getDuration() + mttr;
 
                 client.gauge("jenkins.job.leadtime", leadTime / 1000, hostname, tags);
+                logger.fine(String.format("[%s]: Lead time: %s", buildData.getJobName(null), toTimeString(leadTime)));
                 if (cycleTime > 0) {
                     client.gauge("jenkins.job.cycletime", cycleTime / 1000, hostname, tags);
+                    logger.fine(String.format("[%s]: Cycle Time: %s", buildData.getJobName(null), toTimeString(cycleTime)));
                 }
                 if (mttr > 0) {
                     client.gauge("jenkins.job.mttr", mttr / 1000, hostname, tags);
+                    logger.fine(String.format("[%s]: MTTR: %s", buildData.getJobName(null), toTimeString(mttr)));
                 }
             } else {
                 long feedbackTime = run.getDuration();
                 long mtbf = getMeanTimeBetweenFailure(run);
 
                 client.gauge("jenkins.job.feedbacktime", feedbackTime / 1000, hostname, tags);
+                logger.fine(String.format("[%s]: Feedback Time: %s", buildData.getJobName(null), toTimeString(feedbackTime)));
                 if (mtbf > 0) {
                     client.gauge("jenkins.job.mtbf", mtbf / 1000, hostname, tags);
+                    logger.fine(String.format("[%s]: MTBF: %s", buildData.getJobName(null), toTimeString(mtbf)));
                 }
             }
 
@@ -211,7 +237,7 @@ public class DatadogBuildListener extends RunListener<Run>  {
 
             // Get Datadog Client Instance
             DatadogClient client = getDatadogClient();
-            if(client == null){
+            if (client == null) {
                 return;
             }
 
@@ -239,6 +265,13 @@ public class DatadogBuildListener extends RunListener<Run>  {
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, null);
         }
+    }
+
+    private String toTimeString(long millis) {
+        return String.format("%d min, %d sec",
+                TimeUnit.MILLISECONDS.toMinutes(millis),
+                TimeUnit.MILLISECONDS.toSeconds(millis) -
+                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis)));
     }
 
     private long getMeanTimeBetweenFailure(Run<?, ?> run) {
@@ -280,11 +313,15 @@ public class DatadogBuildListener extends RunListener<Run>  {
         return run != null && run.getResult() != Result.SUCCESS;
     }
 
-    public Queue getQueue(){
+    public RunExt getRunExtForRun(WorkflowRun run) {
+        return RunExt.create(run);
+    }
+
+    public Queue getQueue() {
         return Queue.getInstance();
     }
 
-    public DatadogClient getDatadogClient(){
+    public DatadogClient getDatadogClient() {
         return ClientFactory.getClient();
     }
 }

@@ -25,6 +25,7 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.listeners;
 
+import com.cloudbees.workflow.rest.external.StageNodeExt;
 import hudson.EnvVars;
 import hudson.model.*;
 import jenkins.model.Jenkins;
@@ -33,7 +34,11 @@ import org.datadog.jenkins.plugins.datadog.stubs.ProjectStub;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogMetric;
 import org.datadog.jenkins.plugins.datadog.stubs.QueueStub;
+import org.datadog.jenkins.plugins.datadog.stubs.RunExtStub;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -43,57 +48,68 @@ import static org.mockito.Mockito.*;
 
 public class DatadogBuildListenerTest {
 
-    @Test
-    public void testOnCompletedWithNothing() throws Exception {
-        DatadogClientStub client = new DatadogClientStub();
-        DatadogBuildListener datadogBuildListener = new DatadogBuildListenerTestWrapper();
+    private DatadogClientStub client;
+    private DatadogBuildListener datadogBuildListener;
+    private ProjectStub job;
+    private Queue queue;
+    private WorkflowRun workflowRun;
+    EnvVars envVars;
+
+    @Before
+    public void setUpMocks() {
+        this.client = new DatadogClientStub();
+
+        this.datadogBuildListener = new DatadogBuildListenerTestWrapper();
         ((DatadogBuildListenerTestWrapper)datadogBuildListener).setDatadogClient(client);
 
-        Jenkins jenkins = mock(Jenkins.class);
-        when(jenkins.getFullName()).thenReturn(null);
-
-        ProjectStub job = new ProjectStub(jenkins,null);
-
-        EnvVars envVars = new EnvVars();
-
-        Run run = mock(Run.class);
-        when(run.getResult()).thenReturn(null);
-        when(run.getEnvironment(any(TaskListener.class))).thenReturn(envVars);
-        when(run.getParent()).thenReturn(job);
-
-        datadogBuildListener.onCompleted(run, mock(TaskListener.class));
-
-        client.assertedAllMetricsAndServiceChecks();
-
-    }
-
-    @Test
-    public void testOnCompletedOnSuccessfulRun() throws Exception {
-        DatadogClientStub client = new DatadogClientStub();
-        DatadogBuildListener datadogBuildListener = new DatadogBuildListenerTestWrapper();
-        ((DatadogBuildListenerTestWrapper)datadogBuildListener).setDatadogClient(client);
+        this.queue = new QueueStub(mock(LoadBalancer.class));
+        Queue.Item item = mock(Queue.Item.class);
+        when(item.getId()).thenReturn(1L);
+        when(item.getInQueueSince()).thenReturn(2000000L);
+        ((QueueStub)queue).setItem(item);
+        ((DatadogBuildListenerTestWrapper)datadogBuildListener).setQueue(queue);
 
         Jenkins jenkins = mock(Jenkins.class);
         when(jenkins.getFullName()).thenReturn("ParentFullName");
+        this.job = new ProjectStub(jenkins,"JobName");
 
-        ProjectStub project = new ProjectStub(jenkins,"JobName");
-
-        EnvVars envVars = new EnvVars();
+        this.envVars = new EnvVars();
         envVars.put("HOSTNAME", "test-hostname-2");
         envVars.put("NODE_NAME", "test-node");
         envVars.put("BUILD_URL", "http://build_url.com");
         envVars.put("GIT_BRANCH", "test-branch");
 
-        BuildStub previousSuccessfulRun = new BuildStub(project, Result.SUCCESS, envVars, null,
+        workflowRun = mock(WorkflowRun.class);
+
+    }
+
+    @Test
+    public void testOnCompletedWithNothing() throws Exception {
+        Jenkins jenkins = mock(Jenkins.class);
+        when(jenkins.getFullName()).thenReturn(null);
+        this.job = new ProjectStub(jenkins,null);
+
+        Run run = mock(Run.class);
+        when(run.getResult()).thenReturn(null);
+        when(run.getEnvironment(any(TaskListener.class))).thenReturn(this.envVars);
+        when(run.getParent()).thenReturn(this.job);
+
+        this.datadogBuildListener.onCompleted(run, mock(TaskListener.class));
+        this.client.assertedAllMetricsAndServiceChecks();
+    }
+
+    @Test
+    public void testOnCompletedOnSuccessfulRun() throws Exception {
+        BuildStub previousSuccessfulRun = new BuildStub(this.job, Result.SUCCESS, envVars, null,
                 121000L, 1, null, 1000000L, null);
 
-        BuildStub previousFailedRun1 = new BuildStub(project, Result.FAILURE, envVars, previousSuccessfulRun,
+        BuildStub previousFailedRun1 = new BuildStub(this.job, Result.FAILURE, envVars, previousSuccessfulRun,
                 122000L, 2, previousSuccessfulRun, 2000000L, null);
 
-        BuildStub previousFailedRun2 = new BuildStub(project, Result.FAILURE, envVars, previousSuccessfulRun,
+        BuildStub previousFailedRun2 = new BuildStub(this.job, Result.FAILURE, envVars, previousSuccessfulRun,
                 123000L, 3, previousFailedRun1, 3000000L, null);
 
-        BuildStub successRun = new BuildStub(project, Result.SUCCESS, envVars, previousSuccessfulRun,
+        BuildStub successRun = new BuildStub(this.job, Result.SUCCESS, envVars, previousSuccessfulRun,
                 124000L, 4, previousFailedRun2, 4000000L, null);
 
         datadogBuildListener.onCompleted(previousSuccessfulRun, mock(TaskListener.class));
@@ -137,27 +153,61 @@ public class DatadogBuildListenerTest {
     }
 
     @Test
+    public void testOnCompletedWorkflowRun() throws Exception {
+        final int stageCount = 5;
+        final long stageDuration = 12000;
+        final long pauseDurationPerStage = 400;
+        final long buildDuration = stageDuration * stageCount;
+        final long pauseDuration = pauseDurationPerStage * stageCount;
+        final long totalDuration = buildDuration + pauseDuration;
+        final String[] stageNames = {"Stage 1: Checkout SCM", "Stage 2", "Stage 3", "Stage 4", "Stage 5"};
+
+        WorkflowJob job = mock(WorkflowJob.class);
+        when(job.getFullName()).thenReturn("Pipeline job");
+        when(workflowRun.getParent()).thenReturn(job);
+
+        TaskListener listener = mock(TaskListener.class);
+        when(workflowRun.getEnvironment(listener)).thenReturn(this.envVars);
+        when(workflowRun.getStartTimeInMillis()).thenReturn((long)0);
+        when(workflowRun.getDuration()).thenReturn(totalDuration);
+        when(workflowRun.getResult()).thenReturn(null);
+        when(workflowRun.getNumber()).thenReturn(0);
+        when(workflowRun.getResult()).thenReturn(Result.SUCCESS);
+
+        RunExtStub runExt = new RunExtStub();
+        for(int i = 0; i < stageCount; i++){
+            StageNodeExt stage = mock(StageNodeExt.class);
+            when(stage.getName()).thenReturn(stageNames[i]);
+            when(stage.getPauseDurationMillis()).thenReturn(pauseDurationPerStage);
+            when(stage.getDurationMillis()).thenReturn(stageDuration);
+            runExt.addStage(stage);
+        }
+        ((DatadogBuildListenerTestWrapper)datadogBuildListener).setStubbedRunExt(runExt);
+
+        datadogBuildListener.onCompleted(workflowRun, listener);
+
+        String[] expectedTags = {
+                "result:SUCCESS",
+                "node:test-node",
+                "jenkins_url:unknown",
+                "user_id:anonymous",
+                "job:Pipelinejob",
+                "branch:test-branch"
+        };
+        client.assertMetric("jenkins.job.duration", totalDuration / 1000, "test-hostname-2", expectedTags);
+        client.assertMetric("jenkins.job.pauseduration", pauseDuration / 1000, "test-hostname-2", expectedTags);
+        client.assertMetric("jenkins.job.buildduration", buildDuration / 1000, "test-hostname-2", expectedTags);
+        client.assertMetric("jenkins.job.completed", 1, "test-hostname-2", expectedTags);
+        client.assertMetric("jenkins.job.leadtime", totalDuration / 1000, "test-hostname-2", expectedTags);
+    }
+
+    @Test
     public void testOnCompletedOnFailedRun() throws Exception {
-        DatadogClientStub client = new DatadogClientStub();
-        DatadogBuildListener datadogBuildListener = new DatadogBuildListenerTestWrapper();
-        ((DatadogBuildListenerTestWrapper)datadogBuildListener).setDatadogClient(client);
-
-        Jenkins jenkins = mock(Jenkins.class);
-        when(jenkins.getFullName()).thenReturn("ParentFullName");
-
-        ProjectStub project = new ProjectStub(jenkins,"JobName");
-
-        EnvVars envVars = new EnvVars();
-        envVars.put("HOSTNAME", "test-hostname-2");
-        envVars.put("NODE_NAME", "test-node");
-        envVars.put("BUILD_URL", "http://build_url.com");
-        envVars.put("GIT_BRANCH", "test-branch");
-
-        BuildStub previousSuccessfulRun = new BuildStub(project, Result.SUCCESS, envVars, null,
+        BuildStub previousSuccessfulRun = new BuildStub(this.job, Result.SUCCESS, envVars, null,
                 123000L, 1, null, 1000000L, null);
 
-        BuildStub failedRun = new BuildStub(project, Result.FAILURE, envVars, null,
-                124000L, 2, null, 2000000L, previousSuccessfulRun);;
+        BuildStub failedRun = new BuildStub(this.job, Result.FAILURE, envVars, null,
+                124000L, 2, null, 2000000L, previousSuccessfulRun);
 
         datadogBuildListener.onCompleted(previousSuccessfulRun, mock(TaskListener.class));
         String[] expectedTags1 = new String[6];
@@ -191,30 +241,7 @@ public class DatadogBuildListenerTest {
 
     @Test
     public void testOnStarted() throws Exception {
-        DatadogClientStub client = new DatadogClientStub();
-        DatadogBuildListener datadogBuildListener = new DatadogBuildListenerTestWrapper();
-        ((DatadogBuildListenerTestWrapper)datadogBuildListener).setDatadogClient(client);
-        Queue queue = new QueueStub(mock(LoadBalancer.class));
-        ((DatadogBuildListenerTestWrapper)datadogBuildListener).setQueue(queue);
-
-        Jenkins jenkins = mock(Jenkins.class);
-        when(jenkins.getFullName()).thenReturn("ParentFullName");
-
-        ProjectStub project = new ProjectStub(jenkins,"JobName");
-
-        Queue.Item item = mock(Queue.Item.class);
-        when(item.getId()).thenReturn(1L);
-        when(item.getInQueueSince()).thenReturn(2000000L);
-
-        ((QueueStub)queue).setItem(item);
-
-        EnvVars envVars = new EnvVars();
-        envVars.put("HOSTNAME", "test-hostname-2");
-        envVars.put("NODE_NAME", "test-node");
-        envVars.put("BUILD_URL", "http://build_url.com");
-        envVars.put("GIT_BRANCH", "test-branch");
-
-        BuildStub run = new BuildStub(project, Result.SUCCESS, envVars, null,
+        BuildStub run = new BuildStub(this.job, Result.SUCCESS, envVars, null,
                 123000L, 1, null, 1000000L, null);
 
         datadogBuildListener.onStarted(run, mock(TaskListener.class));
@@ -235,4 +262,5 @@ public class DatadogBuildListenerTest {
         client.metrics.clear();
         client.assertedAllMetricsAndServiceChecks();
     }
+
 }
