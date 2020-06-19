@@ -45,6 +45,7 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
         volumes:
           - $JENKINS_PLUGIN/target/:/var/jenkins_home/plugins
     ## Uncomment environment variables based on your needs. Everything can be configured in jenkins /configure page as well. 
+    #   environment:
     #      - DATADOG_JENKINS_PLUGIN_REPORT_WITH=DSD
     #      - DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS=false
     ## Set `DATADOG_JENKINS_PLUGIN_TARGET_HOST` to `dogstatsd` or `datadog` based on the container you wish to use.
@@ -121,6 +122,10 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
   - You can set your machine `hostname`.
   - You can set Global Tag. For example `.*, owner:$1, release_env:$2, optional:Tag3`.
   
+#### Manual Testing without an Agent
+
+Alternatively, you can manually test the plugin by running the command `mvn hpi:run`, which will spin up a local development environment without the agent. This allows you to test using the HTTP client without needing docker. See the [jenkins documentation](https://jenkinsci.github.io/maven-hpi-plugin/run-mojo.html) for more details and options.
+
 ### Create your first job
 
 1. On jenkins Home page, click on "Create a new Job" 

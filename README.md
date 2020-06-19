@@ -8,13 +8,24 @@ A Jenkins plugin for automatically forwarding metrics, events, and service check
 
 ### Installation
 
-_This plugin requires [Jenkins 1.580.1][2] or newer._
+_This plugin requires [Jenkins 2.164.1][2] or newer._
 
 This plugin can be installed from the [Update Center][3] (found at `Manage Jenkins -> Manage Plugins`) in your Jenkins installation:
 
 1. Select the `Available` tab, search for `Datadog`, and select the checkbox next to `Datadog Plugin`.
 2. Install the plugin by using one of the two install buttons at the bottom of the screen.
-3. To verify the plugin is installed, search for `Datadog Plugin` on the `Installed` tab. After the plugin is installed successfully, continue to the configuration section below.
+3. To verify the plugin is installed, search for `Datadog Plugin` on the `Installed` tab. 
+4. Create a [custom log source file][13]: create a `conf.yaml` inside `conf.d/jenkins.d` with the following:
+  ```
+  logs:
+
+    -type: tcp 
+     port: 10518 
+     service: <SERVICE>
+     source: jenkins
+  ```
+  
+  Continue below for configuration.
 
 **Note**: If you see an unexpected version of the `Datadog Plugin`, run `Check Now` from the `Manage Jenkins -> Manage Plugins` screen.
 
@@ -117,7 +128,7 @@ Logging is done by utilizing the `java.util.Logger`, which follows the [best log
 
 ### Global customization
 
-From the global configuration page, at `Manage Jenkins -> Configure System` you can customize your configuration with:
+To customize your global configuration, in Jenkins navigate to `Manage Jenkins -> Configure System` then click the **Advanced** button. The following options are available:
 
 | Customization              | Description                                                                                                                                                                                                                                 | Environment variable                          |
 |----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|
@@ -253,7 +264,7 @@ Checkout the [development document][12] for tips on spinning up a quick developm
 
 
 [1]: https://plugins.jenkins.io/datadog
-[2]: http://updates.jenkins-ci.org/download/war/1.580.1/jenkins.war
+[2]: http://updates.jenkins-ci.org/download/war/1.632/jenkins.war
 [3]: https://wiki.jenkins-ci.org/display/JENKINS/Plugins#Plugins-Howtoinstallplugins
 [4]: https://app.datadoghq.com/account/settings#api
 [5]: https://github.com/jenkinsci/docker
@@ -264,3 +275,4 @@ Checkout the [development document][12] for tips on spinning up a quick developm
 [10]: https://github.com/jenkinsci/datadog-plugin/blob/master/CHANGELOG.md
 [11]: https://github.com/jenkinsci/datadog-plugin/blob/master/CONTRIBUTING.md
 [12]: https://github.com/jenkinsci/datadog-plugin/blob/master/DEVELOPMENT.md
+[13]: https://docs.datadoghq.com/agent/logs/?tab=tcpudp#custom-log-collection
