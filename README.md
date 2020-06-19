@@ -230,7 +230,7 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 | `jenkins.user.logout`                  | Rate of users logging out.                                     | `jenkins_url`, `user_id`                                    |
 
 
-#### Log Collection {#log-collection}
+#### Log Collection
 
 **Note**: This configuration only applies to those using the [Datadog Agent configuration](#dogstatsd-forwarding-plugin).
 
