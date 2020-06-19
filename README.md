@@ -38,7 +38,7 @@ To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure S
 ##### HTTP forwarding {#http-forwarding-plugin}
 
 1. Select the radio button next to **Use Datadog API URL and Key to report to Datadog** (selected by default).
-2. Use your [Datadog API key][4] in the `API Key` textbox on the Jenkins configuration screen.
+2. Paste your [Datadog API key][4] in the `API Key` textbox on the Jenkins configuration screen.
 3. Test your Datadog API key by using the `Test Key` button on the Jenkins configuration screen directly below the API key textbox.
 4. Save your configuration.
 
@@ -47,7 +47,7 @@ To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure S
 1. Select the radio button next to **Use the Datadog Agent to report to Datadog**.
 2. Specify your DogStatsD server `hostname` and `port`.
 3. Save your configuration.
-4. If you want to forward logs to datadog, create a [custom log source file][13] by creating a `conf.yaml` inside `conf.d/jenkins.d` with the following:
+4. If you want to forward logs to Datadog, create a [custom log source file][13] by creating a `conf.yaml` inside `conf.d/jenkins.d` with the following:
   ```
   logs:
 
