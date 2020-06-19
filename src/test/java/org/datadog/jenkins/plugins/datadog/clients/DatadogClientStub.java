@@ -151,6 +151,7 @@ public class DatadogClientStub implements DatadogClient {
     }
 
     public boolean assertMetric(String name, String hostname, String[] tags) {
+        // Assert that a metric with the same name and tags has already been submitted without checking the value.
         DatadogMetric m = new DatadogMetric(name, 0, hostname, Arrays.asList(tags));
         Optional<DatadogMetric> match = this.metrics.stream().filter(t -> t.same(m)).findFirst();
         if(match.isPresent()){

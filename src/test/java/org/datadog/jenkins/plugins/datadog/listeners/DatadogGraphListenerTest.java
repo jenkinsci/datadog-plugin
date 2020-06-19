@@ -88,6 +88,7 @@ public class DatadogGraphListenerTest {
                 "user_id:anonymous",
                 "stage_name:low",
                 "job:pipeline",
+                "parent_stage_name:medium",
                 "stage_depth:2"
         };
         clientStub.assertMetric("jenkins.job.stageduration", endTime - startTime, hostname, expectedTags);
@@ -118,10 +119,14 @@ public class DatadogGraphListenerTest {
         String[] depths = new String[]{ "2", "2", "2", "1", "1", "0", "0" };
         String[] stageNames = new String[]{ "Windows-1", "Windows-2", "Windows-3", "Test On Windows", "Test On Linux", "Parallel tests",
                 "Pre-setup" };
+        String[] parentNames = new String[]{ "Test On Windows", "Test On Windows", "Test On Windows", "Parallel tests", "Parallel tests", "root", "root" };
+
         for (int i = 0; i < depths.length; i++) {
-            String[] expectedTags = Arrays.copyOf(baseTags, baseTags.length + 2);
-            expectedTags[expectedTags.length - 2] = "stage_depth:" + depths[i];
-            expectedTags[expectedTags.length - 1] = "stage_name:" + stageNames[i];
+            String[] expectedTags = Arrays.copyOf(baseTags, baseTags.length + 3);
+            expectedTags[expectedTags.length - 3] = "stage_depth:" + depths[i];
+            expectedTags[expectedTags.length - 2] = "stage_name:" + stageNames[i];
+            expectedTags[expectedTags.length - 1] = "parent_stage_name:" + parentNames[i];
+
             clientStub.assertMetric("jenkins.job.stageduration", hostname, expectedTags);
         }
 

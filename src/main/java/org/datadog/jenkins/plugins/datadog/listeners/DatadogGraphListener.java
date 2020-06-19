@@ -63,25 +63,41 @@ public class DatadogGraphListener implements GraphListener {
         if (!isMonitored(flowNode)) {
             return;
         }
+        DatadogClient client = ClientFactory.getClient();
+        if (client == null){
+            return;
+        }
         StepEndNode endNode = (StepEndNode) flowNode;
         StepStartNode startNode = endNode.getStartNode();
-        int stage_depth = 0;
+        int stageDepth = 0;
+        String directParentName = null;
         for (BlockStartNode node : startNode.iterateEnclosingBlocks()) {
             if (isStageNode(node)) {
-                stage_depth++;
+                if(directParentName == null){
+                    directParentName = getStageName(node);
+                }
+                stageDepth++;
             }
         }
-        DatadogClient client = ClientFactory.getClient();
+        if(directParentName == null){
+            directParentName = "root";
+        }
+        WorkflowRun run = getRun(flowNode);
+        if(run == null){
+            return;
+        }
         try {
-            BuildData buildData = new BuildData(getRun(flowNode), flowNode.getExecution().getOwner().getListener());
+            BuildData buildData = new BuildData(run, flowNode.getExecution().getOwner().getListener());
             String hostname = buildData.getHostname("");
             Map<String, Set<String>> tags = buildData.getTags();
             TagsUtil.addTagToTags(tags, "stage_name", getStageName(startNode));
-            TagsUtil.addTagToTags(tags, "stage_depth", String.valueOf(stage_depth));
+            TagsUtil.addTagToTags(tags, "parent_stage_name", directParentName);
+            TagsUtil.addTagToTags(tags, "stage_depth", String.valueOf(stageDepth));
             tags.remove("result"); // Jenkins sometimes consider the build has a result even though it's still running.
+                                        // Stage metrics should never report a result.
             client.gauge("jenkins.job.stageduration", getTime(startNode, endNode), hostname, tags);
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+            DatadogUtilities.severe(logger, e, "Unable to submit the stage duration metric for " + getStageName(startNode));
         }
     }
 
@@ -100,9 +116,12 @@ public class DatadogGraphListener implements GraphListener {
 
         // Filter the node out if it is not the end of a stage.
         // The plugin only monitors timing information of stages
-        return isStageNode(((StepEndNode) flowNode).getStartNode());
+        if(!isStageNode(((StepEndNode) flowNode).getStartNode())){
+            return false;
+        }
 
         // Finally return true as this node is the end of a monitored stage.
+        return true;
     }
 
     @CheckForNull
@@ -115,7 +134,6 @@ public class DatadogGraphListener implements GraphListener {
             return null;
         }
 
-        // TODO: WorkflowRun or Run ?
         if (exec instanceof WorkflowRun) {
             return (WorkflowRun) exec;
         }
@@ -138,7 +156,7 @@ public class DatadogGraphListener implements GraphListener {
         return flowNode.getAction(LabelAction.class) != null;
     }
 
-    String getStageName(@Nonnull StepStartNode flowNode) {
+    String getStageName(@Nonnull BlockStartNode flowNode) {
         ThreadNameAction threadNameAction = flowNode.getAction(ThreadNameAction.class);
         if (threadNameAction != null) {
             return threadNameAction.getThreadName();
