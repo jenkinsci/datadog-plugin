@@ -222,7 +222,7 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 | `jenkins.job.mtbf`                     | MTBF, time between last successful job and current failed job. | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
 | `jenkins.job.mttr`                     | MTTR: time between last failed job and current successful job. | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
 | `jenkins.job.started`                  | Rate of started jobs.                                          | `branch`, `jenkins_url`, `job`, `node`, `user_id`                          |
-| `jenkins.job.stageduration`            | Duration of individual stages.                                 | `jenkins_url`, `job`, `user_id`, `stage_name`, `stage_depth`, `stage_parent`|
+| `jenkins.job.stage_duration`            | Duration of individual stages.                                 | `jenkins_url`, `job`, `user_id`, `stage_name`, `stage_depth`, `stage_parent`|
 | `jenkins.job.waiting`                  | Time spent waiting for job to run (in milliseconds).           | `branch`, `jenkins_url`, `job`, `node`, `user_id`                          |
 | `jenkins.node.count`                   | Total number of node.                                          | `jenkins_url`                                                              |
 | `jenkins.node.offline`                 | Offline nodes count.                                           | `jenkins_url`                                                              |
