@@ -268,10 +268,10 @@ public class DatadogBuildListener extends RunListener<Run> {
     }
 
     private String toTimeString(long millis) {
-        return String.format("%d min, %d sec",
-                TimeUnit.MILLISECONDS.toMinutes(millis),
-                TimeUnit.MILLISECONDS.toSeconds(millis) -
-                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis)));
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(millis);
+        long totalSeconds = TimeUnit.MILLISECONDS.toSeconds(millis);
+        long seconds = totalSeconds - TimeUnit.MINUTES.toSeconds(minutes);
+        return String.format("%d min, %d sec", minutes, seconds);
     }
 
     private long getMeanTimeBetweenFailure(Run<?, ?> run) {
