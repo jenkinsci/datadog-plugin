@@ -95,7 +95,7 @@ public class DatadogGraphListener implements GraphListener {
             TagsUtil.addTagToTags(tags, "stage_depth", String.valueOf(stageDepth));
             tags.remove("result"); // Jenkins sometimes consider the build has a result even though it's still running.
                                         // Stage metrics should never report a result.
-            client.gauge("jenkins.job.stageduration", getTime(startNode, endNode), hostname, tags);
+            client.gauge("jenkins.job.stage_duration", getTime(startNode, endNode), hostname, tags);
         } catch (IOException | InterruptedException e) {
             DatadogUtilities.severe(logger, e, "Unable to submit the stage duration metric for " + getStageName(startNode));
         }

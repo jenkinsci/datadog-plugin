@@ -91,7 +91,7 @@ public class DatadogGraphListenerTest {
                 "parent_stage_name:medium",
                 "stage_depth:2"
         };
-        clientStub.assertMetric("jenkins.job.stageduration", endTime - startTime, hostname, expectedTags);
+        clientStub.assertMetric("jenkins.job.stage_duration", endTime - startTime, hostname, expectedTags);
     }
 
     @Test
@@ -127,7 +127,7 @@ public class DatadogGraphListenerTest {
             expectedTags[expectedTags.length - 2] = "stage_name:" + stageNames[i];
             expectedTags[expectedTags.length - 1] = "parent_stage_name:" + parentNames[i];
 
-            clientStub.assertMetric("jenkins.job.stageduration", hostname, expectedTags);
+            clientStub.assertMetric("jenkins.job.stage_duration", hostname, expectedTags);
         }
 
     }
