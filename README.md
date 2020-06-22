@@ -25,7 +25,7 @@ This plugin can be installed from the [Update Center][3] (found at `Manage Jenki
 There are two ways to configure your plugin to submit data to Datadog:
 
 * **RECOMMENDED**: Using a DogStatsD server / Datadog Agent that acts as a forwarder between Jenkins and Datadog.
-  - [Build Logs collection](#log-collection) only works with a full Datadog Agent installed.
+  - Build Logs collection only works with a full Datadog Agent installed.
 * Sending data directly to Datadog through HTTP.
   - The HTTP client implementation used is blocking with a timeout duration of 1 minute. If there is a connection problem with Datadog, it may slow your Jenkins instance down.
 
@@ -40,13 +40,15 @@ To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure S
 1. Select the radio button next to **Use Datadog API URL and Key to report to Datadog** (selected by default).
 2. Paste your [Datadog API key][4] in the `API Key` textbox on the Jenkins configuration screen.
 3. Test your Datadog API key by using the `Test Key` button on the Jenkins configuration screen directly below the API key textbox.
-4. Save your configuration.
+4. (optional) Enter your [Datadog Log Intake URL][15].
+5. Save your configuration.
 
 ##### DogStatsD forwarding {#dogstatsd-forwarding-plugin}
 
 1. Select the radio button next to **Use the Datadog Agent to report to Datadog**.
 2. Specify your DogStatsD server `hostname` and `port`.
-3. Save your configuration.
+3. (optional) Enter your Log Collection Port and configure [log collection](#log-collection).
+4. Save your configuration.
 
 #### Groovy script
 
@@ -69,6 +71,9 @@ d.setTargetApiKey('<DATADOG_API_KEY>')
 // Customization, see dedicated section below
 d.setBlacklist('job1,job2')
 
+// If you want to collect logs
+d.setLogIntakeUrl('https://http-intake.logs.datadoghq.com/v1/input/')
+
 // Save config
 d.save()
 ```
@@ -85,6 +90,9 @@ def d = j.getDescriptor("org.datadog.jenkins.plugins.datadog.DatadogGlobalConfig
 d.setReportWith('DSD')
 d.setTargetHost('localhost')
 d.setTargetPort(8125)
+
+// If you want to collect logs
+d.setLogCollectionPort(8125)
 
 // Customization, see dedicated section below
 d.setBlacklist('job1,job2')
@@ -230,7 +238,7 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 | `jenkins.user.logout`                  | Rate of users logging out.                                     | `jenkins_url`, `user_id`                                    |
 
 
-#### Log Collection
+#### Log Collection for Agents
 
 **Note**: This configuration only applies to those using the [Datadog Agent configuration](#dogstatsd-forwarding-plugin).
 
@@ -246,13 +254,14 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
     logs:
 
       -type: tcp 
-      port: 10518 
+      port: <PORT> 
       service: <SERVICE>
       source: jenkins
     ```
+    
+3. In Jenkins, submit the port you specified above as the `Log Collection Port`. You can set this using [env vars](#dogstatsd-forwarding-env), a [groovy script](#dogstatsd-forwarding-groovy-script), or the [Jenkins UI](#dogstatsd-forwarding-plugin)
   
 3. [Restart the Agent][14].
-
 
 ### Service checks
 
@@ -291,3 +300,4 @@ Checkout the [development document][12] for tips on spinning up a quick developm
 [12]: https://github.com/jenkinsci/datadog-plugin/blob/master/DEVELOPMENT.md
 [13]: https://docs.datadoghq.com/agent/logs/?tab=tcpudp#custom-log-collection
 [14]: https://docs.datadoghq.com/agent/guide/agent-commands/#start-stop-and-restart-the-agent
+[15]: https://docs.datadoghq.com/logs/log_collection/?tab=http
