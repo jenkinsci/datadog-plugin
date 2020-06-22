@@ -67,6 +67,14 @@ public class DatadogMetric {
         Collections.sort(m.tags);
         return tags != null ? tags.toString().equals(m.tags.toString()) : m.tags == null;
     }
+    
+    public boolean sameNoTags(DatadogMetric m) {
+        if (this == m) return true;
+        if (m == null) return false;
+        if (name != null ? !name.equals(m.name) : m.name != null) return false;
+        if (hostname != null ? !hostname.equals(m.hostname) : m.hostname != null) return false;
+        return value == m.value;
+    }
 
     @Override
     public int hashCode() {
