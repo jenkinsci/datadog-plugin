@@ -252,11 +252,10 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 2. To collect Jenkins logs, create a [custom log source file][13] for your Agent by creating a `conf.yaml` inside `conf.d/jenkins.d` with the following:
     ```
     logs:
-
-      -type: tcp 
-      port: <PORT> 
-      service: <SERVICE>
-      source: jenkins
+      - type: tcp 
+        port: <PORT> 
+        service: <SERVICE>
+        source: jenkins
     ```
     
 3. In Jenkins, submit the port you specified above as the `Log Collection Port`. You can set this using [env vars](#dogstatsd-forwarding-env), a [groovy script](#dogstatsd-forwarding-groovy-script), or the [Jenkins UI](#dogstatsd-forwarding-plugin)
