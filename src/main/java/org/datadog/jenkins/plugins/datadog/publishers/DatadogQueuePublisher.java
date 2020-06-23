@@ -26,9 +26,9 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.publishers;
 
 import hudson.Extension;
+import hudson.model.FreeStyleProject;
 import hudson.model.PeriodicWork;
 import hudson.model.Queue;
-import hudson.model.Run;
 import hudson.model.Queue.Task;
 
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
@@ -85,13 +85,12 @@ public class DatadogQueuePublisher extends PeriodicWork {
                 
                 String job_name;
                 Task task = item.task;
-                if (task instanceof Run){ 
-                    job_name = ((Run)task).getParent().getFullName();
-                } else {
+                if (task instanceof FreeStyleProject){ 
                     job_name = task.getFullDisplayName();
+                    TagsUtil.addTagToTags(job_tags, "job_name", job_name);
+
                 }
-                TagsUtil.addTagToTags(job_tags, "job_name", job_name);
-                
+                //TODO: type check for ExecutorStepExecution.PlaceholderTask when pipelines are supported
                 boolean isStuck = false;
                 boolean isBuildable = false;
                 boolean isBlocked = false;
