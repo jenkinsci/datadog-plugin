@@ -26,7 +26,6 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.clients;
 
 import hudson.util.Secret;
-import net.sf.json.JSON;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
@@ -163,6 +162,19 @@ public class DatadogClientStub implements DatadogClient {
             return true;
         }
         Assert.fail("metric { " + m.toString() + " found " + timesSeen + " times, not " + count);
+        return false;
+    }
+
+    public boolean assertMetric(String name, String hostname, String[] tags) {
+        // Assert that a metric with the same name and tags has already been submitted without checking the value.
+        DatadogMetric m = new DatadogMetric(name, 0, hostname, Arrays.asList(tags));
+        Optional<DatadogMetric> match = this.metrics.stream().filter(t -> t.same(m)).findFirst();
+        if(match.isPresent()){
+            this.metrics.remove(match.get());
+            return true;
+        }
+        Assert.fail("metric { " + m.toString() + " does not exist (ignoring value). " +
+                "metrics: {" + this.metrics.toString() + " }");
         return false;
     }
 
