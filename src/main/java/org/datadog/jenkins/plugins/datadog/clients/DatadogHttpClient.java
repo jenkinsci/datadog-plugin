@@ -54,7 +54,7 @@ import java.util.logging.Logger;
  */
 public class DatadogHttpClient implements DatadogClient {
 
-    private static DatadogClient instance = null;
+    private static DatadogHttpClient instance = null;
     // Used to determine if the instance failed last validation last time, so
     // we do not keep retrying to create the instance and logging the same error
     private static boolean failedLastValidation = false;
@@ -96,8 +96,7 @@ public class DatadogHttpClient implements DatadogClient {
         // since we've already validated and/or errored about the data
 
         DatadogHttpClient newInstance = new DatadogHttpClient(url, logIntakeUrl, apiKey);
-        DatadogHttpClient httpInstance = (DatadogHttpClient) instance;
-        if (httpInstance != null && httpInstance.equals(newInstance)) {
+        if (instance != null && instance.equals(newInstance)) {
             if (DatadogHttpClient.failedLastValidation) {
                 return null;
             }

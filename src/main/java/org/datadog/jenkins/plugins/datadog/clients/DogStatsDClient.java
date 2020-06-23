@@ -46,7 +46,7 @@ import java.util.logging.*;
  */
 public class DogStatsDClient implements DatadogClient {
 
-    private static DatadogClient instance = null;
+    private static DogStatsDClient instance = null;
     // Used to determine if the instance failed last validation last time, so
     // we do not keep retrying to create the instance and logging the same error
     private static boolean failedLastValidation = false;
@@ -79,8 +79,7 @@ public class DogStatsDClient implements DatadogClient {
         // since we've already validated and/or errored about the data
 
         DogStatsDClient newInstance = new DogStatsDClient(hostname, port, logCollectionPort);
-        DogStatsDClient dogstatsdInstance = (DogStatsDClient) instance;
-        if (dogstatsdInstance != null && dogstatsdInstance.equals(newInstance)) {
+        if (instance != null && instance.equals(newInstance)) {
             if (DogStatsDClient.failedLastValidation) {
                 return null;
             }
@@ -99,9 +98,9 @@ public class DogStatsDClient implements DatadogClient {
                 }
             }
         }
-        if (dogstatsdInstance != null){
-            dogstatsdInstance.reinitialize(true);
-            dogstatsdInstance.reinitializeLogger(true);
+        if (instance != null){
+            instance.reinitialize(true);
+            instance.reinitializeLogger(true);
         }
         return instance;
     }
