@@ -214,7 +214,7 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 | `jenkins.item.location_changed`        | Rate of items being moved.                                     | `jenkins_url`, `user_id`                                    |
 | `jenkins.item.updated`                 | Rate of items being updated.                                   | `jenkins_url`, `user_id`                                    |
 | `jenkins.job.aborted`                  | Rate of aborted jobs.                                          | `branch`, `jenkins_url`, `job`, `node`, `user_id`           |
-| `jenkins.job.buildduration`            | Build duration without pause (in seconds).                     | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
+| `jenkins.job.build_duration`            | Build duration without pause (in seconds).                     | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
 | `jenkins.job.completed`                | Rate of completed jobs.                                        | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
 | `jenkins.job.cycletime`                | Build Cycle Time.                                              | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
 | `jenkins.job.duration`                 | Build duration (in seconds).                                   | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
