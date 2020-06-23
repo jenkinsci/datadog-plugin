@@ -233,7 +233,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * screen.
      */
     public FormValidation doCheckTargetApiURL(@QueryParameter("targetApiURL") final String targetApiURL) {
-        if(StringUtils.isNotBlank(targetApiURL) && !validateURL(targetApiURL)) {
+        if(!validateURL(targetApiURL)) {
             return FormValidation.error("The field must be configured in the form <http|https>://<url>/");
         }
 
@@ -246,7 +246,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * screen.
      */
     public FormValidation doCheckTargetLogIntakeURL(@QueryParameter("targetLogIntakeURL") final String targetLogIntakeURL) {
-        if (StringUtils.isNotBlank(targetApiURL) && !validateURL(targetLogIntakeURL) && collectBuildLogs) {
+        if (!validateURL(targetLogIntakeURL) && collectBuildLogs) {
             return FormValidation.error("The field must be configured in the form <http|https>://<url>/");
         }
 
@@ -262,7 +262,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     }
 
     public static boolean validateURL(String targetURL) {
-        return targetURL.contains("http");
+        return StringUtils.isNotBlank(targetURL) && targetURL.contains("http");
     }
 
     /**
