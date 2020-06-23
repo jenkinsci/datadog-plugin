@@ -8,30 +8,21 @@ A Jenkins plugin for automatically forwarding metrics, events, and service check
 
 ### Installation
 
-_This plugin requires [Jenkins 2.164.1][2] or newer._
+_This plugin requires [Jenkins 1.632][2] or newer._
 
 This plugin can be installed from the [Update Center][3] (found at `Manage Jenkins -> Manage Plugins`) in your Jenkins installation:
 
 1. Select the `Available` tab, search for `Datadog`, and select the checkbox next to `Datadog Plugin`.
 2. Install the plugin by using one of the two install buttons at the bottom of the screen.
 3. To verify the plugin is installed, search for `Datadog Plugin` on the `Installed` tab. 
-4. Create a [custom log source file][13]: create a `conf.yaml` inside `conf.d/jenkins.d` with the following:
-  ```
-  logs:
 
-    -type: tcp 
-     port: 10518 
-     service: <SERVICE>
-     source: jenkins
-  ```
-  
   Continue below for configuration.
 
 **Note**: If you see an unexpected version of the `Datadog Plugin`, run `Check Now` from the `Manage Jenkins -> Manage Plugins` screen.
 
 ### Configuration
 
-You can use two ways to configure your plugin to submit data to Datadog:
+There are two ways to configure your plugin to submit data to Datadog:
 
 * **RECOMMENDED**: Using a DogStatsD server / Datadog Agent that acts as a forwarder between Jenkins and Datadog.
   - Build Logs collection only works with a full Datadog Agent installed.
@@ -47,15 +38,17 @@ To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure S
 ##### HTTP forwarding {#http-forwarding-plugin}
 
 1. Select the radio button next to **Use Datadog API URL and Key to report to Datadog** (selected by default).
-2. Use your [Datadog API key][4] in the `API Key` textbox on the Jenkins configuration screen.
+2. Paste your [Datadog API key][4] in the `API Key` textbox on the Jenkins configuration screen.
 3. Test your Datadog API key by using the `Test Key` button on the Jenkins configuration screen directly below the API key textbox.
-4. Save your configuration.
+4. (optional) Enter your [Datadog Log Intake URL][15].
+5. Save your configuration.
 
 ##### DogStatsD forwarding {#dogstatsd-forwarding-plugin}
 
-1. Select the radio button next to **Use a DogStatsD Server to report to Datadog**.
+1. Select the radio button next to **Use the Datadog Agent to report to Datadog**.
 2. Specify your DogStatsD server `hostname` and `port`.
-3. Save your configuration.
+3. (optional) Enter your Log Collection Port and configure [log collection](#log-collection).
+4. Save your configuration.
 
 #### Groovy script
 
@@ -78,6 +71,9 @@ d.setTargetApiKey('<DATADOG_API_KEY>')
 // Customization, see dedicated section below
 d.setBlacklist('job1,job2')
 
+// If you want to collect logs
+d.setLogIntakeUrl('https://http-intake.logs.datadoghq.com/v1/input/')
+
 // Save config
 d.save()
 ```
@@ -94,6 +90,9 @@ def d = j.getDescriptor("org.datadog.jenkins.plugins.datadog.DatadogGlobalConfig
 d.setReportWith('DSD')
 d.setTargetHost('localhost')
 d.setTargetPort(8125)
+
+// If you want to collect logs
+d.setLogCollectionPort(8125)
 
 // Customization, see dedicated section below
 d.setBlacklist('job1,job2')
@@ -197,46 +196,74 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 
 ### Metrics
 
-| Metric Name                            | Description                                                    | Default Tags                                                |
-|----------------------------------------|----------------------------------------------------------------|-------------------------------------------------------------|
-| `jenkins.computer.launch_failure`      | Rate of computer launch failures.                              | `jenkins_url`                                               |
-| `jenkins.computer.offline`             | Rate of computer going offline.                                | `jenkins_url`                                               |
-| `jenkins.computer.online`              | Rate of computer going online.                                 | `jenkins_url`                                               |
-| `jenkins.computer.temporarily_offline` | Rate of computer going temporarily offline.                    | `jenkins_url`                                               |
-| `jenkins.computer.temporarily_online`  | Rate of computer going temporarily online.                     | `jenkins_url`                                               |
-| `jenkins.config.changed`               | Rate of configs being changed.                                 | `jenkins_url`, `user_id`                                    |
-| `jenkins.executor.count`               | Executor count.                                                | `jenkins_url`, `node_hostname`, `node_name`, `node_label`   |
-| `jenkins.executor.free`                | Number of unused executor.                                     | `jenkins_url`, `node_hostname`, `node_name`, `node_label`   |
-| `jenkins.executor.in_use`              | Number of idle executor.                                       | `jenkins_url`, `node_hostname`, `node_name`, `node_label`   |
-| `jenkins.item.copied`                  | Rate of items being copied.                                    | `jenkins_url`, `user_id`                                    |
-| `jenkins.item.created`                 | Rate of items being created.                                   | `jenkins_url`, `user_id`                                    |
-| `jenkins.item.deleted`                 | Rate of items being deleted.                                   | `jenkins_url`, `user_id`                                    |
-| `jenkins.item.location_changed`        | Rate of items being moved.                                     | `jenkins_url`, `user_id`                                    |
-| `jenkins.item.updated`                 | Rate of items being updated.                                   | `jenkins_url`, `user_id`                                    |
-| `jenkins.job.aborted`                  | Rate of aborted jobs.                                          | `branch`, `jenkins_url`, `job`, `node`, `user_id`           |
-| `jenkins.job.completed`                | Rate of completed jobs.                                        | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
-| `jenkins.job.cycletime`                | Build Cycle Time.                                              | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
-| `jenkins.job.duration`                 | Build duration (in seconds).                                   | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
-| `jenkins.job.feedbacktime`             | Feedback time from code commit to job failure.                 | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
-| `jenkins.job.leadtime`                 | Build Lead Time.                                               | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
-| `jenkins.job.mtbf`                     | MTBF, time between last successful job and current failed job. | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
-| `jenkins.job.mttr`                     | MTTR: time between last failed job and current successful job. | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
-| `jenkins.job.started`                  | Rate of started jobs.                                          | `branch`, `jenkins_url`, `job`, `node`, `user_id`           |
-| `jenkins.job.waiting`                  | Time spent waiting for job to run (in milliseconds).           | `branch`, `jenkins_url`, `job`, `node`, `user_id`           |
-| `jenkins.node.count`                   | Total number of node.                                          | `jenkins_url`                                               |
-| `jenkins.node.offline`                 | Offline nodes count.                                           | `jenkins_url`                                               |
-| `jenkins.node.online`                  | Online nodes count.                                            | `jenkins_url`                                               |
-| `jenkins.plugin.count`                 | Plugins count.                                                 | `jenkins_url`                                               |
-| `jenkins.project.count`                | Project count.                                                 | `jenkins_url`                                               |
-| `jenkins.queue.size`                   | Queue Size.                                                    | `jenkins_url`                                               |
-| `jenkins.queue.buildable`              | Number of Buildable item in Queue.                             | `jenkins_url`                                               |
-| `jenkins.queue.pending`                | Number of Pending item in Queue.                               | `jenkins_url`                                               |
-| `jenkins.queue.stuck`                  | Number of Stuck item in Queue.                                 | `jenkins_url`                                               |
-| `jenkins.queue.blocked`                | Number of Blocked item in Queue.                               | `jenkins_url`                                               |
-| `jenkins.scm.checkout`                 | Rate of SCM checkouts.                                         | `branch`, `jenkins_url`, `job`, `node`, `user_id`           |
-| `jenkins.user.access_denied`           | Rate of users failing to authenticate.                         | `jenkins_url`, `user_id`                                    |
-| `jenkins.user.authenticated`           | Rate of users authenticating.                                  | `jenkins_url`, `user_id`                                    |
-| `jenkins.user.logout`                  | Rate of users logging out.                                     | `jenkins_url`, `user_id`                                    |
+| Metric Name                            | Description                                                    | Default Tags                                                               |
+|----------------------------------------|----------------------------------------------------------------|----------------------------------------------------------------------------|
+| `jenkins.computer.launch_failure`      | Rate of computer launch failures.                              | `jenkins_url`                                                              |
+| `jenkins.computer.offline`             | Rate of computer going offline.                                | `jenkins_url`                                                              |
+| `jenkins.computer.online`              | Rate of computer going online.                                 | `jenkins_url`                                                              |
+| `jenkins.computer.temporarily_offline` | Rate of computer going temporarily offline.                    | `jenkins_url`                                                              |
+| `jenkins.computer.temporarily_online`  | Rate of computer going temporarily online.                     | `jenkins_url`                                                              |
+| `jenkins.config.changed`               | Rate of configs being changed.                                 | `jenkins_url`, `user_id`                                                   |
+| `jenkins.executor.count`               | Executor count.                                                | `jenkins_url`, `node_hostname`, `node_name`, `node_label`                  |
+| `jenkins.executor.free`                | Number of unused executor.                                     | `jenkins_url`, `node_hostname`, `node_name`, `node_label`                  |
+| `jenkins.executor.in_use`              | Number of idle executor.                                       | `jenkins_url`, `node_hostname`, `node_name`, `node_label`                  |
+| `jenkins.item.copied`                  | Rate of items being copied.                                    | `jenkins_url`, `user_id`                                                   |
+| `jenkins.item.created`                 | Rate of items being created.                                   | `jenkins_url`, `user_id`                                                   |
+| `jenkins.item.deleted`                 | Rate of items being deleted.                                   | `jenkins_url`, `user_id`                                                   |
+| `jenkins.item.location_changed`        | Rate of items being moved.                                     | `jenkins_url`, `user_id`                                                   |
+| `jenkins.item.updated`                 | Rate of items being updated.                                   | `jenkins_url`, `user_id`                                                   |
+| `jenkins.job.aborted`                  | Rate of aborted jobs.                                          | `branch`, `jenkins_url`, `job`, `node`, `user_id`                          |
+| `jenkins.job.completed`                | Rate of completed jobs.                                        | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
+| `jenkins.job.cycletime`                | Build Cycle Time.                                              | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
+| `jenkins.job.duration`                 | Build duration (in seconds).                                   | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
+| `jenkins.job.feedbacktime`             | Feedback time from code commit to job failure.                 | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
+| `jenkins.job.leadtime`                 | Build Lead Time.                                               | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
+| `jenkins.job.mtbf`                     | MTBF, time between last successful job and current failed job. | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
+| `jenkins.job.mttr`                     | MTTR: time between last failed job and current successful job. | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
+| `jenkins.job.started`                  | Rate of started jobs.                                          | `branch`, `jenkins_url`, `job`, `node`, `user_id`                          |
+| `jenkins.job.stage_duration`           | Duration of individual stages.                                 | `jenkins_url`, `job`, `user_id`, `stage_name`, `stage_depth`, `stage_parent`|
+| `jenkins.job.waiting`                  | Time spent waiting for job to run (in milliseconds).           | `branch`, `jenkins_url`, `job`, `node`, `user_id`                          |
+| `jenkins.node.count`                   | Total number of node.                                          | `jenkins_url`                                                              |
+| `jenkins.node.offline`                 | Offline nodes count.                                           | `jenkins_url`                                                              |
+| `jenkins.node.online`                  | Online nodes count.                                            | `jenkins_url`                                                              |
+| `jenkins.node_status.count`            | If this node is present.                                       | `jenkins_url`, `node_hostname`, `node_name`, `node_label`                  |
+| `jenkins.node_status.up`               | If a given node is online, value 1. Otherwise, 0.              | `jenkins_url`, `node_hostname`, `node_name`, `node_label`                  |
+| `jenkins.plugin.count`                 | Plugins count.                                                 | `jenkins_url`                                                              |
+| `jenkins.project.count`                | Project count.                                                 | `jenkins_url`                                                              |
+| `jenkins.queue.size`                   | Queue Size.                                                    | `jenkins_url`                                                              |
+| `jenkins.queue.buildable`              | Number of Buildable item in Queue.                             | `jenkins_url`                                                              |
+| `jenkins.queue.pending`                | Number of Pending item in Queue.                               | `jenkins_url`                                                              |
+| `jenkins.queue.stuck`                  | Number of Stuck item in Queue.                                 | `jenkins_url`                                                              |
+| `jenkins.queue.blocked`                | Number of Blocked item in Queue.                               | `jenkins_url`                                                              |
+| `jenkins.scm.checkout`                 | Rate of SCM checkouts.                                         | `branch`, `jenkins_url`, `job`, `node`, `user_id`                          |
+| `jenkins.user.access_denied`           | Rate of users failing to authenticate.                         | `jenkins_url`, `user_id`                                                   |
+| `jenkins.user.authenticated`           | Rate of users authenticating.                                  | `jenkins_url`, `user_id`                                                   |
+| `jenkins.user.logout`                  | Rate of users logging out.                                     | `jenkins_url`, `user_id`                                                   |
+
+
+#### Log Collection for Agents
+
+**Note**: This configuration only applies to those using the [Datadog Agent configuration](#dogstatsd-forwarding-plugin).
+
+1. Collecting logs is disabled by default in the Datadog Agent, enable it in your `datadog.yaml` file:
+
+   ```yaml
+   logs_enabled: true
+   ```
+
+
+2. To collect Jenkins logs, create a [custom log source file][13] for your Agent by creating a `conf.yaml` inside `conf.d/jenkins.d` with the following:
+    ```
+    logs:
+      - type: tcp 
+        port: <PORT> 
+        service: <SERVICE>
+        source: jenkins
+    ```
+    
+3. In Jenkins, submit the port you specified above as the `Log Collection Port`. You can set this using [env vars](#dogstatsd-forwarding-env), a [groovy script](#dogstatsd-forwarding-groovy-script), or the [Jenkins UI](#dogstatsd-forwarding-plugin).
+  
+4. [Restart the Agent][14].
 
 ### Service checks
 
@@ -274,3 +301,5 @@ Checkout the [development document][12] for tips on spinning up a quick developm
 [11]: https://github.com/jenkinsci/datadog-plugin/blob/master/CONTRIBUTING.md
 [12]: https://github.com/jenkinsci/datadog-plugin/blob/master/DEVELOPMENT.md
 [13]: https://docs.datadoghq.com/agent/logs/?tab=tcpudp#custom-log-collection
+[14]: https://docs.datadoghq.com/agent/guide/agent-commands/#start-stop-and-restart-the-agent
+[15]: https://docs.datadoghq.com/logs/log_collection/?tab=http

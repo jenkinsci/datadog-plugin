@@ -40,6 +40,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
@@ -199,6 +200,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @throws IOException      if there is an input/output exception.
      * @throws ServletException if there is a servlet exception.
      */
+    @RequirePOST
     public FormValidation doTestConnection(@QueryParameter("targetApiKey") final String targetApiKey)
             throws IOException, ServletException {
         if (DatadogHttpClient.validateDefaultIntakeConnection(this.getTargetApiURL(), Secret.fromString(targetApiKey))) {
@@ -219,6 +221,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @return a FormValidation object used to display a message to the user on the configuration
      * screen.
      */
+    @RequirePOST
     public FormValidation doTestHostname(@QueryParameter("hostname") final String hostname){
         if(StringUtils.isNotBlank(hostname) && DatadogUtilities.isValidHostname(hostname)) {
             return FormValidation.ok("Great! Your hostname is valid.");
@@ -232,6 +235,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @return a FormValidation object used to display a message to the user on the configuration
      * screen.
      */
+    @RequirePOST
     public FormValidation doCheckTargetApiURL(@QueryParameter("targetApiURL") final String targetApiURL) {
         if(!validateURL(targetApiURL)) {
             return FormValidation.error("The field must be configured in the form <http|https>://<url>/");
@@ -245,6 +249,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @return a FormValidation object used to display a message to the user on the configuration
      * screen.
      */
+    @RequirePOST
     public FormValidation doCheckTargetLogIntakeURL(@QueryParameter("targetLogIntakeURL") final String targetLogIntakeURL) {
         if (!validateURL(targetLogIntakeURL) && collectBuildLogs) {
             return FormValidation.error("The field must be configured in the form <http|https>://<url>/");
@@ -270,6 +275,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @return a FormValidation object used to display a message to the user on the configuration
      * screen.
      */
+    @RequirePOST
     public FormValidation doCheckTargetHost(@QueryParameter("targetHost") final String targetHost) {
         if (!validateTargetHost(targetHost)) {
             return FormValidation.error("Invalid Host");
@@ -287,6 +293,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @return a FormValidation object used to display a message to the user on the configuration
      * screen.
      */
+    @RequirePOST
     public FormValidation doCheckTargetPort(@QueryParameter("targetPort") final String targetPort) {
         if (!validatePort(targetPort)) {
             return FormValidation.error("Invalid Port");
@@ -300,6 +307,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @return a FormValidation object used to display a message to the user on the configuration
      * screen.
      */
+    @RequirePOST
     public FormValidation doCheckTargetLogCollectionPort(@QueryParameter("targetLogCollectionPort") final String targetLogCollectionPort) {
         if (!validatePort(targetLogCollectionPort) && collectBuildLogs) {
             return FormValidation.error("Invalid Log Collection Port");

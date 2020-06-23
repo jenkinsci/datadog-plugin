@@ -1,0 +1,54 @@
+pipeline {
+    agent none
+    stages {
+        stage('Pre-setup'){
+            steps {
+                echo 'Hello world'
+            }
+        }
+        stage('Parallel tests') {
+            parallel {
+                stage('Test On Windows') {
+                    agent {
+                        label "windows"
+                    }
+                    stages {
+                        stage('Windows-1'){
+                            steps{
+                            sh "echo 'Windows 1'"
+                            }
+                        }
+                        stage('Windows-2'){
+                            steps{
+                            sh "echo 'Windows 2'"
+                            }
+                        }
+                        stage('Windows-3'){
+                            steps{
+                            sh "echo 'Windows 3'"
+                            }
+                        }
+                    }
+                    post {
+                        always {
+                            sh "echo 'done'"
+                        }
+                    }
+                }
+                stage('Test On Linux') {
+                    agent {
+                        label "master"
+                    }
+                    steps {
+                        sh "echo 'Linux'"
+                    }
+                    post {
+                        always {
+                            sh "echo 'done'"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
