@@ -169,11 +169,10 @@ public class DatadogHttpClient implements DatadogClient {
         }
 
         DatadogHttpClient newInstance = (DatadogHttpClient) object;
-        DatadogHttpClient httpInstance = (DatadogHttpClient) instance;
 
-        if ((StringUtils.equals(httpInstance.getLogIntakeUrl(), newInstance.getLogIntakeUrl()))
-        && (StringUtils.equals(httpInstance.getUrl(), newInstance.getUrl())
-        && ((newInstance.getApiKey() == null && httpInstance.getApiKey() == null) || newInstance.getApiKey().equals(httpInstance.getApiKey())))){
+        if ((StringUtils.equals(getLogIntakeUrl(), newInstance.getLogIntakeUrl()))
+        && (StringUtils.equals(getUrl(), newInstance.getUrl())
+        && ((newInstance.getApiKey() == null && getApiKey() == null) || newInstance.getApiKey().equals(getApiKey())))){
             return true;
         }
         return false;

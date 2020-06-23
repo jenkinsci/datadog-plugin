@@ -135,11 +135,10 @@ public class DogStatsDClient implements DatadogClient {
         }
 
         DogStatsDClient newInstance = (DogStatsDClient) object;
-        DogStatsDClient httpInstance = (DogStatsDClient) instance;
 
-        if ((StringUtils.equals(httpInstance.getHostname(), newInstance.getHostname())
-        && (((httpInstance.getPort() == null) && (newInstance.getPort() == null)) || (null != httpInstance.getPort() && port.equals(newInstance.getPort())))
-        && (((httpInstance.getLogCollectionPort() == null) && (newInstance.getLogCollectionPort() == null)) || (null != httpInstance.getLogCollectionPort() && logCollectionPort.equals(newInstance.getLogCollectionPort()))))){
+        if ((StringUtils.equals(getHostname(), newInstance.getHostname())
+        && (((getPort() == null) && (newInstance.getPort() == null)) || (null != getPort() && port.equals(newInstance.getPort())))
+        && (((getLogCollectionPort() == null) && (newInstance.getLogCollectionPort() == null)) || (null != getLogCollectionPort() && logCollectionPort.equals(newInstance.getLogCollectionPort()))))){
            return true;
         }
 
