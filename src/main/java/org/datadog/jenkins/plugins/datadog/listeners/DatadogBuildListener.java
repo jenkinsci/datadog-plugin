@@ -168,10 +168,10 @@ public class DatadogBuildListener extends RunListener<Run> {
                 for (StageNodeExt stage : extRun.getStages()) {
                     pauseDuration += stage.getPauseDurationMillis();
                 }
-                client.gauge("jenkins.job.pauseduration", pauseDuration / 1000, hostname, tags);
+                client.gauge("jenkins.job.pause_duration", pauseDuration / 1000, hostname, tags);
                 logger.fine(String.format("[%s]: Pause Duration: %s", buildData.getJobName(null), toTimeString(pauseDuration)));
                 long buildDuration = run.getDuration() - pauseDuration;
-                client.gauge("jenkins.job.buildduration", buildDuration / 1000, hostname, tags);
+                client.gauge("jenkins.job.build_duration", buildDuration / 1000, hostname, tags);
                 logger.fine(
                         String.format("[%s]: Build Duration (without pause): %s", buildData.getJobName(null), toTimeString(buildDuration)));
             }
