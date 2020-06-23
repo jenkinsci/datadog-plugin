@@ -118,10 +118,19 @@ public class DatadogComputerPublisherTest {
         String hostname = DatadogUtilities.getHostname(null);
         
         computerPublisher.doRun();
+        int numComputers = 0;
+        int numComputersOnline = 0;
+        int numComputersOffline = 0;
+        for (Computer computer: jenkins.jenkins.getComputers()){
+            numComputers++;
+            if (computer.isOffline()) {
+                numComputersOffline++;
+            }   
+            if (computer.isOnline()) {
+                numComputersOnline++;
+            }
+        }
         
-        int numComputers = 3;
-        int numComputersOnline = 1;
-        int numComputersOffline = 2;
         client.assertMetric("jenkins.node.count", numComputers, hostname, expectedTagsGlobal);
         client.assertMetricValues("jenkins.node_status.count", 1, hostname, numComputers);
         
