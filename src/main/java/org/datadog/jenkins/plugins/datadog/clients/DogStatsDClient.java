@@ -130,7 +130,7 @@ public class DogStatsDClient implements DatadogClient {
         if (object == this) {
             return true;
         }
-        if (!(object instanceof DatadogClient)) {
+        if (!(object instanceof DogStatsDClient)) {
             return false;
         }
 

@@ -164,7 +164,7 @@ public class DatadogHttpClient implements DatadogClient {
         if (object == this) {
             return true;
         }
-        if (!(object instanceof DatadogClient)) {
+        if (!(object instanceof DatadogHttpClient)) {
             return false;
         }
 
