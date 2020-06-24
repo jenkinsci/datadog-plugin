@@ -594,4 +594,8 @@ public class DatadogUtilities {
             logger.finer(message + ": " + sw.toString());
         }
     }
+    
+    public static int toInt(boolean b) {
+        return b ? 1 : 0;
+    }
 }
