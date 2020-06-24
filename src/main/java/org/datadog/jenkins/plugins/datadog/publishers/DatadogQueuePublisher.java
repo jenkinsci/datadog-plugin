@@ -26,14 +26,16 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.publishers;
 
 import hudson.Extension;
+import hudson.model.FreeStyleProject;
 import hudson.model.PeriodicWork;
 import hudson.model.Queue;
+import hudson.model.Queue.Task;
+
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -49,8 +51,8 @@ public class DatadogQueuePublisher extends PeriodicWork {
     private static final Logger logger = Logger.getLogger(DatadogQueuePublisher.class.getName());
 
     private static final long RECURRENCE_PERIOD = TimeUnit.MINUTES.toMillis(1);
-    private static final Queue queue = Queue.getInstance();
-
+    private final Queue queue = Queue.getInstance();
+    
     @Override
     public long getRecurrencePeriod() {
         return RECURRENCE_PERIOD;
@@ -70,23 +72,56 @@ public class DatadogQueuePublisher extends PeriodicWork {
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
             // Add JenkinsUrl Tag
             tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
-
             long size = 0;
             long buildable = queue.countBuildableItems();
             long pending = queue.getPendingItems().size();
             long stuck = 0;
             long blocked = 0;
+            String hostname = DatadogUtilities.getHostname(null);
             final Queue.Item[] items = queue.getItems();
             for (Queue.Item item : items) {
+                Map<String, Set<String>> job_tags = DatadogUtilities.getTagsFromGlobalTags();
+                job_tags = TagsUtil.addTagToTags(job_tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
+                
+                String job_name;
+                Task task = item.task;
+                if (task instanceof FreeStyleProject){ 
+                    job_name = task.getFullDisplayName();
+                } else {
+                    //TODO: type check for ExecutorStepExecution.PlaceholderTask when pipelines are supported
+                    job_name = "unknown";
+                }
+                TagsUtil.addTagToTags(job_tags, "job_name", job_name);
+                boolean isStuck = false;
+                boolean isBuildable = false;
+                boolean isBlocked = false;
+                boolean isPending = false;
+                
                 size++;
                 if(item.isStuck()){
+                    isStuck = true;
                     stuck++;
                 }
+                if (item.isBuildable()){
+                    isBuildable = true;
+                    buildable++;
+                }
                 if(item.isBlocked()){
+                    isBlocked = true;
                     blocked++;
                 }
+                if(queue.isPending(task)){
+                    isPending = true;
+                    pending++;
+                }
+                
+                client.gauge("jenkins.queue.job.in_queue", 1, hostname, job_tags);
+                client.gauge("jenkins.queue.job.buildable", DatadogUtilities.toInt(isBuildable), hostname, job_tags);
+                client.gauge("jenkins.queue.job.pending", DatadogUtilities.toInt(isPending), hostname, job_tags);
+                client.gauge("jenkins.queue.job.stuck", DatadogUtilities.toInt(isStuck), hostname, job_tags);
+                client.gauge("jenkins.queue.job.blocked", DatadogUtilities.toInt(isBlocked), hostname, job_tags);
             }
-            String hostname = DatadogUtilities.getHostname(null);
+
             client.gauge("jenkins.queue.size", size, hostname, tags);
             client.gauge("jenkins.queue.buildable", buildable, hostname, tags);
             client.gauge("jenkins.queue.pending", pending, hostname, tags);
@@ -96,6 +131,5 @@ public class DatadogQueuePublisher extends PeriodicWork {
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, null);
         }
-
     }
 }
