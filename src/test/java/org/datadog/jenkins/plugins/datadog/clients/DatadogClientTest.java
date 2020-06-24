@@ -38,6 +38,65 @@ import java.util.concurrent.*;
 public class DatadogClientTest {
 
     @Test
+    public void testHttpClientGetInstanceApiKey() {
+        //validateCongiguration throws an error when given an invalid API key when the urls are valid
+        Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> {
+            DatadogHttpClient.enableValidations = false;
+            DatadogHttpClient client = (DatadogHttpClient) DatadogHttpClient.getInstance("http", "test", null);
+            client.validateConfiguration();
+        });
+
+        String expectedMessage = "Datadog API Key is not set properly";
+        String actualMessage = exception.getMessage();
+        Assert.assertTrue(actualMessage.equals(expectedMessage));
+    }
+
+    @Test
+    public void testHttpClientGetInstanceApiUrl() {
+        // validateCongiguration throws an error when given an invalid url
+        Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> {
+            DatadogHttpClient.enableValidations = false;
+            DatadogHttpClient client = (DatadogHttpClient) DatadogHttpClient.getInstance("", null, null);
+            client.validateConfiguration();
+        });
+        String expectedMessage = "Datadog Target URL is not set properly";
+        String actualMessage = exception.getMessage();
+        Assert.assertTrue(actualMessage.equals(expectedMessage));
+    }
+
+
+    @Test
+    public void testHttpClientGetInstanceEnableValidations() {
+        // calling getInstance with invalid data returns null
+        DatadogHttpClient.enableValidations = true;
+        DatadogClient client = DatadogHttpClient.getInstance("https", null, null);
+        Assert.assertEquals(client, null);
+    }
+
+
+    @Test
+    public void testDogstatsDClientGetInstanceTargetPort() {
+        // validateCongiguration throws an error when given an invalid port
+        Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> {
+            DogStatsDClient.enableValidations = false;
+            DogStatsDClient client = (DogStatsDClient) DogStatsDClient.getInstance("test", null, null);
+            client.validateConfiguration();
+        });
+
+        String expectedMessage = "Datadog Target Port is not set properly";
+        String actualMessage = exception.getMessage();
+        Assert.assertTrue(actualMessage.equals(expectedMessage));
+    }
+
+    @Test
+    public void testDogstatsDClientGetInstanceEnableValidations() {
+        // calling getInstance with invalid data returns null
+        DogStatsDClient.enableValidations = true;
+        DatadogClient client = DogStatsDClient.getInstance("https", null, null);
+        Assert.assertEquals(client, null);
+    }
+
+    @Test
     public void testIncrementCountAndFlush() throws IOException, InterruptedException {
         DatadogHttpClient.enableValidations = false;
         DatadogClient client = DatadogHttpClient.getInstance("test", null, null);
@@ -92,6 +151,7 @@ public class DatadogClientTest {
                 check1 && check2 && check3 && check4);
     }
 
+
     @Test
     public void testIncrementCountAndFlushThreadedEnv() throws IOException, InterruptedException {
         ExecutorService executor = Executors.newFixedThreadPool(2);
@@ -101,7 +161,7 @@ public class DatadogClientTest {
             public void run() {
                 // We use a new instance of a client on every run.
                 DatadogHttpClient.enableValidations = false;
-                DatadogClient client = DatadogHttpClient.getInstance("test", null, null);
+                DatadogClient client = DatadogHttpClient.getInstance("test2", null, null);
                 Map<String, Set<String>> tags = new HashMap<>();
                 tags = DatadogClientStub.addTagToMap(tags, "tag1", "value");
                 tags = DatadogClientStub.addTagToMap(tags, "tag2", "value");
@@ -130,7 +190,7 @@ public class DatadogClientTest {
             public void run() {
                 // We use a new instance of a client on every run.
                 DatadogHttpClient.enableValidations = false;
-                DatadogClient client = DatadogHttpClient.getInstance("test", null, null);
+                DatadogClient client = DatadogHttpClient.getInstance("test3", null, null);
                 Map<String, Set<String>> tags = new HashMap<>();
                 tags = DatadogClientStub.addTagToMap(tags, "tag1", "value");
                 tags = DatadogClientStub.addTagToMap(tags, "tag2", "value");
@@ -168,9 +228,8 @@ public class DatadogClientTest {
     @Test
     public void testIncrementCountAndFlushThreadedEnvOneClient() throws IOException, InterruptedException {
         ExecutorService executor = Executors.newFixedThreadPool(2);
-        // We only have one instance of the client used by all threads
         DatadogHttpClient.enableValidations = false;
-        final DatadogClient client = DatadogHttpClient.getInstance("test", null, null);
+        final DatadogClient client = DatadogHttpClient.getInstance("testing", null, null);
         Runnable increment = new Runnable() {
             @Override
             public void run() {
