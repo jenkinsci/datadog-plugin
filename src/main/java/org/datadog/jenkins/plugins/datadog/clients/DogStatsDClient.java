@@ -91,6 +91,7 @@ public class DogStatsDClient implements DatadogClient {
             if (enableValidations) {
                 try {
                     newInstance.validateConfiguration();
+                    DogStatsDClient.failedLastValidation = false;
                 } catch(IllegalArgumentException e){
                     logger.severe(e.getMessage());
                     DogStatsDClient.failedLastValidation = true;

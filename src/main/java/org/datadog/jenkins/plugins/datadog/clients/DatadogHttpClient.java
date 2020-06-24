@@ -107,6 +107,7 @@ public class DatadogHttpClient implements DatadogClient {
                 DatadogHttpClient.instance = newInstance;
                 try {
                     newInstance.validateConfiguration();
+                    DatadogHttpClient.failedLastValidation = false;
                 } catch(IllegalArgumentException e){
                     logger.severe(e.getMessage());
                     DatadogHttpClient.failedLastValidation = true;
