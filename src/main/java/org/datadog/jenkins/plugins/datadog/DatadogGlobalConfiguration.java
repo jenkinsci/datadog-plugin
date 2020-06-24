@@ -31,6 +31,7 @@ import hudson.util.FormValidation;
 import hudson.util.Secret;
 import jenkins.model.GlobalConfiguration;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogHttpClient;
@@ -222,18 +223,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      */
     @RequirePOST
     public FormValidation doTestHostname(@QueryParameter("hostname") final String hostname){
-        if(DatadogUtilities.isValidHostname(hostname)) {
+        if(StringUtils.isNotBlank(hostname) && DatadogUtilities.isValidHostname(hostname)) {
             return FormValidation.ok("Great! Your hostname is valid.");
         } else {
             return FormValidation.error("Your hostname is invalid, likely because it violates the format set in RFC 1123");
         }
-    }
-
-    private boolean validateTargetApiURL(final String targetApiURL){
-        if(!DatadogClient.ClientType.HTTP.name().equals(reportWith)){
-            return true;
-        }
-        return StringUtils.isNotBlank(targetApiURL) && targetApiURL.contains("http");
     }
 
     /**
@@ -243,18 +237,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      */
     @RequirePOST
     public FormValidation doCheckTargetApiURL(@QueryParameter("targetApiURL") final String targetApiURL) {
-        if(!validateTargetApiURL(targetApiURL)) {
+        if(!validateURL(targetApiURL)) {
             return FormValidation.error("The field must be configured in the form <http|https>://<url>/");
         }
 
         return FormValidation.ok("Valid URL");
-    }
-
-    private boolean validateTargetLogIntakeURL(final String targetLogIntakeURL) {
-        if(!DatadogClient.ClientType.HTTP.name().equals(reportWith) || !collectBuildLogs){
-            return true;
-        }
-        return StringUtils.isNotBlank(targetLogIntakeURL) && targetLogIntakeURL.contains("http");
     }
 
     /**
@@ -264,7 +251,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      */
     @RequirePOST
     public FormValidation doCheckTargetLogIntakeURL(@QueryParameter("targetLogIntakeURL") final String targetLogIntakeURL) {
-        if (!validateTargetLogIntakeURL(targetLogIntakeURL)) {
+        if (!validateURL(targetLogIntakeURL) && collectBuildLogs) {
             return FormValidation.error("The field must be configured in the form <http|https>://<url>/");
         }
 
@@ -277,6 +264,10 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         }
 
         return StringUtils.isNotBlank(targetHost);
+    }
+
+    public static boolean validateURL(String targetURL) {
+        return StringUtils.isNotBlank(targetURL) && targetURL.contains("http");
     }
 
     /**
@@ -293,12 +284,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         return FormValidation.ok("Valid Host");
     }
 
-    private boolean validateTargetPort(String targetPort) {
-        if(!DatadogClient.ClientType.DSD.name().equals(reportWith)) {
-            return true;
-        }
-
-        return StringUtils.isNotBlank(targetPort) && StringUtils.isNumeric(targetPort);
+    public static boolean validatePort(String targetPort) {
+        return StringUtils.isNotBlank(targetPort) && StringUtils.isNumeric(targetPort) && NumberUtils.createInteger(targetPort) != 0;
     }
 
     /**
@@ -308,19 +295,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      */
     @RequirePOST
     public FormValidation doCheckTargetPort(@QueryParameter("targetPort") final String targetPort) {
-        if (!validateTargetPort(targetPort)) {
+        if (!validatePort(targetPort)) {
             return FormValidation.error("Invalid Port");
         }
 
         return FormValidation.ok("Valid Port");
-    }
-
-    private boolean validateTargetLogCollectionPort(String targetLogCollectionPort) {
-        if(!DatadogClient.ClientType.DSD.name().equals(reportWith) || !collectBuildLogs) {
-            return true;
-        }
-
-        return StringUtils.isNotBlank(targetLogCollectionPort) && StringUtils.isNumeric(targetLogCollectionPort);
     }
 
     /**
@@ -330,11 +309,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      */
     @RequirePOST
     public FormValidation doCheckTargetLogCollectionPort(@QueryParameter("targetLogCollectionPort") final String targetLogCollectionPort) {
-        if (!validateTargetLogCollectionPort(targetLogCollectionPort)) {
-            return FormValidation.error("Invalid Port");
+        if (!validatePort(targetLogCollectionPort) && collectBuildLogs) {
+            return FormValidation.error("Invalid Log Collection Port");
         }
 
-        return FormValidation.ok("Valid Port");
+        return FormValidation.ok("Valid Log Collection Port");
     }
 
     /**
@@ -372,7 +351,10 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @SuppressFBWarnings("REC_CATCH_EXCEPTION")
     public boolean configure(final StaplerRequest req, final JSONObject formData) throws FormException {
         try {
-            Boolean status = super.configure(req, formData);
+
+            if(!super.configure(req, formData)){
+                return false;
+            }
 
             this.setReportWith(formData.getString("reportWith"));
             this.setTargetApiURL(formData.getString("targetApiURL"));
@@ -380,20 +362,19 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.setTargetApiKey(formData.getString("targetApiKey"));
             this.setTargetHost(formData.getString("targetHost"));
             String portStr = formData.getString("targetPort");
-            if(StringUtils.isNotBlank(portStr)){
-                if(StringUtils.isNumeric(portStr)) {
-                    this.setTargetPort(formData.getInt("targetPort"));
-                }
-            }else{
+            if (validatePort(portStr)) {
+                this.setTargetPort(formData.getInt("targetPort"));
+            } else {
                 this.setTargetPort(null);
             }
             String logCollectionPortStr = formData.getString("targetLogCollectionPort");
-            if(StringUtils.isNotBlank(logCollectionPortStr)){
-                if(StringUtils.isNumeric(logCollectionPortStr)){
-                    this.setTargetLogCollectionPort(formData.getInt("targetLogCollectionPort"));
-                }
+            if(validatePort(logCollectionPortStr)){
+                this.setTargetLogCollectionPort(formData.getInt("targetLogCollectionPort"));
             }else{
                 this.setTargetLogCollectionPort(null);
+            }
+            if(StringUtils.isNotBlank(this.getHostname()) && !DatadogUtilities.isValidHostname(this.getHostname())){
+                throw new FormException("Your hostname is invalid, likely because it violates the format set in RFC 1123", "hostname");
             }
             this.setHostname(formData.getString("hostname"));
             this.setBlacklist(formData.getString("blacklist"));
@@ -405,66 +386,19 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.setEmitSystemEvents(formData.getBoolean("emitSystemEvents"));
             this.setCollectBuildLogs(formData.getBoolean("collectBuildLogs"));
 
-            if(!validateTargetApiURL(this.getTargetApiURL())){
-                logger.severe("The field (targetApiURL) must be configured in the form <http|https>://<url>/");
-                return false;
-            }
-            if(!validateTargetLogIntakeURL(this.getTargetLogIntakeURL())){
-                logger.severe("The field (targetLogIntakeURL) must be configured in the form <http|https>://<url>/");
-                return false;
-            }
-            if(!validateTargetPort(portStr)){
-                logger.severe("Invalid Port");
-                return false;
-            }
-            if(!validateTargetLogCollectionPort(logCollectionPortStr)){
-                logger.severe("Invalid log collection port");
-                return false;
-            }
-            if(StringUtils.isNotBlank(this.getHostname()) && !DatadogUtilities.isValidHostname(this.getHostname())){
-                throw new FormException("Your hostname is invalid, likely because it violates the format set in RFC 1123", "hostname");
-            }
-            // Run connection validation if applicable
-            if(DatadogClient.ClientType.HTTP.name().equals(this.getReportWith()) &&
-                    !DatadogHttpClient.validateDefaultIntakeConnection(this.getTargetApiURL(), this.getTargetApiKey())){
-
-                // If a client instance exist we set the connectionBroken attribute to true.
-                DatadogClient client = DatadogHttpClient.getInstance(this.getTargetApiURL(),
-                        this.getTargetLogIntakeURL(), this.getTargetApiKey());
-                if(client != null){
-                    client.setDefaultIntakeConnectionBroken(true);
-                }
-                logger.severe("Connection broken, please double check both your API URL and Key");
-                return false;
-            }
-            if(DatadogClient.ClientType.HTTP.name().equals(this.getReportWith()) &&
-                    !DatadogHttpClient.validateLogIntakeConnection(this.getTargetLogIntakeURL(), this.getTargetApiKey())){
-
-                // If a client instance exist we set the connectionBroken attribute to true.
-                DatadogClient client = DatadogHttpClient.getInstance(this.getTargetApiURL(),
-                        this.getTargetLogIntakeURL(), this.getTargetApiKey());
-                if(client != null){
-                    client.setLogIntakeConnectionBroken(true);
-                }
-                logger.severe("Connection broken, please double check both your Log Intake URL and Key");
-                return false;
-            }
-
             //When form is saved....
             DatadogClient client = ClientFactory.getClient(DatadogClient.ClientType.valueOf(this.getReportWith()),
                     this.getTargetApiURL(), this.getTargetLogIntakeURL(), this.getTargetApiKey(), this.getTargetHost(),
                     this.getTargetPort(), this.getTargetLogCollectionPort());
-            // ...reinitialize the DatadogClient
-            if(client != null) {
-                // There are no reasons at this point client should be null.
-                client.setDefaultIntakeConnectionBroken(false);
-                client.setLogIntakeConnectionBroken(false);
+                // ...reinitialize the DatadogClient
+            if(client == null) {
+                return false;
             }
-
+            client.setDefaultIntakeConnectionBroken(false);
+            client.setLogIntakeConnectionBroken(false);
             // Persist global configuration information
             save();
-
-            return status;
+            return true;
         }catch(Exception e){
             // Intercept all FormException instances.
             if(e instanceof FormException){
@@ -474,8 +408,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             DatadogUtilities.severe(logger, e, null);
             return false;
         }
-    }
 
+    }
     public boolean reportWithEquals(String value){
         return this.reportWith.equals(value);
     }

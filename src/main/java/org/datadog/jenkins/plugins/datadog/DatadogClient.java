@@ -27,10 +27,7 @@ package org.datadog.jenkins.plugins.datadog;
 
 import com.timgroup.statsd.ServiceCheck;
 import hudson.util.Secret;
-import org.datadog.jenkins.plugins.datadog.logs.DatadogConsoleLogFilter;
 
-import javax.servlet.ServletException;
-import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
@@ -72,7 +69,7 @@ public interface DatadogClient {
 
     public void setHostname(String hostname);
 
-    public void setPort(int port);
+    public void setPort(Integer port);
 
     public void setLogCollectionPort(Integer logCollectionPort);
 
