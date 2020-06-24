@@ -196,7 +196,6 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 
 ### Metrics
 
-<<<<<<< HEAD
 | Metric Name                            | Description                                                    | Default Tags                                                |
 |----------------------------------------|----------------------------------------------------------------|-------------------------------------------------------------|
 | `jenkins.computer.launch_failure`      | Rate of computer launch failures.                              | `jenkins_url`                                               |
