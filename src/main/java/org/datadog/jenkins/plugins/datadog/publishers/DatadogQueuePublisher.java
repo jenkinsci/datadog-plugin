@@ -87,10 +87,11 @@ public class DatadogQueuePublisher extends PeriodicWork {
                 Task task = item.task;
                 if (task instanceof FreeStyleProject){ 
                     job_name = task.getFullDisplayName();
-                    TagsUtil.addTagToTags(job_tags, "job_name", job_name);
-
+                } else {
+                    //TODO: type check for ExecutorStepExecution.PlaceholderTask when pipelines are supported
+                    job_name = "unknown";
                 }
-                //TODO: type check for ExecutorStepExecution.PlaceholderTask when pipelines are supported
+                TagsUtil.addTagToTags(job_tags, "job_name", job_name);
                 boolean isStuck = false;
                 boolean isBuildable = false;
                 boolean isBlocked = false;
