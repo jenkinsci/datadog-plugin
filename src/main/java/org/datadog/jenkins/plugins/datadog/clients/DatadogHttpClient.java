@@ -150,11 +150,11 @@ public class DatadogHttpClient implements DatadogClient {
                 boolean logConnection = validateLogIntakeConnection(url, apiKey);
                 if (!logConnection) {
                     instance.setLogIntakeConnectionBroken(true);
-                    throw new IllegalArgumentException("Connection broken, please double check both your Log Intake URL and Key");
+                    logger.warning("Connection broken, please double check both your Log Intake URL and Key");
                 }
             } catch (IOException e) {
                 instance.setLogIntakeConnectionBroken(true);
-                throw new IllegalArgumentException("Connection broken, please double check both your Log Intake URL and Key");
+                logger.warning("Connection broken, please double check both your Log Intake URL and Key");
             }
         }
     }
