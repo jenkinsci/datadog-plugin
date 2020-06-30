@@ -27,7 +27,9 @@ package org.datadog.jenkins.plugins.datadog.clients;
 
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.jvnet.hudson.test.JenkinsRule;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -36,6 +38,9 @@ import java.util.Set;
 import java.util.concurrent.*;
 
 public class DatadogClientTest {
+
+    @ClassRule
+    public static JenkinsRule j = new JenkinsRule();
 
     @Test
     public void testHttpClientGetInstanceApiKey() {
