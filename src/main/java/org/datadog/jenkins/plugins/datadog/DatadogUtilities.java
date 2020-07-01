@@ -57,7 +57,7 @@ public class DatadogUtilities {
         try {
             return ExtensionList.lookupSingleton(DatadogGlobalConfiguration.class);
         } catch (IllegalStateException e) {
-            // It can only throw a NullPointerException when running tests
+            // It can only throw a IllegalStateException when running tests
             return null;
         }
     }
