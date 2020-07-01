@@ -1,0 +1,3 @@
+<f:entry field="collectLogs" title="${%collectLogs}">
+    <f:checkbox default="true"/>
+</f:entry>
