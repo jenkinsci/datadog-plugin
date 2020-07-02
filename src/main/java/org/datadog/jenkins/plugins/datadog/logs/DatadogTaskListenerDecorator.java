@@ -32,6 +32,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
@@ -59,8 +60,7 @@ public class DatadogTaskListenerDecorator extends TaskListenerDecorator {
         @Override
         @Nullable
         public TaskListenerDecorator of(@Nonnull FlowExecutionOwner owner) {
-            if (DatadogUtilities.getDatadogGlobalDescriptor() == null ||
-                    !DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs()) {
+            if (!DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs()) {
                 return null;
             }
             try {

@@ -9,6 +9,7 @@ import hudson.tasks.Shell;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins.MasterComputer;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -29,7 +30,7 @@ public class LogCollectionTest {
     @BeforeClass
     public static void setup() throws Exception {
         ClientFactory.setTestClient(stubClient);
-        DatadogGlobalConfiguration cfg = ExtensionList.lookup(DatadogGlobalConfiguration.class).get(0);
+        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         ExtensionList.clearLegacyInstances();
         cfg.setCollectBuildLogs(true);
         j.createOnlineSlave(new LabelAtom("test"));
