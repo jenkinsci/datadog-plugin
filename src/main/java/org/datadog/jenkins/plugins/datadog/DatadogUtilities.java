@@ -31,6 +31,7 @@ import hudson.XmlFile;
 import hudson.model.*;
 import hudson.model.labels.LabelAtom;
 import jenkins.model.Jenkins;
+import org.datadog.jenkins.plugins.datadog.steps.DatadogPipelineAction;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
@@ -117,6 +118,29 @@ public class DatadogUtilities {
         result = TagsUtil.merge(result, computeTagListFromVarList(envVars, tagProperties));
 
         result = TagsUtil.merge(result, getTagsFromGlobalJobTags(jobName, globalJobTags));
+
+        // pipeline defined tags
+        DatadogPipelineAction action = run.getAction(DatadogPipelineAction.class);
+        if(action != null) {
+            List<String> pipelineTags = action.getTags();
+            for (int i = 0; i < pipelineTags.size(); i++) {
+                String[] tagItem = pipelineTags.get(i).replaceAll(" ", "").split(":", 2);
+                if(tagItem.length == 2) {
+                    String tagName = tagItem[0];
+                    String tagValue = tagItem[1];
+                    Set<String> tagValues = result.containsKey(tagName) ? result.get(tagName) : new HashSet<String>();
+                    tagValues.add(tagValue.toLowerCase());
+                    result.put(tagName, tagValues);
+                } else if(tagItem.length == 1) {
+                    String tagName = tagItem[0];
+                    Set<String> tagValues = result.containsKey(tagName) ? result.get(tagName) : new HashSet<String>();
+                    tagValues.add(""); // no values
+                    result.put(tagName, tagValues);
+                } else {
+                    logger.fine(String.format("Ignoring the tag %s. It is empty.", tagItem));
+                }
+            }
+        }
         return result;
     }
 

@@ -8,6 +8,7 @@ import java.io.BufferedReader;
 import java.io.PrintStream;
 import java.io.Reader;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import javax.annotation.Nonnull;
@@ -41,6 +42,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 public class DatadogOptions extends Step implements Serializable {
     private static final long serialVersionUID = 1L;
     private boolean collectLogs = false;
+    private List<String> tags = new ArrayList<String>();
 
     /** Constructor. */
     @DataBoundConstructor
@@ -55,9 +57,18 @@ public class DatadogOptions extends Step implements Serializable {
         this.collectLogs = collectLogs;
     }
 
+    public List<String> getTags() {
+        return tags;
+    }
+
+    @DataBoundSetter
+    public void setTags(List<String> tags) {
+        this.tags = tags;
+    }
+
     @Override
     public StepExecution start(StepContext context) {
-        DatadogPipelineAction action = new DatadogPipelineAction(this.collectLogs);
+        DatadogPipelineAction action = new DatadogPipelineAction(this.collectLogs, this.tags);
         return new ExecutionImpl(context, action);
     }
 
@@ -78,14 +89,24 @@ public class DatadogOptions extends Step implements Serializable {
         public boolean start() throws Exception {
             StepContext context = getContext();
             listener = context.get(TaskListener.class);
-            listener.getLogger().println("Starting DatadogStep");
+            if(listener == null){
+                // Can't even log an error message to the task if listener is null. Not expected.
+                return true;
+            }
+            PrintStream taskLogger = listener.getLogger();
+            taskLogger.println("Starting DatadogStep");  // TODO: Debug line, remove me
             run = context.get(Run.class);
+            if(run == null){
+                taskLogger.println("Unable to find a Run object for this job, the Datadog step will not run.");
+                return true;
+            }
             if(run.getAction(DatadogPipelineAction.class) == null) {
                 run.addAction(action);
             } else {
                 listener.getLogger().println("You already defined a datadog step");
             }
-
+            BodyInvoker invoker = context.newBodyInvoker().withCallback(BodyExecutionCallback.wrap(context));
+            invoker.start();
             return false;
         }
 
