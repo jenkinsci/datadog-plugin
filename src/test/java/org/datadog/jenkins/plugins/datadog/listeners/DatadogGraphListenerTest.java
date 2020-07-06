@@ -89,11 +89,12 @@ public class DatadogGraphListenerTest {
                 "stage_name:low",
                 "job:pipeline",
                 "parent_stage_name:medium",
-                "stage_depth:2"
+                "stage_depth:2",
+                "result:Unknown"
         };
         clientStub.assertMetric("jenkins.job.stage_duration", endTime - startTime, hostname, expectedTags);
     }
-
+    
     @Test
     public void testIntegration() throws Exception {
         jenkinsRule.createOnlineSlave(new LabelAtom("windows"));
@@ -114,7 +115,8 @@ public class DatadogGraphListenerTest {
         String[] baseTags = new String[]{
                 "jenkins_url:" + DatadogUtilities.getJenkinsUrl(),
                 "user_id:anonymous",
-                "job:pipelineIntegration"
+                "job:pipelineIntegration",
+                "result:Unknown"
         };
         String[] depths = new String[]{ "2", "2", "2", "1", "1", "0", "0" };
         String[] stageNames = new String[]{ "Windows-1", "Windows-2", "Windows-3", "Test On Windows", "Test On Linux", "Parallel tests",
@@ -130,6 +132,35 @@ public class DatadogGraphListenerTest {
             clientStub.assertMetric("jenkins.job.stage_duration", hostname, expectedTags);
         }
 
+    }
+    
+    @Test
+    public void testIntegrationErrorTag() throws Exception {
+        jenkinsRule.createOnlineSlave(new LabelAtom("windows"));
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationFailure");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineFailure.txt"),
+                "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        WorkflowRun run = job.scheduleBuild2(0).get();
+        BufferedReader br = new BufferedReader(run.getLogReader());
+        String s;
+        while ((s = br.readLine()) != null) {
+            System.out.println(s);
+        }
+        br.close();
+        String hostname = DatadogUtilities.getHostname(null);
+        String[] tags = new String[]{
+                "jenkins_url:" + DatadogUtilities.getJenkinsUrl(),
+                "user_id:anonymous",
+                "job:pipelineIntegrationFailure",
+                "result:Error",
+                "stage_depth:0",
+                "stage_name:Fail",
+                "parent_stage_name:root"               
+        };
+        clientStub.assertMetric("jenkins.job.stage_duration", hostname, tags);
     }
 
     @Test
