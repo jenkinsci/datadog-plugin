@@ -12,4 +12,4 @@ def configurations = [
     [ platform: "linux", jdk: "11", jenkins: commonVersion, javaLevel: "8" ],
 ]
 
-buildPlugin(configurations: recommendedConfigurations() + configurations)
+buildPlugin(configurations: buildPlugin.recommendedConfigurations() + configurations)
