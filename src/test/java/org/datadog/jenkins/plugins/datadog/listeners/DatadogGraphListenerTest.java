@@ -1,6 +1,9 @@
 package org.datadog.jenkins.plugins.datadog.listeners;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import hudson.model.labels.LabelAtom;
@@ -97,6 +100,8 @@ public class DatadogGraphListenerTest {
     
     @Test
     public void testIntegration() throws Exception {
+        DatadogGraphListener graphListener = spy(DatadogGraphListener.class);
+        doReturn("Unknown").when(graphListener).getResultTag(any());
         jenkinsRule.createOnlineSlave(new LabelAtom("windows"));
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration");
         String definition = IOUtils.toString(
@@ -128,7 +133,6 @@ public class DatadogGraphListenerTest {
             expectedTags[expectedTags.length - 3] = "stage_depth:" + depths[i];
             expectedTags[expectedTags.length - 2] = "stage_name:" + stageNames[i];
             expectedTags[expectedTags.length - 1] = "parent_stage_name:" + parentNames[i];
-
             clientStub.assertMetric("jenkins.job.stage_duration", hostname, expectedTags);
         }
 
