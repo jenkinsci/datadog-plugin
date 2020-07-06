@@ -100,8 +100,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
     @DataBoundConstructor
     public DatadogGlobalConfiguration() {
-        loadEnvVariables(); // Load environment variables
         load(); // Load the persisted global configuration
+        loadEnvVariables(); // Load environment variables after as they should take precedence.
     }
 
     private void loadEnvVariables(){

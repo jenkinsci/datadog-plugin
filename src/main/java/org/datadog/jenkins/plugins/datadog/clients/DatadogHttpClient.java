@@ -131,8 +131,20 @@ public class DatadogHttpClient implements DatadogClient {
         if (apiKey == null || Secret.toString(apiKey).isEmpty()){
             throw new IllegalArgumentException("Datadog API Key is not set properly");
         }
-        if (DatadogHttpClient.isCollectBuildLogEnabled() && (logIntakeUrl == null || logIntakeUrl.isEmpty())){
-            throw new IllegalArgumentException("Datadog Log Intake URL is not set properly");
+        if (DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs() ) {
+            if (logIntakeUrl == null || logIntakeUrl.isEmpty()) {
+                throw new IllegalArgumentException("Datadog Log Intake URL is not set properly");
+            }
+            try {
+                boolean logConnection = validateLogIntakeConnection(url, apiKey);
+                if (!logConnection) {
+                    instance.setLogIntakeConnectionBroken(true);
+                    logger.warning("Connection broken, please double check both your Log Intake URL and Key");
+                }
+            } catch (IOException e) {
+                instance.setLogIntakeConnectionBroken(true);
+                logger.warning("Connection broken, please double check both your Log Intake URL and Key");
+            }
         }
         try {
             boolean intakeConnection = validateDefaultIntakeConnection(url, apiKey);
@@ -144,18 +156,6 @@ public class DatadogHttpClient implements DatadogClient {
         } catch (IOException e) {
             instance.setDefaultIntakeConnectionBroken(true);
             throw new IllegalArgumentException("Connection broken, please double check both your API URL and Key");
-        }
-        if (DatadogHttpClient.isCollectBuildLogEnabled()) {
-            try {
-                boolean logConnection = validateLogIntakeConnection(url, apiKey);
-                if (!logConnection) {
-                    instance.setLogIntakeConnectionBroken(true);
-                    logger.warning("Connection broken, please double check both your Log Intake URL and Key");
-                }
-            } catch (IOException e) {
-                instance.setLogIntakeConnectionBroken(true);
-                logger.warning("Connection broken, please double check both your Log Intake URL and Key");
-            }
         }
     }
 
@@ -646,10 +646,4 @@ public class DatadogHttpClient implements DatadogClient {
         }
         return this.jenkinsVersion;
     }
-
-    private static boolean isCollectBuildLogEnabled(){
-        return DatadogUtilities.getDatadogGlobalDescriptor() != null &&
-                DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs();
-    }
-
 }

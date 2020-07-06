@@ -73,8 +73,8 @@ public class DatadogQueuePublisher extends PeriodicWork {
             // Add JenkinsUrl Tag
             tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
             long size = 0;
-            long buildable = queue.countBuildableItems();
-            long pending = queue.getPendingItems().size();
+            long buildable = 0;
+            long pending = 0;
             long stuck = 0;
             long blocked = 0;
             String hostname = DatadogUtilities.getHostname(null);
