@@ -100,8 +100,9 @@ public class DatadogGraphListenerTest {
     
     @Test
     public void testIntegration() throws Exception {
-        DatadogGraphListener graphListener = spy(DatadogGraphListener.class);
-        doReturn("Unknown").when(graphListener).getResultTag(any());
+        listener = spy(DatadogGraphListener.class);
+        // CI and local tests return different results
+        doReturn("Unknown").when(listener).getResultTag(any());
         jenkinsRule.createOnlineSlave(new LabelAtom("windows"));
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration");
         String definition = IOUtils.toString(
