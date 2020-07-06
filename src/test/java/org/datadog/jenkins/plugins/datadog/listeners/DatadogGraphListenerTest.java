@@ -101,7 +101,7 @@ public class DatadogGraphListenerTest {
     @Test
     public void testIntegration() throws Exception {
         listener = spy(DatadogGraphListener.class);
-        // CI and local tests return different results
+        // CI and local tests return different results so we will mock the result
         doReturn("Unknown").when(listener).getResultTag(any());
         jenkinsRule.createOnlineSlave(new LabelAtom("windows"));
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration");
