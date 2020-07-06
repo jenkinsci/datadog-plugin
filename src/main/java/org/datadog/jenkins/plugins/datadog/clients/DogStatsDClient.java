@@ -120,7 +120,7 @@ public class DogStatsDClient implements DatadogClient {
             throw new IllegalArgumentException("Datadog Target Port is not set properly");
         }
         if (DogStatsDClient.isCollectBuildLogEnabled() && logCollectionPort == null) {
-            throw new IllegalArgumentException("Datadog Log Collection Port is not set properly");
+            logger.severe("Datadog Log Collection Port is not set properly");
         }
         return;
     }
