@@ -1,5 +1,19 @@
 Changes
 =======
+## 1.2.0 / 2020-07-06
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-1.1.2...datadog-1.2.0
+
+### Changes
+* [Added] Add new queue metrics tagged by job name. See [#73](https://github.com/jenkinsci/datadog-plugin/pull/73).
+* [Added] Add new node status metrics tagged by node name. See [#71](https://github.com/jenkinsci/datadog-plugin/pull/71).
+* [Fixed] Re-order configuration loading logic, env vars should always take precedence. See [#87](https://github.com/jenkinsci/datadog-plugin/pull/87).
+* [Fixed] Fix queue.buildable and queue.pending metrics values. See [#83](https://github.com/jenkinsci/datadog-plugin/pull/83).
+* [Fixed] Update failedlastValidation if client passes validation. See [#81](https://github.com/jenkinsci/datadog-plugin/pull/81).
+* [Fixed] Update jenkins parent-pom. See [#80](https://github.com/jenkinsci/datadog-plugin/pull/80).
+* [Fixed] Add configuration validation in clients. See [#59](https://github.com/jenkinsci/datadog-plugin/pull/59).
+* [Fixed] Enforce POST in form validation. See [#61](https://github.com/jenkinsci/datadog-plugin/pull/61).
+
 
 # 1.1.2 / 06-09-2020
 ### Details
