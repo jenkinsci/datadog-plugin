@@ -7,6 +7,8 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import hudson.model.labels.LabelAtom;
+import hudson.model.queue.QueueTaskFuture;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -86,23 +88,18 @@ public class DatadogGraphListenerTest {
 
         listener.onNewHead(endNode);
         String hostname = DatadogUtilities.getHostname(null);
-        String[] expectedTags = new String[]{
-                "jenkins_url:" + DatadogUtilities.getJenkinsUrl(),
-                "user_id:anonymous",
-                "stage_name:low",
-                "job:pipeline",
-                "parent_stage_name:medium",
-                "stage_depth:2",
-                "result:Unknown"
-        };
+        String[] expectedTags = new String[] { "jenkins_url:" + DatadogUtilities.getJenkinsUrl(), "user_id:anonymous",
+                "stage_name:low", "job:pipeline", "parent_stage_name:medium", "stage_depth:2", "result:UNKNOWN" };
         clientStub.assertMetric("jenkins.job.stage_duration", endTime - startTime, hostname, expectedTags);
     }
-    
+
     @Test
     public void testIntegration() throws Exception {
+        listener = new DatadogGraphListener();
         listener = spy(DatadogGraphListener.class);
         // CI and local tests return different results
-        doReturn("Unknown").when(listener).getResultTag(any());
+        
+        doReturn("Test").when(listener).getResultTag(any());
         jenkinsRule.createOnlineSlave(new LabelAtom("windows"));
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration");
         String definition = IOUtils.toString(
@@ -110,7 +107,8 @@ public class DatadogGraphListenerTest {
                 "UTF-8"
         );
         job.setDefinition(new CpsFlowDefinition(definition, true));
-        WorkflowRun run = job.scheduleBuild2(0).get();
+        QueueTaskFuture<WorkflowRun> futureRun = job.scheduleBuild2(0);
+        WorkflowRun run = futureRun.get();
         BufferedReader br = new BufferedReader(run.getLogReader());
         String s;
         while ((s = br.readLine()) != null) {
@@ -122,7 +120,7 @@ public class DatadogGraphListenerTest {
                 "jenkins_url:" + DatadogUtilities.getJenkinsUrl(),
                 "user_id:anonymous",
                 "job:pipelineIntegration",
-                "result:Unknown"
+                "result:UNKNOWN"
         };
         String[] depths = new String[]{ "2", "2", "2", "1", "1", "0", "0" };
         String[] stageNames = new String[]{ "Windows-1", "Windows-2", "Windows-3", "Test On Windows", "Test On Linux", "Parallel tests",
@@ -136,7 +134,6 @@ public class DatadogGraphListenerTest {
             expectedTags[expectedTags.length - 1] = "parent_stage_name:" + parentNames[i];
             clientStub.assertMetric("jenkins.job.stage_duration", hostname, expectedTags);
         }
-
     }
     
     @Test
@@ -160,7 +157,7 @@ public class DatadogGraphListenerTest {
                 "jenkins_url:" + DatadogUtilities.getJenkinsUrl(),
                 "user_id:anonymous",
                 "job:pipelineIntegrationFailure",
-                "result:Error",
+                "result:ERROR",
                 "stage_depth:0",
                 "stage_name:Fail",
                 "parent_stage_name:root"               

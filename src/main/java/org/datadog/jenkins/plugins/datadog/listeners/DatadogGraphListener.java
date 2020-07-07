@@ -184,31 +184,20 @@ public class DatadogGraphListener implements GraphListener {
     String getResultTag(@Nonnull FlowNode endNode) {
         ErrorAction error = endNode.getError();
         if (error != null) {
-            return "Error";
+            return "ERROR";
         }
         WarningAction warningAction = endNode.getPersistentAction(WarningAction.class);
         if (warningAction != null) {
             Result result = warningAction.getResult();
-            if (result == Result.ABORTED) {
-                return "Cancelled";
-            } else if (result == Result.FAILURE) {
-                return "Failure";
-            } else if (result == Result.SUCCESS) {
-                return "Success";
-            // either not built or unstable https://javadoc.jenkins-ci.org/hudson/model/Result.html
-            } else { 
-                return "Warning";
-            }
+            return result.toString();
         }
         QueueItemAction queueAction = endNode.getPersistentAction(QueueItemAction.class);
         if (queueAction != null) {
             if (QueueItemAction.getNodeState(endNode) == QueueItemAction.QueueState.CANCELLED) {
-                return "Cancelled";
-            // Other possibilities are queued, launched, unknown: https://javadoc.jenkins.io/plugin/workflow-api/org/jenkinsci/plugins/workflow/actions/QueueItemAction.QueueState.html
-            } else {
-                return "Unknown";
+                return "CANCELLED";
             }
+            // Other possibilities are queued, launched, unknown: https://javadoc.jenkins.io/plugin/workflow-api/org/jenkinsci/plugins/workflow/actions/QueueItemAction.QueueState.html
         }
-        return "Unknown";
+        return "UNKNOWN";
     }
 }
