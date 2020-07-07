@@ -1,10 +1,9 @@
 pipeline {
     agent none
     stages {
-        stage('Fail'){
+        stage('test'){
             steps {
-                echo 'Failure'
-                exit 1
+                echo "hello"
             }
         }
     }

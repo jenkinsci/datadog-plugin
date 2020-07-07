@@ -191,12 +191,9 @@ public class DatadogGraphListener implements GraphListener {
             Result result = warningAction.getResult();
             return result.toString();
         }
-        QueueItemAction queueAction = endNode.getPersistentAction(QueueItemAction.class);
-        if (queueAction != null) {
-            if (QueueItemAction.getNodeState(endNode) == QueueItemAction.QueueState.CANCELLED) {
-                return "CANCELLED";
-            }
-            // Other possibilities are queued, launched, unknown: https://javadoc.jenkins.io/plugin/workflow-api/org/jenkinsci/plugins/workflow/actions/QueueItemAction.QueueState.html
+        // Other possibilities are queued, launched, unknown: https://javadoc.jenkins.io/plugin/workflow-api/org/jenkinsci/plugins/workflow/actions/QueueItemAction.QueueState.html
+        if (QueueItemAction.getNodeState(endNode) == QueueItemAction.QueueState.CANCELLED) {
+            return "CANCELLED";
         }
         return "UNKNOWN";
     }

@@ -3,6 +3,7 @@ package org.datadog.jenkins.plugins.datadog.listeners;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import hudson.model.Result;
 import hudson.model.labels.LabelAtom;
 
 import java.io.BufferedReader;
@@ -11,18 +12,22 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.math3.exception.NullArgumentException;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
+import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.actions.TimingAction;
+import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Assert;
@@ -127,11 +132,11 @@ public class DatadogGraphListenerTest {
     }
     
     @Test
-    public void testIntegrationErrorTag() throws Exception {
+    public void testIntegrationNoFailureTag() throws Exception {
         jenkinsRule.createOnlineSlave(new LabelAtom("windows"));
-        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationFailure");
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationSuccess");
         String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineFailure.txt"),
+                this.getClass().getResourceAsStream("testPipelineSuccess.txt"),
                 "UTF-8"
         );
         job.setDefinition(new CpsFlowDefinition(definition, true));
@@ -146,10 +151,10 @@ public class DatadogGraphListenerTest {
         String[] tags = new String[]{
                 "jenkins_url:" + DatadogUtilities.getJenkinsUrl(),
                 "user_id:anonymous",
-                "job:pipelineIntegrationFailure",
-                "result:ERROR",
+                "job:pipelineIntegrationSuccess",
+                "result:UNKNOWN",
                 "stage_depth:0",
-                "stage_name:Fail",
+                "stage_name:test",
                 "parent_stage_name:root"               
         };
         clientStub.assertMetric("jenkins.job.stage_duration", hostname, tags);
@@ -166,6 +171,33 @@ public class DatadogGraphListenerTest {
 
         when(node.getAction(ThreadNameAction.class)).thenReturn(mock(ThreadNameAction.class));
         Assert.assertFalse(listener.isStageNode(node));
+    }
+    
+    @Test 
+    public void getResultTagTest(){
+        // passed with null
+        Assert.assertThrows(NullPointerException.class, () -> {
+            listener.getResultTag(null);
+        });
+        
+        FlowNode node = mock(FlowNode.class);
+        
+        // when getError returns an error
+        when(node.getError()).thenReturn(new ErrorAction(new NullArgumentException()));
+        Assert.assertEquals(listener.getResultTag(node), "ERROR");
+
+        // when there's a warning action 
+        when(node.getError()).thenReturn(null);
+        when(node.getPersistentAction(WarningAction.class)).thenReturn(new WarningAction(Result.SUCCESS));
+        Assert.assertEquals(listener.getResultTag(node), "SUCCESS");
+
+        when(node.getPersistentAction(WarningAction.class)).thenReturn(new WarningAction(Result.NOT_BUILT));
+        Assert.assertEquals(listener.getResultTag(node), "NOT_BUILT");
+
+        // when the result is unknown
+        when(node.getPersistentAction(WarningAction.class)).thenReturn(null);
+        Assert.assertEquals(listener.getResultTag(node), "UNKNOWN");
+
     }
 
     @Test
