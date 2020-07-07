@@ -1,9 +1,11 @@
+  
 pipeline {
     agent none
     stages {
         stage('Pre-setup'){
             steps {
                 echo 'Hello world'
+                exit 1
             }
         }
         stage('Parallel tests') {
@@ -16,26 +18,26 @@ pipeline {
                         stage('Windows-1'){
                             steps{
                             sh "echo 'Windows 1'"
-                            sh "error"
+                            exit 1
                             }
                         }
                         stage('Windows-2'){
                             steps{
                             sh "echo 'Windows 2'"
-                            sh "error"
+                            exit 1
                             }
                         }
                         stage('Windows-3'){
                             steps{
                             sh "echo 'Windows 3'"
-                            sh "error"
+                            exit 1
                             }
                         }
                     }
                     post {
                         always {
                             sh "echo 'done'"
-                            sh "error"
+                            exit 1
                         }
                     }
                 }
@@ -45,12 +47,12 @@ pipeline {
                     }
                     steps {
                         sh "echo 'Linux'"
-                        sh "exit 1"
+                        exit 1
                     }
                     post {
                         always {
                             sh "echo 'done'"
-                            sh "exit 1"
+                            exit 1
                         }
                     }
                 }
