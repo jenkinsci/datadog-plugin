@@ -375,9 +375,12 @@ public class DatadogUtilities {
     public static String getHostname(EnvVars envVars) {
         String[] UNIX_OS = {"mac", "linux", "freebsd", "sunos"};
 
+        logger.info(String.format("Checking hostname"));
+
         // Check hostname configuration from Jenkins
         String hostname = null;
         try {
+            logger.info(String.format("Checking hostname from Jenkins config"));
             hostname = getDatadogGlobalDescriptor().getHostname();
         } catch (NullPointerException e){
             // noop
@@ -389,6 +392,7 @@ public class DatadogUtilities {
 
         // Check hostname using jenkins env variables
         if (envVars != null) {
+            logger.info(String.format("Checking hostname from env"));
             hostname = envVars.get("HOSTNAME");
         }
         if (isValidHostname(hostname)) {
@@ -401,6 +405,7 @@ public class DatadogUtilities {
         if (Arrays.asList(UNIX_OS).contains(os)) {
             // Attempt to grab unix hostname
             try {
+                logger.info(String.format("Checking hostname from /bin/hostname command"));
                 String[] cmd = {"/bin/hostname", "-f"};
                 Process proc = Runtime.getRuntime().exec(cmd);
                 InputStream in = proc.getInputStream();
@@ -413,6 +418,7 @@ public class DatadogUtilities {
                 reader.close();
 
                 hostname = out.toString();
+                logger.info(String.format("Checking hostname from /bin/hostname output: " + hostname));
             } catch (Exception e) {
                 severe(logger, e, null);
             }
@@ -427,7 +433,9 @@ public class DatadogUtilities {
 
         // Check localhost hostname
         try {
+            logger.info(String.format("Checking hostname from getLocalHost"));
             hostname = Inet4Address.getLocalHost().getHostName();
+            logger.info(String.format("Checking hostname from getLocalHost output: " + hostname));
         } catch (UnknownHostException e) {
             logger.fine(String.format("Unknown hostname error received for localhost. Error: %s", e));
         }
