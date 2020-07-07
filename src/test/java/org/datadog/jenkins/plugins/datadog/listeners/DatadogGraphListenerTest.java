@@ -1,13 +1,9 @@
 package org.datadog.jenkins.plugins.datadog.listeners;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import hudson.model.labels.LabelAtom;
-import hudson.model.queue.QueueTaskFuture;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -95,11 +91,6 @@ public class DatadogGraphListenerTest {
 
     @Test
     public void testIntegration() throws Exception {
-        listener = new DatadogGraphListener();
-        listener = spy(DatadogGraphListener.class);
-        // CI and local tests return different results
-        
-        doReturn("Test").when(listener).getResultTag(any());
         jenkinsRule.createOnlineSlave(new LabelAtom("windows"));
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration");
         String definition = IOUtils.toString(
@@ -107,8 +98,7 @@ public class DatadogGraphListenerTest {
                 "UTF-8"
         );
         job.setDefinition(new CpsFlowDefinition(definition, true));
-        QueueTaskFuture<WorkflowRun> futureRun = job.scheduleBuild2(0);
-        WorkflowRun run = futureRun.get();
+        WorkflowRun run = job.scheduleBuild2(0).get();
         BufferedReader br = new BufferedReader(run.getLogReader());
         String s;
         while ((s = br.readLine()) != null) {
@@ -120,7 +110,7 @@ public class DatadogGraphListenerTest {
                 "jenkins_url:" + DatadogUtilities.getJenkinsUrl(),
                 "user_id:anonymous",
                 "job:pipelineIntegration",
-                "result:UNKNOWN"
+                "result:ERROR"
         };
         String[] depths = new String[]{ "2", "2", "2", "1", "1", "0", "0" };
         String[] stageNames = new String[]{ "Windows-1", "Windows-2", "Windows-3", "Test On Windows", "Test On Linux", "Parallel tests",
