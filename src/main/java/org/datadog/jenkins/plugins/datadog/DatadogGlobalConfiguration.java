@@ -153,7 +153,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         
         String excludedEnvVar = System.getenv(EXCLUDED_PROPERTY);
         if(StringUtils.isBlank(excludedEnvVar)){
-            //backwards compatibility
+            // backwards compatibility
             excludedEnvVar = System.getenv(BLACKLIST_PROPERTY);
             if(StringUtils.isNotBlank(excludedEnvVar)){
                 this.excluded = excludedEnvVar;
@@ -162,7 +162,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         
         String includedEnvVar = System.getenv(INCLUDED_PROPERTY);
         if(StringUtils.isBlank(includedEnvVar)){
-            //backwards compatibility
+            // backwards compatibility
             includedEnvVar = System.getenv(WHITELIST_PROPERTY);
             if(StringUtils.isNotBlank(includedEnvVar)){
                 this.included = includedEnvVar;
