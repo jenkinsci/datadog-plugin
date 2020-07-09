@@ -188,6 +188,7 @@ public class DatadogGraphListener implements GraphListener {
         WarningAction warningAction = endNode.getPersistentAction(WarningAction.class);
         if (warningAction != null) {
             Result result = warningAction.getResult();
+            // Result could be SUCCESS, NOT_BUILT, FAILURE, etc https://javadoc.jenkins-ci.org/hudson/model/Result.html
             return result.toString();
         }
         // Other possibilities are queued, launched, unknown: https://javadoc.jenkins.io/plugin/workflow-api/org/jenkinsci/plugins/workflow/actions/QueueItemAction.QueueState.html
