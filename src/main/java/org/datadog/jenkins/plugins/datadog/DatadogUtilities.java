@@ -121,13 +121,13 @@ public class DatadogUtilities {
     }
 
     /**
-     * Checks if a jobName is blacklisted, whitelisted, or neither.
+     * Checks if a jobName is excluded, included, or neither.
      *
      * @param jobName - A String containing the name of some job.
-     * @return a boolean to signify if the jobName is or is not blacklisted or whitelisted.
+     * @return a boolean to signify if the jobName is or is not excluded or included.
      */
     public static boolean isJobTracked(final String jobName) {
-        return !isJobBlacklisted(jobName) && isJobWhitelisted(jobName);
+        return !isJobExcluded(jobName) && isJobIncluded(jobName);
     }
 
     /**
@@ -242,21 +242,21 @@ public class DatadogUtilities {
     }
 
     /**
-     * Checks if a jobName is blacklisted.
+     * Checks if a jobName is excluded.
      *
      * @param jobName - A String containing the name of some job.
-     * @return a boolean to signify if the jobName is or is not blacklisted.
+     * @return a boolean to signify if the jobName is or is not excluded.
      */
-    private static boolean isJobBlacklisted(final String jobName) {
+    private static boolean isJobExcluded(final String jobName) {
         final DatadogGlobalConfiguration datadogGlobalConfig = getDatadogGlobalDescriptor();
         if (datadogGlobalConfig == null){
             return false;
         }
-        final String blacklistProp = datadogGlobalConfig.getBlacklist();
-        List<String> blacklist = cstrToList(blacklistProp);
-        for (String blacklistedJob : blacklist){
-            Pattern blacklistedJobPattern = Pattern.compile(blacklistedJob);
-            Matcher jobNameMatcher = blacklistedJobPattern.matcher(jobName);
+        final String excludedProp = datadogGlobalConfig.getExcluded();
+        List<String> excluded = cstrToList(excludedProp);
+        for (String excludedJob : excluded){
+            Pattern excludedJobPattern = Pattern.compile(excludedJob);
+            Matcher jobNameMatcher = excludedJobPattern.matcher(jobName);
             if (jobNameMatcher.matches()) {
                 return true;
             }
@@ -266,26 +266,26 @@ public class DatadogUtilities {
     }
 
     /**
-     * Checks if a jobName is whitelisted.
+     * Checks if a jobName is included.
      *
      * @param jobName - A String containing the name of some job.
-     * @return a boolean to signify if the jobName is or is not whitelisted.
+     * @return a boolean to signify if the jobName is or is not included.
      */
-    private static boolean isJobWhitelisted(final String jobName) {
+    private static boolean isJobIncluded(final String jobName) {
         final DatadogGlobalConfiguration datadogGlobalConfig = getDatadogGlobalDescriptor();
         if (datadogGlobalConfig == null){
             return true;
         }
-        final String whitelistProp = datadogGlobalConfig.getWhitelist();
-        final List<String> whitelist = cstrToList(whitelistProp);
-        for (String whitelistedJob : whitelist){
-            Pattern whitelistedJobPattern = Pattern.compile(whitelistedJob);
-            Matcher jobNameMatcher = whitelistedJobPattern.matcher(jobName);
+        final String includedProp = datadogGlobalConfig.getIncluded();
+        final List<String> included = cstrToList(includedProp);
+        for (String includedJob : included){
+            Pattern includedJobPattern = Pattern.compile(includedJob);
+            Matcher jobNameMatcher = includedJobPattern.matcher(jobName);
             if (jobNameMatcher.matches()) {
                 return true;
             }
         }
-        return whitelist.isEmpty();
+        return included.isEmpty();
     }
 
     /**

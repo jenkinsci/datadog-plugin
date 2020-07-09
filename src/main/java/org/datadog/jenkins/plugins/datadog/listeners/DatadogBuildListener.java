@@ -70,7 +70,7 @@ public class DatadogBuildListener extends RunListener<Run> {
     @Override
     public void onStarted(Run run, TaskListener listener) {
         try {
-            // Process only if job is NOT in blacklist and is in whitelist
+            // Process only if job is NOT in excluded and is in included
             if (!DatadogUtilities.isJobTracked(run.getParent().getFullName())) {
                 return;
             }
@@ -131,7 +131,7 @@ public class DatadogBuildListener extends RunListener<Run> {
     @Override
     public void onCompleted(Run run, @Nonnull TaskListener listener) {
         try {
-            // Process only if job in NOT in blacklist and is in whitelist
+            // Process only if job in NOT in excluded and is in included
             if (!DatadogUtilities.isJobTracked(run.getParent().getFullName())) {
                 return;
             }
@@ -229,7 +229,7 @@ public class DatadogBuildListener extends RunListener<Run> {
     @Override
     public void onDeleted(Run run) {
         try {
-            // Process only if job is NOT in blacklist and is in whitelist
+            // Process only if job is NOT in excluded and is in included
             if (!DatadogUtilities.isJobTracked(run.getParent().getFullName())) {
                 return;
             }

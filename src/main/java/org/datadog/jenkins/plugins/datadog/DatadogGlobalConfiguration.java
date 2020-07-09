@@ -62,8 +62,12 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static String TARGET_PORT_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_PORT";
     private static String TARGET_LOG_COLLECTION_PORT_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT";
     private static String HOSTNAME_PROPERTY = "DATADOG_JENKINS_PLUGIN_HOSTNAME";
+    private static String EXCLUDED_PROPERTY = "DATADOG_JENKINS_PLUGIN_EXCLUDED";
+    private static String INCLUDED_PROPERTY = "DATADOG_JENKINS_PLUGIN_INCLUDED";
+    //Deprecated
     private static String BLACKLIST_PROPERTY = "DATADOG_JENKINS_PLUGIN_BLACKLIST";
     private static String WHITELIST_PROPERTY = "DATADOG_JENKINS_PLUGIN_WHITELIST";
+    
     private static String GLOBAL_TAG_FILE_PROPERTY = "DATADOG_JENKINS_PLUGIN_GLOBAL_TAG_FILE";
     private static String GLOBAL_TAGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_GLOBAL_TAGS";
     private static String GLOBAL_JOB_TAGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_GLOBAL_JOB_TAGS";
@@ -89,8 +93,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private Integer targetPort = DEFAULT_TARGET_PORT_VALUE;
     private Integer targetLogCollectionPort = DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE;
     private String hostname = null;
-    private String blacklist = null;
-    private String whitelist = null;
+    private String excluded = null;
+    private String included = null;
     private String globalTagFile = null;
     private String globalTags = null;
     private String globalJobTags = null;
@@ -146,15 +150,23 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         if(StringUtils.isNotBlank(hostnameEnvVar)){
             this.hostname = hostnameEnvVar;
         }
-
-        String blacklistEnvVar = System.getenv(BLACKLIST_PROPERTY);
-        if(StringUtils.isNotBlank(blacklistEnvVar)){
-            this.blacklist = blacklistEnvVar;
+        
+        String excludedEnvVar = System.getenv(EXCLUDED_PROPERTY);
+        if(StringUtils.isBlank(excludedEnvVar)){
+            //backwards compatibility
+            excludedEnvVar = System.getenv(BLACKLIST_PROPERTY);
+            if(StringUtils.isNotBlank(excludedEnvVar)){
+                this.excluded = excludedEnvVar;
+            }
         }
-
-        String whitelistEnvVar = System.getenv(WHITELIST_PROPERTY);
-        if(StringUtils.isNotBlank(whitelistEnvVar)){
-            this.whitelist = whitelistEnvVar;
+        
+        String includedEnvVar = System.getenv(INCLUDED_PROPERTY);
+        if(StringUtils.isBlank(includedEnvVar)){
+            //backwards compatibility
+            includedEnvVar = System.getenv(WHITELIST_PROPERTY);
+            if(StringUtils.isNotBlank(includedEnvVar)){
+                this.included = includedEnvVar;
+            }   
         }
 
         String globalTagFileEnvVar = System.getenv(GLOBAL_TAG_FILE_PROPERTY);
@@ -377,8 +389,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                 throw new FormException("Your hostname is invalid, likely because it violates the format set in RFC 1123", "hostname");
             }
             this.setHostname(formData.getString("hostname"));
-            this.setBlacklist(formData.getString("blacklist"));
-            this.setWhitelist(formData.getString("whitelist"));
+            this.setExcluded(formData.getString("excluded"));
+            this.setIncluded(formData.getString("included"));
             this.setGlobalTagFile(formData.getString("globalTagFile"));
             this.setGlobalTags(formData.getString("globalTags"));
             this.setGlobalJobTags(formData.getString("globalJobTags"));
@@ -568,45 +580,79 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     }
 
     /**
-     * Getter function for the blacklist global configuration, containing
-     * a comma-separated list of jobs to blacklist from monitoring.
-     *
-     * @return a String array containing the blacklist global configuration.
-     */
+     * @deprecated replaced by {@link #getExcluded()}
+    **/
+    @Deprecated
     public String getBlacklist() {
-        return blacklist;
+        return excluded;
+    }
+    
+    /**
+     * Getter function for the excluded global configuration, containing
+     * a comma-separated list of jobs to exclude from monitoring.
+     *
+     * @return a String array containing the excluded global configuration.
+     */
+    public String getExcluded() {
+        return excluded;
     }
 
     /**
-     * Setter function for the blacklist global configuration,
-     * accepting a comma-separated string of jobs.
-     *
-     * @param jobs - a comma-separated list of jobs to blacklist from monitoring.
-     */
+     * @deprecated replaced by {@link #setExcluded()}
+    **/
+    @Deprecated
     @DataBoundSetter
     public void setBlacklist(final String jobs) {
-        this.blacklist = jobs;
+        this.excluded = jobs;
     }
-
+    
     /**
-     * Getter function for the whitelist global configuration, containing
-     * a comma-separated list of jobs to whitelist from monitoring.
-     *
-     * @return a String array containing the whitelist global configuration.
-     */
-    public String getWhitelist() {
-        return whitelist;
-    }
-
-    /**
-     * Setter function for the whitelist global configuration,
+     * Setter function for the excluded jobs global configuration,
      * accepting a comma-separated string of jobs.
      *
-     * @param jobs - a comma-separated list of jobs to whitelist from monitoring.
+     * @param jobs - a comma-separated list of jobs to exclude from monitoring.
      */
     @DataBoundSetter
+    public void setExcluded(final String jobs) {
+        this.excluded = jobs;
+    }
+
+    /**
+     * @deprecated replaced by {@link #getIncluded()}
+    **/
+    @Deprecated
+    public String getWhitelist() {
+        return included;
+    }
+    
+    /**
+     * Getter function for the included global configuration, containing
+     * a comma-separated list of jobs to include for monitoring.
+     *
+     * @return a String array containing the included global configuration.
+     */
+    public String getIncluded() {
+        return included;
+    }
+
+    /**
+     * @deprecated replaced by {@link #setIncluded()}
+    **/
+    @Deprecated
+    @DataBoundSetter
     public void setWhitelist(final String jobs) {
-        this.whitelist = jobs;
+        this.included = jobs;
+    }
+    
+    /**
+     * Setter function for the includedd global configuration,
+     * accepting a comma-separated string of jobs.
+     *
+     * @param jobs - a comma-separated list of jobs to include for monitoring.
+     */
+    @DataBoundSetter
+    public void setIncluded(final String jobs) {
+        this.included = jobs;
     }
 
     /**
@@ -664,7 +710,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * Setter function for the globalJobTags global configuration,
      * accepting a comma-separated string of jobs and tags.
      *
-     * @param globalJobTags - a comma-separated list of jobs to whitelist from monitoring.
+     * @param globalJobTags - a comma-separated list of jobs to include from monitoring.
      */
     @DataBoundSetter
     public void setGlobalJobTags(String globalJobTags) {
