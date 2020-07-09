@@ -99,7 +99,6 @@ public class DatadogGraphListener implements GraphListener {
             TagsUtil.addTagToTags(tags, "stage_name", getStageName(startNode));
             TagsUtil.addTagToTags(tags, "parent_stage_name", directParentName);
             TagsUtil.addTagToTags(tags, "stage_depth", String.valueOf(stageDepth));
-            tags.remove("result"); // Jenkins sometimes consider the build has a result even though it's still running.
             //Add custom result tag
             TagsUtil.addTagToTags(tags, "result", result);
             client.gauge("jenkins.job.stage_duration", getTime(startNode, endNode), hostname, tags);
