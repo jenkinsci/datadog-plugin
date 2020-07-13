@@ -140,13 +140,7 @@ public class DatadogGraphListenerTest {
                 "UTF-8"
         );
         job.setDefinition(new CpsFlowDefinition(definition, true));
-        WorkflowRun run = job.scheduleBuild2(0).get();
-        BufferedReader br = new BufferedReader(run.getLogReader());
-        String s;
-        while ((s = br.readLine()) != null) {
-            System.out.println(s);
-        }
-        br.close();
+        job.scheduleBuild2(0).get();
         String hostname = DatadogUtilities.getHostname(null);
         String[] tags = new String[]{
                 "jenkins_url:" + DatadogUtilities.getJenkinsUrl(),
