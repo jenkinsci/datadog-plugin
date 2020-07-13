@@ -5,7 +5,6 @@ pipeline {
         stage('Pre-setup'){
             steps {
                 echo 'Hello world'
-                exit 1
             }
         }
         stage('Parallel tests') {
@@ -17,27 +16,23 @@ pipeline {
                     stages {
                         stage('Windows-1'){
                             steps{
-                            sh "echo 'Windows 1'"
-                            exit 1
+                            echo 'Windows 1'
                             }
                         }
                         stage('Windows-2'){
                             steps{
-                            sh "echo 'Windows 2'"
-                            exit 1
+                            echo 'Windows 2'
                             }
                         }
                         stage('Windows-3'){
                             steps{
-                            sh "echo 'Windows 3'"
-                            exit 1
+                            echo 'Windows 3'
                             }
                         }
                     }
                     post {
                         always {
-                            sh "echo 'done'"
-                            exit 1
+                            echo 'done'
                         }
                     }
                 }
@@ -46,13 +41,11 @@ pipeline {
                         label "master"
                     }
                     steps {
-                        sh "echo 'Linux'"
-                        exit 1
+                        echo 'Linux'
                     }
                     post {
                         always {
-                            sh "echo 'done'"
-                            exit 1
+                            echo 'done'
                         }
                     }
                 }

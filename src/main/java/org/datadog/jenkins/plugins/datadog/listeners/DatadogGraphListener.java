@@ -42,6 +42,7 @@ import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
+import org.jenkinsci.plugins.workflow.actions.NotExecutedNodeAction;
 import org.jenkinsci.plugins.workflow.actions.QueueItemAction;
 import org.jenkinsci.plugins.workflow.actions.StageAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
@@ -49,14 +50,15 @@ import org.jenkinsci.plugins.workflow.actions.TimingAction;
 import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
+import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.flow.GraphListener;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 /**
- * A GraphListener implementation which computes timing information
- * for the various stages in a pipeline.
+ * A GraphListener implementation which computes timing information for the
+ * various stages in a pipeline.
  */
 @Extension
 public class DatadogGraphListener implements GraphListener {
@@ -69,7 +71,7 @@ public class DatadogGraphListener implements GraphListener {
             return;
         }
         DatadogClient client = ClientFactory.getClient();
-        if (client == null){
+        if client == null){
             return;
         }
         StepEndNode endNode = (StepEndNode) flowNode;
@@ -99,7 +101,7 @@ public class DatadogGraphListener implements GraphListener {
             TagsUtil.addTagToTags(tags, "stage_name", getStageName(startNode));
             TagsUtil.addTagToTags(tags, "parent_stage_name", directParentName);
             TagsUtil.addTagToTags(tags, "stage_depth", String.valueOf(stageDepth));
-            //Add custom result tag
+            // Add custom result tag
             TagsUtil.addTagToTags(tags, "result", result);
             client.gauge("jenkins.job.stage_duration", getTime(startNode, endNode), hostname, tags);
         } catch (IOException | InterruptedException e) {
@@ -122,7 +124,7 @@ public class DatadogGraphListener implements GraphListener {
 
         // Filter the node out if it is not the end of a stage.
         // The plugin only monitors timing information of stages
-        if(!isStageNode(((StepEndNode) flowNode).getStartNode())){
+        if (!isStageNode(((StepEndNode) flowNode).getStartNode())) {
             return false;
         }
 
@@ -179,7 +181,7 @@ public class DatadogGraphListener implements GraphListener {
         }
         return 0;
     }
-    
+
     String getResultTag(@Nonnull FlowNode endNode) {
         ErrorAction error = endNode.getError();
         if (error != null) {
@@ -194,6 +196,10 @@ public class DatadogGraphListener implements GraphListener {
         // Other possibilities are queued, launched, unknown: https://javadoc.jenkins.io/plugin/workflow-api/org/jenkinsci/plugins/workflow/actions/QueueItemAction.QueueState.html
         if (QueueItemAction.getNodeState(endNode) == QueueItemAction.QueueState.CANCELLED) {
             return "CANCELLED";
+        }
+        FlowExecution exec = endNode.getExecution();
+        if ((exec != null && exec.isComplete()) || NotExecutedNodeAction.isExecuted(endNode)) {
+            return "SUCCESS";
         }
         return "UNKNOWN";
     }

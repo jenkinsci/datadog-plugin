@@ -90,7 +90,7 @@ public class DatadogGraphListenerTest {
         listener.onNewHead(endNode);
         String hostname = DatadogUtilities.getHostname(null);
         String[] expectedTags = new String[] { "jenkins_url:" + DatadogUtilities.getJenkinsUrl(), "user_id:anonymous",
-                "stage_name:low", "job:pipeline", "parent_stage_name:medium", "stage_depth:2", "result:UNKNOWN" };
+                "stage_name:low", "job:pipeline", "parent_stage_name:medium", "stage_depth:2", "result:SUCCESS" };
         clientStub.assertMetric("jenkins.job.stage_duration", endTime - startTime, hostname, expectedTags);
     }
 
@@ -115,7 +115,7 @@ public class DatadogGraphListenerTest {
                 "jenkins_url:" + DatadogUtilities.getJenkinsUrl(),
                 "user_id:anonymous",
                 "job:pipelineIntegration",
-                "result:ERROR"
+                "result:SUCCESS"
         };
         String[] depths = new String[]{ "2", "2", "2", "1", "1", "0", "0" };
         String[] stageNames = new String[]{ "Windows-1", "Windows-2", "Windows-3", "Test On Windows", "Test On Linux", "Parallel tests",
@@ -146,7 +146,7 @@ public class DatadogGraphListenerTest {
                 "jenkins_url:" + DatadogUtilities.getJenkinsUrl(),
                 "user_id:anonymous",
                 "job:pipelineIntegrationSuccess",
-                "result:UNKNOWN",
+                "result:SUCCESS",
                 "stage_depth:0",
                 "stage_name:test",
                 "parent_stage_name:root"               
@@ -190,7 +190,7 @@ public class DatadogGraphListenerTest {
 
         // when the result is unknown
         when(node.getPersistentAction(WarningAction.class)).thenReturn(null);
-        Assert.assertEquals(listener.getResultTag(node), "UNKNOWN");
+        Assert.assertEquals(listener.getResultTag(node), "SUCCESS");
 
     }
 
