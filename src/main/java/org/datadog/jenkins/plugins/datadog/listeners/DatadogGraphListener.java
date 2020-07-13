@@ -57,8 +57,8 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 /**
- * A GraphListener implementation which computes timing information for the
- * various stages in a pipeline.
+ * A GraphListener implementation which computes timing information
+ * for the various stages in a pipeline.
  */
 @Extension
 public class DatadogGraphListener implements GraphListener {
