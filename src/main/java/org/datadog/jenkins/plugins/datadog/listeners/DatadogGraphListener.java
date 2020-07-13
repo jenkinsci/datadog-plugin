@@ -71,7 +71,7 @@ public class DatadogGraphListener implements GraphListener {
             return;
         }
         DatadogClient client = ClientFactory.getClient();
-        if client == null){
+        if (client == null){
             return;
         }
         StepEndNode endNode = (StepEndNode) flowNode;
