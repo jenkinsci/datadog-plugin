@@ -158,6 +158,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             if(StringUtils.isNotBlank(excludedEnvVar)){
                 this.excluded = excludedEnvVar;
             }
+        } else {
+            this.excluded = excludedEnvVar;
         }
         
         String includedEnvVar = System.getenv(INCLUDED_PROPERTY);
@@ -166,7 +168,9 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             includedEnvVar = System.getenv(WHITELIST_PROPERTY);
             if(StringUtils.isNotBlank(includedEnvVar)){
                 this.included = includedEnvVar;
-            }   
+            }    
+        } else {
+            this.included = includedEnvVar;
         }
 
         String globalTagFileEnvVar = System.getenv(GLOBAL_TAG_FILE_PROPERTY);
