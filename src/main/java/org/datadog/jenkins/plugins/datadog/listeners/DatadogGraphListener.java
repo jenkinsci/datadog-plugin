@@ -25,29 +25,45 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.listeners;
 
+import static org.datadog.jenkins.plugins.datadog.model.BuildStage.BuildStageKey;
+
 import hudson.Extension;
 import hudson.model.Queue;
-import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Logger;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
+import hudson.model.Result;
+import hudson.model.Run;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.model.BuildStage;
+import org.datadog.jenkins.plugins.datadog.traces.BuildTraceAction;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
 import org.jenkinsci.plugins.workflow.actions.StageAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.actions.TimingAction;
+import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
+import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.flow.GraphListener;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.logging.Logger;
+import java.util.stream.StreamSupport;
 
 /**
  * A GraphListener implementation which computes timing information
@@ -63,6 +79,7 @@ public class DatadogGraphListener implements GraphListener {
         if (!isMonitored(flowNode)) {
             return;
         }
+
         DatadogClient client = ClientFactory.getClient();
         if (client == null){
             return;
@@ -86,8 +103,10 @@ public class DatadogGraphListener implements GraphListener {
         if(run == null){
             return;
         }
+
+        BuildData buildData = null;
         try {
-            BuildData buildData = new BuildData(run, flowNode.getExecution().getOwner().getListener());
+            buildData = new BuildData(run, flowNode.getExecution().getOwner().getListener());
             String hostname = buildData.getHostname("");
             Map<String, Set<String>> tags = buildData.getTags();
             TagsUtil.addTagToTags(tags, "stage_name", getStageName(startNode));
@@ -99,7 +118,38 @@ public class DatadogGraphListener implements GraphListener {
         } catch (IOException | InterruptedException e) {
             DatadogUtilities.severe(logger, e, "Unable to submit the stage duration metric for " + getStageName(startNode));
         }
+
+        //APM Traces
+        final BuildTraceAction buildTraceAction = buildTraceActionFor(flowNode.getExecution());
+        if(buildTraceAction == null) {
+            logger.severe("Unable to trace stage. BuildTraceAction is not present for " + getStageName(startNode));
+            return;
+        }
+
+        if(buildData == null) {
+            logger.severe("Unable to submit traces for " + getStageName(startNode));
+            return;
+        }
+
+        final BuildStage stage = BuildStage.buildStage(startNode.getId(), getStageName(startNode))
+                .withData(buildData)
+                .withStartTime(getTime(startNode))
+                .withEndTime(getTime(endNode))
+                .withResult(resultForStage(startNode, endNode).toString())
+                .build();
+
+        final List<BuildStageKey> stageRelations = new ArrayList<>();
+        stageRelations.add(stage.getKey());
+        for (BlockStartNode node : startNode.iterateEnclosingBlocks()) {
+            if (isStageNode(node)) {
+                stageRelations.add(BuildStage.buildStageKey(node.getId(), getStageName(node)));
+            }
+        }
+
+        Collections.reverse(stageRelations); //This is necessary cause Jenkins returns relations inside-out.
+        buildTraceAction.getPipeline().addStage(stageRelations, stage);
     }
+
 
     private boolean isMonitored(FlowNode flowNode) {
         // Filter the node out if it is not the end of step
@@ -164,6 +214,14 @@ public class DatadogGraphListener implements GraphListener {
         return flowNode.getDisplayName();
     }
 
+    long getTime(FlowNode node) {
+        TimingAction time = node.getAction(TimingAction.class);
+        if(time != null) {
+            return time.getStartTime();
+        }
+        return 0;
+    }
+
     long getTime(FlowNode startNode, FlowNode endNode) {
         TimingAction startTime = startNode.getAction(TimingAction.class);
         TimingAction endTime = endNode.getAction(TimingAction.class);
@@ -172,5 +230,51 @@ public class DatadogGraphListener implements GraphListener {
             return endTime.getStartTime() - startTime.getStartTime();
         }
         return 0;
+    }
+
+    static @CheckForNull BuildTraceAction buildTraceActionFor(final FlowExecution exec) {
+        BuildTraceAction buildTraceAction = null;
+        Run<?, ?> run = runFor(exec);
+        if (run != null) {
+            buildTraceAction = run.getAction(BuildTraceAction.class);
+        }
+        return buildTraceAction;
+    }
+
+    static Result resultForStage(FlowNode startNode, FlowNode endNode) {
+        Result errorResult = Result.SUCCESS;
+        DepthFirstScanner scanner = new DepthFirstScanner();
+        if (scanner.setup(endNode, Collections.singletonList(startNode))) {
+            WarningAction warningAction = StreamSupport.stream(scanner.spliterator(), false)
+                    .map(node -> node.getPersistentAction(WarningAction.class))
+                    .filter(Objects::nonNull)
+                    .max(Comparator.comparing(warning -> warning.getResult().ordinal))
+                    .orElse(null);
+            if (warningAction != null) {
+                errorResult = warningAction.getResult();
+            }
+        }
+        return errorResult;
+    }
+
+    /**
+     * Gets the jenkins run object of the specified executing workflow.
+     *
+     * @param exec execution of a workflow
+     * @return jenkins run object of a job
+     */
+    private static @CheckForNull Run<?, ?> runFor(FlowExecution exec) {
+        Queue.Executable executable;
+        try {
+            executable = exec.getOwner().getExecutable();
+        } catch (IOException x) {
+            DatadogUtilities.severe(logger, x, "");
+            return null;
+        }
+        if (executable instanceof Run) {
+            return (Run<?, ?>) executable;
+        } else {
+            return null;
+        }
     }
 }

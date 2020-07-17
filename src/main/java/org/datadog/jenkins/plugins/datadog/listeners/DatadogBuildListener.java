@@ -27,6 +27,7 @@ package org.datadog.jenkins.plugins.datadog.listeners;
 
 import com.cloudbees.workflow.rest.external.RunExt;
 import com.cloudbees.workflow.rest.external.StageNodeExt;
+import datadog.trace.api.DDTags;
 import hudson.Extension;
 import hudson.model.Queue;
 import hudson.model.Result;
@@ -39,6 +40,9 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import javax.annotation.Nonnull;
+
+import io.opentracing.Span;
+import io.opentracing.util.GlobalTracer;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
@@ -47,6 +51,8 @@ import org.datadog.jenkins.plugins.datadog.events.BuildAbortedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildFinishedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildStartedEventImpl;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.model.BuildStage;
+import org.datadog.jenkins.plugins.datadog.traces.BuildTraceAction;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 
@@ -113,6 +119,11 @@ public class DatadogBuildListener extends RunListener<Run> {
 
             // Submit counter
             client.incrementCounter("jenkins.job.started", hostname, tags);
+
+            // Traces
+            final BuildTraceAction buildTraceAction = BuildTraceAction.newAction();
+            System.out.println("---- DatadogBuildListener start: " + buildTraceAction);
+            run.addAction(buildTraceAction);
 
             logger.fine("End DatadogBuildListener#onStarted");
         } catch (Exception e) {
@@ -220,10 +231,101 @@ public class DatadogBuildListener extends RunListener<Run> {
                 }
             }
 
+            //Traces
+            System.out.println("---- 5 DatadogBuildListener completed");
+            final BuildTraceAction traceAction = run.getAction(BuildTraceAction.class);
+            if(traceAction == null) {
+                return;
+            }
+
+            final long startTimeMicros = buildData.getStartTime(0L) * 1000;
+            final long endTimeMicros = buildData.getEndTime(0L) * 1000;
+            final Span span = GlobalTracer.get().buildSpan("jenkins.pipeline").withStartTimestamp(startTimeMicros).start();
+            span.setTag(DDTags.SERVICE_NAME, "jenkins");
+            span.setTag(DDTags.RESOURCE_NAME, buildData.getJobName(null));
+            span.setTag(DDTags.SPAN_TYPE, "ci");
+            span.setTag("provider", "jenkins");
+            span.setTag(DDTags.LANGUAGE_TAG_KEY, "");
+            span.setTag(DDTags.USER_NAME, buildData.getUserId());
+            span.setTag("pipeline.id", buildData.getBuildId(""));
+            span.setTag("pipeline.name", buildData.getJobName(""));
+            span.setTag("pipeline.number", buildData.getBuildNumber(""));
+            span.setTag("pipeline.workspace", buildData.getWorkspace(""));
+
+            span.setTag("node.name", buildData.getNodeName(""));
+            span.setTag("repository.url", buildData.getGitUrl(""));
+            span.setTag("repository.branch", buildData.getBranch(""));
+            span.setTag("repository.commit", buildData.getGitCommit(""));
+
+            span.setTag("jenkins.tag", buildData.getBuildTag(""));
+            span.setTag("jenkins.executor.number", buildData.getExecutorNumber(""));
+
+            final String result = buildData.getResult("");
+            span.setTag("jenkins.result", result);
+            if(Result.FAILURE.toString().equals(result)) {
+                span.setTag("error", true);
+            }
+
+            final BuildStage root = traceAction.getPipeline().buildTree();
+            System.out.println("-------- Traverse Trace start");
+            for(BuildStage child : root.getChildren()) {
+                traceStage(child, span);
+            }
+            System.out.println("-------- Traverse Trace end");
+            span.finish(endTimeMicros);
+
             logger.fine("End DatadogBuildListener#onCompleted");
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, null);
         }
+    }
+
+    private void traceStage(final BuildStage current, final Span parentSpan) {
+        System.out.println("--------- Stage: " + current);
+
+        final long startTimeMicros = current.getStartTime() * 1000;
+        final long endTimeMicros = current.getEndTime() * 1000;
+
+        final Span span = GlobalTracer.get().buildSpan("jenkins.pipeline")
+                .asChildOf(parentSpan)
+                .withStartTimestamp(startTimeMicros).start();
+        span.setTag(DDTags.SERVICE_NAME, "jenkins");
+        span.setTag(DDTags.RESOURCE_NAME, current.getName());
+        span.setTag(DDTags.SPAN_TYPE, "ci");
+        span.setTag("provider", "jenkins");
+        span.setTag("job.id", current.getId());
+        span.setTag("job.name", current.getName());
+        span.setTag("jenkins.result", current.getResult());
+        span.setTag("error", current.isError());
+
+        for(BuildStage child : current.getChildren()) {
+            traceStage(child, span);
+        }
+
+        try {
+            final BuildData data = current.getData();
+            if(data == null) {
+                logger.severe("Unable to send traces of stage " + current.getName() + ". BuildData is not present.");
+                return;
+            }
+
+            span.setTag(DDTags.USER_NAME, data.getUserId());
+            span.setTag("job.number", data.getBuildNumber(""));
+            span.setTag("job.workspace", data.getWorkspace(""));
+
+            span.setTag("node.name", data.getNodeName(""));
+            span.setTag("repository.url", data.getGitUrl(""));
+            span.setTag("repository.branch", data.getBranch(""));
+            span.setTag("repository.commit", data.getGitCommit(""));
+
+            span.setTag("jenkins.tag", data.getBuildTag(""));
+            span.setTag("jenkins.executor.number", data.getExecutorNumber(""));
+        } catch (Exception e) {
+            DatadogUtilities.severe(logger, e, null);
+        } finally {
+            span.finish(endTimeMicros);
+        }
+
     }
 
     @Override
