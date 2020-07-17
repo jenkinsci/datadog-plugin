@@ -1,0 +1,13 @@
+pipeline {
+    agent any
+    options {
+      datadog(collectLogs: true)
+    }
+    stages {
+        stage('foo'){
+            steps {
+                echo 'foo'
+            }
+        }
+    }
+}
