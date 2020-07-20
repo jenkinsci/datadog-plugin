@@ -61,12 +61,12 @@
         </f:entry>
         <f:validateButton title="${%Test Hostname}" progress="${%Testing...}" method="testHostname" with="hostname" checkMethod="post" />
 
-        <f:entry title="Blacklisted Jobs" description="A comma-separated list of job names that should not monitored." >
-          <f:textarea field="blacklist" optional="true" default="${blacklist}" />
+        <f:entry title="Excluded Jobs" description="A comma-separated list of job names that should not monitored." >
+          <f:textarea field="excluded" optional="true" default="${excluded}" />
         </f:entry>
 
-        <f:entry title="Whitelisted Jobs" description="A list of job names that should be monitored. An empty whitelist permits all jobs not blacklisted." >
-          <f:textarea field="whitelist" optional="true" default="${whitelist}" />
+        <f:entry title="Included Jobs" description="A list of job names that should be monitored. An empty included permits all jobs not excluded." >
+          <f:textarea field="included" optional="true" default="${included}" />
         </f:entry>
 
         <f:entry field="globalTagFileEntry" title="Global Tag File" description="Add tags from default file in workspace.">

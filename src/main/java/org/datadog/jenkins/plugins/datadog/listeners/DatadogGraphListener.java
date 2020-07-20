@@ -108,7 +108,7 @@ public class DatadogGraphListener implements GraphListener {
             return false;
         }
 
-        // Filter the node if the job has been blacklisted from the Datadog plugin configuration.
+        // Filter the node if the job has been excluded from the Datadog plugin configuration.
         WorkflowRun run = getRun(flowNode);
         if (run == null || !DatadogUtilities.isJobTracked(run.getParent().getFullName())) {
             return false;

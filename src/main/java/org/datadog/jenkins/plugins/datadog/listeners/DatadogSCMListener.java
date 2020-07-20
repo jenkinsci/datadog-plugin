@@ -71,7 +71,7 @@ public class DatadogSCMListener extends SCMListener {
     public void onCheckout(Run<?, ?> build, SCM scm, FilePath workspace, TaskListener listener,
                            File changelogFile, SCMRevisionState pollingBaseline) throws Exception {
         try {
-            // Process only if job is NOT in blacklist and is in whitelist
+            // Process only if job is NOT in excluded and is in included
             DatadogJobProperty prop = DatadogUtilities.getDatadogJobProperties(build);
             if (!(DatadogUtilities.isJobTracked(build.getParent().getFullName())
                     && prop != null && prop.isEmitSCMEvents())) {
