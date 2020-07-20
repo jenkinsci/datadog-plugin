@@ -50,7 +50,22 @@ public class DatadogBuildListenerTest {
         ((DatadogBuildListenerTestWrapper)datadogBuildListener).setDatadogClient(client);
 
         Jenkins jenkins = mock(Jenkins.class);
+        
         when(jenkins.getFullName()).thenReturn(null);
+        ProjectStub job = new ProjectStub(jenkins,null);
+
+        EnvVars envVars = new EnvVars();
+
+        Run run = mock(Run.class);
+        when(run.getResult()).thenReturn(null);
+        when(run.getEnvironment(any(TaskListener.class))).thenReturn(envVars);
+        when(run.getParent()).thenReturn(job);
+
+        datadogBuildListener.onCompleted(run, mock(TaskListener.class));
+
+        client.assertedAllMetricsAndServiceChecks();
+
+    }
 
     @Test
     public void testOnCompletedOnSuccessfulRun() throws Exception {
