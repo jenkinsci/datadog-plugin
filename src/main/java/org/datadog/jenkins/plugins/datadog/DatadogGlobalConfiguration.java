@@ -93,8 +93,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private Integer targetPort = DEFAULT_TARGET_PORT_VALUE;
     private Integer targetLogCollectionPort = DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE;
     private String hostname = null;
-    private String excluded = null;
-    private String included = null;
+    private String blacklist = null;
+    private String whitelist = null;
     private String globalTagFile = null;
     private String globalTags = null;
     private String globalJobTags = null;
@@ -156,10 +156,10 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             // backwards compatibility
             excludedEnvVar = System.getenv(BLACKLIST_PROPERTY);
             if(StringUtils.isNotBlank(excludedEnvVar)){
-                this.excluded = excludedEnvVar;
+                this.blacklist = excludedEnvVar;
             }
         } else {
-            this.excluded = excludedEnvVar;
+            this.blacklist = excludedEnvVar;
         }
         
         String includedEnvVar = System.getenv(INCLUDED_PROPERTY);
@@ -167,10 +167,10 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             // backwards compatibility
             includedEnvVar = System.getenv(WHITELIST_PROPERTY);
             if(StringUtils.isNotBlank(includedEnvVar)){
-                this.included = includedEnvVar;
+                this.whitelist = includedEnvVar;
             }    
         } else {
-            this.included = includedEnvVar;
+            this.whitelist = includedEnvVar;
         }
 
         String globalTagFileEnvVar = System.getenv(GLOBAL_TAG_FILE_PROPERTY);
@@ -392,9 +392,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             if(StringUtils.isNotBlank(this.getHostname()) && !DatadogUtilities.isValidHostname(this.getHostname())){
                 throw new FormException("Your hostname is invalid, likely because it violates the format set in RFC 1123", "hostname");
             }
+            
             this.setHostname(formData.getString("hostname"));
-            this.setExcluded(formData.getString("excluded"));
-            this.setIncluded(formData.getString("included"));
+            // These config names have to be kept for backwards compatibility reasons
+            this.setExcluded(formData.getString("blacklist"));
+            this.setIncluded(formData.getString("whitelist"));          
             this.setGlobalTagFile(formData.getString("globalTagFile"));
             this.setGlobalTags(formData.getString("globalTags"));
             this.setGlobalJobTags(formData.getString("globalJobTags"));
@@ -588,7 +590,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     **/
     @Deprecated
     public String getBlacklist() {
-        return excluded;
+        return blacklist;
     }
     
     /**
@@ -598,7 +600,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @return a String array containing the excluded global configuration.
      */
     public String getExcluded() {
-        return excluded;
+        return blacklist;
     }
 
     /**
@@ -607,7 +609,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @Deprecated
     @DataBoundSetter
     public void setBlacklist(final String jobs) {
-        this.excluded = jobs;
+        this.blacklist = jobs;
     }
     
     /**
@@ -618,7 +620,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      */
     @DataBoundSetter
     public void setExcluded(final String jobs) {
-        this.excluded = jobs;
+        this.blacklist = jobs;
     }
 
     /**
@@ -626,7 +628,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     **/
     @Deprecated
     public String getWhitelist() {
-        return included;
+        return whitelist;
     }
     
     /**
@@ -636,7 +638,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @return a String array containing the included global configuration.
      */
     public String getIncluded() {
-        return included;
+        return whitelist;
     }
 
     /**
@@ -645,7 +647,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @Deprecated
     @DataBoundSetter
     public void setWhitelist(final String jobs) {
-        this.included = jobs;
+        this.whitelist = jobs;
     }
     
     /**
@@ -656,7 +658,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      */
     @DataBoundSetter
     public void setIncluded(final String jobs) {
-        this.included = jobs;
+        this.whitelist = jobs;
     }
 
     /**
