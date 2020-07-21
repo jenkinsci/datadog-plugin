@@ -394,6 +394,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             }
             
             this.setHostname(formData.getString("hostname"));
+            // These config names have to be kept for backwards compatibility reasons
             this.setExcluded(formData.getString("blacklist"));
             this.setIncluded(formData.getString("whitelist"));          
             this.setGlobalTagFile(formData.getString("globalTagFile"));
