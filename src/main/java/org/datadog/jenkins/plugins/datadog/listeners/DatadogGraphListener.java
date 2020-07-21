@@ -25,29 +25,41 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.listeners;
 
-import static org.datadog.jenkins.plugins.datadog.model.BuildStage.BuildStageKey;
+import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.BuildStageKey;
 
+import datadog.trace.api.DDTags;
 import hudson.Extension;
 import hudson.model.Queue;
 import hudson.model.Result;
 import hudson.model.Run;
+import io.opentracing.Span;
+import io.opentracing.SpanContext;
+import io.opentracing.Tracer;
+import io.opentracing.propagation.Format;
+import io.opentracing.util.GlobalTracer;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.model.BuildStage;
-import org.datadog.jenkins.plugins.datadog.traces.BuildTraceAction;
+import org.datadog.jenkins.plugins.datadog.model.BuildPipeline;
+import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.traces.BuildTextMapAdapter;
+import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
+import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
 import org.jenkinsci.plugins.workflow.actions.StageAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.actions.TimingAction;
 import org.jenkinsci.plugins.workflow.actions.WarningAction;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.flow.GraphListener;
+import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
+import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
@@ -57,13 +69,10 @@ import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Logger;
-import java.util.stream.StreamSupport;
 
 /**
  * A GraphListener implementation which computes timing information
@@ -76,6 +85,11 @@ public class DatadogGraphListener implements GraphListener {
 
     @Override
     public void onNewHead(FlowNode flowNode) {
+        //APM Traces
+        if(flowNode instanceof FlowEndNode) {
+            sendPipelineTraces((FlowEndNode) flowNode);
+        }
+
         if (!isMonitored(flowNode)) {
             return;
         }
@@ -118,36 +132,100 @@ public class DatadogGraphListener implements GraphListener {
         } catch (IOException | InterruptedException e) {
             DatadogUtilities.severe(logger, e, "Unable to submit the stage duration metric for " + getStageName(startNode));
         }
+    }
 
-        //APM Traces
-        final BuildTraceAction buildTraceAction = buildTraceActionFor(flowNode.getExecution());
-        if(buildTraceAction == null) {
-            logger.severe("Unable to trace stage. BuildTraceAction is not present for " + getStageName(startNode));
-            return;
-        }
-
-        if(buildData == null) {
-            logger.severe("Unable to submit traces for " + getStageName(startNode));
-            return;
-        }
-
-        final BuildStage stage = BuildStage.buildStage(startNode.getId(), getStageName(startNode))
-                .withData(buildData)
-                .withStartTime(getTime(startNode))
-                .withEndTime(getTime(endNode))
-                .withResult(resultForStage(startNode, endNode).toString())
-                .build();
-
-        final List<BuildStageKey> stageRelations = new ArrayList<>();
-        stageRelations.add(stage.getKey());
-        for (BlockStartNode node : startNode.iterateEnclosingBlocks()) {
-            if (isStageNode(node)) {
-                stageRelations.add(BuildStage.buildStageKey(node.getId(), getStageName(node)));
+    private void sendPipelineTraces(FlowEndNode flowEndNode) {
+        final BuildPipeline pipeline = new BuildPipeline();
+        final DepthFirstScanner scanner = new DepthFirstScanner();
+        scanner.setup(flowEndNode.getExecution().getCurrentHeads());
+        scanner.forEach(flowNode -> {
+            if(!(flowNode instanceof BlockEndNode) && !(flowNode instanceof StepAtomNode)) {
+                return;
             }
+
+            final String id;
+            final String name;
+            final Long startTime;
+            Long endTime = null;
+            final String result;
+            if(flowNode instanceof BlockEndNode) {
+                final BlockEndNode blockEndNode= (BlockEndNode) flowNode;
+                final BlockStartNode blockStartNode = blockEndNode.getStartNode();
+                id = blockStartNode.getId();
+                name = blockStartNode.getDisplayName();
+                startTime = getTime(blockStartNode);
+                endTime = getTime(blockEndNode);
+                result = resultForNode(blockStartNode);
+            } else {
+                final StepAtomNode stepAtomNode = (StepAtomNode) flowNode;
+                id = stepAtomNode.getId();
+                name = stepAtomNode.getDisplayName();
+                startTime = getTime(stepAtomNode);
+                result = resultForNode(stepAtomNode);
+            }
+
+            final BuildPipelineNode stage = BuildPipelineNode.buildStage(id, name)
+                    .withStartTime(startTime)
+                    .withEndTime(endTime)
+                    .withActions(flowNode.getActions())
+                    .withResult(result)
+                    .build();
+
+            final List<BuildStageKey> stageRelations = new ArrayList<>();
+            stageRelations.add(stage.getKey());
+            for (BlockStartNode node : flowNode.iterateEnclosingBlocks()) {
+                stageRelations.add(BuildPipelineNode.buildStageKey(node.getId(), getStageName(node)));
+            }
+
+            Collections.reverse(stageRelations); //This is necessary cause Jenkins returns relations inside-out.
+            pipeline.addStage(stageRelations, stage);
+        });
+
+        final BuildSpanAction buildSpanAction = buildTraceActionFor(flowEndNode.getExecution());
+        if(buildSpanAction == null){
+            return;
         }
 
-        Collections.reverse(stageRelations); //This is necessary cause Jenkins returns relations inside-out.
-        buildTraceAction.getPipeline().addStage(stageRelations, stage);
+        final SpanContext buildSpanContext = GlobalTracer.get().extract(Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatation()));
+        final BuildPipelineNode pipelineNode = pipeline.buildTree();
+        sendPipelineNodeTrace(pipelineNode, buildSpanContext);
+    }
+
+    private void sendPipelineNodeTrace(final BuildPipelineNode current, final SpanContext parentSpanContext) {
+        Long startTime = current.getStartTime();
+        if(startTime == null) {
+            logger.severe("Unable to send traces for node '"+current.getName()+"'. Its startTime is null");
+            return;
+        }
+
+        Long endTime = current.getEndTime();
+        if(endTime == null) {
+            logger.severe("Unable to send traces for node '"+current.getName()+"'. Its endTime is null");
+            return;
+        }
+
+        final Tracer.SpanBuilder spanBuilder = GlobalTracer.get()
+                .buildSpan("jenkins.pipeline")
+                .withStartTimestamp(startTime * 1000);
+
+        if(parentSpanContext != null) {
+            spanBuilder.asChildOf(parentSpanContext);
+        }
+
+        final Span span = spanBuilder.start();
+        span.setTag(DDTags.SERVICE_NAME, "jenkins");
+        span.setTag(DDTags.RESOURCE_NAME, current.getName());
+        span.setTag(DDTags.SPAN_TYPE, "ci");
+        span.setTag("ci.provider", "jenkins");
+        span.setTag("job.id", current.getId());
+        span.setTag("job.name", current.getName());
+        span.setTag("jenkins.result", current.getResult());
+        span.setTag("error", current.isError());
+
+        for(BuildPipelineNode child : current.getChildren()) {
+            sendPipelineNodeTrace(child, span.context());
+        }
+        span.finish(endTime * 1000);
     }
 
 
@@ -232,29 +310,30 @@ public class DatadogGraphListener implements GraphListener {
         return 0;
     }
 
-    static @CheckForNull BuildTraceAction buildTraceActionFor(final FlowExecution exec) {
-        BuildTraceAction buildTraceAction = null;
+    static @CheckForNull
+    BuildSpanAction buildTraceActionFor(final FlowExecution exec) {
+        BuildSpanAction buildSpanAction = null;
         Run<?, ?> run = runFor(exec);
         if (run != null) {
-            buildTraceAction = run.getAction(BuildTraceAction.class);
+            buildSpanAction = run.getAction(BuildSpanAction.class);
         }
-        return buildTraceAction;
+        return buildSpanAction;
     }
 
-    static Result resultForStage(FlowNode startNode, FlowNode endNode) {
-        Result errorResult = Result.SUCCESS;
-        DepthFirstScanner scanner = new DepthFirstScanner();
-        if (scanner.setup(endNode, Collections.singletonList(startNode))) {
-            WarningAction warningAction = StreamSupport.stream(scanner.spliterator(), false)
-                    .map(node -> node.getPersistentAction(WarningAction.class))
-                    .filter(Objects::nonNull)
-                    .max(Comparator.comparing(warning -> warning.getResult().ordinal))
-                    .orElse(null);
-            if (warningAction != null) {
-                errorResult = warningAction.getResult();
-            }
+    static String resultForNode(FlowNode flowNode) {
+        Result result = Result.SUCCESS;
+
+        final ErrorAction errorAction = flowNode.getError();
+        final WarningAction warningAction = flowNode.getAction(WarningAction.class);
+
+        if(errorAction != null) {
+            result = Result.FAILURE;
+        } else if (warningAction != null) {
+            result = Result.UNSTABLE;
         }
-        return errorResult;
+
+        System.out.println("---------- Node: '"+flowNode.getDisplayName()+"', status: " + result);
+        return result.toString();
     }
 
     /**

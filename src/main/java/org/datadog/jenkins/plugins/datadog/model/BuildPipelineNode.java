@@ -1,5 +1,6 @@
 package org.datadog.jenkins.plugins.datadog.model;
 
+import hudson.model.Action;
 import hudson.model.Result;
 
 import java.util.ArrayList;
@@ -9,12 +10,11 @@ import java.util.Objects;
 /**
  * Represent a stage of the Jenkins Pipeline.
  */
-public class BuildStage {
+public class BuildPipelineNode {
 
     private final BuildStageKey key;
-    private final List<BuildStage> children;
-    private BuildData data;
-
+    private final List<BuildPipelineNode> children;
+    private List<Action> actions;
     private Long startTime;
     private Long endTime;
     private String result;
@@ -32,21 +32,17 @@ public class BuildStage {
         return new BuildStageKey(stageId, stageName);
     }
 
-    public BuildStage(final BuildStageBuilder builder) {
+    public BuildPipelineNode(final BuildStageBuilder builder) {
         this.key = builder.key;
         this.children = new ArrayList<>();
-
-        if(builder.data != null) {
-            this.data = builder.data;
-        }
-
+        this.actions = builder.actions;
         this.startTime = builder.startTime;
         this.endTime = builder.endTime;
         this.result = builder.result;
         this.error = builder.error;
     }
 
-    public void addChild(final BuildStage child) {
+    public void addChild(final BuildPipelineNode child) {
         children.add(child);
     }
 
@@ -62,16 +58,16 @@ public class BuildStage {
         return key.name;
     }
 
-    public BuildData getData() {
-        return data;
-    }
-
     public Long getStartTime() {
         return startTime;
     }
 
     public Long getEndTime() {
         return endTime;
+    }
+
+    public void setEndTime(Long endTime) {
+        this.endTime = endTime;
     }
 
     public String getResult() {
@@ -82,16 +78,16 @@ public class BuildStage {
         return error;
     }
 
-    public List<BuildStage> getChildren() {
+    public List<BuildPipelineNode> getChildren() {
         return children;
     }
 
-    public BuildStage getChild(final BuildStageKey id) {
+    public BuildPipelineNode getChild(final BuildStageKey id) {
         if(children.isEmpty()) {
             return null;
         }
 
-        for(final BuildStage child : children) {
+        for(final BuildPipelineNode child : children) {
             if(id.equals(child.getKey())){
                 return child;
             }
@@ -100,8 +96,7 @@ public class BuildStage {
         return null;
     }
 
-    public void updateData(final BuildStage stage) {
-        this.data = stage.data;
+    public void updateData(final BuildPipelineNode stage) {
         this.startTime = stage.startTime;
         this.endTime = stage.endTime;
         this.result = stage.result;
@@ -112,7 +107,7 @@ public class BuildStage {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        BuildStage that = (BuildStage) o;
+        BuildPipelineNode that = (BuildPipelineNode) o;
         return Objects.equals(key, that.key);
     }
 
@@ -127,7 +122,6 @@ public class BuildStage {
         final StringBuilder sb = new StringBuilder("BuildStage{");
         sb.append("key=").append(key);
         sb.append(", children=").append(children);
-        sb.append(", data=").append(data);
         sb.append(", startTime=").append(startTime);
         sb.append(", endTime=").append(endTime);
         sb.append(", result='").append(result).append('\'');
@@ -138,7 +132,7 @@ public class BuildStage {
 
     public static class BuildStageBuilder {
         private final BuildStageKey key;
-        private BuildData data;
+        private List<Action> actions;
         private Long startTime;
         private Long endTime;
         private String result;
@@ -146,14 +140,18 @@ public class BuildStage {
 
         public BuildStageBuilder(String stageId, String stageName) {
             this.key = new BuildStageKey(stageId, stageName);
+            this.actions = new ArrayList<>();
         }
 
         public BuildStageBuilder(final BuildStageKey key) {
             this.key = key;
         }
 
-        public BuildStageBuilder withData(final BuildData data) {
-            this.data = data;
+        public BuildStageBuilder withActions(final List<Action> actions) {
+            if(actions != null){
+                this.actions.addAll(actions);
+            }
+
             return this;
         }
 
@@ -175,8 +173,8 @@ public class BuildStage {
             return this;
         }
 
-        public BuildStage build() {
-            return new BuildStage(this);
+        public BuildPipelineNode build() {
+            return new BuildPipelineNode(this);
         }
     }
 

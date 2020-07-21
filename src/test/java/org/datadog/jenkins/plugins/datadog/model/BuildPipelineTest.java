@@ -14,38 +14,34 @@ public class BuildPipelineTest {
         //Given
         final BuildPipeline pipeline = BuildPipeline.newPipeline();
         pipeline.addStage(Arrays.asList(
-                BuildStage.buildStageKey("13", "Build Stage"),
-                BuildStage.buildStageKey("15", "Inner Build Stage"),
-                BuildStage.buildStageKey("17", "Inner Inner Build Stage")
-        ), BuildStage.buildStage("17", "Inner Inner Build Stage").build());
+                BuildPipelineNode.buildStageKey("13", "Build Stage"),
+                BuildPipelineNode.buildStageKey("15", "Inner Build Stage"),
+                BuildPipelineNode.buildStageKey("17", "Inner Inner Build Stage")
+        ), BuildPipelineNode.buildStage("17", "Inner Inner Build Stage").build());
 
         pipeline.addStage(Arrays.asList(
-                BuildStage.buildStageKey("13", "Build Stage"),
-                BuildStage.buildStageKey("15", "Inner Build Stage")
-        ), BuildStage.buildStage("15", "Inner Build Stage").build());
+                BuildPipelineNode.buildStageKey("13", "Build Stage"),
+                BuildPipelineNode.buildStageKey("15", "Inner Build Stage")
+        ), BuildPipelineNode.buildStage("15", "Inner Build Stage").build());
 
-        pipeline.addStage(Collections.singletonList(BuildStage.buildStageKey("13", "Build Stage")
-        ), BuildStage.buildStage("13", "Build Stage").build());
+        pipeline.addStage(Collections.singletonList(BuildPipelineNode.buildStageKey("13", "Build Stage")
+        ), BuildPipelineNode.buildStage("13", "Build Stage").build());
 
         //When
-        final BuildStage root = pipeline.buildTree();
+        final BuildPipelineNode buildPipelineNode = pipeline.buildTree();
 
         //Then
-        Assert.assertEquals(1, root.getChildren().size());
+        Assert.assertEquals(BuildPipelineNode.buildStageKey("13", "Build Stage"), buildPipelineNode.getKey());
+        Assert.assertEquals(1, buildPipelineNode.getChildren().size());
 
-        final List<BuildStage> rootChildren = root.getChildren();
-        final BuildStage buildStage = rootChildren.get(0);
-        Assert.assertEquals(BuildStage.buildStageKey("13", "Build Stage"), buildStage.getKey());
-        Assert.assertEquals(1, buildStage.getChildren().size());
+        final List<BuildPipelineNode> buildChildren = buildPipelineNode.getChildren();
+        final BuildPipelineNode innerBuildPipelineNode = buildChildren.get(0);
+        Assert.assertEquals(BuildPipelineNode.buildStageKey("15", "Inner Build Stage"), innerBuildPipelineNode.getKey());
+        Assert.assertEquals(1, innerBuildPipelineNode.getChildren().size());
 
-        final List<BuildStage> buildChildren = buildStage.getChildren();
-        final BuildStage innerBuildStage = buildChildren.get(0);
-        Assert.assertEquals(BuildStage.buildStageKey("15", "Inner Build Stage"), innerBuildStage.getKey());
-        Assert.assertEquals(1, innerBuildStage.getChildren().size());
-
-        final List<BuildStage> innerBuildChildren = innerBuildStage.getChildren();
-        final BuildStage innerInnerBuildChildren = innerBuildChildren.get(0);
-        Assert.assertEquals(BuildStage.buildStageKey("17", "Inner Inner Build Stage"), innerInnerBuildChildren.getKey());
+        final List<BuildPipelineNode> innerBuildChildren = innerBuildPipelineNode.getChildren();
+        final BuildPipelineNode innerInnerBuildChildren = innerBuildChildren.get(0);
+        Assert.assertEquals(BuildPipelineNode.buildStageKey("17", "Inner Inner Build Stage"), innerInnerBuildChildren.getKey());
         Assert.assertEquals(0, innerInnerBuildChildren.getChildren().size());
     }
 
@@ -53,24 +49,24 @@ public class BuildPipelineTest {
     public void should_build_pipeline_with_siblings_stages() {
         //Given
         final BuildPipeline pipeline = BuildPipeline.newPipeline();
-        pipeline.addStage(Collections.singletonList(BuildStage.buildStageKey("6", "Declarative: Checkout SCM"))
-                , BuildStage.buildStage("6", "Declarative: Checkout SCM").build());
+        pipeline.addStage(Collections.singletonList(BuildPipelineNode.buildStageKey("6", "Declarative: Checkout SCM"))
+                , BuildPipelineNode.buildStage("6", "Declarative: Checkout SCM").build());
 
-        pipeline.addStage(Collections.singletonList(BuildStage.buildStageKey("13", "Build Stage")
-        ), BuildStage.buildStage("13", "Build Stage").build());
+        pipeline.addStage(Collections.singletonList(BuildPipelineNode.buildStageKey("13", "Build Stage")
+        ), BuildPipelineNode.buildStage("13", "Build Stage").build());
 
 
-        pipeline.addStage(Collections.singletonList(BuildStage.buildStageKey("26", "Test Stage"))
-                , BuildStage.buildStage("26", "Test Stage").build());
+        pipeline.addStage(Collections.singletonList(BuildPipelineNode.buildStageKey("26", "Test Stage"))
+                , BuildPipelineNode.buildStage("26", "Test Stage").build());
 
-        pipeline.addStage(Collections.singletonList(BuildStage.buildStageKey("35", "Deploy Stage"))
-                , BuildStage.buildStage("35", "Deploy Stage").build());
+        pipeline.addStage(Collections.singletonList(BuildPipelineNode.buildStageKey("35", "Deploy Stage"))
+                , BuildPipelineNode.buildStage("35", "Deploy Stage").build());
 
-        pipeline.addStage(Collections.singletonList(BuildStage.buildStageKey("14", "Declarative: Post Actions"))
-                , BuildStage.buildStage("14", "Declarative: Post Actions").build());
+        pipeline.addStage(Collections.singletonList(BuildPipelineNode.buildStageKey("14", "Declarative: Post Actions"))
+                , BuildPipelineNode.buildStage("14", "Declarative: Post Actions").build());
 
         //When
-        final BuildStage root = pipeline.buildTree();
+        final BuildPipelineNode root = pipeline.buildTree();
 
         //Then
         Assert.assertEquals(5, root.getChildren().size());
