@@ -29,9 +29,7 @@ public class DatadogOptionsTest {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         ExtensionList.clearLegacyInstances();
         cfg.setCollectBuildLogs(false);
-        EnvVars env = new EnvVars();
-        env.put("DD_TEST", "bar");
-        j.createOnlineSlave(new LabelAtom("test"), env);
+        j.createOnlineSlave(new LabelAtom("test"));
     }
 
     @Test
@@ -56,14 +54,14 @@ public class DatadogOptionsTest {
         );
         p.setDefinition(new CpsFlowDefinition(definition, true));
         p.scheduleBuild2(0).get();
-        List<DatadogMetric> metrics = stubClient.metrics;
         String hostname = DatadogUtilities.getHostname(null);
         String[] expectedTags = new String[]{
                 "jenkins_url:" + DatadogUtilities.getJenkinsUrl(),
                 "user_id:anonymous",
                 "job:testMetricTags",
                 "result:SUCCESS",
-                "foo:bar"
+                "foo:bar",
+                "bar:foo"
         };
         stubClient.assertMetric("jenkins.job.duration", hostname, expectedTags);
     }

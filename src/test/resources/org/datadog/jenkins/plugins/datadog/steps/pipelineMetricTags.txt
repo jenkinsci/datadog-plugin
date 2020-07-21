@@ -4,7 +4,7 @@ pipeline {
         label "test"
     }
     options {
-      datadog(collectLogs: true, tags: ["foo:${DD_TEST}"])
+      datadog(collectLogs: false, tags: ["foo:${DD_TEST}", "${DD_TEST}:foo"])
     }
     stages {
         stage('Stage'){

@@ -1,6 +1,5 @@
 package org.datadog.jenkins.plugins.datadog.steps;
 
-import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.Run;
 import hudson.model.TaskListener;
@@ -26,7 +25,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 /**
- * Pipeline plug-in step for recording time-stamps.
+ * Pipeline plug-in step for configuring Datadog monitoring options.
  */
 public class DatadogOptions extends Step implements Serializable {
 
