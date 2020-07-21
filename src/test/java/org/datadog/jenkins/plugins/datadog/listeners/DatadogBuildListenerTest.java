@@ -50,8 +50,8 @@ public class DatadogBuildListenerTest {
         ((DatadogBuildListenerTestWrapper)datadogBuildListener).setDatadogClient(client);
 
         Jenkins jenkins = mock(Jenkins.class);
+        
         when(jenkins.getFullName()).thenReturn(null);
-
         ProjectStub job = new ProjectStub(jenkins,null);
 
         EnvVars envVars = new EnvVars();
