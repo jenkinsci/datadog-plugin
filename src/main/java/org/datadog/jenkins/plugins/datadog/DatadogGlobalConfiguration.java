@@ -392,9 +392,19 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             if(StringUtils.isNotBlank(this.getHostname()) && !DatadogUtilities.isValidHostname(this.getHostname())){
                 throw new FormException("Your hostname is invalid, likely because it violates the format set in RFC 1123", "hostname");
             }
-            this.setHostname(formData.getString("hostname"));
-            this.setExcluded(formData.getString("excluded"));
-            this.setIncluded(formData.getString("included"));
+            String includedInput = formData.getString("whitelist");
+            if (StringUtils.isNotBlank(includedInput)) {
+                this.setIncluded(includedInput); 
+            } else {
+                this.setIncluded(formData.getString("included"));
+            }
+            String excludedInput = formData.getString("blacklist");
+            if (StringUtils.isNotBlank(excludedInput)) {
+                this.setExcluded(excludedInput); 
+            } else {
+                this.setExcluded(formData.getString("excluded"));
+            }
+            this.setHostname(formData.getString("hostname"));            
             this.setGlobalTagFile(formData.getString("globalTagFile"));
             this.setGlobalTags(formData.getString("globalTags"));
             this.setGlobalJobTags(formData.getString("globalJobTags"));
