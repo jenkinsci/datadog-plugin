@@ -2,9 +2,14 @@ package org.datadog.jenkins.plugins.datadog.model;
 
 import hudson.model.Action;
 import hudson.model.Result;
+import org.jenkinsci.plugins.workflow.actions.PersistentAction;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -14,7 +19,9 @@ public class BuildPipelineNode {
 
     private final BuildStageKey key;
     private final List<BuildPipelineNode> children;
-    private List<Action> actions;
+
+    private FlowNode node;
+    private StepData stepData;
     private Long startTime;
     private Long endTime;
     private String result;
@@ -35,7 +42,8 @@ public class BuildPipelineNode {
     public BuildPipelineNode(final BuildStageBuilder builder) {
         this.key = builder.key;
         this.children = new ArrayList<>();
-        this.actions = builder.actions;
+        this.node = builder.node;
+        this.stepData = builder.stepData;
         this.startTime = builder.startTime;
         this.endTime = builder.endTime;
         this.result = builder.result;
@@ -82,6 +90,10 @@ public class BuildPipelineNode {
         return children;
     }
 
+    public FlowNode getNode() {
+        return node;
+    }
+
     public BuildPipelineNode getChild(final BuildStageKey id) {
         if(children.isEmpty()) {
             return null;
@@ -96,11 +108,17 @@ public class BuildPipelineNode {
         return null;
     }
 
+    public StepData getStepData() {
+        return stepData;
+    }
+
     public void updateData(final BuildPipelineNode stage) {
         this.startTime = stage.startTime;
         this.endTime = stage.endTime;
         this.result = stage.result;
         this.error = stage.error;
+        this.node = stage.node;
+        this.stepData = stage.stepData;
     }
 
     @Override
@@ -119,9 +137,11 @@ public class BuildPipelineNode {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("BuildStage{");
+        final StringBuilder sb = new StringBuilder("BuildPipelineNode{");
         sb.append("key=").append(key);
         sb.append(", children=").append(children);
+        sb.append(", node=").append(node);
+        sb.append(", stepData=").append(stepData);
         sb.append(", startTime=").append(startTime);
         sb.append(", endTime=").append(endTime);
         sb.append(", result='").append(result).append('\'');
@@ -132,7 +152,8 @@ public class BuildPipelineNode {
 
     public static class BuildStageBuilder {
         private final BuildStageKey key;
-        private List<Action> actions;
+        private FlowNode node;
+        private StepData stepData;
         private Long startTime;
         private Long endTime;
         private String result;
@@ -140,18 +161,19 @@ public class BuildPipelineNode {
 
         public BuildStageBuilder(String stageId, String stageName) {
             this.key = new BuildStageKey(stageId, stageName);
-            this.actions = new ArrayList<>();
         }
 
         public BuildStageBuilder(final BuildStageKey key) {
             this.key = key;
         }
 
-        public BuildStageBuilder withActions(final List<Action> actions) {
-            if(actions != null){
-                this.actions.addAll(actions);
-            }
+        public BuildStageBuilder withStepData(final StepData stepData) {
+            this.stepData = stepData;
+            return this;
+        }
 
+        public BuildStageBuilder withFlowNode(final FlowNode node) {
+            this.node = node;
             return this;
         }
 

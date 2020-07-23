@@ -25,7 +25,10 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.listeners;
 
+import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.BuildStageBuilder;
 import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.BuildStageKey;
+import static org.datadog.jenkins.plugins.datadog.model.StepData.StepEnvVars;
+import static org.datadog.jenkins.plugins.datadog.model.StepData.StepComputer;
 
 import datadog.trace.api.DDTags;
 import hudson.Extension;
@@ -43,9 +46,12 @@ import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipeline;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
-import org.datadog.jenkins.plugins.datadog.traces.BuildTextMapAdapter;
+import org.datadog.jenkins.plugins.datadog.model.StepData;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
+import org.datadog.jenkins.plugins.datadog.traces.BuildTextMapAdapter;
+import org.datadog.jenkins.plugins.datadog.traces.StepDataManager;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
 import org.jenkinsci.plugins.workflow.actions.StageAction;
@@ -61,14 +67,18 @@ import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.graph.StepNode;
 import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -164,12 +174,17 @@ public class DatadogGraphListener implements GraphListener {
                 result = resultForNode(stepAtomNode);
             }
 
-            final BuildPipelineNode stage = BuildPipelineNode.buildStage(id, name)
+            final BuildStageBuilder stageBuilder = BuildPipelineNode.buildStage(id, name)
                     .withStartTime(startTime)
                     .withEndTime(endTime)
-                    .withActions(flowNode.getActions())
-                    .withResult(result)
-                    .build();
+                    .withFlowNode(flowNode)
+                    .withResult(result);
+
+            if(flowNode instanceof StepNode) {
+                stageBuilder.withStepData(StepDataManager.get().remove(((StepNode) flowNode).getDescriptor()));
+            }
+
+            final BuildPipelineNode stage = stageBuilder.build();
 
             final List<BuildStageKey> stageRelations = new ArrayList<>();
             stageRelations.add(stage.getKey());
@@ -192,40 +207,105 @@ public class DatadogGraphListener implements GraphListener {
     }
 
     private void sendPipelineNodeTrace(final BuildPipelineNode current, final SpanContext parentSpanContext) {
-        Long startTime = current.getStartTime();
-        if(startTime == null) {
-            logger.severe("Unable to send traces for node '"+current.getName()+"'. Its startTime is null");
-            return;
+        Span span = null;
+
+        if(isTraceable(current)) {
+            Long startTime = current.getStartTime();
+            if(startTime == null) {
+                logger.severe("Unable to send traces for node '"+current.getName()+"'. Its startTime is null");
+                return;
+            }
+
+            final Tracer.SpanBuilder spanBuilder = GlobalTracer.get()
+                    .buildSpan("jenkins.pipeline")
+                    .withStartTimestamp(startTime * 1000);
+
+            if(parentSpanContext != null) {
+                spanBuilder.asChildOf(parentSpanContext);
+            }
+
+
+            span = spanBuilder.start();
+            span.setTag(DDTags.SERVICE_NAME, "jenkins");
+            span.setTag(DDTags.RESOURCE_NAME, current.getName());
+            span.setTag(DDTags.SPAN_TYPE, "ci");
+            span.setTag(DDTags.LANGUAGE_TAG_KEY, "");
+            span.setTag("ci.provider", "jenkins");
+            span.setTag("job.id", current.getId());
+            span.setTag("job.name", current.getName());
+            span.setTag("jenkins.result", current.getResult());
+            span.setTag("error", current.isError());
+
+            final StepData stepData = current.getStepData();
+            if(stepData != null) {
+                final StepEnvVars envVars = stepData.getEnvVars();
+                span.setTag("repository.branch", envVars.get("GIT_BRANCH"));
+                span.setTag("repository.commit", envVars.get("GIT_COMMIT"));
+                span.setTag("repository.url", envVars.get("GIT_URL"));
+                span.setTag("job.url", envVars.get("BUILD_URL"));
+                span.setTag("user.principal", envVars.get("USER"));
+
+                final StepData.StepFilePath filePath = stepData.getFilePath();
+                span.setTag("job.workspace", filePath.getRemote());
+
+                final StepComputer stepComputer = stepData.getComputer();
+                span.setTag("node.name", (!"".equals(stepComputer.getNodeName())) ? stepComputer.getNodeName() : "master");
+                span.setTag("node.hostname", stepComputer.getHostName() != null ? stepComputer.getHostName() : "");
+            }
+
+            //Arguments
+            final FlowNode node = current.getNode();
+            final Map<String, Object> arguments = new HashMap<>(ArgumentsAction.getFilteredArguments(node));
+            if(node instanceof BlockEndNode) {
+                BlockStartNode startNode = ((BlockEndNode) node).getStartNode();
+                Map<String, Object> argumentsFromStart = ArgumentsAction.getFilteredArguments(startNode);
+                arguments.putAll(argumentsFromStart);
+            }
+            for(Map.Entry<String, Object> entry : arguments.entrySet()) {
+                span.setTag("jenkins.step.args."+entry.getKey(), String.valueOf(entry.getValue()));
+
+                if("script".equals(entry.getKey())){
+                    span.setTag("job.script", String.valueOf(entry.getValue()));
+                }
+            }
+
+            //Error
+            final ErrorAction errorAction = node.getAction(ErrorAction.class);
+            if(errorAction != null) {
+                final Throwable error = errorAction.getError();
+                span.setTag(DDTags.ERROR_MSG, error.getMessage());
+                span.setTag(DDTags.ERROR_TYPE, error.getClass().getName());
+
+                final StringWriter errorString = new StringWriter();
+                error.printStackTrace(new PrintWriter(errorString));
+                span.setTag(DDTags.ERROR_STACK, errorString.toString());
+            }
         }
 
-        Long endTime = current.getEndTime();
-        if(endTime == null) {
-            logger.severe("Unable to send traces for node '"+current.getName()+"'. Its endTime is null");
-            return;
+        for(final BuildPipelineNode child : current.getChildren()) {
+            sendPipelineNodeTrace(child, (span != null) ? span.context() : parentSpanContext);
         }
 
-        final Tracer.SpanBuilder spanBuilder = GlobalTracer.get()
-                .buildSpan("jenkins.pipeline")
-                .withStartTimestamp(startTime * 1000);
+        if(span != null) {
+            Long endTime = current.getEndTime();
+            if(endTime == null) {
+                logger.severe("Unable to send traces for node '"+current.getName()+"'. Its endTime is null");
+                return;
+            }
 
-        if(parentSpanContext != null) {
-            spanBuilder.asChildOf(parentSpanContext);
+            span.finish(endTime * 1000);
         }
+    }
 
-        final Span span = spanBuilder.start();
-        span.setTag(DDTags.SERVICE_NAME, "jenkins");
-        span.setTag(DDTags.RESOURCE_NAME, current.getName());
-        span.setTag(DDTags.SPAN_TYPE, "ci");
-        span.setTag("ci.provider", "jenkins");
-        span.setTag("job.id", current.getId());
-        span.setTag("job.name", current.getName());
-        span.setTag("jenkins.result", current.getResult());
-        span.setTag("error", current.isError());
+    private boolean isTraceable(BuildPipelineNode current) {
+        final FlowNode flowNode = current.getNode();
 
-        for(BuildPipelineNode child : current.getChildren()) {
-            sendPipelineNodeTrace(child, span.context());
+        if(flowNode instanceof BlockEndNode){
+            final BlockStartNode startNode = ((BlockEndNode) flowNode).getStartNode();
+            return startNode.getAction(LabelAction.class) != null || startNode.getAction(StageAction.class) != null;
+        } else {
+            return flowNode instanceof StepAtomNode;
         }
-        span.finish(endTime * 1000);
     }
 
 

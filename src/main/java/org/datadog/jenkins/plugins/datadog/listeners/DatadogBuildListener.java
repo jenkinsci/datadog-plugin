@@ -44,6 +44,8 @@ import javax.annotation.Nonnull;
 import io.opentracing.Span;
 import io.opentracing.propagation.Format;
 import io.opentracing.util.GlobalTracer;
+import jenkins.scm.api.SCMHead;
+import jenkins.scm.api.SCMRevisionAction;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
@@ -245,6 +247,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             if(buildSpan == null) {
                 return;
             }
+
             final long endTimeMicros = buildData.getEndTime(0L) * 1000;
             buildSpan.setTag(DDTags.SERVICE_NAME, "jenkins");
             buildSpan.setTag(DDTags.RESOURCE_NAME, buildData.getJobName(null));
