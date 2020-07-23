@@ -7,7 +7,7 @@ https://github.com/jenkinsci/datadog-plugin/compare/datadog-1.1.2...datadog-1.2.
 ### Changes
 * [Added] Use inclusive naming. See [#94](https://github.com/jenkinsci/datadog-plugin/pull/94).
 * [Added] Add new queue metrics with job tags. See [#73](https://github.com/jenkinsci/datadog-plugin/pull/73).
-* [Added] Add new node status metrics . See [#71](https://github.com/jenkinsci/datadog-plugin/pull/71).
+* [Added] Add new node status metrics. See [#71](https://github.com/jenkinsci/datadog-plugin/pull/71).
 * [Fixed] Keep backwards compatibility with old config naming. See [#95](https://github.com/jenkinsci/datadog-plugin/pull/95).
 * [Fixed] Don't fail validation if log collection is not working. See [#90](https://github.com/jenkinsci/datadog-plugin/pull/90).
 * [Fixed] Re-order configuration loading logic. See [#87](https://github.com/jenkinsci/datadog-plugin/pull/87).
