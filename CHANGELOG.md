@@ -12,7 +12,7 @@ https://github.com/jenkinsci/datadog-plugin/compare/datadog-1.1.2...datadog-1.2.
 * [Fixed] Don't fail validation if log collection is not working. See [#90](https://github.com/jenkinsci/datadog-plugin/pull/90).
 * [Fixed] Re-order configuration loading logic. See [#87](https://github.com/jenkinsci/datadog-plugin/pull/87).
 * [Fixed] Fix buildable and pending metrics. See [#83](https://github.com/jenkinsci/datadog-plugin/pull/83).
-* [Fixed] Update failedlastValidation if client passes validation  . See [#81](https://github.com/jenkinsci/datadog-plugin/pull/81).
+* [Fixed] Update failedlastValidation if client passes validation. See [#81](https://github.com/jenkinsci/datadog-plugin/pull/81).
 * [Fixed] Update pom for 1.x. See [#80](https://github.com/jenkinsci/datadog-plugin/pull/80).
 * [Fixed] Add configuration validation in clients. See [#59](https://github.com/jenkinsci/datadog-plugin/pull/59).
 * [Fixed] Enforce POST in form validation. See [#61](https://github.com/jenkinsci/datadog-plugin/pull/61).
