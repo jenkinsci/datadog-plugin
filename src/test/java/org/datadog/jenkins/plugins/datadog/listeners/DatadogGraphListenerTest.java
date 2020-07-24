@@ -5,7 +5,6 @@ import static org.mockito.Mockito.when;
 
 import hudson.model.Result;
 import hudson.model.labels.LabelAtom;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
