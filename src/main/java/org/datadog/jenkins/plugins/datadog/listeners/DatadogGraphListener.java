@@ -32,6 +32,7 @@ import static org.datadog.jenkins.plugins.datadog.model.StepData.StepComputer;
 
 import datadog.trace.api.DDTags;
 import hudson.Extension;
+import hudson.console.AnnotatedLargeText;
 import hudson.model.Queue;
 import hudson.model.Result;
 import hudson.model.Run;
@@ -43,6 +44,8 @@ import io.opentracing.util.GlobalTracer;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.logs.DatadogOutputStream;
+import org.datadog.jenkins.plugins.datadog.logs.DatadogWriter;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipeline;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
@@ -54,6 +57,7 @@ import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
+import org.jenkinsci.plugins.workflow.actions.LogAction;
 import org.jenkinsci.plugins.workflow.actions.StageAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.actions.TimingAction;
@@ -74,6 +78,7 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -224,7 +229,6 @@ public class DatadogGraphListener implements GraphListener {
                 spanBuilder.asChildOf(parentSpanContext);
             }
 
-
             span = spanBuilder.start();
             span.setTag(DDTags.SERVICE_NAME, "jenkins");
             span.setTag(DDTags.RESOURCE_NAME, current.getName());
@@ -279,6 +283,24 @@ public class DatadogGraphListener implements GraphListener {
                 final StringWriter errorString = new StringWriter();
                 error.printStackTrace(new PrintWriter(errorString));
                 span.setTag(DDTags.ERROR_STACK, errorString.toString());
+            }
+
+            //Logs
+            final LogAction logAction = node.getAction(LogAction.class);
+            if(logAction != null) {
+                final AnnotatedLargeText<? extends FlowNode> logText = logAction.getLogText();
+                final WorkflowRun run = getRun(current.getNode());
+                if(run != null) {
+                    final DatadogWriter writer = new DatadogWriter(run, run.getCharset(), span.context());
+                    final OutputStream out = new DatadogOutputStream(writer);
+
+                    try {
+                        logText.writeLogTo(0, out);
+                    } catch (Exception e) {
+                        System.out.println("--------- LogAction ex: " + e);
+                    }
+                }
+
             }
         }
 
@@ -412,7 +434,6 @@ public class DatadogGraphListener implements GraphListener {
             result = Result.UNSTABLE;
         }
 
-        System.out.println("---------- Node: '"+flowNode.getDisplayName()+"', status: " + result);
         return result.toString();
     }
 

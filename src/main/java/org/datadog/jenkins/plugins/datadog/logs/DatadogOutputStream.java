@@ -42,10 +42,18 @@ public class DatadogOutputStream extends LineTransformationOutputStream {
         this.writer = writer;
     }
 
+    public DatadogOutputStream(DatadogWriter writer) {
+        super();
+        this.delegate = null;
+        this.writer = writer;
+    }
+
     @Override
     protected void eol(byte[] b, int len) throws IOException {
-        delegate.write(b, 0, len);
-        this.flush();
+        if(delegate != null) {
+            delegate.write(b, 0, len);
+            this.flush();
+        }
 
         String line = new String(b, 0, len, writer.getCharset());
         line = ConsoleNote.removeNotes(line).trim();
@@ -54,13 +62,17 @@ public class DatadogOutputStream extends LineTransformationOutputStream {
 
     @Override
     public void flush() throws IOException {
-        delegate.flush();
+        if(delegate != null) {
+            delegate.flush();
+        }
         super.flush();
     }
 
     @Override
     public void close() throws IOException {
-        delegate.close();
+        if(delegate != null){
+            delegate.close();
+        }
         super.close();
     }
 }

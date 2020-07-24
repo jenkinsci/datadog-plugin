@@ -34,18 +34,9 @@ import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
-import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
-import javax.annotation.Nonnull;
-
 import io.opentracing.Span;
 import io.opentracing.propagation.Format;
 import io.opentracing.util.GlobalTracer;
-import jenkins.scm.api.SCMHead;
-import jenkins.scm.api.SCMRevisionAction;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
@@ -54,11 +45,17 @@ import org.datadog.jenkins.plugins.datadog.events.BuildAbortedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildFinishedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildStartedEventImpl;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
 import org.datadog.jenkins.plugins.datadog.traces.BuildTextMapAdapter;
-import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+
+import javax.annotation.Nonnull;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 
 /**
@@ -127,7 +124,7 @@ public class DatadogBuildListener extends RunListener<Run> {
 
             // Traces
             final long startTimeMicros = buildData.getStartTime(0L) * 1000;
-            final Span buildSpan = GlobalTracer.get().buildSpan("jenkins.build")
+            final Span buildSpan = GlobalTracer.get().buildSpan("jenkins.pipeline")
                     .withStartTimestamp(startTimeMicros)
                     .start();
 
@@ -255,10 +252,10 @@ public class DatadogBuildListener extends RunListener<Run> {
             buildSpan.setTag("ci.provider", "jenkins");
             buildSpan.setTag(DDTags.LANGUAGE_TAG_KEY, "");
             buildSpan.setTag(DDTags.USER_NAME, buildData.getUserId());
-            buildSpan.setTag("build.id", buildData.getBuildId(""));
-            buildSpan.setTag("build.name", buildData.getJobName(""));
-            buildSpan.setTag("build.number", buildData.getBuildNumber(""));
-            buildSpan.setTag("build.workspace", buildData.getWorkspace(""));
+            buildSpan.setTag("pipeline.id", buildData.getBuildId(""));
+            buildSpan.setTag("pipeline.name", buildData.getJobName(""));
+            buildSpan.setTag("pipeline.number", buildData.getBuildNumber(""));
+            buildSpan.setTag("pipeline.workspace", buildData.getWorkspace(""));
             buildSpan.setTag("node.name", buildData.getNodeName(""));
             buildSpan.setTag("repository.url", buildData.getGitUrl(""));
             buildSpan.setTag("repository.branch", buildData.getBranch(""));
