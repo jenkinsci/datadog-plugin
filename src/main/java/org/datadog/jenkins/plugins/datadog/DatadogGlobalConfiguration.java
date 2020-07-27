@@ -587,6 +587,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
     /**
      * @deprecated replaced by {@link #getExcluded()}
+     * @return a String array containing the excluded global configuration.
     **/
     @Deprecated
     public String getBlacklist() {
@@ -604,7 +605,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     }
 
     /**
-     * @deprecated replaced by {@link #setExcluded()}
+     * @deprecated replaced by {@link #setExcluded(String)}
+     * @param jobs - a comma-separated list of jobs to exclude from monitoring.
     **/
     @Deprecated
     @DataBoundSetter
@@ -625,6 +627,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
     /**
      * @deprecated replaced by {@link #getIncluded()}
+     * @return a String array containing the included global configuration.
     **/
     @Deprecated
     public String getWhitelist() {
@@ -642,7 +645,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     }
 
     /**
-     * @deprecated replaced by {@link #setIncluded()}
+     * @deprecated replaced by {@link #setIncluded(String)}
+     * @param jobs - a comma-separated list of jobs to include for monitoring.
     **/
     @Deprecated
     @DataBoundSetter
