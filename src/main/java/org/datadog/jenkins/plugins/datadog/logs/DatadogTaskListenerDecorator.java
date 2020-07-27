@@ -43,7 +43,7 @@ public class DatadogTaskListenerDecorator extends TaskListenerDecorator {
     private static final Logger LOGGER = Logger.getLogger(DatadogTaskListenerDecorator.class.getName());
     private transient WorkflowRun run;
 
-    DatadogTaskListenerDecorator(WorkflowRun run) {
+    public DatadogTaskListenerDecorator(WorkflowRun run) {
         this.run = run;
     }
 
