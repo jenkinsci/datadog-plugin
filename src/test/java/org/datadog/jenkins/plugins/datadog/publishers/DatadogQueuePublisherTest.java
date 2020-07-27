@@ -44,7 +44,7 @@ public class DatadogQueuePublisherTest {
         
         jenkins.jenkins.getQueue().schedule(project);
 
-        // set all the computers offline so they can't execute any buils, filling up the queue
+        // set all the computers offline so they can't execute any buils, filling up the queue 
         for (Computer computer: jenkins.jenkins.getComputers()){
             computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
         }
