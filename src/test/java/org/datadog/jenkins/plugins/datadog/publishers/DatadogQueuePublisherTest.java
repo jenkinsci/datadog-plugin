@@ -94,6 +94,7 @@ public class DatadogQueuePublisherTest {
     @Test
     public void testQueueMetricsMultipleBuilds() throws Exception {
         String hostname = DatadogUtilities.getHostname(null);
+        String displayName = project.getDisplayName();
         final FreeStyleProject project = jenkins.createFreeStyleProject();
         project.getBuildersList().add(new SleepBuilder(10000));
         
@@ -107,7 +108,6 @@ public class DatadogQueuePublisherTest {
         }
         
         DatadogQueuePublisher queuePublisher = new DatadogQueuePublisher();
-        String displayName = project.getDisplayName();
         final String[] expectedTags = new String[2];
         expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
         expectedTags[1] = "job_name:" + displayName;
