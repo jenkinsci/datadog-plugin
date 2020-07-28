@@ -1,6 +1,6 @@
 package org.datadog.jenkins.plugins.datadog.publishers;
 
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -27,15 +27,11 @@ import hudson.slaves.OfflineCause;
 public class DatadogQueuePublisherTest {
     @ClassRule 
     public static JenkinsRule jenkins = new JenkinsRule();
-    public DatadogClientStub client = new DatadogClientStub();
-    DatadogQueuePublisher queuePublisher = new DatadogQueuePublisher();
+    private static DatadogClientStub client = new DatadogClientStub();
     
-    @Before
-    public void setup() throws Exception {
-        client = new DatadogClientStub();
+    @BeforeClass
+    public static void setup() throws Exception {
         ClientFactory.setTestClient(client);
-        queuePublisher = new DatadogQueuePublisher();
-        jenkins.jenkins.getQueue().clear();
     }
     
     @Test
@@ -62,7 +58,7 @@ public class DatadogQueuePublisherTest {
         final String[] expectedTags = new String[2];
         expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
         expectedTags[1] = "job_name:" + displayName;
-
+        DatadogQueuePublisher queuePublisher = new DatadogQueuePublisher();
         queuePublisher.doRun();
         client.assertMetric("jenkins.queue.job.in_queue", 1, hostname, expectedTags);
     }
@@ -94,8 +90,8 @@ public class DatadogQueuePublisherTest {
     @Test
     public void testQueueMetricsMultipleBuilds() throws Exception {
         String hostname = DatadogUtilities.getHostname(null);
-        String displayName = project.getDisplayName();
         final FreeStyleProject project = jenkins.createFreeStyleProject();
+        String displayName = project.getDisplayName();
         project.getBuildersList().add(new SleepBuilder(10000));
         
         for (int i = 0; i < 10; i++) {
