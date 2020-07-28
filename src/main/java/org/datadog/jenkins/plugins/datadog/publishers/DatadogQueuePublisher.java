@@ -36,6 +36,8 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -85,10 +87,9 @@ public class DatadogQueuePublisher extends PeriodicWork {
                 
                 String job_name;
                 Task task = item.task;
-                if (task instanceof FreeStyleProject){ 
+                if ((task instanceof FreeStyleProject) | (task instanceof WorkflowJob)) { 
                     job_name = task.getFullDisplayName();
                 } else {
-                    //TODO: type check for ExecutorStepExecution.PlaceholderTask when pipelines are supported
                     job_name = "unknown";
                 }
                 TagsUtil.addTagToTags(job_tags, "job_name", job_name);

@@ -1,16 +1,20 @@
 package org.datadog.jenkins.plugins.datadog.publishers;
 
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.SleepBuilder;
+import org.apache.commons.io.IOUtils;
 
 import java.util.Arrays;
 
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
+
+import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 
 import hudson.model.Messages;
 import hudson.model.ParametersAction;
@@ -23,11 +27,44 @@ import hudson.slaves.OfflineCause;
 public class DatadogQueuePublisherTest {
     @ClassRule 
     public static JenkinsRule jenkins = new JenkinsRule();
-    private static DatadogClientStub client = new DatadogClientStub();
+    public DatadogClientStub client = new DatadogClientStub();
+    DatadogQueuePublisher queuePublisher = new DatadogQueuePublisher();
     
-    @BeforeClass
-    public static void setup() throws Exception {
+    @Before
+    public void setup() throws Exception {
+        client = new DatadogClientStub();
         ClientFactory.setTestClient(client);
+        queuePublisher = new DatadogQueuePublisher();
+        jenkins.jenkins.getQueue().clear();
+    }
+    
+    @Test
+    public void testPipelineInQueue() throws Exception {
+        String hostname = DatadogUtilities.getHostname(null);
+        WorkflowJob job = jenkins.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationSuccess");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineDefinition.txt"),
+                "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        String displayName = job.getDisplayName();
+
+        // set all the computers offline so they can't execute any buils, filling up the queue
+        for (Computer computer: jenkins.jenkins.getComputers()){
+            computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
+        }
+        
+        // make sure there is a queue
+        for (int i = 0; i < 5; i++) {
+            jenkins.jenkins.getQueue().schedule(job, 10);
+        }
+
+        final String[] expectedTags = new String[2];
+        expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
+        expectedTags[1] = "job_name:" + displayName;
+
+        queuePublisher.doRun();
+        client.assertMetric("jenkins.queue.job.in_queue", 1, hostname, expectedTags);
     }
 
     @Test
@@ -53,11 +90,11 @@ public class DatadogQueuePublisherTest {
     
     }
     
+    
     @Test
     public void testQueueMetricsMultipleBuilds() throws Exception {
         String hostname = DatadogUtilities.getHostname(null);
         final FreeStyleProject project = jenkins.createFreeStyleProject();
-        String displayName = project.getDisplayName();
         project.getBuildersList().add(new SleepBuilder(10000));
         
         for (int i = 0; i < 10; i++) {
@@ -70,6 +107,7 @@ public class DatadogQueuePublisherTest {
         }
         
         DatadogQueuePublisher queuePublisher = new DatadogQueuePublisher();
+        String displayName = project.getDisplayName();
         final String[] expectedTags = new String[2];
         expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
         expectedTags[1] = "job_name:" + displayName;

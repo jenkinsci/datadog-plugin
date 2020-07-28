@@ -1,0 +1,11 @@
+pipeline {
+    agent none
+    stages {
+        stage('testing'){
+            steps {
+                echo "testing"
+                sleep 10s
+            }
+        }
+    }
+}
