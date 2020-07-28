@@ -27,7 +27,9 @@ package org.datadog.jenkins.plugins.datadog.clients;
 
 import com.timgroup.statsd.*;
 import datadog.opentracing.DDTracer;
+import datadog.trace.common.writer.DDAgentWriter;
 import hudson.util.Secret;
+import io.opentracing.Tracer;
 import io.opentracing.util.GlobalTracer;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
@@ -60,11 +62,13 @@ public class DogStatsDClient implements DatadogClient {
 
     private StatsDClient statsd;
     private Logger ddLogger;
+    private Tracer ddTracer;
     private String previousPayload;
 
     private String hostname = null;
     private Integer port = null;
     private Integer logCollectionPort = null;
+    private Integer traceCollectionPort = null;
     private boolean isStopped = true;
 
     /**
@@ -76,11 +80,11 @@ public class DogStatsDClient implements DatadogClient {
      * @return an singleton instance of the DogStatsDClient.
      */
     @SuppressFBWarnings(value={"DC_DOUBLECHECK", "RC_REF_COMPARISON"})
-    public static DatadogClient getInstance(String hostname, Integer port, Integer logCollectionPort){
+    public static DatadogClient getInstance(String hostname, Integer port, Integer logCollectionPort, Integer traceCollectionPort){
         // If the configuration has not changed, return the current instance without validation
         // since we've already validated and/or errored about the data
 
-        DogStatsDClient newInstance = new DogStatsDClient(hostname, port, logCollectionPort);
+        DogStatsDClient newInstance = new DogStatsDClient(hostname, port, logCollectionPort, traceCollectionPort);
         if (instance != null && instance.equals(newInstance)) {
             if (DogStatsDClient.failedLastValidation) {
                 return null;
@@ -104,14 +108,16 @@ public class DogStatsDClient implements DatadogClient {
         if (instance != null){
             instance.reinitialize(true);
             instance.reinitializeLogger(true);
+            instance.reinitializeTracer(true);
         }
         return instance;
     }
 
-    private DogStatsDClient(String hostname, Integer port, Integer logCollectionPort) {
+    private DogStatsDClient(String hostname, Integer port, Integer logCollectionPort, Integer traceCollectionPort) {
         this.hostname = hostname;
         this.port = port;
         this.logCollectionPort = logCollectionPort;
+        this.traceCollectionPort = traceCollectionPort;
     }
 
     public void validateConfiguration() throws IllegalArgumentException {
@@ -123,6 +129,10 @@ public class DogStatsDClient implements DatadogClient {
         }
         if (DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs()  && logCollectionPort == null) {
             logger.warning("Datadog Log Collection Port is not set properly");
+        }
+
+        if (DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildTraces()  && traceCollectionPort == null) {
+            logger.warning("Datadog Trace Collection Port is not set properly");
         }
         return;
     }
@@ -174,8 +184,6 @@ public class DogStatsDClient implements DatadogClient {
             this.stop();
         }
 
-        // Initialize the Tracer
-        initializeTracer();
         return !isStopped;
     }
 
@@ -218,8 +226,38 @@ public class DogStatsDClient implements DatadogClient {
         return true;
     }
 
+
+    /**
+     * reinitialize the Tracer Client
+     * @param force - force to reinitialize
+     * @return true if reinitialized properly otherwise false
+     */
+    private boolean reinitializeTracer(boolean force) {
+        if(this.ddTracer != null && !force) {
+            return true;
+        }
+
+        if(!DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildTraces() || this.traceCollectionPort == null) {
+            return false;
+        }
+
+        logger.info("Re/Initialize Datadog-Plugin Tracer: hostname = " + this.hostname + ", traceCollectionPort = " + this.traceCollectionPort);
+        final DDTracer.DDTracerBuilder tracerBuilder = DDTracer.builder();
+        if(this.traceCollectionPort != null){
+            tracerBuilder.writer(DDAgentWriter.builder().traceAgentPort(traceCollectionPort).build());
+        }
+
+        ddTracer = tracerBuilder.build();
+        return true;
+    }
+
     private void initializeTracer() {
-        final DDTracer tracer = DDTracer.builder().build();
+        final DDTracer.DDTracerBuilder tracerBuilder = DDTracer.builder();
+        if(this.traceCollectionPort != null){
+            tracerBuilder.writer(DDAgentWriter.builder().traceAgentPort(traceCollectionPort).build());
+        }
+
+        final DDTracer tracer = tracerBuilder.build();
         GlobalTracer.registerIfAbsent(tracer);
     }
 
