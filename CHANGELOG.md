@@ -1,8 +1,8 @@
 Changes
 =======
-# 1.2.0 / 2020-07-23
+# 1.1.3 / 2020-07-23
 ### Details
-https://github.com/jenkinsci/datadog-plugin/compare/datadog-1.1.2...datadog-1.2.0
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-1.1.2...datadog-1.1.3
 
 ### Changes
 * [Added] Use inclusive naming. See [#94](https://github.com/jenkinsci/datadog-plugin/pull/94).
