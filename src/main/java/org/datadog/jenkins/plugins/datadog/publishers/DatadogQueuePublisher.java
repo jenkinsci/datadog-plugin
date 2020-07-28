@@ -30,6 +30,7 @@ import hudson.model.FreeStyleProject;
 import hudson.model.PeriodicWork;
 import hudson.model.Queue;
 import hudson.model.Queue.Task;
+import hudson.model.Run;
 
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
@@ -37,7 +38,7 @@ import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-
+import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -89,6 +90,13 @@ public class DatadogQueuePublisher extends PeriodicWork {
                 Task task = item.task;
                 if ((task instanceof FreeStyleProject) | (task instanceof WorkflowJob)) { 
                     job_name = task.getFullDisplayName();
+                } else if (task instanceof ExecutorStepExecution.PlaceholderTask) {
+                    Run<?, ?> run = ((ExecutorStepExecution.PlaceholderTask) task).runForDisplay();
+                    if (run != null) {
+                        job_name = run.getParent().getFullName();
+                    } else {
+                        job_name = "unknown";
+                    }
                 } else {
                     job_name = "unknown";
                 }
