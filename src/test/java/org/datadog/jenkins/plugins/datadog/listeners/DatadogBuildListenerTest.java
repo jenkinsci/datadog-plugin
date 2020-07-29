@@ -54,7 +54,7 @@ public class DatadogBuildListenerTest {
     private Queue queue;
     private WorkflowRun workflowRun;
     EnvVars envVars;
-
+    
     @Before
     public void setUpMocks() {
         this.client = new DatadogClientStub();

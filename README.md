@@ -69,7 +69,7 @@ d.setTargetApiURL('https://api.datadoghq.com/api/')
 d.setTargetApiKey('<DATADOG_API_KEY>')
 
 // Customization, see dedicated section below
-d.setBlacklist('job1,job2')
+d.setExcluded('job1,job2')
 
 // If you want to collect logs
 d.setLogIntakeUrl('https://http-intake.logs.datadoghq.com/v1/input/')
@@ -95,7 +95,7 @@ d.setTargetPort(8125)
 d.setLogCollectionPort(8125)
 
 // Customization, see dedicated section below
-d.setBlacklist('job1,job2')
+d.setExcluded('job1,job2')
 
 // Save config
 d.save()
@@ -131,8 +131,8 @@ To customize your global configuration, in Jenkins navigate to `Manage Jenkins -
 
 | Customization              | Description                                                                                                                                                                                                                                 | Environment variable                          |
 |----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|
-| Blacklisted jobs           | A comma-separated list of regex used to exclude job names from monitoring, for example: `susans-job,johns-.*,prod_folder/prod_release`.                                                                                                      | `DATADOG_JENKINS_PLUGIN_BLACKLIST`            |
-| Whitelisted jobs           | A comma-separated list of regex used to include job names for monitoring, for example: `susans-job,johns-.*,prod_folder/prod_release`.                                                                                                          | `DATADOG_JENKINS_PLUGIN_WHITELIST`            |
+| Excluded jobs           | A comma-separated list of regex used to exclude job names from monitoring, for example: `susans-job,johns-.*,prod_folder/prod_release`.                                                                                                      | `DATADOG_JENKINS_PLUGIN_EXCLUDED`            |
+| Included jobs           | A comma-separated list of regex used to include job names for monitoring, for example: `susans-job,johns-.*,prod_folder/prod_release`.                                                                                                          | `DATADOG_JENKINS_PLUGIN_INCLUDED`            |
 | Global tag file            | The path to a workspace file containing a comma separated list of tags (not compatible with pipeline jobs).                                                                                                                                   | `DATADOG_JENKINS_PLUGIN_GLOBAL_TAG_FILE`      |
 | Global tags                | A comma-separated list of tags to apply to all metrics, events, and service checks.                                                                                                                                                         | `DATADOG_JENKINS_PLUGIN_GLOBAL_TAGS`          |
 | Global job tags            | A comma separated list of regex to match a job and a list of tags to apply to that job. **Note**: Tags can reference match groups in the regex using the `$` symbol, for example: `(.*?)_job_(*?)_release, owner:$1, release_env:$2, optional:Tag3` | `DATADOG_JENKINS_PLUGIN_GLOBAL_JOB_TAGS`      |
@@ -223,7 +223,7 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 | `jenkins.job.mttr`                     | MTTR: time between last failed job and current successful job. | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
 | `jenkins.job.pause_duration`            | Pause duration of build job (in seconds).                     | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
 | `jenkins.job.started`                  | Rate of started jobs.                                          | `branch`, `jenkins_url`, `job`, `node`, `user_id`                          |
-| `jenkins.job.stage_duration`           | Duration of individual stages.                                 | `jenkins_url`, `job`, `user_id`, `stage_name`, `stage_depth`, `stage_parent`|
+| `jenkins.job.stage_duration`           | Duration of individual stages.                                 | `jenkins_url`, `job`, `user_id`, `stage_name`, `stage_depth`, `stage_parent`, `result` |
 | `jenkins.job.waiting`                  | Time spent waiting for job to run (in milliseconds).           | `branch`, `jenkins_url`, `job`, `node`, `user_id`                          |
 | `jenkins.node.count`                   | Total number of node.                                          | `jenkins_url`                                                              |
 | `jenkins.node.offline`                 | Offline nodes count.                                           | `jenkins_url`                                                              |

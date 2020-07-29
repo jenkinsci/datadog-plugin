@@ -3,6 +3,7 @@ package org.datadog.jenkins.plugins.datadog.listeners;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import hudson.model.Result;
 import hudson.model.labels.LabelAtom;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -10,18 +11,22 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.math3.exception.NullArgumentException;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
+import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.actions.TimingAction;
+import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Assert;
@@ -83,14 +88,8 @@ public class DatadogGraphListenerTest {
 
         listener.onNewHead(endNode);
         String hostname = DatadogUtilities.getHostname(null);
-        String[] expectedTags = new String[]{
-                "jenkins_url:" + DatadogUtilities.getJenkinsUrl(),
-                "user_id:anonymous",
-                "stage_name:low",
-                "job:pipeline",
-                "parent_stage_name:medium",
-                "stage_depth:2"
-        };
+        String[] expectedTags = new String[] { "jenkins_url:" + DatadogUtilities.getJenkinsUrl(), "user_id:anonymous",
+                "stage_name:low", "job:pipeline", "parent_stage_name:medium", "stage_depth:2", "result:SUCCESS" };
         clientStub.assertMetric("jenkins.job.stage_duration", endTime - startTime, hostname, expectedTags);
     }
 
@@ -114,7 +113,8 @@ public class DatadogGraphListenerTest {
         String[] baseTags = new String[]{
                 "jenkins_url:" + DatadogUtilities.getJenkinsUrl(),
                 "user_id:anonymous",
-                "job:pipelineIntegration"
+                "job:pipelineIntegration",
+                "result:SUCCESS"
         };
         String[] depths = new String[]{ "2", "2", "2", "1", "1", "0", "0" };
         String[] stageNames = new String[]{ "Windows-1", "Windows-2", "Windows-3", "Test On Windows", "Test On Linux", "Parallel tests",
@@ -126,10 +126,31 @@ public class DatadogGraphListenerTest {
             expectedTags[expectedTags.length - 3] = "stage_depth:" + depths[i];
             expectedTags[expectedTags.length - 2] = "stage_name:" + stageNames[i];
             expectedTags[expectedTags.length - 1] = "parent_stage_name:" + parentNames[i];
-
             clientStub.assertMetric("jenkins.job.stage_duration", hostname, expectedTags);
         }
-
+    }
+    
+    @Test
+    public void testIntegrationNoFailureTag() throws Exception {
+        jenkinsRule.createOnlineSlave(new LabelAtom("windows"));
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationSuccess");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineSuccess.txt"),
+                "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        job.scheduleBuild2(0).get();
+        String hostname = DatadogUtilities.getHostname(null);
+        String[] tags = new String[]{
+                "jenkins_url:" + DatadogUtilities.getJenkinsUrl(),
+                "user_id:anonymous",
+                "job:pipelineIntegrationSuccess",
+                "result:SUCCESS",
+                "stage_depth:0",
+                "stage_name:test",
+                "parent_stage_name:root"               
+        };
+        clientStub.assertMetric("jenkins.job.stage_duration", hostname, tags);
     }
 
     @Test
@@ -143,6 +164,33 @@ public class DatadogGraphListenerTest {
 
         when(node.getAction(ThreadNameAction.class)).thenReturn(mock(ThreadNameAction.class));
         Assert.assertFalse(listener.isStageNode(node));
+    }
+    
+    @Test 
+    public void getResultTagTest(){
+        // passed with null
+        Assert.assertThrows(NullPointerException.class, () -> {
+            listener.getResultTag(null);
+        });
+        
+        FlowNode node = mock(FlowNode.class);
+        
+        // when getError returns an error
+        when(node.getError()).thenReturn(new ErrorAction(new NullArgumentException()));
+        Assert.assertEquals(listener.getResultTag(node), "ERROR");
+
+        // when there's a warning action 
+        when(node.getError()).thenReturn(null);
+        when(node.getPersistentAction(WarningAction.class)).thenReturn(new WarningAction(Result.SUCCESS));
+        Assert.assertEquals(listener.getResultTag(node), "SUCCESS");
+
+        when(node.getPersistentAction(WarningAction.class)).thenReturn(new WarningAction(Result.NOT_BUILT));
+        Assert.assertEquals(listener.getResultTag(node), "NOT_BUILT");
+
+        // when the result is unknown
+        when(node.getPersistentAction(WarningAction.class)).thenReturn(null);
+        Assert.assertEquals(listener.getResultTag(node), "SUCCESS");
+
     }
 
     @Test

@@ -70,7 +70,7 @@ public class LogCollectionTest {
 
     @Test
     public void testPipelineOnWorkerNode() throws Exception {
-        WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "pipelineOnSlave");
+        WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "pipelineOnWorkerNode");
         p.setDefinition(new CpsFlowDefinition("node('test') {echo 'foo'}\n", true));
         p.scheduleBuild2(0).get();
         Assert.assertTrue(stubClient.logLines.contains("foo"));

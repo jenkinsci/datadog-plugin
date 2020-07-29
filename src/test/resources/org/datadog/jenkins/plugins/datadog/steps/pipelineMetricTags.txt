@@ -1,0 +1,16 @@
+def DD_TEST = "bar"
+pipeline {
+    agent {
+        label "test"
+    }
+    options {
+      datadog(collectLogs: false, tags: ["foo:${DD_TEST}", "${DD_TEST}:foo"])
+    }
+    stages {
+        stage('Stage'){
+            steps {
+                echo 'Done'
+            }
+        }
+    }
+}

@@ -37,6 +37,12 @@ import hudson.model.Run;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Logger;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
@@ -52,6 +58,10 @@ import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
 import org.jenkinsci.plugins.workflow.actions.LogAction;
+import org.jenkinsci.plugins.workflow.actions.ErrorAction;
+import org.jenkinsci.plugins.workflow.actions.LabelAction;
+import org.jenkinsci.plugins.workflow.actions.NotExecutedNodeAction;
+import org.jenkinsci.plugins.workflow.actions.QueueItemAction;
 import org.jenkinsci.plugins.workflow.actions.StageAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.actions.TimingAction;
@@ -119,16 +129,16 @@ public class DatadogGraphListener implements GraphListener {
             return;
         }
 
-        BuildData buildData = null;
         try {
-            buildData = new BuildData(run, flowNode.getExecution().getOwner().getListener());
+            String result = getResultTag(endNode);
+            BuildData buildData = new BuildData(run, flowNode.getExecution().getOwner().getListener());
             String hostname = buildData.getHostname("");
             Map<String, Set<String>> tags = buildData.getTags();
             TagsUtil.addTagToTags(tags, "stage_name", getStageName(startNode));
             TagsUtil.addTagToTags(tags, "parent_stage_name", directParentName);
             TagsUtil.addTagToTags(tags, "stage_depth", String.valueOf(stageDepth));
-            tags.remove("result"); // Jenkins sometimes consider the build has a result even though it's still running.
-                                        // Stage metrics should never report a result.
+            // Add custom result tag
+            TagsUtil.addTagToTags(tags, "result", result);
             client.gauge("jenkins.job.stage_duration", getTime(startNode, endNode), hostname, tags);
         } catch (IOException | InterruptedException e) {
             DatadogUtilities.severe(logger, e, "Unable to submit the stage duration metric for " + getStageName(startNode));
@@ -203,7 +213,7 @@ public class DatadogGraphListener implements GraphListener {
         sendPipelineNodeTrace(tracer, pipelineNode, buildSpanContext);
     }*/
 
-    private void sendPipelineNodeTrace(final Tracer tracer, final BuildPipelineNode current, final SpanContext parentSpanContext) {
+    /*private void sendPipelineNodeTrace(final Tracer tracer, final BuildPipelineNode current, final SpanContext parentSpanContext) {
         Span span = null;
 
         if(isTraceable(current)) {
@@ -309,9 +319,9 @@ public class DatadogGraphListener implements GraphListener {
 
             span.finish(endTime * 1000);
         }
-    }
+    }*/
 
-    private boolean isTraceable(BuildPipelineNode current) {
+    /*private boolean isTraceable(BuildPipelineNode current) {
         final FlowNode flowNode = current.getNode();
 
         if(flowNode instanceof BlockEndNode){
@@ -321,7 +331,7 @@ public class DatadogGraphListener implements GraphListener {
             return flowNode instanceof StepAtomNode;
         }
     }
-
+*/
 
     private boolean isMonitored(FlowNode flowNode) {
         // Filter the node out if it is not the end of step
@@ -330,7 +340,7 @@ public class DatadogGraphListener implements GraphListener {
             return false;
         }
 
-        // Filter the node if the job has been blacklisted from the Datadog plugin configuration.
+        // Filter the node if the job has been excluded from the Datadog plugin configuration.
         WorkflowRun run = getRun(flowNode);
         if (run == null || !DatadogUtilities.isJobTracked(run.getParent().getFullName())) {
             return false;
@@ -338,7 +348,7 @@ public class DatadogGraphListener implements GraphListener {
 
         // Filter the node out if it is not the end of a stage.
         // The plugin only monitors timing information of stages
-        if(!isStageNode(((StepEndNode) flowNode).getStartNode())){
+        if (!isStageNode(((StepEndNode) flowNode).getStartNode())) {
             return false;
         }
 
@@ -386,13 +396,13 @@ public class DatadogGraphListener implements GraphListener {
         return flowNode.getDisplayName();
     }
 
-    long getTime(FlowNode node) {
+/*    long getTime(FlowNode node) {
         TimingAction time = node.getAction(TimingAction.class);
         if(time != null) {
             return time.getStartTime();
         }
         return 0;
-    }
+    }*/
 
     long getTime(FlowNode startNode, FlowNode endNode) {
         TimingAction startTime = startNode.getAction(TimingAction.class);
@@ -404,7 +414,7 @@ public class DatadogGraphListener implements GraphListener {
         return 0;
     }
 
-    static @CheckForNull
+    /*static @CheckForNull
     BuildSpanAction buildTraceActionFor(final FlowExecution exec) {
         BuildSpanAction buildSpanAction = null;
         Run<?, ?> run = runFor(exec);
@@ -427,7 +437,7 @@ public class DatadogGraphListener implements GraphListener {
         }
 
         return result.toString();
-    }
+    }*/
 
     /**
      * Gets the jenkins run object of the specified executing workflow.
@@ -450,7 +460,29 @@ public class DatadogGraphListener implements GraphListener {
         }
     }
 
-    public DatadogTracePipelineLogic getTracePipelineLogic(){
+    public DatadogTracePipelineLogic getTracePipelineLogic() {
         return DatadogTracePipelineLogic.get();
+    }
+
+    String getResultTag(@Nonnull FlowNode endNode) {
+        ErrorAction error = endNode.getError();
+        if (error != null) {
+            return "ERROR";
+        }
+        WarningAction warningAction = endNode.getPersistentAction(WarningAction.class);
+        if (warningAction != null) {
+            Result result = warningAction.getResult();
+            // Result could be SUCCESS, NOT_BUILT, FAILURE, etc https://javadoc.jenkins-ci.org/hudson/model/Result.html
+            return result.toString();
+        }
+        // Other possibilities are queued, launched, unknown: https://javadoc.jenkins.io/plugin/workflow-api/org/jenkinsci/plugins/workflow/actions/QueueItemAction.QueueState.html
+        if (QueueItemAction.getNodeState(endNode) == QueueItemAction.QueueState.CANCELLED) {
+            return "CANCELLED";
+        }
+        FlowExecution exec = endNode.getExecution();
+        if ((exec != null && exec.isComplete()) || NotExecutedNodeAction.isExecuted(endNode)) {
+            return "SUCCESS";
+        }
+        return "UNKNOWN";
     }
 }

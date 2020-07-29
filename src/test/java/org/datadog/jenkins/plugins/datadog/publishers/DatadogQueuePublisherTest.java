@@ -1,6 +1,6 @@
 package org.datadog.jenkins.plugins.datadog.publishers;
 
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -17,17 +17,22 @@ import hudson.model.ParametersAction;
 import hudson.model.StringParameterValue;
 import hudson.model.Cause;
 import hudson.model.Computer;
+import hudson.model.Queue;
 import hudson.model.FreeStyleProject;
 import hudson.slaves.OfflineCause;
 
 public class DatadogQueuePublisherTest {
     @ClassRule 
     public static JenkinsRule jenkins = new JenkinsRule();
-    private static DatadogClientStub client = new DatadogClientStub();
+    public DatadogClientStub client;
+    DatadogQueuePublisher queuePublisher = new DatadogQueuePublisher();
     
-    @BeforeClass
-    public static void setup() throws Exception {
+    @Before
+    public void setup() throws Exception {
+        client = new DatadogClientStub();
+        queuePublisher = new DatadogQueuePublisher();
         ClientFactory.setTestClient(client);
+        jenkins.jenkins.getQueue().clear();
     }
 
     @Test
@@ -39,11 +44,10 @@ public class DatadogQueuePublisherTest {
         
         jenkins.jenkins.getQueue().schedule(project);
 
-        // set all the computers offline so they can't execute any buils, filling up the queue
+        // set all the computers offline so they can't execute any buils, filling up the queue 
         for (Computer computer: jenkins.jenkins.getComputers()){
             computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
         }
-        DatadogQueuePublisher queuePublisher = new DatadogQueuePublisher();
 
         final String[] expectedTags = new String[2];
         expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
@@ -69,7 +73,6 @@ public class DatadogQueuePublisherTest {
             computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
         }
         
-        DatadogQueuePublisher queuePublisher = new DatadogQueuePublisher();
         final String[] expectedTags = new String[2];
         expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
         expectedTags[1] = "job_name:" + displayName;
@@ -97,9 +100,7 @@ public class DatadogQueuePublisherTest {
         for (Computer computer: jenkins.jenkins.getComputers()){
             computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
         }
-        
-        DatadogQueuePublisher queuePublisher = new DatadogQueuePublisher();
-        
+            
         final String[] expectedTags = new String[2];
         expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
         expectedTags[1] = "job_name:test7";
@@ -131,5 +132,45 @@ public class DatadogQueuePublisherTest {
         client.assertMetric("jenkins.queue.job.buildable", 1, hostname, expectedTags);
         client.assertMetric("jenkins.queue.job.buildable", 1, hostname, expectedTags1);
         client.assertMetric("jenkins.queue.job.buildable", 1, hostname, expectedTags2);
+    }
+    
+    @Test
+    public void testAllQueueMetrics() throws Exception {
+        String hostname = DatadogUtilities.getHostname(null);
+        
+        String displayName = "";
+        for (int i = 0; i < 10; i++) {
+            FreeStyleProject project = jenkins.createFreeStyleProject();
+            displayName = project.getDisplayName();
+            project.getBuildersList().add(new SleepBuilder(10000));
+            project.scheduleBuild(0, new Cause.RemoteCause("host",String.valueOf(i)), new ParametersAction(new StringParameterValue("param", String.valueOf(i))));
+        }
+
+        // set all the computers offline so they can't execute any builds, filling up the queue
+        for (Computer computer: jenkins.jenkins.getComputers()){
+            computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
+        }
+                
+        final String[] expectedTags = new String[1];
+        expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
+        
+        queuePublisher.doRun();
+    
+        Queue queueStats = jenkins.jenkins.getQueue();
+        int size = queueStats.getItems().length;
+        int buildable = queueStats.countBuildableItems();
+        int pending = queueStats.getPendingItems().size();
+        
+        // Make sure values are consistent across jenkins.queue.* and jenkins.queue.job.* metrics
+        client.assertMetric("jenkins.queue.size", size, hostname, expectedTags);
+        client.assertMetricValues("jenkins.queue.job.in_queue", 1, hostname, size);
+        
+        client.assertMetric("jenkins.queue.buildable", size, hostname, expectedTags);
+        client.assertMetricValues("jenkins.queue.job.buildable", 1, hostname, buildable);
+        
+        client.assertMetric("jenkins.queue.pending", pending, hostname, expectedTags);
+        client.assertMetricValues("jenkins.queue.job.pending", 1, hostname, pending);
+        client.assertMetricValues("jenkins.queue.job.pending", 0, hostname, size);
+
     }
 }
