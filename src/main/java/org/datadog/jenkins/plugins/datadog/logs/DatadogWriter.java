@@ -28,7 +28,6 @@ package org.datadog.jenkins.plugins.datadog.logs;
 import hudson.model.Run;
 import io.opentracing.SpanContext;
 import io.opentracing.propagation.Format;
-import io.opentracing.util.GlobalTracer;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
@@ -39,7 +38,6 @@ import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildTextMapAdapter;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.logging.Logger;
@@ -111,7 +109,8 @@ public class DatadogWriter {
         if(spanContext == null && run.getAction(BuildSpanAction.class) != null) {
             final BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
             if(buildSpanAction != null){
-                return GlobalTracer.get().extract(Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatation()));
+                final DatadogClient client = ClientFactory.getClient();
+                return client.tracer().extract(Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatation()));
             }
         }
         return spanContext;

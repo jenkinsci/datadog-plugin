@@ -25,11 +25,15 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.clients;
 
+import static org.mockito.Mockito.mock;
+
 import hudson.util.Secret;
+import io.opentracing.Tracer;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.junit.Assert;
+import org.mockito.Mockito;
 
 import java.util.*;
 
@@ -38,11 +42,13 @@ public class DatadogClientStub implements DatadogClient {
     public List<DatadogMetric> metrics;
     public List<DatadogMetric> serviceChecks;
     public List<String> logLines;
+    public Tracer tracer;
 
     public DatadogClientStub() {
         this.metrics = new ArrayList<>();
         this.serviceChecks = new ArrayList<>();
         this.logLines = new ArrayList<>();
+        this.tracer = mock(Tracer.class);
     }
 
     @Override
@@ -139,6 +145,11 @@ public class DatadogClientStub implements DatadogClient {
         return true;
     }
 
+    @Override
+    public Tracer tracer() {
+        return this.tracer;
+    }
+
     public boolean assertMetric(String name, double value, String hostname, String[] tags) {
         DatadogMetric m = new DatadogMetric(name, value, hostname, Arrays.asList(tags));
         if (this.metrics.contains(m)) {
@@ -199,6 +210,10 @@ public class DatadogClientStub implements DatadogClient {
         return false;
     }
 
+    public boolean assertTrace() {
+        return false;
+    }
+
     public static List<String> convertTagMapToList(Map<String, Set<String>> tags){
         List<String> result = new ArrayList<>();
         for (String name : tags.keySet()) {
@@ -217,4 +232,6 @@ public class DatadogClientStub implements DatadogClient {
         tags.put(name, v);
         return tags;
     }
+
+
 }

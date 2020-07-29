@@ -25,24 +25,27 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.clients;
 
-import com.timgroup.statsd.*;
+import com.timgroup.statsd.Event;
+import com.timgroup.statsd.NonBlockingStatsDClient;
+import com.timgroup.statsd.ServiceCheck;
+import com.timgroup.statsd.StatsDClient;
 import datadog.opentracing.DDTracer;
-import datadog.trace.common.writer.DDAgentWriter;
 import hudson.util.Secret;
 import io.opentracing.Tracer;
-import io.opentracing.util.GlobalTracer;
+import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
-import org.apache.commons.lang.StringUtils;
 
 import java.net.ConnectException;
 import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.*;
+import java.util.logging.Handler;
+import java.util.logging.Logger;
+import java.util.logging.SocketHandler;
 
 /**
  * This class is used to collect all methods that has to do with transmitting
@@ -243,24 +246,14 @@ public class DogStatsDClient implements DatadogClient {
 
         logger.info("Re/Initialize Datadog-Plugin Tracer: hostname = " + this.hostname + ", traceCollectionPort = " + this.traceCollectionPort);
         final DDTracer.DDTracerBuilder tracerBuilder = DDTracer.builder();
-        if(this.traceCollectionPort != null){
+        //TODO Enable traceCollectionPort when APM Java Tracer 0.59.0 was released.
+        /*if(this.traceCollectionPort != null){
             tracerBuilder.writer(DDAgentWriter.builder().traceAgentPort(traceCollectionPort).build());
-        }
+        }*/
 
         ddTracer = tracerBuilder.build();
         return true;
     }
-
-    private void initializeTracer() {
-        final DDTracer.DDTracerBuilder tracerBuilder = DDTracer.builder();
-        if(this.traceCollectionPort != null){
-            tracerBuilder.writer(DDAgentWriter.builder().traceAgentPort(traceCollectionPort).build());
-        }
-
-        final DDTracer tracer = tracerBuilder.build();
-        GlobalTracer.registerIfAbsent(tracer);
-    }
-
 
     private boolean stop(){
         if (this.statsd != null){
@@ -472,4 +465,11 @@ public class DogStatsDClient implements DatadogClient {
         }
         return true;
     }
+
+    @Override
+    public Tracer tracer() {
+        return this.ddTracer;
+    }
+
+
 }

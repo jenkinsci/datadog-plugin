@@ -1,8 +1,14 @@
 package org.datadog.jenkins.plugins.datadog.model;
 
-import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.BuildStageKey;
+import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.BuildPipelineNodeKey;
 
-import java.util.Comparator;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
+import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
+import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
+
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,20 +19,37 @@ import java.util.Map;
  */
 public class BuildPipeline {
 
-    private final Map<List<BuildStageKey>, BuildPipelineNode> stagesByPath;
+    private final Map<List<BuildPipelineNodeKey>, BuildPipelineNode> stagesByPath;
     private BuildPipelineNode root;
-
-    public static BuildPipeline newPipeline() {
-        return new BuildPipeline();
-    }
 
     public BuildPipeline() {
         this.stagesByPath = new HashMap<>();
-        this.root = BuildPipelineNode.buildStage("initial", "initial").build();
+        this.root = new BuildPipelineNode("initial", "initial");
     }
 
-    public BuildPipelineNode addStage(final List<BuildStageKey> stageRelations, final BuildPipelineNode stage) {
-        return stagesByPath.put(stageRelations, stage);
+    public BuildPipelineNode add(final FlowNode node) {
+        final BuildPipelineNode buildNode = buildPipelineNode(node);
+        if(buildNode == null) {
+            return null;
+        }
+
+        final List<BuildPipelineNodeKey> buildNodeRelations = new ArrayList<>();
+        buildNodeRelations.add(buildNode.getKey());
+        for (final BlockStartNode startNode : node.iterateEnclosingBlocks()) {
+            buildNodeRelations.add(new BuildPipelineNodeKey(startNode.getId(), startNode.getDisplayName()));
+        }
+
+        Collections.reverse(buildNodeRelations);
+        return stagesByPath.put(buildNodeRelations, buildNode);
+    }
+
+    private BuildPipelineNode buildPipelineNode(FlowNode node) {
+        if(node instanceof BlockEndNode) {
+            return new BuildPipelineNode((BlockEndNode) node);
+        } else if(node instanceof StepAtomNode) {
+            return new BuildPipelineNode((StepAtomNode) node);
+        }
+        return null;
     }
 
     /**
@@ -43,8 +66,8 @@ public class BuildPipeline {
      *               -- stage3
      **/
     public BuildPipelineNode buildTree() {
-        for(Map.Entry<List<BuildStageKey>, BuildPipelineNode> entry : stagesByPath.entrySet()){
-            final List<BuildStageKey> pathStages = entry.getKey();
+        for(Map.Entry<List<BuildPipelineNodeKey>, BuildPipelineNode> entry : stagesByPath.entrySet()){
+            final List<BuildPipelineNodeKey> pathStages = entry.getKey();
             final BuildPipelineNode stage = entry.getValue();
             buildTree(pathStages, root, stage);
         }
@@ -66,34 +89,34 @@ public class BuildPipeline {
         for(BuildPipelineNode stage : stages) {
             sortSiblingsByStartTime(stage.getChildren());
         }
-        stages.sort(new BuildStageComparator());
+        stages.sort(new BuildPipelineNode.BuildPipelineNodeComparator());
     }
 
-    private void completeInformation(final List<BuildPipelineNode> stages, final BuildPipelineNode parent) {
-        for(int i = 0; i < stages.size(); i++) {
-            final BuildPipelineNode stage = stages.get(i);
-            final Long endTime = stage.getEndTime();
-            if(endTime == null) {
-                if(i + 1 < stages.size()) {
-                    final BuildPipelineNode sibling = stages.get(i + 1);
-                    stage.setEndTime(sibling.getStartTime());
+    private void completeInformation(final List<BuildPipelineNode> nodes, final BuildPipelineNode parent) {
+        for(int i = 0; i < nodes.size(); i++) {
+            final BuildPipelineNode node = nodes.get(i);
+            final Long endTime = node.getEndTime();
+            if(endTime == -1L) {
+                if(i + 1 < nodes.size()) {
+                    final BuildPipelineNode sibling = nodes.get(i + 1);
+                    node.setEndTime(sibling.getStartTime());
                 } else {
-                    stage.setEndTime(parent.getEndTime());
+                    node.setEndTime(parent.getEndTime());
                 }
             }
 
-            completeInformation(stage.getChildren(), stage);
+            completeInformation(node.getChildren(), node);
         }
     }
 
-    private void buildTree(List<BuildStageKey> pathStages, BuildPipelineNode parent, BuildPipelineNode stage) {
+    private void buildTree(List<BuildPipelineNodeKey> pathStages, BuildPipelineNode parent, BuildPipelineNode stage) {
         if(pathStages.isEmpty()) {
             return;
         }
 
-        final BuildStageKey buildStageId = pathStages.get(0);
+        final BuildPipelineNodeKey buildNodeKey = pathStages.get(0);
         if(pathStages.size() == 1){
-            final BuildPipelineNode child = parent.getChild(buildStageId);
+            final BuildPipelineNode child = parent.getChild(buildNodeKey);
             if (child == null) {
                 parent.addChild(stage);
             } else {
@@ -101,30 +124,12 @@ public class BuildPipeline {
             }
 
         } else {
-            BuildPipelineNode child = parent.getChild(buildStageId);
+            BuildPipelineNode child = parent.getChild(buildNodeKey);
             if(child == null) {
-                child = BuildPipelineNode.buildStage(buildStageId).build();
+                child = new BuildPipelineNode(buildNodeKey);
                 parent.addChild(child);
             }
             buildTree(pathStages.subList(1, pathStages.size()), child, stage);
         }
     }
-
-    private static class BuildStageComparator implements Comparator<BuildPipelineNode> {
-
-        @Override
-        public int compare(BuildPipelineNode o1, BuildPipelineNode o2) {
-            if(o1.getStartTime() == null || o2.getStartTime() == null) {
-                return 0;
-            }
-
-            if(o1.getStartTime() < o2.getStartTime()) {
-                return -1;
-            } else if (o1.getStartTime() > o2.getStartTime()){
-                return 1;
-            }
-            return 0;
-        }
-    }
-
 }

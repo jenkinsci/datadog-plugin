@@ -27,16 +27,12 @@ package org.datadog.jenkins.plugins.datadog.listeners;
 
 import com.cloudbees.workflow.rest.external.RunExt;
 import com.cloudbees.workflow.rest.external.StageNodeExt;
-import datadog.trace.api.DDTags;
 import hudson.Extension;
 import hudson.model.Queue;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
-import io.opentracing.Span;
-import io.opentracing.propagation.Format;
-import io.opentracing.util.GlobalTracer;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
@@ -45,9 +41,7 @@ import org.datadog.jenkins.plugins.datadog.events.BuildAbortedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildFinishedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildStartedEventImpl;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
-import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
-import org.datadog.jenkins.plugins.datadog.traces.BuildTextMapAdapter;
+import org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import javax.annotation.Nonnull;
@@ -123,15 +117,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             client.incrementCounter("jenkins.job.started", hostname, tags);
 
             // Traces
-            final long startTimeMicros = buildData.getStartTime(0L) * 1000;
-            final Span buildSpan = GlobalTracer.get().buildSpan("jenkins.pipeline")
-                    .withStartTimestamp(startTimeMicros)
-                    .start();
-
-            BuildSpanManager.get().put(buildData.getBuildTag(""), buildSpan);
-            final BuildSpanAction buildSpanAction = BuildSpanAction.newAction();
-            GlobalTracer.get().inject(buildSpan.context(), Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatation()));
-            run.addAction(buildSpanAction);
+            getTraceBuildLogic().onStarted(buildData, run);
 
             logger.fine("End DatadogBuildListener#onStarted");
         } catch (Exception e) {
@@ -240,36 +226,8 @@ public class DatadogBuildListener extends RunListener<Run> {
             }
 
             // APM Traces
-            final Span buildSpan = BuildSpanManager.get().remove(buildData.getBuildTag(""));
-            if(buildSpan == null) {
-                return;
-            }
+            getTraceBuildLogic().onCompleted(buildData);
 
-            final long endTimeMicros = buildData.getEndTime(0L) * 1000;
-            buildSpan.setTag(DDTags.SERVICE_NAME, "jenkins");
-            buildSpan.setTag(DDTags.RESOURCE_NAME, buildData.getJobName(null));
-            buildSpan.setTag(DDTags.SPAN_TYPE, "ci");
-            buildSpan.setTag("ci.provider", "jenkins");
-            buildSpan.setTag(DDTags.LANGUAGE_TAG_KEY, "");
-            buildSpan.setTag(DDTags.USER_NAME, buildData.getUserId());
-            buildSpan.setTag("pipeline.id", buildData.getBuildId(""));
-            buildSpan.setTag("pipeline.name", buildData.getJobName(""));
-            buildSpan.setTag("pipeline.number", buildData.getBuildNumber(""));
-            buildSpan.setTag("pipeline.workspace", buildData.getWorkspace(""));
-            buildSpan.setTag("node.name", buildData.getNodeName(""));
-            buildSpan.setTag("repository.url", buildData.getGitUrl(""));
-            buildSpan.setTag("repository.branch", buildData.getBranch(""));
-            buildSpan.setTag("repository.commit", buildData.getGitCommit(""));
-            buildSpan.setTag("jenkins.tag", buildData.getBuildTag(""));
-            buildSpan.setTag("jenkins.executor.number", buildData.getExecutorNumber(""));
-
-            final String result = buildData.getResult("");
-            buildSpan.setTag("jenkins.result", result);
-            if(Result.FAILURE.toString().equals(result)) {
-                buildSpan.setTag("error", true);
-            }
-
-            buildSpan.finish(endTimeMicros);
             logger.fine("End DatadogBuildListener#onCompleted");
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, null);
@@ -374,5 +332,9 @@ public class DatadogBuildListener extends RunListener<Run> {
 
     public DatadogClient getDatadogClient() {
         return ClientFactory.getClient();
+    }
+
+    public DatadogTraceBuildLogic getTraceBuildLogic(){
+        return DatadogTraceBuildLogic.get();
     }
 }

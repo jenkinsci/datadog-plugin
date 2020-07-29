@@ -1,7 +1,6 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
 import org.datadog.jenkins.plugins.datadog.model.StepData;
-import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 
 import java.util.HashMap;

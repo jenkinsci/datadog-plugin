@@ -27,6 +27,7 @@ package org.datadog.jenkins.plugins.datadog;
 
 import com.timgroup.statsd.ServiceCheck;
 import hudson.util.Secret;
+import io.opentracing.Tracer;
 
 import java.util.Map;
 import java.util.Set;
@@ -133,5 +134,11 @@ public interface DatadogClient {
      * @return a boolean to signify the success or failure of the request.
      */
     public boolean sendLogs(String payload);
+
+    /**
+     * Get configured tracer.
+     * @return a OpenTracing tracer.
+     */
+    public Tracer tracer();
 
 }

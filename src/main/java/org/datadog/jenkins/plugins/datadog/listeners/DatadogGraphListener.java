@@ -25,10 +25,8 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.listeners;
 
-import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.BuildStageBuilder;
-import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.BuildStageKey;
-import static org.datadog.jenkins.plugins.datadog.model.StepData.StepEnvVars;
 import static org.datadog.jenkins.plugins.datadog.model.StepData.StepComputer;
+import static org.datadog.jenkins.plugins.datadog.model.StepData.StepEnvVars;
 
 import datadog.trace.api.DDTags;
 import hudson.Extension;
@@ -39,20 +37,16 @@ import hudson.model.Run;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
-import io.opentracing.propagation.Format;
-import io.opentracing.util.GlobalTracer;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.logs.DatadogOutputStream;
 import org.datadog.jenkins.plugins.datadog.logs.DatadogWriter;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.model.BuildPipeline;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.StepData;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
-import org.datadog.jenkins.plugins.datadog.traces.BuildTextMapAdapter;
-import org.datadog.jenkins.plugins.datadog.traces.StepDataManager;
+import org.datadog.jenkins.plugins.datadog.traces.DatadogTracePipelineLogic;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
@@ -69,10 +63,7 @@ import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.flow.GraphListener;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
-import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
-import org.jenkinsci.plugins.workflow.graph.StepNode;
-import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import javax.annotation.CheckForNull;
@@ -81,10 +72,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -101,9 +89,7 @@ public class DatadogGraphListener implements GraphListener {
     @Override
     public void onNewHead(FlowNode flowNode) {
         //APM Traces
-        if(flowNode instanceof FlowEndNode) {
-            sendPipelineTraces((FlowEndNode) flowNode);
-        }
+        getTracePipelineLogic().onNewHead(runFor(flowNode.getExecution()), flowNode);
 
         if (!isMonitored(flowNode)) {
             return;
@@ -149,7 +135,7 @@ public class DatadogGraphListener implements GraphListener {
         }
     }
 
-    private void sendPipelineTraces(FlowEndNode flowEndNode) {
+/*    private void sendPipelineTraces(FlowEndNode flowEndNode) {
         final BuildPipeline pipeline = new BuildPipeline();
         final DepthFirstScanner scanner = new DepthFirstScanner();
         scanner.setup(flowEndNode.getExecution().getCurrentHeads());
@@ -191,7 +177,7 @@ public class DatadogGraphListener implements GraphListener {
 
             final BuildPipelineNode stage = stageBuilder.build();
 
-            final List<BuildStageKey> stageRelations = new ArrayList<>();
+            final List<BuildPipelineNodeKey> stageRelations = new ArrayList<>();
             stageRelations.add(stage.getKey());
             for (BlockStartNode node : flowNode.iterateEnclosingBlocks()) {
                 stageRelations.add(BuildPipelineNode.buildStageKey(node.getId(), getStageName(node)));
@@ -206,12 +192,18 @@ public class DatadogGraphListener implements GraphListener {
             return;
         }
 
-        final SpanContext buildSpanContext = GlobalTracer.get().extract(Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatation()));
-        final BuildPipelineNode pipelineNode = pipeline.buildTree();
-        sendPipelineNodeTrace(pipelineNode, buildSpanContext);
-    }
+        final DatadogClient client = ClientFactory.getClient();
+        if (client == null){
+            return;
+        }
 
-    private void sendPipelineNodeTrace(final BuildPipelineNode current, final SpanContext parentSpanContext) {
+        final Tracer tracer = client.tracer();
+        final SpanContext buildSpanContext = tracer.extract(Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatation()));
+        final BuildPipelineNode pipelineNode = pipeline.buildTree();
+        sendPipelineNodeTrace(tracer, pipelineNode, buildSpanContext);
+    }*/
+
+    private void sendPipelineNodeTrace(final Tracer tracer, final BuildPipelineNode current, final SpanContext parentSpanContext) {
         Span span = null;
 
         if(isTraceable(current)) {
@@ -221,7 +213,7 @@ public class DatadogGraphListener implements GraphListener {
                 return;
             }
 
-            final Tracer.SpanBuilder spanBuilder = GlobalTracer.get()
+            final Tracer.SpanBuilder spanBuilder = tracer
                     .buildSpan("jenkins.pipeline")
                     .withStartTimestamp(startTime * 1000);
 
@@ -305,7 +297,7 @@ public class DatadogGraphListener implements GraphListener {
         }
 
         for(final BuildPipelineNode child : current.getChildren()) {
-            sendPipelineNodeTrace(child, (span != null) ? span.context() : parentSpanContext);
+            sendPipelineNodeTrace(tracer, child, (span != null) ? span.context() : parentSpanContext);
         }
 
         if(span != null) {
@@ -456,5 +448,9 @@ public class DatadogGraphListener implements GraphListener {
         } else {
             return null;
         }
+    }
+
+    public DatadogTracePipelineLogic getTracePipelineLogic(){
+        return DatadogTracePipelineLogic.get();
     }
 }

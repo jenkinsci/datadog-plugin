@@ -27,6 +27,7 @@ package org.datadog.jenkins.plugins.datadog.clients;
 
 import hudson.ProxyConfiguration;
 import hudson.util.Secret;
+import io.opentracing.Tracer;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -646,4 +647,10 @@ public class DatadogHttpClient implements DatadogClient {
         }
         return this.jenkinsVersion;
     }
+
+    @Override
+    public Tracer tracer() {
+        throw new UnsupportedOperationException("");
+    }
+
 }
