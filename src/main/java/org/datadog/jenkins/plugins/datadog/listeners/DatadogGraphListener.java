@@ -27,6 +27,8 @@ package org.datadog.jenkins.plugins.datadog.listeners;
 
 import hudson.Extension;
 import hudson.model.Queue;
+import hudson.model.Result;
+
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
@@ -38,12 +40,17 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
+import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
+import org.jenkinsci.plugins.workflow.actions.NotExecutedNodeAction;
+import org.jenkinsci.plugins.workflow.actions.QueueItemAction;
 import org.jenkinsci.plugins.workflow.actions.StageAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.actions.TimingAction;
+import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
+import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.flow.GraphListener;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
@@ -87,14 +94,15 @@ public class DatadogGraphListener implements GraphListener {
             return;
         }
         try {
+            String result = getResultTag(endNode);
             BuildData buildData = new BuildData(run, flowNode.getExecution().getOwner().getListener());
             String hostname = buildData.getHostname("");
             Map<String, Set<String>> tags = buildData.getTags();
             TagsUtil.addTagToTags(tags, "stage_name", getStageName(startNode));
             TagsUtil.addTagToTags(tags, "parent_stage_name", directParentName);
             TagsUtil.addTagToTags(tags, "stage_depth", String.valueOf(stageDepth));
-            tags.remove("result"); // Jenkins sometimes consider the build has a result even though it's still running.
-                                        // Stage metrics should never report a result.
+            // Add custom result tag
+            TagsUtil.addTagToTags(tags, "result", result);
             client.gauge("jenkins.job.stage_duration", getTime(startNode, endNode), hostname, tags);
         } catch (IOException | InterruptedException e) {
             DatadogUtilities.severe(logger, e, "Unable to submit the stage duration metric for " + getStageName(startNode));
@@ -116,7 +124,7 @@ public class DatadogGraphListener implements GraphListener {
 
         // Filter the node out if it is not the end of a stage.
         // The plugin only monitors timing information of stages
-        if(!isStageNode(((StepEndNode) flowNode).getStartNode())){
+        if (!isStageNode(((StepEndNode) flowNode).getStartNode())) {
             return false;
         }
 
@@ -172,5 +180,27 @@ public class DatadogGraphListener implements GraphListener {
             return endTime.getStartTime() - startTime.getStartTime();
         }
         return 0;
+    }
+
+    String getResultTag(@Nonnull FlowNode endNode) {
+        ErrorAction error = endNode.getError();
+        if (error != null) {
+            return "ERROR";
+        }
+        WarningAction warningAction = endNode.getPersistentAction(WarningAction.class);
+        if (warningAction != null) {
+            Result result = warningAction.getResult();
+            // Result could be SUCCESS, NOT_BUILT, FAILURE, etc https://javadoc.jenkins-ci.org/hudson/model/Result.html
+            return result.toString();
+        }
+        // Other possibilities are queued, launched, unknown: https://javadoc.jenkins.io/plugin/workflow-api/org/jenkinsci/plugins/workflow/actions/QueueItemAction.QueueState.html
+        if (QueueItemAction.getNodeState(endNode) == QueueItemAction.QueueState.CANCELLED) {
+            return "CANCELLED";
+        }
+        FlowExecution exec = endNode.getExecution();
+        if ((exec != null && exec.isComplete()) || NotExecutedNodeAction.isExecuted(endNode)) {
+            return "SUCCESS";
+        }
+        return "UNKNOWN";
     }
 }
