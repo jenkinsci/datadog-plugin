@@ -42,7 +42,7 @@ import java.util.logging.Logger;
 
 public class BuildData {
 
-    private static final transient Logger LOGGER = Logger.getLogger(BuildData.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(BuildData.class.getName());
 
     private String buildNumber;
     private String buildId;

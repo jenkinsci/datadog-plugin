@@ -27,9 +27,8 @@ package org.datadog.jenkins.plugins.datadog.logs;
 
 import hudson.Extension;
 import hudson.console.ConsoleLogFilter;
-import hudson.model.AbstractBuild;
-import hudson.model.Computer;
-import hudson.model.Run;
+import hudson.model.*;
+
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 
 import javax.annotation.Nonnull;
@@ -52,7 +51,6 @@ public class DatadogConsoleLogFilter extends ConsoleLogFilter implements Seriali
         this.run = run;
     }
 
-    @Override
     public OutputStream decorateLogger(Run build, OutputStream outputStream) throws IOException, InterruptedException {
         try {
             if (!DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs()) {

@@ -6,7 +6,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Keeps Build spans using Jenkins build.tag as key.
+ * Used to propagate the build Span between onStart() and onComplete() methods.
+ * This mechanism is needed because the Span object cannot be serialized in a Jenkins Action.
  */
 public class BuildSpanManager {
 

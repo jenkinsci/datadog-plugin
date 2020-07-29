@@ -6,6 +6,10 @@ import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Used to associated StepDescriptor with a StepData object.
+ * This mechanism is used to propagate information from the {@code Step} execution to the {@code StepNode}
+ */
 public class StepDataManager {
 
     private static final StepDataManager INSTANCE = new StepDataManager();

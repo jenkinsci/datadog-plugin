@@ -25,30 +25,45 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.clients;
 
-import static org.mockito.Mockito.mock;
-
+import datadog.opentracing.DDTracer;
+import datadog.trace.common.writer.ListWriter;
+import datadog.trace.core.DDSpan;
 import hudson.util.Secret;
 import io.opentracing.Tracer;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.junit.Assert;
-import org.mockito.Mockito;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 public class DatadogClientStub implements DatadogClient {
 
     public List<DatadogMetric> metrics;
     public List<DatadogMetric> serviceChecks;
     public List<String> logLines;
+    public ListWriter tracerWriter;
     public Tracer tracer;
 
     public DatadogClientStub() {
         this.metrics = new ArrayList<>();
         this.serviceChecks = new ArrayList<>();
         this.logLines = new ArrayList<>();
-        this.tracer = mock(Tracer.class);
+
+        this.tracerWriter = new ListWriter() {
+            @Override
+            public boolean add(final List<DDSpan> trace) {
+                final boolean result = super.add(trace);
+                return result;
+            }
+        };
+        this.tracer = DDTracer.builder().writer(tracerWriter).build();
     }
 
     @Override
@@ -150,6 +165,10 @@ public class DatadogClientStub implements DatadogClient {
         return this.tracer;
     }
 
+    public ListWriter tracerWriter() {
+        return this.tracerWriter;
+    }
+
     public boolean assertMetric(String name, double value, String hostname, String[] tags) {
         DatadogMetric m = new DatadogMetric(name, value, hostname, Arrays.asList(tags));
         if (this.metrics.contains(m)) {
@@ -210,10 +229,6 @@ public class DatadogClientStub implements DatadogClient {
         return false;
     }
 
-    public boolean assertTrace() {
-        return false;
-    }
-
     public static List<String> convertTagMapToList(Map<String, Set<String>> tags){
         List<String> result = new ArrayList<>();
         for (String name : tags.keySet()) {
@@ -232,6 +247,5 @@ public class DatadogClientStub implements DatadogClient {
         tags.put(name, v);
         return tags;
     }
-
 
 }

@@ -246,7 +246,7 @@ public class DogStatsDClient implements DatadogClient {
 
         logger.info("Re/Initialize Datadog-Plugin Tracer: hostname = " + this.hostname + ", traceCollectionPort = " + this.traceCollectionPort);
         final DDTracer.DDTracerBuilder tracerBuilder = DDTracer.builder();
-        //TODO Enable traceCollectionPort when APM Java Tracer 0.59.0 was released.
+        //NOTE Enable traceCollectionPort when APM Java Tracer 0.59.0 was released.
         /*if(this.traceCollectionPort != null){
             tracerBuilder.writer(DDAgentWriter.builder().traceAgentPort(traceCollectionPort).build());
         }*/

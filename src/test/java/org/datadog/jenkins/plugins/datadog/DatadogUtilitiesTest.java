@@ -25,6 +25,17 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import hudson.model.Result;
+import org.apache.commons.math3.exception.NullArgumentException;
+import org.jenkinsci.plugins.workflow.actions.ErrorAction;
+import org.jenkinsci.plugins.workflow.actions.LabelAction;
+import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
+import org.jenkinsci.plugins.workflow.actions.WarningAction;
+import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -69,6 +80,47 @@ public class DatadogUtilitiesTest {
         Assert.assertTrue(DatadogUtilities.linesToList("item1\nitem2").equals(items));
         Assert.assertTrue(DatadogUtilities.linesToList("  item1 \n item2 ").equals(items));
         Assert.assertTrue(DatadogUtilities.linesToList(" \n item1 \n item2 \n ").equals(items));
+    }
+
+
+    @Test
+    public void isStageNodeTest() {
+        Assert.assertFalse(DatadogUtilities.isStageNode(null));
+        BlockStartNode node = mock(BlockStartNode.class);
+        Assert.assertFalse(DatadogUtilities.isStageNode(node));
+
+        when(node.getAction(LabelAction.class)).thenReturn(mock(LabelAction.class));
+        Assert.assertTrue(DatadogUtilities.isStageNode(node));
+
+        when(node.getAction(ThreadNameAction.class)).thenReturn(mock(ThreadNameAction.class));
+        Assert.assertFalse(DatadogUtilities.isStageNode(node));
+    }
+
+    @Test
+    public void getResultTagTest(){
+        // passed with null
+        Assert.assertThrows(NullPointerException.class, () -> {
+            DatadogUtilities.getResultTag(null);
+        });
+
+        FlowNode node = mock(FlowNode.class);
+
+        // when getError returns an error
+        when(node.getError()).thenReturn(new ErrorAction(new NullArgumentException()));
+        Assert.assertEquals(DatadogUtilities.getResultTag(node), "ERROR");
+
+        // when there's a warning action
+        when(node.getError()).thenReturn(null);
+        when(node.getPersistentAction(WarningAction.class)).thenReturn(new WarningAction(Result.SUCCESS));
+        Assert.assertEquals(DatadogUtilities.getResultTag(node), "SUCCESS");
+
+        when(node.getPersistentAction(WarningAction.class)).thenReturn(new WarningAction(Result.NOT_BUILT));
+        Assert.assertEquals(DatadogUtilities.getResultTag(node), "NOT_BUILT");
+
+        // when the result is unknown
+        when(node.getPersistentAction(WarningAction.class)).thenReturn(null);
+        Assert.assertEquals(DatadogUtilities.getResultTag(node), "SUCCESS");
+
     }
 
 }

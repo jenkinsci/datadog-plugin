@@ -10,9 +10,13 @@ import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 
 import java.util.logging.Logger;
 
+/**
+ * Keeps the logic to send traces related to Jenkins Build.
+ */
 public class DatadogTraceBuildLogic {
 
     private static final DatadogTraceBuildLogic INSTANCE = new DatadogTraceBuildLogic();
@@ -56,28 +60,31 @@ public class DatadogTraceBuildLogic {
             return;
         }
 
+        final String prefix = BuildPipelineNode.NodeType.PIPELINE.getNormalizedName();
         final long endTimeMicros = buildData.getEndTime(0L) * 1000;
         buildSpan.setTag(DDTags.SERVICE_NAME, "jenkins");
         buildSpan.setTag(DDTags.RESOURCE_NAME, buildData.getJobName(null));
         buildSpan.setTag(DDTags.SPAN_TYPE, "ci");
-        buildSpan.setTag("ci.provider", "jenkins");
+        buildSpan.setTag(CITags.CI_PROVIDER, "jenkins");
         buildSpan.setTag(DDTags.LANGUAGE_TAG_KEY, "");
-        buildSpan.setTag(DDTags.USER_NAME, buildData.getUserId());
-        buildSpan.setTag("pipeline.id", buildData.getBuildId(""));
-        buildSpan.setTag("pipeline.name", buildData.getJobName(""));
-        buildSpan.setTag("pipeline.number", buildData.getBuildNumber(""));
-        buildSpan.setTag("pipeline.workspace", buildData.getWorkspace(""));
-        buildSpan.setTag("node.name", buildData.getNodeName(""));
-        buildSpan.setTag("repository.url", buildData.getGitUrl(""));
-        buildSpan.setTag("repository.branch", buildData.getBranch(""));
-        buildSpan.setTag("repository.commit", buildData.getGitCommit(""));
-        buildSpan.setTag("jenkins.tag", buildData.getBuildTag(""));
-        buildSpan.setTag("jenkins.executor.number", buildData.getExecutorNumber(""));
+        buildSpan.setTag(CITags.USER_NAME, buildData.getUserId());
+        buildSpan.setTag(prefix + CITags._ID, buildData.getBuildId(""));
+        buildSpan.setTag(prefix + CITags._NAME, buildData.getJobName(""));
+        buildSpan.setTag(prefix + CITags._NUMBER, buildData.getBuildNumber(""));
+        buildSpan.setTag(prefix + CITags._WORKSPACE, buildData.getWorkspace(""));
+        buildSpan.setTag(CITags.NODE_NAME, buildData.getNodeName(""));
+        buildSpan.setTag(CITags.REPOSITORY_URL, buildData.getGitUrl(""));
+        buildSpan.setTag(CITags.REPOSITORY_BRANCH, buildData.getBranch(""));
+        buildSpan.setTag(CITags.REPOSITORY_COMMIT, buildData.getGitCommit(""));
+        buildSpan.setTag(CITags.JENKINS_TAG, buildData.getBuildTag(""));
+        buildSpan.setTag(CITags.JENKINS_EXECUTOR_NUMBER, buildData.getExecutorNumber(""));
 
-        final String result = buildData.getResult("");
-        buildSpan.setTag("jenkins.result", result);
-        if(Result.FAILURE.toString().equals(result)) {
-            buildSpan.setTag("error", true);
+        final String jenkinsResult = buildData.getResult("");
+        final String pipelineResult = DatadogUtilities.getNormalizedResult(Result.fromString(jenkinsResult));
+        buildSpan.setTag(prefix + CITags._RESULT, pipelineResult);
+        buildSpan.setTag(CITags.JENKINS_RESULT, jenkinsResult);
+        if(Result.FAILURE.toString().equals(jenkinsResult)) {
+            buildSpan.setTag(CITags.ERROR, true);
         }
 
         buildSpan.finish(endTimeMicros);

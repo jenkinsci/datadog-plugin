@@ -1,26 +1,17 @@
 package org.datadog.jenkins.plugins.datadog.model;
 
-import datadog.trace.api.DDTags;
 import hudson.console.AnnotatedLargeText;
+import hudson.model.Node;
 import hudson.model.Result;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.traces.StepDataManager;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
-import org.jenkinsci.plugins.workflow.actions.ErrorAction;
-import org.jenkinsci.plugins.workflow.actions.LabelAction;
-import org.jenkinsci.plugins.workflow.actions.LogAction;
-import org.jenkinsci.plugins.workflow.actions.StageAction;
-import org.jenkinsci.plugins.workflow.actions.TimingAction;
-import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
-import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
-import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.graph.StepNode;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -33,23 +24,44 @@ import java.util.Objects;
  */
 public class BuildPipelineNode {
 
+    public enum NodeType {
+        PIPELINE("pipeline"), STAGE("stage"), STEP("step", "job");
+
+        private final String name;
+        private final String normalizedName;
+
+        NodeType(final String name) {
+            this.name = name;
+            this.normalizedName = name;
+        }
+
+        NodeType(final String name, final String normalizedName) {
+            this.name = name;
+            this.normalizedName = normalizedName;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getNormalizedName() {
+            return normalizedName;
+        }
+    }
+
     private final BuildPipelineNodeKey key;
     private final List<BuildPipelineNode> children;
+    private final String id;
+    private final String name;
 
-    private String id;
-    private String name;
     private NodeType type;
     private boolean internal;
-    private FlowNode node;
-
     private Map<String, Object> args = new HashMap<>();
     private Map<String, String> envVars = new HashMap<>();
     private String workspace;
     private String nodeName;
     private String nodeHostname;
     private AnnotatedLargeText logText;
-
-    private StepData stepData;
     private long startTime;
     private long startTimeMicros;
     private long endTime;
@@ -76,10 +88,10 @@ public class BuildPipelineNode {
 
         this.id = startNode.getId();
         this.name = startNode.getDisplayName();
-        if(isPipeline(endNode)) {
+        if(DatadogUtilities.isPipelineNode(endNode)) {
             this.type = NodeType.PIPELINE;
             this.internal = true;
-        } else if(isStage(startNode)){
+        } else if(DatadogUtilities.isStageNode(startNode)){
             this.type = NodeType.STAGE;
             this.internal = false;
         } else{
@@ -92,37 +104,23 @@ public class BuildPipelineNode {
         if(endNode instanceof StepNode){
             final StepData stepData = StepDataManager.get().remove(((StepNode)endNode).getDescriptor());
             if(stepData != null) {
-                final StepData.StepEnvVars envVars = stepData.getEnvVars();
-                this.envVars = envVars.getEnvVars();
-
-                final StepData.StepFilePath filePath = stepData.getFilePath();
-                this.workspace = filePath.getRemote();
-
-                final StepData.StepComputer stepComputer = stepData.getComputer();
-                this.nodeName = (!"".equals(stepComputer.getNodeName())) ? stepComputer.getNodeName() : "master";
-                this.nodeHostname = stepComputer.getHostName() != null ? stepComputer.getHostName() : "";
+                this.envVars = stepData.getEnvVars();
+                this.workspace = stepData.getWorkspace();
+                this.nodeName = stepData.getNodeName();
+                this.nodeHostname = stepData.getNodeHostname();
             }
         }
 
-        this.logText = getLogText(endNode);
-        this.startTime = getTime(startNode);
+        this.logText = DatadogUtilities.getLogText(endNode);
+        this.startTime = DatadogUtilities.getTime(startNode);
         this.startTimeMicros = this.startTime * 1000;
-        this.endTime = getTime(endNode);
+        this.endTime = DatadogUtilities.getTime(endNode);
         this.endTimeMicros = this.endTime * 1000;
-        this.result = resultForNode(startNode);
-
-        this.errorObj = getErrorObj(endNode);
-        if(Result.FAILURE.toString().equals(this.result)){
+        this.result = DatadogUtilities.getResultTag(startNode);
+        this.errorObj = DatadogUtilities.getErrorObj(endNode);
+        if("error".equalsIgnoreCase(this.result)){
             this.error = true;
         }
-    }
-
-    private AnnotatedLargeText getLogText(FlowNode node) {
-        final LogAction logAction = node.getAction(LogAction.class);
-        if(logAction != null) {
-            return logAction.getLogText();
-        }
-        return null;
     }
 
     public BuildPipelineNode(final StepAtomNode stepNode) {
@@ -136,28 +134,22 @@ public class BuildPipelineNode {
 
         final StepData stepData = StepDataManager.get().remove(stepNode.getDescriptor());
         if(stepData != null) {
-            final StepData.StepEnvVars envVars = stepData.getEnvVars();
-            this.envVars = envVars.getEnvVars();
-            final StepData.StepFilePath filePath = stepData.getFilePath();
-            this.workspace = filePath.getRemote();
-            final StepData.StepComputer stepComputer = stepData.getComputer();
-            this.nodeName = (!"".equals(stepComputer.getNodeName())) ? stepComputer.getNodeName() : "master";
-            this.nodeHostname = stepComputer.getHostName() != null ? stepComputer.getHostName() : "";
+            this.envVars = stepData.getEnvVars();
+            this.workspace = stepData.getWorkspace();
+            this.nodeName = stepData.getNodeName();
+            this.nodeHostname = stepData.getNodeHostname();
         }
 
-        this.logText = getLogText(stepNode);
-        this.startTime = getTime(stepNode);
+        this.logText = DatadogUtilities.getLogText(stepNode);
+        this.startTime = DatadogUtilities.getTime(stepNode);
         this.startTimeMicros = this.startTime * 1000;
         this.endTime = -1L;
         this.endTimeMicros = this.endTime * 1000;
-        this.result = resultForNode(stepNode);
-        if(Result.FAILURE.toString().equals(this.result)){
+        this.result = DatadogUtilities.getResultTag(stepNode);
+        this.errorObj = DatadogUtilities.getErrorObj(stepNode);
+        if("error".equalsIgnoreCase(this.result)){
             this.error = true;
         }
-    }
-
-    public void addChild(final BuildPipelineNode child) {
-        children.add(child);
     }
 
     public BuildPipelineNodeKey getKey() {
@@ -165,11 +157,11 @@ public class BuildPipelineNode {
     }
 
     public String getId() {
-        return key.id;
+        return id;
     }
 
     public String getName() {
-        return key.name;
+        return name;
     }
 
     public boolean isInternal() {
@@ -237,10 +229,6 @@ public class BuildPipelineNode {
         return children;
     }
 
-    public FlowNode getNode() {
-        return node;
-    }
-
     public BuildPipelineNode getChild(final BuildPipelineNodeKey id) {
         if(children.isEmpty()) {
             return null;
@@ -255,14 +243,11 @@ public class BuildPipelineNode {
         return null;
     }
 
-    public StepData getStepData() {
-        return stepData;
-    }
-
     public NodeType getType() {
         return type;
     }
 
+    // Used during the tree is being built in BuildPipeline class.
     public void updateData(final BuildPipelineNode buildNode) {
         this.type = buildNode.type;
         this.internal = buildNode.internal;
@@ -279,46 +264,12 @@ public class BuildPipelineNode {
         this.result = buildNode.result;
         this.error = buildNode.error;
         this.errorObj = buildNode.errorObj;
-        this.node = buildNode.node;
-        this.stepData = buildNode.stepData;
     }
 
-
-    private long getTime(FlowNode node) {
-        TimingAction time = node.getAction(TimingAction.class);
-        if(time != null) {
-            return time.getStartTime();
-        }
-        return -1L;
+    public void addChild(final BuildPipelineNode child) {
+        children.add(child);
     }
 
-    private static String resultForNode(FlowNode flowNode) {
-        Result result = Result.SUCCESS;
-
-        final ErrorAction errorAction = flowNode.getError();
-        final WarningAction warningAction = flowNode.getAction(WarningAction.class);
-
-        if(errorAction != null) {
-            result = Result.FAILURE;
-        } else if (warningAction != null) {
-            result = Result.UNSTABLE;
-        }
-
-        return result.toString();
-    }
-
-    private boolean isStage(BlockStartNode startNode) {
-        return startNode.getAction(LabelAction.class) != null || startNode.getAction(StageAction.class) != null;
-    }
-
-    private boolean isPipeline(BlockEndNode endNode) {
-        return endNode instanceof FlowEndNode;
-    }
-
-    private Throwable getErrorObj(FlowNode node) {
-        final ErrorAction errorAction = node.getAction(ErrorAction.class);
-        return (errorAction != null) ? errorAction.getError() : null;
-    }
 
     @Override
     public boolean equals(Object o) {
@@ -333,25 +284,6 @@ public class BuildPipelineNode {
         return Objects.hash(key);
     }
 
-
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("BuildPipelineNode{");
-        sb.append("key=").append(key);
-        sb.append(", children=").append(children);
-        sb.append(", node=").append(node);
-        sb.append(", stepData=").append(stepData);
-        sb.append(", startTime=").append(startTime);
-        sb.append(", endTime=").append(endTime);
-        sb.append(", result='").append(result).append('\'');
-        sb.append(", error=").append(error);
-        sb.append('}');
-        return sb.toString();
-    }
-
-    public enum NodeType {
-        PIPELINE, STAGE, STEP
-    }
 
     public static class BuildPipelineNodeKey {
         private final String id;
@@ -382,15 +314,6 @@ public class BuildPipelineNode {
         @Override
         public int hashCode() {
             return Objects.hash(id, name);
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("BuildPipelineNodeKey{");
-            sb.append("id='").append(id).append('\'');
-            sb.append(", name='").append(name).append('\'');
-            sb.append('}');
-            return sb.toString();
         }
     }
 

@@ -26,18 +26,15 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.logs;
 
 import hudson.model.Run;
-import io.opentracing.SpanContext;
-import io.opentracing.propagation.Format;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
-import org.datadog.jenkins.plugins.datadog.traces.BuildTextMapAdapter;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.logging.Logger;
@@ -49,20 +46,11 @@ public class DatadogWriter {
     private OutputStream errorStream;
     private Charset charset;
     private Run<?, ?> run;
-    private SpanContext spanContext;
 
     public DatadogWriter(Run<?, ?> run, OutputStream error, Charset charset) {
         this.errorStream = error != null ? error : System.err;
         this.charset = charset;
         this.run = run;
-        this.spanContext = null;
-    }
-
-    public DatadogWriter(Run<?, ?> run, Charset charset, SpanContext spanContext) {
-        this.errorStream = System.err;
-        this.charset = charset;
-        this.run = run;
-        this.spanContext = spanContext;
     }
 
     public Charset getCharset() {
@@ -84,12 +72,6 @@ public class DatadogWriter {
             payload.put("ddsource", "jenkins");
             payload.put("service", "jenkins");
 
-            final SpanContext spanContext = getSpanContext();
-            if(spanContext != null) {
-                payload.put("dd.trace_id",  spanContext.toTraceId());
-                payload.put("dd.span_id", spanContext.toSpanId());
-            }
-
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
             if(client == null){
@@ -103,17 +85,6 @@ public class DatadogWriter {
         } catch (Exception e){
             DatadogUtilities.severe(logger, e, null);
         }
-    }
-
-    private SpanContext getSpanContext() {
-        if(spanContext == null && run.getAction(BuildSpanAction.class) != null) {
-            final BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
-            if(buildSpanAction != null){
-                final DatadogClient client = ClientFactory.getClient();
-                return client.tracer().extract(Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatation()));
-            }
-        }
-        return spanContext;
     }
 
 }

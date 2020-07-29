@@ -1,7 +1,6 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
 import datadog.trace.api.DDTags;
-import hudson.console.AnnotatedLargeText;
 import hudson.model.Run;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
@@ -9,40 +8,36 @@ import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
-import org.datadog.jenkins.plugins.datadog.logs.DatadogOutputStream;
-import org.datadog.jenkins.plugins.datadog.logs.DatadogWriter;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipeline;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 
-import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+/**
+ * Keeps the logic to send traces related to Jenkins Pipelines.
+ */
 public class DatadogTracePipelineLogic {
 
     private static final String CI_PROVIDER = "jenkins";
-
-    private static final DatadogTracePipelineLogic INSTANCE = new DatadogTracePipelineLogic();
     private static final Logger logger = Logger.getLogger(DatadogTracePipelineLogic.class.getName());
 
-    private final Tracer tracer;
+    private static final DatadogTracePipelineLogic INSTANCE = new DatadogTracePipelineLogic();
 
-    public DatadogTracePipelineLogic() {
-        this.tracer = ClientFactory.getClient().tracer();
-    }
-
-    public void onNewHead(Run run, FlowNode flowNode) {
+    public void execute(Run run, FlowNode flowNode) {
         if (!DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildTraces()) {
             return;
         }
 
-        if(this.tracer == null) {
+        final Tracer tracer = ClientFactory.getClient().tracer();
+        if(tracer == null) {
             logger.severe("Unable to send pipeline traces. Tracer is null");
             return;
         }
@@ -59,21 +54,22 @@ public class DatadogTracePipelineLogic {
         final FlowEndNode flowEndNode = (FlowEndNode) flowNode;
         final BuildPipeline pipeline = new BuildPipeline();
         final DepthFirstScanner scanner = new DepthFirstScanner();
-        scanner.setup(flowEndNode.getExecution().getCurrentHeads());
+        List<FlowNode> currentHeads = flowEndNode.getExecution().getCurrentHeads();
+        scanner.setup(currentHeads);
         scanner.forEach(pipeline::add);
 
         final SpanContext spanContext = tracer.extract(Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatation()));
         final BuildPipelineNode root = pipeline.buildTree();
-        sendTrace(run, root, spanContext);
+        sendTrace(tracer, run, root, spanContext);
     }
 
-    private void sendTrace(final Run run, final BuildPipelineNode current, final SpanContext parentSpanContext) {
+    private void sendTrace(final Tracer tracer, final Run run, final BuildPipelineNode current, final SpanContext parentSpanContext) {
         if(!isTraceable(current)){
             logger.severe("Node " + current.getName() + " is not traceable.");
             return;
         }
 
-        final Tracer.SpanBuilder spanBuilder = this.tracer.buildSpan(buildOperationName(current)).withStartTimestamp(current.getStartTimeMicros());
+        final Tracer.SpanBuilder spanBuilder = tracer.buildSpan(buildOperationName(current)).withStartTimestamp(current.getStartTimeMicros());
 
         if(parentSpanContext != null) {
             spanBuilder.asChildOf(parentSpanContext);
@@ -93,58 +89,46 @@ public class DatadogTracePipelineLogic {
         final Span span = spanBuilder.start();
 
         for(final BuildPipelineNode child : current.getChildren()) {
-            sendTrace(run, child, span.context());
+            sendTrace(tracer, run, child, span.context());
         }
 
         //Logs
-        sendLogs(run, current, span.context());
+        //NOTE: Implement sendNodeLogs
 
         span.finish(current.getEndTimeMicros());
     }
 
-    private void sendLogs(final Run run, BuildPipelineNode current, final SpanContext spanContext) {
-        try {
-            final AnnotatedLargeText logText = current.getLogText();
-            if(logText != null) {
-                final DatadogWriter writer = new DatadogWriter(run, run.getCharset(), spanContext);
-                final OutputStream out = new DatadogOutputStream(writer);
-                logText.writeLogTo(0, out);
-            }
-        } catch (Exception e){
-            logger.severe("Unable to send logs of node " + current.getName());
-        }
-
-    }
 
     private Map<String, String> buildTraceTags(BuildPipelineNode current) {
-        final String prefix = current.getType().name().toLowerCase();
+        final String normalizedPrefix = current.getType().getNormalizedName();
+        final String prefix = current.getType().getName();
         final Map<String, String> envVars = current.getEnvVars();
 
         final Map<String, String> tags = new HashMap<>();
-        tags.put("ci.provider", CI_PROVIDER);
-        tags.put(prefix + ".id", current.getId());
-        tags.put(prefix + ".name", current.getName());
+        tags.put(CITags.CI_PROVIDER, CI_PROVIDER);
+        tags.put(normalizedPrefix + ".id", current.getId());
+        tags.put(normalizedPrefix + ".name", current.getName());
         tags.put(CI_PROVIDER + ".internal", String.valueOf(current.isInternal()));
         tags.put(CI_PROVIDER + ".result", current.getResult());
-        tags.put("job.workspace", current.getWorkspace());
-        tags.put("job.url", envVars.get("BUILD_URL"));
+        tags.put(normalizedPrefix + ".workspace", current.getWorkspace());
+        tags.put(normalizedPrefix + ".url", envVars.get("BUILD_URL"));
         tags.put("error", String.valueOf(current.isError()));
 
-        tags.put("repository.branch", envVars.get("GIT_BRANCH"));
-        tags.put("repository.commit", envVars.get("GIT_COMMIT"));
-        tags.put("repository.url", envVars.get("GIT_URL"));
+        tags.put(CITags.REPOSITORY_BRANCH, envVars.get("GIT_BRANCH"));
+        tags.put(CITags.REPOSITORY_COMMIT, envVars.get("GIT_COMMIT"));
+        tags.put(CITags.REPOSITORY_URL, envVars.get("GIT_URL"));
 
-        tags.put("user.principal", envVars.get("USER"));
+        tags.put(CITags.USER_NAME, envVars.get("USER"));
 
-        tags.put("node.name", current.getNodeName());
-        tags.put("node.hostname", current.getNodeHostname());
+        tags.put(CITags.NODE_NAME, current.getNodeName());
+        tags.put(CITags.NODE_HOSTNAME, current.getNodeHostname());
 
         // Arguments
         for(Map.Entry<String, Object> entry : current.getArgs().entrySet()) {
             tags.put(CI_PROVIDER + "." + prefix + ".args."+entry.getKey(), String.valueOf(entry.getValue()));
 
             if("script".equals(entry.getKey())){
-                tags.put("job.script", String.valueOf(entry.getValue()));
+                tags.put(normalizedPrefix + ".script", String.valueOf(entry.getValue()));
             }
         }
 
@@ -159,11 +143,9 @@ public class DatadogTracePipelineLogic {
             tags.put(DDTags.ERROR_STACK, errorString.toString());
         }
 
-        //Logs
-        //TBD
-
         return tags;
     }
+
 
     private String buildOperationName(BuildPipelineNode current) {
         return CI_PROVIDER + "." + current.getType().name().toLowerCase() + ((current.isInternal()) ? ".internal" : "");
