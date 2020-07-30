@@ -2,6 +2,8 @@
 
 A Jenkins plugin for automatically forwarding metrics, events, and service checks to a Datadog account.
 
+![Jenkins Datadog Dashboard][16]
+
 **Note**: The [Jenkins CI plugin page][1] for this plugin references this documentation.
 
 ## Setup
@@ -310,3 +312,4 @@ Checkout the [development document][12] for tips on spinning up a quick developm
 [13]: https://docs.datadoghq.com/agent/logs/?tab=tcpudp#custom-log-collection
 [14]: https://docs.datadoghq.com/agent/guide/agent-commands/#start-stop-and-restart-the-agent
 [15]: https://docs.datadoghq.com/logs/log_collection/?tab=http
+[16]: https://raw.githubusercontent.com/jenkinsci/datadog-plugin/master/images/dashboard.png
