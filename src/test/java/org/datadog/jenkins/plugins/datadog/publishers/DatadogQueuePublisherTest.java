@@ -35,7 +35,6 @@ public class DatadogQueuePublisherTest {
         jenkins.jenkins.getQueue().clear();
     }
 
-
     @Test
     public void testQueueMetrics() throws Exception {
         String hostname = DatadogUtilities.getHostname(null);
@@ -57,8 +56,7 @@ public class DatadogQueuePublisherTest {
         client.assertMetric("jenkins.queue.job.in_queue", 1, hostname, expectedTags);
     
     }
-    
-    
+
     @Test
     public void testQueueMetricsMultipleBuilds() throws Exception {
         String hostname = DatadogUtilities.getHostname(null);
