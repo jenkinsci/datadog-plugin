@@ -270,7 +270,7 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 
 ### Service checks
 
-Build status `jenkins.job.status` with the default tags: : `jenkins_url`, `job`, `node`, `result`, `user_id`
+Build status `jenkins.job.status` with the default tags: : `jenkins_url`, `job`, `node`, `user_id`
 
 ## Issue Tracking
 

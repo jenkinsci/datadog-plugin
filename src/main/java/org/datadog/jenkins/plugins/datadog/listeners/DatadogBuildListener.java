@@ -170,7 +170,11 @@ public class DatadogBuildListener extends RunListener<Run>  {
             } else if (Result.FAILURE.toString().equals(buildResult)) {
                 status = DatadogClient.Status.CRITICAL;
             }
-            client.serviceCheck("jenkins.job.status", status, hostname, tags);
+            // Get all tags from buildData except the result tag that is used as the SC status.
+            Map<String, Set<String>> serviceCheckTags = buildData.getTags();
+            serviceCheckTags.remove("result");
+
+            client.serviceCheck("jenkins.job.status", status, hostname, serviceCheckTags);
 
             if (run.getResult() == Result.SUCCESS) {
                 long mttr = getMeanTimeToRecovery(run);
