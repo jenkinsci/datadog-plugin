@@ -163,14 +163,14 @@ public class DatadogQueuePublisherTest {
         
         // Make sure values are consistent across jenkins.queue.* and jenkins.queue.job.* metrics
         client.assertMetric("jenkins.queue.size", size, hostname, expectedTags);
-        client.assertMetricValues("jenkins.queue.job.in_queue", 1, hostname, size);
+        client.assertMetricValuesMin("jenkins.queue.job.in_queue", 1, hostname, size);
         
         client.assertMetric("jenkins.queue.buildable", size, hostname, expectedTags);
-        client.assertMetricValues("jenkins.queue.job.buildable", 1, hostname, buildable);
+        client.assertMetricValuesMin("jenkins.queue.job.buildable", 1, hostname, buildable);
         
         client.assertMetric("jenkins.queue.pending", pending, hostname, expectedTags);
         client.assertMetricValues("jenkins.queue.job.pending", 1, hostname, pending);
-        client.assertMetricValues("jenkins.queue.job.pending", 0, hostname, size);
+        client.assertMetricValuesMin("jenkins.queue.job.pending", 0, hostname, size);
 
     }
 }
