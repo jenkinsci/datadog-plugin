@@ -12,6 +12,7 @@ import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.graph.StepNode;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -318,7 +319,7 @@ public class BuildPipelineNode {
     }
 
 
-    static class BuildPipelineNodeComparator implements Comparator<BuildPipelineNode> {
+    static class BuildPipelineNodeComparator implements Comparator<BuildPipelineNode>, Serializable {
 
         @Override
         public int compare(BuildPipelineNode o1, BuildPipelineNode o2) {
