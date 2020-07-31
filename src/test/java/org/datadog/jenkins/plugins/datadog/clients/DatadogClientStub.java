@@ -165,6 +165,21 @@ public class DatadogClientStub implements DatadogClient {
         return false;
     }
 
+    /*
+     * Asserts that the metric of a given value is submitted at least a given number of times.
+     */
+    public boolean assertMetricValuesMin(String name, double value, String hostname, int min) {
+        DatadogMetric m = new DatadogMetric(name, value, hostname, new ArrayList<>());
+
+        // compare without tags so metrics of the same value are considered the same.
+        long timesSeen = this.metrics.stream().filter(x -> x.sameNoTags(m)).count();
+        if (timesSeen >= min){
+            return true;
+        }
+        Assert.fail("metric { " + m.toString() + " found " + timesSeen + " times, not more than" + min);
+        return false;
+    }
+
     public boolean assertMetric(String name, String hostname, String[] tags) {
         // Assert that a metric with the same name and tags has already been submitted without checking the value.
         DatadogMetric m = new DatadogMetric(name, 0, hostname, Arrays.asList(tags));
