@@ -1,5 +1,9 @@
 Changes
 =======
+## 1.2.0 / 2020-07-31
+
+* [Changed] Remove the result tag from the service check (#103). See [#106](https://github.com/jenkinsci/datadog-plugin/pull/106).
+
 # 1.1.3 / 2020-07-23
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-1.1.2...datadog-1.1.3
