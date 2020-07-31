@@ -5,16 +5,12 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.SleepBuilder;
-import org.apache.commons.io.IOUtils;
 
 import java.util.Arrays;
 
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
-
-import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
-import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 
 import hudson.model.Messages;
 import hudson.model.ParametersAction;
@@ -38,35 +34,7 @@ public class DatadogQueuePublisherTest {
         ClientFactory.setTestClient(client);
         jenkins.jenkins.getQueue().clear();
     }
-    
-    @Test
-    public void testPipelineInQueue() throws Exception {
-        String hostname = DatadogUtilities.getHostname(null);
-        WorkflowJob job = jenkins.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationSuccess");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineDefinition.txt"),
-                "UTF-8"
-        );
-        job.setDefinition(new CpsFlowDefinition(definition, true));
-        String displayName = job.getDisplayName();
 
-        // set all the computers offline so they can't execute any buils, filling up the queue
-        for (Computer computer: jenkins.jenkins.getComputers()){
-            computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
-        }
-        
-        // make sure there is a queue
-        for (int i = 0; i < 5; i++) {
-            jenkins.jenkins.getQueue().schedule(job, 10);
-        }
-
-        final String[] expectedTags = new String[2];
-        expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
-        expectedTags[1] = "job_name:" + displayName;
-        DatadogQueuePublisher queuePublisher = new DatadogQueuePublisher();
-        queuePublisher.doRun();
-        client.assertMetric("jenkins.queue.job.in_queue", 1, hostname, expectedTags);
-    }
 
     @Test
     public void testQueueMetrics() throws Exception {

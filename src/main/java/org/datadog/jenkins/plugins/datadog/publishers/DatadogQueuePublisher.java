@@ -88,7 +88,7 @@ public class DatadogQueuePublisher extends PeriodicWork {
                 
                 String job_name;
                 Task task = item.task;
-                if ((task instanceof FreeStyleProject) | (task instanceof WorkflowJob)) { 
+                if (task instanceof FreeStyleProject) { 
                     job_name = task.getFullDisplayName();
                 } else if (task instanceof ExecutorStepExecution.PlaceholderTask) {
                     Run<?, ?> run = ((ExecutorStepExecution.PlaceholderTask) task).runForDisplay();
