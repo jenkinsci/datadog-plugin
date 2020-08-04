@@ -1,0 +1,19 @@
+pipeline {
+    agent {
+        label "test"
+    }
+    stages {
+        stage('testing'){
+            steps {
+                echo "testing"
+                sh 'sleep 100s'
+            }
+        }
+        stage('testing1'){
+            steps {
+                echo "testing"
+                sh 'sleep 100s'
+            }
+        }
+    }
+}
