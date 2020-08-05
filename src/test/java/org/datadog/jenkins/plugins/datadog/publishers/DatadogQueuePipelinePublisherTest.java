@@ -41,7 +41,7 @@ public class DatadogQueuePipelinePublisherTest {
         EnvVars envVars = new EnvVars();
         jenkins.createSlave("test", "test", envVars);
         
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 85; i++) {
             job.scheduleBuild2(0);
             queuePublisher.doRun();
         }
