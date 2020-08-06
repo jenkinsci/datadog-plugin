@@ -27,7 +27,6 @@ public class DatadogQueuePipelinePublisherTest {
         DatadogClientStub client = new DatadogClientStub();;
         ClientFactory.setTestClient(client);
         DatadogQueuePublisher queuePublisher = new DatadogQueuePublisher();
-
         String hostname = DatadogUtilities.getHostname(null);
         WorkflowJob job = jenkins.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationSuccess");
         String definition = IOUtils.toString(
@@ -35,21 +34,9 @@ public class DatadogQueuePipelinePublisherTest {
                 "UTF-8"
         );
         job.setDefinition(new CpsFlowDefinition(definition, true));
-
         String displayName = job.getDisplayName();
-
-        EnvVars envVars = new EnvVars();
-        jenkins.createSlave("test", "test", envVars);
-        
-        for (int i = 0; i < 85; i++) {
-            job.scheduleBuild2(0);
-            queuePublisher.doRun();
-        }
-        
-        for (Computer computer: jenkins.jenkins.getComputers()){
-            computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
-        }
-                
+        job.scheduleBuild2(0);
+        Thread.sleep(5000);
         final String[] expectedTags = new String[2];
         expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
         expectedTags[1] = "job_name:" + displayName;
