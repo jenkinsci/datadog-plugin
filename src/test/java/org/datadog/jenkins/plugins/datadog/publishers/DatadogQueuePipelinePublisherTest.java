@@ -36,9 +36,7 @@ public class DatadogQueuePipelinePublisherTest {
         job.setDefinition(new CpsFlowDefinition(definition, true));
         String displayName = job.getDisplayName();
         
-        
         job.scheduleBuild2(0);
-        Thread.sleep(5000);
         
         final String[] expectedTags = new String[2];
         expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
