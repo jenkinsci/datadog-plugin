@@ -72,7 +72,6 @@ public class DatadogBuildListenerTest {
         Jenkins jenkins = mock(Jenkins.class);
         when(jenkins.getFullName()).thenReturn("ParentFullName");
         this.job = new ProjectStub(jenkins,"JobName");
-
         this.envVars = new EnvVars();
         envVars.put("HOSTNAME", "test-hostname-2");
         envVars.put("NODE_NAME", "test-node");
@@ -93,6 +92,7 @@ public class DatadogBuildListenerTest {
         when(run.getResult()).thenReturn(null);
         when(run.getEnvironment(any(TaskListener.class))).thenReturn(this.envVars);
         when(run.getParent()).thenReturn(this.job);
+        Thread.sleep(1000);
 
         this.datadogBuildListener.onCompleted(run, mock(TaskListener.class));
         this.client.assertedAllMetricsAndServiceChecks();
