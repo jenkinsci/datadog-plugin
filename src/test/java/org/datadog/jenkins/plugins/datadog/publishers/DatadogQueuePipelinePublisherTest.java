@@ -38,7 +38,6 @@ public class DatadogQueuePipelinePublisherTest {
         job.setDefinition(new CpsFlowDefinition(definition, true));
         String displayName = job.getDisplayName();
         
-        job.scheduleBuild2(1000000);
         job.scheduleBuild2(0);
 
         Thread.sleep(5000);
