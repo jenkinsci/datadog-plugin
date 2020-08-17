@@ -349,7 +349,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      */
     @RequirePOST
     public FormValidation doCheckTargetTraceCollectionPort(@QueryParameter("targetTraceCollectionPort") final String targetTraceCollectionPort) {
-        if (!validatePort(targetTraceCollectionPort) && collectBuildLogs) {
+        if (!validatePort(targetTraceCollectionPort) && collectBuildTraces) {
             return FormValidation.error("Invalid Trace Collection Port");
         }
 

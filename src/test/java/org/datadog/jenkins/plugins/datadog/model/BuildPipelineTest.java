@@ -25,7 +25,7 @@ import java.util.Map;
 public class BuildPipelineTest {
 
     @Test
-    public void should_build_pipeline_with_nested_stages() {
+    public void testShouldBuildPipelineWithNestedStages() {
         //Given
         final Map<String, FlowNode> flowNodeById = getDummyPipeline();
         final BuildPipeline pipeline = new BuildPipeline();
