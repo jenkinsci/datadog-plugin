@@ -12,12 +12,8 @@ public class BuildSpanAction extends InvisibleAction {
 
     private Map<String, String> buildSpanPropatation;
 
-    protected BuildSpanAction(){
+    public BuildSpanAction(){
         this.buildSpanPropatation = new HashMap<>();
-    }
-
-    public static BuildSpanAction newAction() {
-        return new BuildSpanAction();
     }
 
     public Map<String, String> getBuildSpanPropatation() {

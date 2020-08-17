@@ -49,7 +49,7 @@ public class DatadogTraceBuildLogic {
                 .start();
 
         getBuildSpanManager().put(buildData.getBuildTag(""), buildSpan);
-        final BuildSpanAction buildSpanAction = BuildSpanAction.newAction();
+        final BuildSpanAction buildSpanAction = new BuildSpanAction();
         tracer.inject(buildSpan.context(), Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatation()));
         run.addAction(buildSpanAction);
     }
