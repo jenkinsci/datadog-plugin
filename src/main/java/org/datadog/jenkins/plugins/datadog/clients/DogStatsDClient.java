@@ -30,6 +30,7 @@ import com.timgroup.statsd.NonBlockingStatsDClient;
 import com.timgroup.statsd.ServiceCheck;
 import com.timgroup.statsd.StatsDClient;
 import datadog.opentracing.DDTracer;
+import datadog.trace.common.writer.DDAgentWriter;
 import hudson.util.Secret;
 import io.opentracing.Tracer;
 import org.apache.commons.lang.StringUtils;
@@ -246,10 +247,9 @@ public class DogStatsDClient implements DatadogClient {
 
         logger.info("Re/Initialize Datadog-Plugin Tracer: hostname = " + this.hostname + ", traceCollectionPort = " + this.traceCollectionPort);
         final DDTracer.DDTracerBuilder tracerBuilder = DDTracer.builder();
-        //NOTE Enable traceCollectionPort when APM Java Tracer 0.59.0 was released.
-        /*if(this.traceCollectionPort != null){
+        if (this.traceCollectionPort != null){
             tracerBuilder.writer(DDAgentWriter.builder().traceAgentPort(traceCollectionPort).build());
-        }*/
+        }
 
         ddTracer = tracerBuilder.build();
         return true;
