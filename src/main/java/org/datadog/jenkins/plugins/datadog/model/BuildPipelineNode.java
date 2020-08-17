@@ -68,7 +68,11 @@ public class BuildPipelineNode {
     private long endTime;
     private long endTimeMicros;
     private String result;
+
+    // Flag that indicates if the node must be marked as error.
     private boolean error;
+    // Throwable of the node.
+    // Although the error flag was true, this can be null.
     private Throwable errorObj;
 
     public BuildPipelineNode(final String id, final String name) {
