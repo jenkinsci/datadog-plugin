@@ -10,6 +10,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 
+import javax.annotation.Nonnull;
 import java.util.logging.Logger;
 
 /**
@@ -80,7 +81,7 @@ public class DatadogTraceBuildLogic {
         buildSpan.setTag(CITags.JENKINS_EXECUTOR_NUMBER, buildData.getExecutorNumber(""));
 
         final String jenkinsResult = buildData.getResult("");
-        final String pipelineResult = DatadogUtilities.getNormalizedResult(Result.fromString(jenkinsResult));
+        final String pipelineResult = getNormalizedResult(Result.fromString(jenkinsResult));
         buildSpan.setTag(prefix + CITags._RESULT, pipelineResult);
         buildSpan.setTag(CITags.JENKINS_RESULT, jenkinsResult);
         if(Result.FAILURE.toString().equals(jenkinsResult)) {
@@ -92,5 +93,17 @@ public class DatadogTraceBuildLogic {
 
     protected BuildSpanManager getBuildSpanManager() {
         return BuildSpanManager.get();
+    }
+
+    private String getNormalizedResult(@Nonnull Result result) {
+        if(result.equals(Result.SUCCESS)){
+            return "SUCCESS";
+        } else if(result.equals(Result.FAILURE)) {
+            return "ERROR";
+        } else if(result.equals(Result.ABORTED)){
+            return "CANCELLED";
+        } else {
+            return "UNSTABLE";
+        }
     }
 }

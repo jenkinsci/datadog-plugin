@@ -622,54 +622,6 @@ public class DatadogUtilities {
         }
     }
 
-    /**
-     * Returns the accessor to the logs of a certain {@code FlowNode}, if it has logs.
-     * @param flowNode
-     * @return accessor to the flowNode logs.
-     */
-    public static AnnotatedLargeText getLogText(FlowNode flowNode) {
-        final LogAction logAction = flowNode.getAction(LogAction.class);
-        if(logAction != null) {
-            return logAction.getLogText();
-        }
-        return null;
-    }
-
-    /**
-     * Returns the {@code Throwable} of a certain {@code FlowNode}, if it has errors.
-     * @param flowNode
-     * @return throwable associated with a certain flowNode.
-     */
-    public static Throwable getErrorObj(FlowNode flowNode) {
-        final ErrorAction errorAction = flowNode.getAction(ErrorAction.class);
-        return (errorAction != null) ? errorAction.getError() : null;
-    }
-
-    /**
-     * Returns the startTime of a certain {@code FlowNode}, if it has time information.
-     * @param flowNode
-     * @return startTime of the flowNode in milliseconds.
-     */
-    public static long getTime(FlowNode flowNode) {
-        TimingAction time = flowNode.getAction(TimingAction.class);
-        if(time != null) {
-            return time.getStartTime();
-        }
-        return -1L;
-    }
-
-    public static String getNormalizedResult(@Nonnull Result result) {
-        if(result.equals(Result.SUCCESS)){
-            return "SUCCESS";
-        } else if(result.equals(Result.FAILURE)) {
-            return "ERROR";
-        } else if(result.equals(Result.ABORTED)){
-            return "CANCELLED";
-        } else {
-            return "UNSTABLE";
-        }
-    }
-
     public static String getResultTag(@Nonnull FlowNode endNode) {
         ErrorAction error = endNode.getError();
         if (error != null) {
@@ -721,82 +673,6 @@ public class DatadogUtilities {
     public static boolean isPipelineNode(FlowNode flowNode) {
         return flowNode instanceof FlowEndNode;
     }
-
-    /**
-     * Returns {@code Map<String,String>} with environment variables of a certain {@code StepContext}
-     * @param stepContext
-     * @return map with environment variables of a stepContext.
-     */
-    public static Map<String, String> getEnvVars(StepContext stepContext) {
-        EnvVars envVarsObj = null;
-        try {
-            envVarsObj = stepContext.get(EnvVars.class);
-        } catch (Exception e){
-            logger.fine("Unable to extract environment variables from StepContext.");
-        }
-
-        if(envVarsObj == null) {
-            return Collections.emptyMap();
-        }
-
-        return envVarsObj.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
-
-    /**
-     * Returns the nodeName of the remote node which is executing a determined {@code Step}
-     * @param stepContext
-     * @return node name of the remote node.
-     */
-    public static String getNodeName(StepContext stepContext) {
-        try {
-            Computer computer = stepContext.get(Computer.class);
-            return getNodeName(computer);
-        } catch (Exception e){
-            logger.fine("Unable to extract the node name from StepContext.");
-            return null;
-        }
-    }
-
-    /**
-     * Returns the hostname of the remote node which is executing a determined {@code Step}
-     * See {@code Computer.getHostName()}
-     * @param stepContext
-     * @return hostname of the remote node.
-     */
-    public static String getNodeHostname(final StepContext stepContext) {
-        try {
-            Computer computer = stepContext.get(Computer.class);
-            if(computer == null) {
-                return null;
-            }
-
-            return computer.getHostName();
-        } catch (Exception e){
-            logger.fine("Unable to extract hostname from StepContext.");
-            return null;
-        }
-    }
-
-    /**
-     * Returns the workspace filepath of the remote node which is executing a determined {@code Step}
-     * @param stepContext
-     * @return absolute filepath of the workspace of the remote node.
-     */
-    public static String getNodeWorkspace(final StepContext stepContext) {
-        FilePath filePath = null;
-        try {
-            filePath = stepContext.get(FilePath.class);
-        } catch (Exception e){
-            logger.fine("Unable to extract FilePath information of the StepContext.");
-        }
-
-        if(filePath == null) {
-            return null;
-        }
-
-        return filePath.getRemote();
-    }
-
 
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH")
     public static void severe(Logger logger, Throwable e, String message){

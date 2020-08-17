@@ -6,6 +6,9 @@ import hudson.model.Result;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.traces.StepDataManager;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
+import org.jenkinsci.plugins.workflow.actions.ErrorAction;
+import org.jenkinsci.plugins.workflow.actions.LogAction;
+import org.jenkinsci.plugins.workflow.actions.TimingAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
@@ -116,13 +119,13 @@ public class BuildPipelineNode {
             }
         }
 
-        this.logText = DatadogUtilities.getLogText(endNode);
-        this.startTime = DatadogUtilities.getTime(startNode);
+        this.logText = getLogText(endNode);
+        this.startTime = getTime(startNode);
         this.startTimeMicros = this.startTime * 1000;
-        this.endTime = DatadogUtilities.getTime(endNode);
+        this.endTime = getTime(endNode);
         this.endTimeMicros = this.endTime * 1000;
         this.result = DatadogUtilities.getResultTag(startNode);
-        this.errorObj = DatadogUtilities.getErrorObj(endNode);
+        this.errorObj = getErrorObj(endNode);
         if("error".equalsIgnoreCase(this.result)){
             this.error = true;
         }
@@ -145,13 +148,13 @@ public class BuildPipelineNode {
             this.nodeHostname = stepData.getNodeHostname();
         }
 
-        this.logText = DatadogUtilities.getLogText(stepNode);
-        this.startTime = DatadogUtilities.getTime(stepNode);
+        this.logText = getLogText(stepNode);
+        this.startTime = getTime(stepNode);
         this.startTimeMicros = this.startTime * 1000;
         this.endTime = -1L;
         this.endTimeMicros = this.endTime * 1000;
         this.result = DatadogUtilities.getResultTag(stepNode);
-        this.errorObj = DatadogUtilities.getErrorObj(stepNode);
+        this.errorObj = getErrorObj(stepNode);
         if("error".equalsIgnoreCase(this.result)){
             this.error = true;
         }
@@ -289,6 +292,43 @@ public class BuildPipelineNode {
         return Objects.hash(key);
     }
 
+
+    /**
+     * Returns the startTime of a certain {@code FlowNode}, if it has time information.
+     * @param flowNode
+     * @return startTime of the flowNode in milliseconds.
+     */
+    private static long getTime(FlowNode flowNode) {
+        TimingAction time = flowNode.getAction(TimingAction.class);
+        if(time != null) {
+            return time.getStartTime();
+        }
+        return -1L;
+    }
+
+    /**
+     * Returns the accessor to the logs of a certain {@code FlowNode}, if it has logs.
+     * @param flowNode
+     * @return accessor to the flowNode logs.
+     */
+    private static AnnotatedLargeText getLogText(FlowNode flowNode) {
+        final LogAction logAction = flowNode.getAction(LogAction.class);
+        if(logAction != null) {
+            return logAction.getLogText();
+        }
+        return null;
+    }
+
+
+    /**
+     * Returns the {@code Throwable} of a certain {@code FlowNode}, if it has errors.
+     * @param flowNode
+     * @return throwable associated with a certain flowNode.
+     */
+    private static Throwable getErrorObj(FlowNode flowNode) {
+        final ErrorAction errorAction = flowNode.getAction(ErrorAction.class);
+        return (errorAction != null) ? errorAction.getError() : null;
+    }
 
     public static class BuildPipelineNodeKey {
         private final String id;
