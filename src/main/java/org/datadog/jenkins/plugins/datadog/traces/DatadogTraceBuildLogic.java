@@ -37,6 +37,11 @@ public class DatadogTraceBuildLogic {
 
         // Traces
         final Tracer tracer = client.tracer();
+        if(tracer == null) {
+            logger.severe("Unable to send build traces. Tracer is null");
+            return;
+        }
+
         final long startTimeMicros = buildData.getStartTime(0L) * 1000;
 
         final Span buildSpan = tracer.buildSpan("jenkins.build")

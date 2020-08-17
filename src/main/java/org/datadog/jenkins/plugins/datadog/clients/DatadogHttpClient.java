@@ -650,7 +650,8 @@ public class DatadogHttpClient implements DatadogClient {
 
     @Override
     public Tracer tracer() {
-        throw new UnsupportedOperationException("");
+        logger.severe("Traces are only available using Datadog Agent.");
+        return null;
     }
 
 }
