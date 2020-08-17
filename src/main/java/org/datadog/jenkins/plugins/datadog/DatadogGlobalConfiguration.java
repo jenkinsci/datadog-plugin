@@ -61,6 +61,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static String TARGET_HOST_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_HOST";
     private static String TARGET_PORT_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_PORT";
     private static String TARGET_LOG_COLLECTION_PORT_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT";
+    private static String TARGET_TRACE_COLLECTION_PORT_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_TRACE_COLLECTION_PORT";
     private static String HOSTNAME_PROPERTY = "DATADOG_JENKINS_PLUGIN_HOSTNAME";
     private static String EXCLUDED_PROPERTY = "DATADOG_JENKINS_PLUGIN_EXCLUDED";
     private static String INCLUDED_PROPERTY = "DATADOG_JENKINS_PLUGIN_INCLUDED";
@@ -81,7 +82,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static String DEFAULT_TARGET_LOG_INTAKE_URL_VALUE = "https://http-intake.logs.datadoghq.com/v1/input/";
     private static String DEFAULT_TARGET_HOST_VALUE = "localhost";
     private static Integer DEFAULT_TARGET_PORT_VALUE = 8125;
-    private static Integer DEFAULT_TARGET_TRACE_COLLECTION_PORT_VALUE = 8126;
+    private static Integer DEFAULT_TARGET_TRACE_COLLECTION_PORT_VALUE = null;
     private static Integer DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE = null;
     private static boolean DEFAULT_EMIT_SECURITY_EVENTS_VALUE = true;
     private static boolean DEFAULT_EMIT_SYSTEM_EVENTS_VALUE = true;
@@ -149,6 +150,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         String targetLogCollectionPortEnvVar = System.getenv(TARGET_LOG_COLLECTION_PORT_PROPERTY);
         if(StringUtils.isNotBlank(targetLogCollectionPortEnvVar) && StringUtils.isNumeric(targetLogCollectionPortEnvVar)){
             this.targetLogCollectionPort = Integer.valueOf(targetLogCollectionPortEnvVar);
+        }
+
+        String targetTraceCollectionPortEnvVar = System.getenv(TARGET_TRACE_COLLECTION_PORT_PROPERTY);
+        if(StringUtils.isNotBlank(targetTraceCollectionPortEnvVar) && StringUtils.isNumeric(targetTraceCollectionPortEnvVar)) {
+            this.targetTraceCollectionPort = Integer.valueOf(targetTraceCollectionPortEnvVar);
         }
 
         String hostnameEnvVar = System.getenv(HOSTNAME_PROPERTY);
