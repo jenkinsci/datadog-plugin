@@ -97,7 +97,7 @@
             <f:checkbox title="Enable Log Collection" field="collectBuildLogs" default="false" />
         </f:entry>
 
-        <f:entry description="Enable Trace Collection.">
+        <f:entry description="Enable Trace Collection. Traces are only available if Datadog Agent is used to report to Datadog.">
             <f:checkbox title="Enable Trace Collection" field="collectBuildTraces" default="false" />
         </f:entry>
 
