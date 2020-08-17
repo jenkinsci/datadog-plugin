@@ -254,9 +254,7 @@ public class DogStatsDClient implements DatadogClient {
 
         logger.info("Re/Initialize Datadog-Plugin Tracer: hostname = " + this.hostname + ", traceCollectionPort = " + this.traceCollectionPort);
         final DDTracer.DDTracerBuilder tracerBuilder = DDTracer.builder();
-        if (this.traceCollectionPort != null){
-            tracerBuilder.writer(DDAgentWriter.builder().traceAgentPort(traceCollectionPort).build());
-        }
+        tracerBuilder.writer(DDAgentWriter.builder().traceAgentPort(traceCollectionPort).build());
 
         final Tracer ddTracer = tracerBuilder.build();
         traceBuildLogic = new DatadogTraceBuildLogic(ddTracer);
