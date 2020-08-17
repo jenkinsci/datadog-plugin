@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * Represents a Jenkins Pipeline.
- * To represent the stages is used an n-ary tree.
+ * The stages are represented using an n-ary tree.
  */
 public class BuildPipeline {
 
