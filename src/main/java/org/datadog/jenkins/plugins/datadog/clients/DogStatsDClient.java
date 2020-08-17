@@ -31,14 +31,19 @@ import com.timgroup.statsd.ServiceCheck;
 import com.timgroup.statsd.StatsDClient;
 import datadog.opentracing.DDTracer;
 import datadog.trace.common.writer.DDAgentWriter;
+import hudson.model.Run;
 import hudson.util.Secret;
 import io.opentracing.Tracer;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic;
+import org.datadog.jenkins.plugins.datadog.traces.DatadogTracePipelineLogic;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 import java.net.ConnectException;
 import java.net.UnknownHostException;
@@ -64,9 +69,11 @@ public class DogStatsDClient implements DatadogClient {
     @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL")
     public static boolean enableValidations = true;
 
+    private DatadogTraceBuildLogic traceBuildLogic;
+    private DatadogTracePipelineLogic tracePipelineLogic;
+
     private StatsDClient statsd;
     private Logger ddLogger;
-    private Tracer ddTracer;
     private String previousPayload;
 
     private String hostname = null;
@@ -237,7 +244,7 @@ public class DogStatsDClient implements DatadogClient {
      * @return true if reinitialized properly otherwise false
      */
     private boolean reinitializeTracer(boolean force) {
-        if(this.ddTracer != null && !force) {
+        if(this.traceBuildLogic != null && this.tracePipelineLogic != null && !force) {
             return true;
         }
 
@@ -251,7 +258,9 @@ public class DogStatsDClient implements DatadogClient {
             tracerBuilder.writer(DDAgentWriter.builder().traceAgentPort(traceCollectionPort).build());
         }
 
-        ddTracer = tracerBuilder.build();
+        final Tracer ddTracer = tracerBuilder.build();
+        traceBuildLogic = new DatadogTraceBuildLogic(ddTracer);
+        tracePipelineLogic = new DatadogTracePipelineLogic(ddTracer);
         return true;
     }
 
@@ -467,8 +476,18 @@ public class DogStatsDClient implements DatadogClient {
     }
 
     @Override
-    public Tracer tracer() {
-        return this.ddTracer;
+    public void startBuildTrace(BuildData buildData, Run run) {
+        traceBuildLogic.startBuildTrace(buildData, run);
+    }
+
+    @Override
+    public void finishBuildTrace(BuildData buildData) {
+        traceBuildLogic.finishBuildTrace(buildData);
+    }
+
+    @Override
+    public void sendPipelineTrace(Run<?, ?> run, FlowNode flowNode) {
+        tracePipelineLogic.execute(run, flowNode);
     }
 
 

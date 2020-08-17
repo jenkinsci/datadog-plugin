@@ -32,7 +32,6 @@ import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.traces.DatadogTracePipelineLogic;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.actions.TimingAction;
@@ -63,16 +62,17 @@ public class DatadogGraphListener implements GraphListener {
     @Override
     public void onNewHead(FlowNode flowNode) {
         //APM Traces
-        getTracePipelineLogic().execute(runFor(flowNode.getExecution()), flowNode);
+        DatadogClient client = ClientFactory.getClient();
+        if (client == null){
+            return;
+        }
+
+        client.sendPipelineTrace(runFor(flowNode.getExecution()), flowNode);
 
         if (!isMonitored(flowNode)) {
             return;
         }
 
-        DatadogClient client = ClientFactory.getClient();
-        if (client == null){
-            return;
-        }
         StepEndNode endNode = (StepEndNode) flowNode;
         StepStartNode startNode = endNode.getStartNode();
         int stageDepth = 0;
@@ -185,9 +185,5 @@ public class DatadogGraphListener implements GraphListener {
         } else {
             return null;
         }
-    }
-
-    public DatadogTracePipelineLogic getTracePipelineLogic() {
-        return DatadogTracePipelineLogic.get();
     }
 }

@@ -26,6 +26,7 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.clients;
 
 import hudson.ProxyConfiguration;
+import hudson.model.Run;
 import hudson.util.Secret;
 import io.opentracing.Tracer;
 import jenkins.model.Jenkins;
@@ -35,9 +36,11 @@ import net.sf.json.JSONSerializer;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -649,9 +652,18 @@ public class DatadogHttpClient implements DatadogClient {
     }
 
     @Override
-    public Tracer tracer() {
-        logger.severe("Traces are only available using Datadog Agent.");
-        return null;
+    public void startBuildTrace(BuildData buildData, Run run) {
+        logger.fine("Traces are only available using Datadog Agent.");
+    }
+
+    @Override
+    public void finishBuildTrace(BuildData buildData) {
+        logger.fine("Traces are only available using Datadog Agent.");
+    }
+
+    @Override
+    public void sendPipelineTrace(Run<?, ?> run, FlowNode flowNode) {
+        logger.fine("Traces are only available using Datadog Agent.");
     }
 
 }

@@ -7,7 +7,6 @@ import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipeline;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
@@ -29,15 +28,18 @@ public class DatadogTracePipelineLogic {
     private static final String CI_PROVIDER = "jenkins";
     private static final Logger logger = Logger.getLogger(DatadogTracePipelineLogic.class.getName());
 
-    private static final DatadogTracePipelineLogic INSTANCE = new DatadogTracePipelineLogic();
+    private final Tracer tracer;
+
+    public DatadogTracePipelineLogic(Tracer tracer) {
+        this.tracer = tracer;
+    }
 
     public void execute(Run run, FlowNode flowNode) {
         if (!DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildTraces()) {
             return;
         }
 
-        final Tracer tracer = ClientFactory.getClient().tracer();
-        if(tracer == null) {
+        if(this.tracer == null) {
             logger.severe("Unable to send pipeline traces. Tracer is null");
             return;
         }
@@ -173,9 +175,4 @@ public class DatadogTracePipelineLogic {
     private boolean isLastNode(FlowNode flowNode) {
         return flowNode instanceof FlowEndNode;
     }
-
-    public static DatadogTracePipelineLogic get() {
-        return INSTANCE;
-    }
-
 }

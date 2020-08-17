@@ -6,9 +6,7 @@ import hudson.model.Run;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
-import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 
@@ -19,25 +17,22 @@ import java.util.logging.Logger;
  */
 public class DatadogTraceBuildLogic {
 
-    private static final DatadogTraceBuildLogic INSTANCE = new DatadogTraceBuildLogic();
-
     private static final Logger logger = Logger.getLogger(DatadogTraceBuildLogic.class.getName());
 
-    public void onStarted(final BuildData buildData, Run run) {
+    private final Tracer tracer;
+
+    public DatadogTraceBuildLogic(final Tracer tracer) {
+        this.tracer = tracer;
+    }
+
+    public void startBuildTrace(final BuildData buildData, Run run) {
         if (!DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildTraces()) {
             logger.fine("Trace Collection disabled");
             return;
         }
 
-        // Get Datadog Client Instance
-        DatadogClient client = getDatadogClient();
-        if (client == null) {
-            return;
-        }
-
         // Traces
-        final Tracer tracer = client.tracer();
-        if(tracer == null) {
+        if(this.tracer == null) {
             logger.severe("Unable to send build traces. Tracer is null");
             return;
         }
@@ -50,11 +45,11 @@ public class DatadogTraceBuildLogic {
 
         getBuildSpanManager().put(buildData.getBuildTag(""), buildSpan);
         final BuildSpanAction buildSpanAction = new BuildSpanAction();
-        tracer.inject(buildSpan.context(), Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatation()));
+        this.tracer.inject(buildSpan.context(), Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatation()));
         run.addAction(buildSpanAction);
     }
 
-    public void onCompleted(final BuildData buildData) {
+    public void finishBuildTrace(final BuildData buildData) {
         if (!DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildTraces()) {
             return;
         }
@@ -93,14 +88,6 @@ public class DatadogTraceBuildLogic {
         }
 
         buildSpan.finish(endTimeMicros);
-    }
-
-    public static DatadogTraceBuildLogic get() {
-        return INSTANCE;
-    }
-
-    protected DatadogClient getDatadogClient() {
-        return ClientFactory.getClient();
     }
 
     protected BuildSpanManager getBuildSpanManager() {

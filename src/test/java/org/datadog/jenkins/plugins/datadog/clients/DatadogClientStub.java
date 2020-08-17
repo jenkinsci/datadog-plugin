@@ -28,11 +28,16 @@ package org.datadog.jenkins.plugins.datadog.clients;
 import datadog.opentracing.DDTracer;
 import datadog.trace.common.writer.ListWriter;
 import datadog.trace.core.DDSpan;
+import hudson.model.Run;
 import hudson.util.Secret;
 import io.opentracing.Tracer;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
+import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic;
+import org.datadog.jenkins.plugins.datadog.traces.DatadogTracePipelineLogic;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.junit.Assert;
 
 import java.util.ArrayList;
@@ -51,6 +56,9 @@ public class DatadogClientStub implements DatadogClient {
     public ListWriter tracerWriter;
     public Tracer tracer;
 
+    public DatadogTraceBuildLogic traceBuildLogic;
+    public DatadogTracePipelineLogic tracePipelineLogic;
+
     public DatadogClientStub() {
         this.metrics = new ArrayList<>();
         this.serviceChecks = new ArrayList<>();
@@ -63,7 +71,10 @@ public class DatadogClientStub implements DatadogClient {
                 return result;
             }
         };
+
         this.tracer = DDTracer.builder().writer(tracerWriter).build();
+        this.traceBuildLogic = new DatadogTraceBuildLogic(tracer);
+        this.tracePipelineLogic = new DatadogTracePipelineLogic(tracer);
     }
 
     @Override
@@ -161,8 +172,18 @@ public class DatadogClientStub implements DatadogClient {
     }
 
     @Override
-    public Tracer tracer() {
-        return this.tracer;
+    public void startBuildTrace(BuildData buildData, Run run) {
+        this.traceBuildLogic.startBuildTrace(buildData, run);
+    }
+
+    @Override
+    public void finishBuildTrace(BuildData buildData) {
+        this.traceBuildLogic.finishBuildTrace(buildData);
+    }
+
+    @Override
+    public void sendPipelineTrace(Run<?, ?> run, FlowNode flowNode) {
+        this.tracePipelineLogic.execute(run, flowNode);
     }
 
     public ListWriter tracerWriter() {

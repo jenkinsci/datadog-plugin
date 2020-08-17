@@ -41,7 +41,6 @@ import org.datadog.jenkins.plugins.datadog.events.BuildAbortedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildFinishedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildStartedEventImpl;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import javax.annotation.Nonnull;
@@ -117,7 +116,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             client.incrementCounter("jenkins.job.started", hostname, tags);
 
             // Traces
-            getTraceBuildLogic().onStarted(buildData, run);
+            client.startBuildTrace(buildData, run);
 
             logger.fine("End DatadogBuildListener#onStarted");
         } catch (Exception e) {
@@ -226,7 +225,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             }
 
             // APM Traces
-            getTraceBuildLogic().onCompleted(buildData);
+            client.finishBuildTrace(buildData);
 
             logger.fine("End DatadogBuildListener#onCompleted");
         } catch (Exception e) {
@@ -332,9 +331,5 @@ public class DatadogBuildListener extends RunListener<Run> {
 
     public DatadogClient getDatadogClient() {
         return ClientFactory.getClient();
-    }
-
-    public DatadogTraceBuildLogic getTraceBuildLogic(){
-        return DatadogTraceBuildLogic.get();
     }
 }
