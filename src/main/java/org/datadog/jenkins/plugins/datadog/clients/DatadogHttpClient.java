@@ -150,6 +150,11 @@ public class DatadogHttpClient implements DatadogClient {
                 logger.warning("Connection broken, please double check both your Log Intake URL and Key");
             }
         }
+
+        if (DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildTraces() ) {
+            logger.warning("Traces Collection only can be used if Datadog Agent reports to Datadog.");
+        }
+
         try {
             boolean intakeConnection = validateDefaultIntakeConnection(url, apiKey);
             if (!intakeConnection) {
