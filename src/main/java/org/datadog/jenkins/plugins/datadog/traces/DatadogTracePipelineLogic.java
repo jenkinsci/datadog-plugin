@@ -55,9 +55,17 @@ public class DatadogTracePipelineLogic {
 
         final FlowEndNode flowEndNode = (FlowEndNode) flowNode;
         final BuildPipeline pipeline = new BuildPipeline();
+
+        // As this logic is evaluated in the last node of the graph,
+        // getCurrentHeads() method returns all nodes as a plain list.
+        final List<FlowNode> currentHeads = flowEndNode.getExecution().getCurrentHeads();
+
+        // Provided that plain list of nodes, the DepthFirstScanner algorithm
+        // is used to visit efficiently every node in form of a DAG.
         final DepthFirstScanner scanner = new DepthFirstScanner();
-        List<FlowNode> currentHeads = flowEndNode.getExecution().getCurrentHeads();
         scanner.setup(currentHeads);
+
+        // Every found flow node of the DAG is added to the BuildPipeline instance.
         scanner.forEach(pipeline::add);
 
         final SpanContext spanContext = tracer.extract(Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatation()));
