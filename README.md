@@ -12,6 +12,8 @@ A Jenkins plugin for automatically forwarding metrics, events, and service check
 
 _This plugin requires [Jenkins 2.164.1][2]._
 
+_For older versions of Jenkins (i.e 1.632+), you can find the 1.2.0 version of the plugin [here](https://updates.jenkins.io/download/plugins/datadog/)._
+
 This plugin can be installed from the [Update Center][3] (found at `Manage Jenkins -> Manage Plugins`) in your Jenkins installation:
 
 1. Select the `Available` tab, search for `Datadog`, and select the checkbox next to `Datadog Plugin`.
@@ -144,6 +146,17 @@ pipeline {
             }
         }
     }
+}
+```
+
+In scripted pipeline, wrap the relevant section with the datadog step like so:
+```groovy
+datadog(collectLogs: true, tags: ["foo:bar", "bar:baz"]){
+  node {
+    stage('Example') {
+      echo "Hello world."
+    }
+  }
 }
 ```
 
