@@ -1,5 +1,40 @@
 Changes
 =======
+# 2.0.0 / 2020-08-18
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-1.1.3...datadog-2.0.0
+
+Adding three new pipeline metrics:
+- jenkins.job.pause_duration
+- jenkins.job.build_duration
+- jenkins.job.stage_duration
+
+Forwarding logs from pipeline-based jobs is now possible.
+
+Introducing a 'datadog' pipeline step to allow configuration from the Jenkinsfile.
+
+### Changes
+* [Added] Add a Datadog build step. See [#88](https://github.com/jenkinsci/datadog-plugin/pull/88).
+* [Added] Use inclusive naming . See [#94](https://github.com/jenkinsci/datadog-plugin/pull/94).
+* [Added] Add new queue metrics with job tags. See [#73](https://github.com/jenkinsci/datadog-plugin/pull/73).
+* [Added] Add pipeline pause and build duration. See [#77](https://github.com/jenkinsci/datadog-plugin/pull/77).
+* [Added] Collect and submit jenkins.job.stage_duration. See [#76](https://github.com/jenkinsci/datadog-plugin/pull/76).
+* [Added] Add new node status metrics . See [#71](https://github.com/jenkinsci/datadog-plugin/pull/71).
+* [Added] Add support for collection of pipeline logs. See [#74](https://github.com/jenkinsci/datadog-plugin/pull/74).
+* [Added] Add workflow-job dependency. See [#72](https://github.com/jenkinsci/datadog-plugin/pull/72).
+* [Fixed] Add result tag to stage metrics. See [#92](https://github.com/jenkinsci/datadog-plugin/pull/92).
+* [Fixed] Keep backwards compatibility with old config naming. See [#95](https://github.com/jenkinsci/datadog-plugin/pull/95).
+* [Fixed] Use more inclusive naming of config. See [#93](https://github.com/jenkinsci/datadog-plugin/pull/93).
+* [Fixed] Don't fail validation if log connection is broken. See [#82](https://github.com/jenkinsci/datadog-plugin/pull/82).
+* [Fixed] Re-order configuration loading logic. See [#87](https://github.com/jenkinsci/datadog-plugin/pull/87).
+* [Fixed] Update config access through lookupSingleton method. See [#85](https://github.com/jenkinsci/datadog-plugin/pull/85).
+* [Fixed] Fix buildable and pending metrics. See [#83](https://github.com/jenkinsci/datadog-plugin/pull/83).
+* [Fixed] Update failedlastValidation if client passes validation  . See [#81](https://github.com/jenkinsci/datadog-plugin/pull/81).
+* [Fixed] Update pom for 1.x. See [#80](https://github.com/jenkinsci/datadog-plugin/pull/80).
+* [Fixed] Add configuration validation in clients. See [#59](https://github.com/jenkinsci/datadog-plugin/pull/59).
+* [Fixed] Enforce POST in form validation. See [#61](https://github.com/jenkinsci/datadog-plugin/pull/61).
+* [Changed] Remove the result tag from the service check. See [#103](https://github.com/jenkinsci/datadog-plugin/pull/103).
+
 # 1.1.3 / 2020-07-23
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-1.1.2...datadog-1.1.3
