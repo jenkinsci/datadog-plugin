@@ -10,7 +10,7 @@ A Jenkins plugin for automatically forwarding metrics, events, and service check
 
 ### Installation
 
-_This plugin requires [Jenkins 1.632][2] or newer._
+_This plugin requires [Jenkins 2.164.1][2]._
 
 This plugin can be installed from the [Update Center][3] (found at `Manage Jenkins -> Manage Plugins`) in your Jenkins installation:
 
@@ -42,14 +42,14 @@ To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure S
 1. Select the radio button next to **Use Datadog API URL and Key to report to Datadog** (selected by default).
 2. Paste your [Datadog API key][4] in the `API Key` textbox on the Jenkins configuration screen.
 3. Test your Datadog API key by using the `Test Key` button on the Jenkins configuration screen directly below the API key textbox.
-4. (optional) Enter your [Datadog Log Intake URL][15].
+4. (optional) Enter your [Datadog Log Intake URL][15] and select "Enable Log Collection" in the Advanced tab.
 5. Save your configuration.
 
 ##### DogStatsD forwarding {#dogstatsd-forwarding-plugin}
 
 1. Select the radio button next to **Use the Datadog Agent to report to Datadog**.
 2. Specify your DogStatsD server `hostname` and `port`.
-3. (optional) Enter your Log Collection Port and configure [log collection](#log-collection).
+3. (optional) Enter your Log Collection Port and configure [log collection](#log-collection) and select "Enable Log Collection" in the Advanced tab.
 4. Save your configuration.
 
 #### Groovy script
@@ -126,6 +126,26 @@ Configure your Datadog plugin using environment variables with the `DATADOG_JENK
 Logging is done by utilizing the `java.util.Logger`, which follows the [best logging practices for Jenkins][6]. To obtain logs, follow the directions in the [Jenkins logging documentation][6]. When adding a logger, all Datadog plugin functions start with `org.datadog.jenkins.plugins.datadog.` and the function name you are after should autopopulate. As of this writing, the only function available was `org.datadog.jenkins.plugins.datadog.listeners.DatadogBuildListener`.
 
 ## Customization
+
+### Pipeline customization
+
+The Datadog plugin adds a "datadog" step that provides some configuration option for your pipeline-based jobs.
+In declarative pipelines, add the step to a top-level option block like so:
+```groovy
+pipeline {
+    agent any
+    options {
+        datadog(collectLogs: true, tags: ["foo:bar", "bar:baz"])
+    }
+    stages {
+        stage('Example') {
+            steps {
+                echo "Hello world."
+            }
+        }
+    }
+}
+```
 
 ### Global customization
 
