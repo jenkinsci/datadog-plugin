@@ -10,7 +10,7 @@ A Jenkins plugin for automatically forwarding metrics, events, and service check
 
 ### Installation
 
-_This plugin requires Java 8+ and [Jenkins 1.632][2] or newer._
+_This plugin requires [Jenkins 1.632][2] or newer._
 
 This plugin can be installed from the [Update Center][3] (found at `Manage Jenkins -> Manage Plugins`) in your Jenkins installation:
 
@@ -198,53 +198,57 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 
 ### Metrics
 
-| Metric Name                            | Description                                                    | Default Tags                                                |
-|----------------------------------------|----------------------------------------------------------------|-------------------------------------------------------------|
-| `jenkins.computer.launch_failure`      | Rate of computer launch failures.                              | `jenkins_url`                                               |
-| `jenkins.computer.offline`             | Rate of computer going offline.                                | `jenkins_url`                                               |
-| `jenkins.computer.online`              | Rate of computer going online.                                 | `jenkins_url`                                               |
-| `jenkins.computer.temporarily_offline` | Rate of computer going temporarily offline.                    | `jenkins_url`                                               |
-| `jenkins.computer.temporarily_online`  | Rate of computer going temporarily online.                     | `jenkins_url`                                               |
-| `jenkins.config.changed`               | Rate of configs being changed.                                 | `jenkins_url`, `user_id`                                    |
-| `jenkins.executor.count`               | Executor count.                                                | `jenkins_url`, `node_hostname`, `node_name`, `node_label`   |
-| `jenkins.executor.free`                | Number of unused executor.                                     | `jenkins_url`, `node_hostname`, `node_name`, `node_label`   |
-| `jenkins.executor.in_use`              | Number of idle executor.                                       | `jenkins_url`, `node_hostname`, `node_name`, `node_label`   |
-| `jenkins.item.copied`                  | Rate of items being copied.                                    | `jenkins_url`, `user_id`                                    |
-| `jenkins.item.created`                 | Rate of items being created.                                   | `jenkins_url`, `user_id`                                    |
-| `jenkins.item.deleted`                 | Rate of items being deleted.                                   | `jenkins_url`, `user_id`                                    |
-| `jenkins.item.location_changed`        | Rate of items being moved.                                     | `jenkins_url`, `user_id`                                    |
-| `jenkins.item.updated`                 | Rate of items being updated.                                   | `jenkins_url`, `user_id`                                    |
-| `jenkins.job.aborted`                  | Rate of aborted jobs.                                          | `branch`, `jenkins_url`, `job`, `node`, `user_id`           |
-| `jenkins.job.completed`                | Rate of completed jobs.                                        | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
-| `jenkins.job.cycletime`                | Build Cycle Time.                                              | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
-| `jenkins.job.duration`                 | Build duration (in seconds).                                   | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
-| `jenkins.job.feedbacktime`             | Feedback time from code commit to job failure.                 | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
-| `jenkins.job.leadtime`                 | Build Lead Time.                                               | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
-| `jenkins.job.mtbf`                     | MTBF, time between last successful job and current failed job. | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
-| `jenkins.job.mttr`                     | MTTR: time between last failed job and current successful job. | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id` |
-| `jenkins.job.started`                  | Rate of started jobs.                                          | `branch`, `jenkins_url`, `job`, `node`, `user_id`           |
-| `jenkins.job.waiting`                  | Time spent waiting for job to run (in milliseconds).           | `branch`, `jenkins_url`, `job`, `node`, `user_id`           |
-| `jenkins.node.count`                   | Total number of node.                                          | `jenkins_url`                                               |
-| `jenkins.node.offline`                 | Offline nodes count.                                           | `jenkins_url`                                               |
-| `jenkins.node.online`                  | Online nodes count.                                            | `jenkins_url`                                               |
-| `jenkins.node_status.count`            | If this node is present.                                       | `jenkins_url`, `node_hostname`, `node_name`, `node_label`   |
-| `jenkins.node_status.up`               | If a given node is online, value 1. Otherwise, 0.                                    | `jenkins_url`, `node_hostname`, `node_name`, `node_label`   |
-| `jenkins.plugin.count`                 | Plugins count.                                                 | `jenkins_url`                                               |
-| `jenkins.project.count`                | Project count.                                                 | `jenkins_url`                                               |
-| `jenkins.queue.size`                   | Queue Size.                                                    | `jenkins_url`                                               |
-| `jenkins.queue.buildable`              | Number of Buildable item in Queue.                             | `jenkins_url`                                               |
-| `jenkins.queue.pending`                | Number of Pending item in Queue.                               | `jenkins_url`                                               |
-| `jenkins.queue.stuck`                  | Number of Stuck item in Queue.                                 | `jenkins_url`                                               |
-| `jenkins.queue.blocked`                | Number of Blocked item in Queue.                               | `jenkins_url`                                               |
+| Metric Name                            | Description                                                    | Default Tags                                                               |
+|----------------------------------------|----------------------------------------------------------------|----------------------------------------------------------------------------|
+| `jenkins.computer.launch_failure`      | Rate of computer launch failures.                              | `jenkins_url`                                                              |
+| `jenkins.computer.offline`             | Rate of computer going offline.                                | `jenkins_url`                                                              |
+| `jenkins.computer.online`              | Rate of computer going online.                                 | `jenkins_url`                                                              |
+| `jenkins.computer.temporarily_offline` | Rate of computer going temporarily offline.                    | `jenkins_url`                                                              |
+| `jenkins.computer.temporarily_online`  | Rate of computer going temporarily online.                     | `jenkins_url`                                                              |
+| `jenkins.config.changed`               | Rate of configs being changed.                                 | `jenkins_url`, `user_id`                                                   |
+| `jenkins.executor.count`               | Executor count.                                                | `jenkins_url`, `node_hostname`, `node_name`, `node_label`                  |
+| `jenkins.executor.free`                | Number of unused executor.                                     | `jenkins_url`, `node_hostname`, `node_name`, `node_label`                  |
+| `jenkins.executor.in_use`              | Number of idle executor.                                       | `jenkins_url`, `node_hostname`, `node_name`, `node_label`                  |
+| `jenkins.item.copied`                  | Rate of items being copied.                                    | `jenkins_url`, `user_id`                                                   |
+| `jenkins.item.created`                 | Rate of items being created.                                   | `jenkins_url`, `user_id`                                                   |
+| `jenkins.item.deleted`                 | Rate of items being deleted.                                   | `jenkins_url`, `user_id`                                                   |
+| `jenkins.item.location_changed`        | Rate of items being moved.                                     | `jenkins_url`, `user_id`                                                   |
+| `jenkins.item.updated`                 | Rate of items being updated.                                   | `jenkins_url`, `user_id`                                                   |
+| `jenkins.job.aborted`                  | Rate of aborted jobs.                                          | `branch`, `jenkins_url`, `job`, `node`, `user_id`                          |
+| `jenkins.job.build_duration`           | Build duration without pause (in seconds).                     | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
+| `jenkins.job.completed`                | Rate of completed jobs.                                        | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
+| `jenkins.job.cycletime`                | Build Cycle Time.                                              | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
+| `jenkins.job.duration`                 | Build duration (in seconds).                                   | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
+| `jenkins.job.feedbacktime`             | Feedback time from code commit to job failure.                 | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
+| `jenkins.job.leadtime`                 | Build Lead Time.                                               | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
+| `jenkins.job.mtbf`                     | MTBF, time between last successful job and current failed job. | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
+| `jenkins.job.mttr`                     | MTTR: time between last failed job and current successful job. | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
+| `jenkins.job.pause_duration`            | Pause duration of build job (in seconds).                     | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
+| `jenkins.job.started`                  | Rate of started jobs.                                          | `branch`, `jenkins_url`, `job`, `node`, `user_id`                          |
+| `jenkins.job.stage_duration`           | Duration of individual stages.                                 | `jenkins_url`, `job`, `user_id`, `stage_name`, `stage_depth`, `stage_parent`, `result` |
+| `jenkins.job.waiting`                  | Time spent waiting for job to run (in milliseconds).           | `branch`, `jenkins_url`, `job`, `node`, `user_id`                          |
+| `jenkins.node.count`                   | Total number of node.                                          | `jenkins_url`                                                              |
+| `jenkins.node.offline`                 | Offline nodes count.                                           | `jenkins_url`                                                              |
+| `jenkins.node.online`                  | Online nodes count.                                            | `jenkins_url`                                                              |
+| `jenkins.node_status.count`            | If this node is present.                                       | `jenkins_url`, `node_hostname`, `node_name`, `node_label`                  |
+| `jenkins.node_status.up`               | If a given node is online, value 1. Otherwise, 0.              | `jenkins_url`, `node_hostname`, `node_name`, `node_label`                  |
+| `jenkins.plugin.count`                 | Plugins count.                                                 | `jenkins_url`                                                              |
+| `jenkins.project.count`                | Project count.                                                 | `jenkins_url`                                                              |
+| `jenkins.queue.size`                   | Queue Size.                                                    | `jenkins_url`                                                              |
+| `jenkins.queue.buildable`              | Number of Buildable item in Queue.                             | `jenkins_url`                                                              |
+| `jenkins.queue.pending`                | Number of Pending item in Queue.                               | `jenkins_url`                                                              |
+| `jenkins.queue.stuck`                  | Number of Stuck item in Queue.                                 | `jenkins_url`                                                              |
+| `jenkins.queue.blocked`                | Number of Blocked item in Queue.                               | `jenkins_url`                                                              |
 | `jenkins.queue.job.in_queue`                   | Number of times a Job has been in a Queue.                                                     | `jenkins_url`, `job_name`                                               |
 | `jenkins.queue.job.buildable`              | Number of times a Job has been Buildable in a Queue.                             | `jenkins_url`, `job_name`                                               |
 | `jenkins.queue.job.pending`                | Number of times a Job has been Pending in a Queue.                             | `jenkins_url`, `job_name`                                               |
 | `jenkins.queue.job.stuck`                  | Number of times a Job has been Stuck in a Queue.                                  | `jenkins_url`, `job_name`                                               |
 | `jenkins.queue.job.blocked`                | Number of times a Job has been Blocked in a Queue.                           | `jenkins_url`, `job_name`                                               |
-| `jenkins.scm.checkout`                 | Rate of SCM checkouts.                                         | `branch`, `jenkins_url`, `job`, `node`, `user_id`           |
-| `jenkins.user.access_denied`           | Rate of users failing to authenticate.                         | `jenkins_url`, `user_id`                                    |
-| `jenkins.user.authenticated`           | Rate of users authenticating.                                  | `jenkins_url`, `user_id`                                    |
-| `jenkins.user.logout`                  | Rate of users logging out.                                     | `jenkins_url`, `user_id`                                    |
+| `jenkins.scm.checkout`                 | Rate of SCM checkouts.                                         | `branch`, `jenkins_url`, `job`, `node`, `user_id`                          |
+| `jenkins.user.access_denied`           | Rate of users failing to authenticate.                         | `jenkins_url`, `user_id`                                                   |
+| `jenkins.user.authenticated`           | Rate of users authenticating.                                  | `jenkins_url`, `user_id`                                                   |
+| `jenkins.user.logout`                  | Rate of users logging out.                                     | `jenkins_url`, `user_id`                                                   |
+
 
 #### Log Collection for Agents
 
