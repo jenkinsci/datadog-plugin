@@ -29,9 +29,9 @@
           <f:textbox field="targetLogCollectionPort" default="${targetLogCollectionPort}" checkMethod="post" />
         </f:entry>
 
-        <f:entry title="Traces Collection Port" field="targetTraceCollectionPortEntry">
+        <!--<f:entry title="Traces Collection Port" field="targetTraceCollectionPortEntry">
           <f:textbox field="targetTraceCollectionPort" default="${targetTraceCollectionPort}" checkMethod="post" />
-        </f:entry>
+        </f:entry>-->
 
     </f:radioBlock>
 
@@ -97,9 +97,9 @@
             <f:checkbox title="Enable Log Collection" field="collectBuildLogs" default="false" />
         </f:entry>
 
-        <f:entry description="Enable Trace Collection. Traces are only available if Datadog Agent is used to report to Datadog.">
+        <!--<f:entry description="Enable Trace Collection. Traces are only available if Datadog Agent is used to report to Datadog.">
             <f:checkbox title="Enable Trace Collection" field="collectBuildTraces" default="false" />
-        </f:entry>
+        </f:entry>-->
 
     </f:advanced>
   </f:section>
