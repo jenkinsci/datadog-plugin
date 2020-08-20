@@ -61,6 +61,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static String TARGET_HOST_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_HOST";
     private static String TARGET_PORT_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_PORT";
     private static String TARGET_LOG_COLLECTION_PORT_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT";
+    private static String TARGET_TRACE_COLLECTION_PORT_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_TRACE_COLLECTION_PORT";
     private static String HOSTNAME_PROPERTY = "DATADOG_JENKINS_PLUGIN_HOSTNAME";
     private static String EXCLUDED_PROPERTY = "DATADOG_JENKINS_PLUGIN_EXCLUDED";
     private static String INCLUDED_PROPERTY = "DATADOG_JENKINS_PLUGIN_INCLUDED";
@@ -74,16 +75,19 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static String EMIT_SECURITY_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_SECURITY_EVENTS";
     private static String EMIT_SYSTEM_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS";
     private static String COLLECT_BUILD_LOGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS";
+    private static String COLLECT_BUILD_TRACES_PROPERTY = "DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_TRACES";
 
     private static String DEFAULT_REPORT_WITH_VALUE = DatadogClient.ClientType.HTTP.name();
     private static String DEFAULT_TARGET_API_URL_VALUE = "https://api.datadoghq.com/api/";
     private static String DEFAULT_TARGET_LOG_INTAKE_URL_VALUE = "https://http-intake.logs.datadoghq.com/v1/input/";
     private static String DEFAULT_TARGET_HOST_VALUE = "localhost";
     private static Integer DEFAULT_TARGET_PORT_VALUE = 8125;
+    private static Integer DEFAULT_TARGET_TRACE_COLLECTION_PORT_VALUE = null;
     private static Integer DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE = null;
     private static boolean DEFAULT_EMIT_SECURITY_EVENTS_VALUE = true;
     private static boolean DEFAULT_EMIT_SYSTEM_EVENTS_VALUE = true;
     private static boolean DEFAULT_COLLECT_BUILD_LOGS_VALUE = false;
+    private static boolean DEFAULT_COLLECT_BUILD_TRACES_VALUE = false;
 
     private String reportWith = DEFAULT_REPORT_WITH_VALUE;
     private String targetApiURL = DEFAULT_TARGET_API_URL_VALUE;
@@ -92,6 +96,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private String targetHost = DEFAULT_TARGET_HOST_VALUE;
     private Integer targetPort = DEFAULT_TARGET_PORT_VALUE;
     private Integer targetLogCollectionPort = DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE;
+    private Integer targetTraceCollectionPort = DEFAULT_TARGET_TRACE_COLLECTION_PORT_VALUE;
     private String hostname = null;
     private String blacklist = null;
     private String whitelist = null;
@@ -101,6 +106,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private boolean emitSecurityEvents = DEFAULT_EMIT_SECURITY_EVENTS_VALUE;
     private boolean emitSystemEvents = DEFAULT_EMIT_SYSTEM_EVENTS_VALUE;
     private boolean collectBuildLogs = DEFAULT_COLLECT_BUILD_LOGS_VALUE;
+    private boolean collectBuildTraces = DEFAULT_COLLECT_BUILD_TRACES_VALUE;
 
     @DataBoundConstructor
     public DatadogGlobalConfiguration() {
@@ -144,6 +150,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         String targetLogCollectionPortEnvVar = System.getenv(TARGET_LOG_COLLECTION_PORT_PROPERTY);
         if(StringUtils.isNotBlank(targetLogCollectionPortEnvVar) && StringUtils.isNumeric(targetLogCollectionPortEnvVar)){
             this.targetLogCollectionPort = Integer.valueOf(targetLogCollectionPortEnvVar);
+        }
+
+        String targetTraceCollectionPortEnvVar = System.getenv(TARGET_TRACE_COLLECTION_PORT_PROPERTY);
+        if(StringUtils.isNotBlank(targetTraceCollectionPortEnvVar) && StringUtils.isNumeric(targetTraceCollectionPortEnvVar)) {
+            this.targetTraceCollectionPort = Integer.valueOf(targetTraceCollectionPortEnvVar);
         }
 
         String hostnameEnvVar = System.getenv(HOSTNAME_PROPERTY);
@@ -201,6 +212,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         String collectBuildLogsEnvVar = System.getenv(COLLECT_BUILD_LOGS_PROPERTY);
         if(StringUtils.isNotBlank(collectBuildLogsEnvVar)){
             this.collectBuildLogs = Boolean.valueOf(collectBuildLogsEnvVar);
+        }
+
+        String collectBuildTracesEnvVar = System.getenv(COLLECT_BUILD_TRACES_PROPERTY);
+        if(StringUtils.isNotBlank(collectBuildTracesEnvVar)){
+            this.collectBuildTraces = Boolean.valueOf(collectBuildTraces);
         }
     }
 
@@ -333,6 +349,20 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     }
 
     /**
+     * @param targetTraceCollectionPort - The Trace Collection Port which the plugin will report to.
+     * @return a FormValidation object used to display a message to the user on the configuration
+     * screen.
+     */
+    @RequirePOST
+    public FormValidation doCheckTargetTraceCollectionPort(@QueryParameter("targetTraceCollectionPort") final String targetTraceCollectionPort) {
+        if (!validatePort(targetTraceCollectionPort) && collectBuildTraces) {
+            return FormValidation.error("Invalid Trace Collection Port");
+        }
+
+        return FormValidation.ok("Valid Trace Collection Port");
+    }
+
+    /**
      * Indicates if this builder can be used with all kinds of project types.
      *
      * @param aClass - An extension of the AbstractProject class representing a specific type of
@@ -389,6 +419,13 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             }else{
                 this.setTargetLogCollectionPort(null);
             }
+            String traceCollectionPortStr = formData.getString("targetTraceCollectionPort");
+            if(validatePort(traceCollectionPortStr)){
+                this.setTargetTraceCollectionPort(formData.getInt("targetTraceCollectionPort"));
+            }else{
+                this.setTargetTraceCollectionPort(null);
+            }
+
             if(StringUtils.isNotBlank(this.getHostname()) && !DatadogUtilities.isValidHostname(this.getHostname())){
                 throw new FormException("Your hostname is invalid, likely because it violates the format set in RFC 1123", "hostname");
             }
@@ -403,11 +440,12 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.setEmitSecurityEvents(formData.getBoolean("emitSecurityEvents"));
             this.setEmitSystemEvents(formData.getBoolean("emitSystemEvents"));
             this.setCollectBuildLogs(formData.getBoolean("collectBuildLogs"));
+            this.setCollectBuildTraces(formData.getBoolean("collectBuildTraces"));
 
             //When form is saved....
             DatadogClient client = ClientFactory.getClient(DatadogClient.ClientType.valueOf(this.getReportWith()),
                     this.getTargetApiURL(), this.getTargetLogIntakeURL(), this.getTargetApiKey(), this.getTargetHost(),
-                    this.getTargetPort(), this.getTargetLogCollectionPort());
+                    this.getTargetPort(), this.getTargetLogCollectionPort(), this.getTargetTraceCollectionPort());
                 // ...reinitialize the DatadogClient
             if(client == null) {
                 return false;
@@ -564,6 +602,25 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @DataBoundSetter
     public void setTargetLogCollectionPort(Integer targetLogCollectionPort) {
         this.targetLogCollectionPort = targetLogCollectionPort;
+    }
+
+    /**
+     * Getter function for the targetTraceCollectionPort global configuration.
+     *
+     * @return a Integer containing the targetTraceCollectionPort global configuration.
+     */
+    public Integer getTargetTraceCollectionPort() {
+        return targetTraceCollectionPort;
+    }
+
+    /**
+     * Setter function for the targetLogCollectionPort global configuration.
+     *
+     * @param targetTraceCollectionPort = A string containing the Trace Collection Port
+     */
+    @DataBoundSetter
+    public void setTargetTraceCollectionPort(Integer targetTraceCollectionPort) {
+        this.targetTraceCollectionPort = targetTraceCollectionPort;
     }
 
     /**
@@ -778,4 +835,20 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         this.collectBuildLogs = collectBuildLogs;
     }
 
+    /**
+     * @return - A {@link Boolean} indicating if the user has configured Datadog to collect traces.
+     */
+    public boolean isCollectBuildTraces() {
+        return collectBuildTraces;
+    }
+
+    /**
+     * Set the checkbox in the UI, used for Jenkins data binding
+     *
+     * @param collectBuildTraces - The checkbox status (checked/unchecked)
+     */
+    @DataBoundSetter
+    public void setCollectBuildTraces(boolean collectBuildTraces) {
+        this.collectBuildTraces = collectBuildTraces;
+    }
 }

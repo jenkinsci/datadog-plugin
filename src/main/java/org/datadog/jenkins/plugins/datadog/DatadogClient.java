@@ -26,7 +26,11 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog;
 
 import com.timgroup.statsd.ServiceCheck;
+import hudson.model.Run;
 import hudson.util.Secret;
+import io.opentracing.Tracer;
+import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 import java.util.Map;
 import java.util.Set;
@@ -133,5 +137,25 @@ public interface DatadogClient {
      * @return a boolean to signify the success or failure of the request.
      */
     public boolean sendLogs(String payload);
+
+    /**
+     * Start the trace of a certain Jenkins build.
+     * @param buildData
+     * @param run
+     */
+    void startBuildTrace(BuildData buildData, Run run);
+
+    /**
+     * Finish the trace of a certain Jenkins build.
+     * @param buildData
+     */
+    void finishBuildTrace(BuildData buildData);
+
+    /**
+     * Send all traces related to a certain Jenkins pipeline.
+     * @param run a particular execution of a Jenkins build
+     * @param flowNode current flowNode
+     */
+    void sendPipelineTrace(Run<?, ?> run, FlowNode flowNode);
 
 }

@@ -26,7 +26,9 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.clients;
 
 import hudson.ProxyConfiguration;
+import hudson.model.Run;
 import hudson.util.Secret;
+import io.opentracing.Tracer;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -34,9 +36,11 @@ import net.sf.json.JSONSerializer;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -146,6 +150,11 @@ public class DatadogHttpClient implements DatadogClient {
                 logger.warning("Connection broken, please double check both your Log Intake URL and Key");
             }
         }
+
+        if (DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildTraces() ) {
+            logger.warning("Traces Collection only can be used if Datadog Agent reports to Datadog.");
+        }
+
         try {
             boolean intakeConnection = validateDefaultIntakeConnection(url, apiKey);
             if (!intakeConnection) {
@@ -646,4 +655,20 @@ public class DatadogHttpClient implements DatadogClient {
         }
         return this.jenkinsVersion;
     }
+
+    @Override
+    public void startBuildTrace(BuildData buildData, Run run) {
+        logger.fine("Traces are only available using Datadog Agent.");
+    }
+
+    @Override
+    public void finishBuildTrace(BuildData buildData) {
+        logger.fine("Traces are only available using Datadog Agent.");
+    }
+
+    @Override
+    public void sendPipelineTrace(Run<?, ?> run, FlowNode flowNode) {
+        logger.fine("Traces are only available using Datadog Agent.");
+    }
+
 }

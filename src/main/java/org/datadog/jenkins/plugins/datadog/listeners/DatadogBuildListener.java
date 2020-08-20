@@ -33,12 +33,6 @@ import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
-import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
-import javax.annotation.Nonnull;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
@@ -48,6 +42,13 @@ import org.datadog.jenkins.plugins.datadog.events.BuildFinishedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildStartedEventImpl;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+
+import javax.annotation.Nonnull;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 
 /**
@@ -113,6 +114,9 @@ public class DatadogBuildListener extends RunListener<Run> {
 
             // Submit counter
             client.incrementCounter("jenkins.job.started", hostname, tags);
+
+            // Traces
+            client.startBuildTrace(buildData, run);
 
             logger.fine("End DatadogBuildListener#onStarted");
         } catch (Exception e) {
@@ -224,11 +228,15 @@ public class DatadogBuildListener extends RunListener<Run> {
                 }
             }
 
+            // APM Traces
+            client.finishBuildTrace(buildData);
+
             logger.fine("End DatadogBuildListener#onCompleted");
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, null);
         }
     }
+
 
     @Override
     public void onDeleted(Run run) {

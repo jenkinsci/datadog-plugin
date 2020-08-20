@@ -84,7 +84,7 @@ public class DatadogClientTest {
         // validateCongiguration throws an error when given an invalid port
         Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> {
             DogStatsDClient.enableValidations = false;
-            DogStatsDClient client = (DogStatsDClient) DogStatsDClient.getInstance("test", null, null);
+            DogStatsDClient client = (DogStatsDClient) DogStatsDClient.getInstance("test", null, null, null);
             client.validateConfiguration();
         });
 
@@ -97,7 +97,7 @@ public class DatadogClientTest {
     public void testDogstatsDClientGetInstanceEnableValidations() {
         // calling getInstance with invalid data returns null
         DogStatsDClient.enableValidations = true;
-        DatadogClient client = DogStatsDClient.getInstance("https", null, null);
+        DatadogClient client = DogStatsDClient.getInstance("https", null, null, null);
         Assert.assertEquals(client, null);
     }
 

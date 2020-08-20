@@ -27,27 +27,14 @@ package org.datadog.jenkins.plugins.datadog.listeners;
 
 import hudson.Extension;
 import hudson.model.Queue;
-import hudson.model.Result;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Logger;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
+import hudson.model.Run;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
-import org.jenkinsci.plugins.workflow.actions.ErrorAction;
-import org.jenkinsci.plugins.workflow.actions.LabelAction;
-import org.jenkinsci.plugins.workflow.actions.NotExecutedNodeAction;
-import org.jenkinsci.plugins.workflow.actions.QueueItemAction;
-import org.jenkinsci.plugins.workflow.actions.StageAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.actions.TimingAction;
-import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
@@ -55,6 +42,13 @@ import org.jenkinsci.plugins.workflow.flow.GraphListener;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  * A GraphListener implementation which computes timing information
@@ -67,19 +61,24 @@ public class DatadogGraphListener implements GraphListener {
 
     @Override
     public void onNewHead(FlowNode flowNode) {
-        if (!isMonitored(flowNode)) {
-            return;
-        }
+        //APM Traces
         DatadogClient client = ClientFactory.getClient();
         if (client == null){
             return;
         }
+
+        client.sendPipelineTrace(runFor(flowNode.getExecution()), flowNode);
+
+        if (!isMonitored(flowNode)) {
+            return;
+        }
+
         StepEndNode endNode = (StepEndNode) flowNode;
         StepStartNode startNode = endNode.getStartNode();
         int stageDepth = 0;
         String directParentName = null;
         for (BlockStartNode node : startNode.iterateEnclosingBlocks()) {
-            if (isStageNode(node)) {
+            if (DatadogUtilities.isStageNode(node)) {
                 if(directParentName == null){
                     directParentName = getStageName(node);
                 }
@@ -93,8 +92,9 @@ public class DatadogGraphListener implements GraphListener {
         if(run == null){
             return;
         }
+
         try {
-            String result = getResultTag(endNode);
+            String result = DatadogUtilities.getResultTag(endNode);
             BuildData buildData = new BuildData(run, flowNode.getExecution().getOwner().getListener());
             String hostname = buildData.getHostname("");
             Map<String, Set<String>> tags = buildData.getTags();
@@ -124,7 +124,7 @@ public class DatadogGraphListener implements GraphListener {
 
         // Filter the node out if it is not the end of a stage.
         // The plugin only monitors timing information of stages
-        if (!isStageNode(((StepEndNode) flowNode).getStartNode())) {
+        if (!DatadogUtilities.isStageNode(((StepEndNode) flowNode).getStartNode())) {
             return false;
         }
 
@@ -148,22 +148,6 @@ public class DatadogGraphListener implements GraphListener {
         return null;
     }
 
-    boolean isStageNode(BlockStartNode flowNode) {
-        if (flowNode == null) {
-            return false;
-        }
-        if (flowNode.getAction(StageAction.class) != null) {
-            // Legacy style stage block without a body
-            // https://groups.google.com/g/jenkinsci-users/c/MIVk-44cUcA
-            return true;
-        }
-        if (flowNode.getAction(ThreadNameAction.class) != null) {
-            // TODO comment
-            return false;
-        }
-        return flowNode.getAction(LabelAction.class) != null;
-    }
-
     String getStageName(@Nonnull BlockStartNode flowNode) {
         ThreadNameAction threadNameAction = flowNode.getAction(ThreadNameAction.class);
         if (threadNameAction != null) {
@@ -182,25 +166,24 @@ public class DatadogGraphListener implements GraphListener {
         return 0;
     }
 
-    String getResultTag(@Nonnull FlowNode endNode) {
-        ErrorAction error = endNode.getError();
-        if (error != null) {
-            return "ERROR";
+    /**
+     * Gets the jenkins run object of the specified executing workflow.
+     *
+     * @param exec execution of a workflow
+     * @return jenkins run object of a job
+     */
+    private static @CheckForNull Run<?, ?> runFor(FlowExecution exec) {
+        Queue.Executable executable;
+        try {
+            executable = exec.getOwner().getExecutable();
+        } catch (IOException x) {
+            DatadogUtilities.severe(logger, x, "");
+            return null;
         }
-        WarningAction warningAction = endNode.getPersistentAction(WarningAction.class);
-        if (warningAction != null) {
-            Result result = warningAction.getResult();
-            // Result could be SUCCESS, NOT_BUILT, FAILURE, etc https://javadoc.jenkins-ci.org/hudson/model/Result.html
-            return result.toString();
+        if (executable instanceof Run) {
+            return (Run<?, ?>) executable;
+        } else {
+            return null;
         }
-        // Other possibilities are queued, launched, unknown: https://javadoc.jenkins.io/plugin/workflow-api/org/jenkinsci/plugins/workflow/actions/QueueItemAction.QueueState.html
-        if (QueueItemAction.getNodeState(endNode) == QueueItemAction.QueueState.CANCELLED) {
-            return "CANCELLED";
-        }
-        FlowExecution exec = endNode.getExecution();
-        if ((exec != null && exec.isComplete()) || NotExecutedNodeAction.isExecuted(endNode)) {
-            return "SUCCESS";
-        }
-        return "UNKNOWN";
     }
 }

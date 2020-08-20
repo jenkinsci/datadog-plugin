@@ -25,20 +25,33 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.clients;
 
-import com.timgroup.statsd.*;
+import com.timgroup.statsd.Event;
+import com.timgroup.statsd.NonBlockingStatsDClient;
+import com.timgroup.statsd.ServiceCheck;
+import com.timgroup.statsd.StatsDClient;
+import datadog.opentracing.DDTracer;
+import datadog.trace.common.writer.DDAgentWriter;
+import hudson.model.Run;
 import hudson.util.Secret;
+import io.opentracing.Tracer;
+import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic;
+import org.datadog.jenkins.plugins.datadog.traces.DatadogTracePipelineLogic;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
-import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 import java.net.ConnectException;
 import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.*;
+import java.util.logging.Handler;
+import java.util.logging.Logger;
+import java.util.logging.SocketHandler;
 
 /**
  * This class is used to collect all methods that has to do with transmitting
@@ -56,6 +69,9 @@ public class DogStatsDClient implements DatadogClient {
     @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL")
     public static boolean enableValidations = true;
 
+    private DatadogTraceBuildLogic traceBuildLogic;
+    private DatadogTracePipelineLogic tracePipelineLogic;
+
     private StatsDClient statsd;
     private Logger ddLogger;
     private String previousPayload;
@@ -63,6 +79,7 @@ public class DogStatsDClient implements DatadogClient {
     private String hostname = null;
     private Integer port = null;
     private Integer logCollectionPort = null;
+    private Integer traceCollectionPort = null;
     private boolean isStopped = true;
 
     /**
@@ -74,11 +91,11 @@ public class DogStatsDClient implements DatadogClient {
      * @return an singleton instance of the DogStatsDClient.
      */
     @SuppressFBWarnings(value={"DC_DOUBLECHECK", "RC_REF_COMPARISON"})
-    public static DatadogClient getInstance(String hostname, Integer port, Integer logCollectionPort){
+    public static DatadogClient getInstance(String hostname, Integer port, Integer logCollectionPort, Integer traceCollectionPort){
         // If the configuration has not changed, return the current instance without validation
         // since we've already validated and/or errored about the data
 
-        DogStatsDClient newInstance = new DogStatsDClient(hostname, port, logCollectionPort);
+        DogStatsDClient newInstance = new DogStatsDClient(hostname, port, logCollectionPort, traceCollectionPort);
         if (instance != null && instance.equals(newInstance)) {
             if (DogStatsDClient.failedLastValidation) {
                 return null;
@@ -102,14 +119,16 @@ public class DogStatsDClient implements DatadogClient {
         if (instance != null){
             instance.reinitialize(true);
             instance.reinitializeLogger(true);
+            instance.reinitializeTracer(true);
         }
         return instance;
     }
 
-    private DogStatsDClient(String hostname, Integer port, Integer logCollectionPort) {
+    private DogStatsDClient(String hostname, Integer port, Integer logCollectionPort, Integer traceCollectionPort) {
         this.hostname = hostname;
         this.port = port;
         this.logCollectionPort = logCollectionPort;
+        this.traceCollectionPort = traceCollectionPort;
     }
 
     public void validateConfiguration() throws IllegalArgumentException {
@@ -121,6 +140,10 @@ public class DogStatsDClient implements DatadogClient {
         }
         if (DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs()  && logCollectionPort == null) {
             logger.warning("Datadog Log Collection Port is not set properly");
+        }
+
+        if (DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildTraces()  && traceCollectionPort == null) {
+            logger.warning("Datadog Trace Collection Port is not set properly");
         }
         return;
     }
@@ -171,6 +194,7 @@ public class DogStatsDClient implements DatadogClient {
             DatadogUtilities.severe(logger, e, "Failed to reinitialize DogStatsD Client");
             this.stop();
         }
+
         return !isStopped;
     }
 
@@ -210,6 +234,31 @@ public class DogStatsDClient implements DatadogClient {
             }
             return false;
         }
+        return true;
+    }
+
+
+    /**
+     * reinitialize the Tracer Client
+     * @param force - force to reinitialize
+     * @return true if reinitialized properly otherwise false
+     */
+    private boolean reinitializeTracer(boolean force) {
+        if(this.traceBuildLogic != null && this.tracePipelineLogic != null && !force) {
+            return true;
+        }
+
+        if(!DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildTraces() || this.traceCollectionPort == null) {
+            return false;
+        }
+
+        logger.info("Re/Initialize Datadog-Plugin Tracer: hostname = " + this.hostname + ", traceCollectionPort = " + this.traceCollectionPort);
+        final DDTracer.DDTracerBuilder tracerBuilder = DDTracer.builder();
+        tracerBuilder.writer(DDAgentWriter.builder().traceAgentPort(traceCollectionPort).build());
+
+        final Tracer ddTracer = tracerBuilder.build();
+        traceBuildLogic = new DatadogTraceBuildLogic(ddTracer);
+        tracePipelineLogic = new DatadogTracePipelineLogic(ddTracer);
         return true;
     }
 
@@ -423,4 +472,21 @@ public class DogStatsDClient implements DatadogClient {
         }
         return true;
     }
+
+    @Override
+    public void startBuildTrace(BuildData buildData, Run run) {
+        traceBuildLogic.startBuildTrace(buildData, run);
+    }
+
+    @Override
+    public void finishBuildTrace(BuildData buildData) {
+        traceBuildLogic.finishBuildTrace(buildData);
+    }
+
+    @Override
+    public void sendPipelineTrace(Run<?, ?> run, FlowNode flowNode) {
+        tracePipelineLogic.execute(run, flowNode);
+    }
+
+
 }

@@ -27,13 +27,30 @@ package org.datadog.jenkins.plugins.datadog;
 
 import hudson.EnvVars;
 import hudson.ExtensionList;
+import hudson.FilePath;
 import hudson.XmlFile;
+import hudson.console.AnnotatedLargeText;
 import hudson.model.*;
 import hudson.model.labels.LabelAtom;
 import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.steps.DatadogPipelineAction;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
+import org.jenkinsci.plugins.workflow.actions.ErrorAction;
+import org.jenkinsci.plugins.workflow.actions.LabelAction;
+import org.jenkinsci.plugins.workflow.actions.LogAction;
+import org.jenkinsci.plugins.workflow.actions.NotExecutedNodeAction;
+import org.jenkinsci.plugins.workflow.actions.QueueItemAction;
+import org.jenkinsci.plugins.workflow.actions.StageAction;
+import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
+import org.jenkinsci.plugins.workflow.actions.TimingAction;
+import org.jenkinsci.plugins.workflow.actions.WarningAction;
+import org.jenkinsci.plugins.workflow.flow.FlowExecution;
+import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
+import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
+import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
 
 import javax.annotation.Nonnull;
 import java.io.*;
@@ -44,6 +61,7 @@ import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class DatadogUtilities {
 
@@ -604,6 +622,58 @@ public class DatadogUtilities {
         }
     }
 
+    public static String getResultTag(@Nonnull FlowNode endNode) {
+        ErrorAction error = endNode.getError();
+        if (error != null) {
+            return "ERROR";
+        }
+        WarningAction warningAction = endNode.getPersistentAction(WarningAction.class);
+        if (warningAction != null) {
+            Result result = warningAction.getResult();
+            // Result could be SUCCESS, NOT_BUILT, FAILURE, etc https://javadoc.jenkins-ci.org/hudson/model/Result.html
+            return result.toString();
+        }
+        // Other possibilities are queued, launched, unknown: https://javadoc.jenkins.io/plugin/workflow-api/org/jenkinsci/plugins/workflow/actions/QueueItemAction.QueueState.html
+        if (QueueItemAction.getNodeState(endNode) == QueueItemAction.QueueState.CANCELLED) {
+            return "CANCELLED";
+        }
+        FlowExecution exec = endNode.getExecution();
+        if ((exec != null && exec.isComplete()) || NotExecutedNodeAction.isExecuted(endNode)) {
+            return "SUCCESS";
+        }
+        return "UNKNOWN";
+    }
+
+    /**
+     * Returns true if a {@code FlowNode} is a Stage node.
+     * @param flowNode
+     * @return flag indicating if a flowNode is a Stage node.
+     */
+    public static boolean isStageNode(BlockStartNode flowNode) {
+        if (flowNode == null) {
+            return false;
+        }
+        if (flowNode.getAction(StageAction.class) != null) {
+            // Legacy style stage block without a body
+            // https://groups.google.com/g/jenkinsci-users/c/MIVk-44cUcA
+            return true;
+        }
+        if (flowNode.getAction(ThreadNameAction.class) != null) {
+            // TODO comment
+            return false;
+        }
+        return flowNode.getAction(LabelAction.class) != null;
+    }
+
+    /**
+     * Returns true if a {@code FlowNode} is a Pipeline node.
+     * @param flowNode
+     * @return flag indicating if a flowNode is a Pipeline node.
+     */
+    public static boolean isPipelineNode(FlowNode flowNode) {
+        return flowNode instanceof FlowEndNode;
+    }
+
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH")
     public static void severe(Logger logger, Throwable e, String message){
         if(message == null){
@@ -622,4 +692,5 @@ public class DatadogUtilities {
     public static int toInt(boolean b) {
         return b ? 1 : 0;
     }
+
 }
