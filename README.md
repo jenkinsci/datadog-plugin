@@ -25,10 +25,9 @@ This plugin can be installed from the [Update Center][3] (found at `Manage Jenki
 There are two ways to configure your plugin to submit data to Datadog:
 
 * **RECOMMENDED**: Using a DogStatsD server / Datadog Agent that acts as a forwarder between Jenkins and Datadog.
-  - Build Logs and Traces collection only works with a full Datadog Agent installed.
+  - Build Logs collection only works with a full Datadog Agent installed.
 * Sending data directly to Datadog through HTTP.
   - The HTTP client implementation used is blocking with a timeout duration of 1 minute. If there is a connection problem with Datadog, it may slow your Jenkins instance down.
-  - Traces collection is not available.
 
 The configuration can be done from the [plugin user interface](#plugin-user-interface) with a [Groovy script](#groovy-script), or through [environment variables](#environment-variables).
 
@@ -49,8 +48,6 @@ To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure S
 1. Select the radio button next to **Use the Datadog Agent to report to Datadog**.
 2. Specify your DogStatsD server `hostname` and `port`.
 3. (optional) Enter your Log Collection Port and configure [log collection](#log-collection).
-4. (optional) Enter your Trace Collection Port.
-5. Save your configuration.
 
 #### Groovy script
 
@@ -96,8 +93,6 @@ d.setTargetPort(8125)
 // If you want to collect logs
 d.setLogCollectionPort(8125)
 
-// If you want to collect traces
-d.setTraceCollectionPort(8126)
 
 // Customization, see dedicated section below
 d.setExcluded('job1,job2')
@@ -123,7 +118,6 @@ Configure your Datadog plugin using environment variables with the `DATADOG_JENK
 2. Set the `DATADOG_JENKINS_PLUGIN_TARGET_HOST` variable, which specifies the DogStatsD server host (defaults to `localhost`).
 3. Set the `DATADOG_JENKINS_PLUGIN_TARGET_PORT` variable, which specifies the DogStatsD server port (defaults to `8125`).
 4. (optional) Set the `DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT` variable, which specifies the Datadog Agent log collection port.
-5. (optional) Set the `DATADOG_JENKINS_PLUGIN_TARGET_TRACE_COLLECTION_PORT` variable, which specifies the Datadog Agent trace collection port.
 
 #### Logging
 
@@ -145,7 +139,6 @@ To customize your global configuration, in Jenkins navigate to `Manage Jenkins -
 | Send security audit events | Submits the `Security Events Type` of events and metrics (enabled by default).                                                                                                                                                                | `DATADOG_JENKINS_PLUGIN_EMIT_SECURITY_EVENTS` |
 | Send system events         | Submits the `System Events Type` of events and metrics (enabled by default).                                                                                                                                                                  | `DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS`   |
 | Enable Log Collection      | Collect and Submit build logs (disabled by default).                                                                                                                                                                  | `DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS`   |
-| Enable Trace Collection      | Collect and Submit build traces (disabled by default).                                                                                                                                                                  | `DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_TRACES`   |
 
 ### Job customization
 
@@ -278,22 +271,6 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 3. In Jenkins, submit the port you specified above as the `Log Collection Port`. You can set this using [env vars](#dogstatsd-forwarding-env), a [groovy script](#dogstatsd-forwarding-groovy-script), or the [Jenkins UI](#dogstatsd-forwarding-plugin).
   
 4. [Restart the Agent][14].
-
-#### Trace Collection for Agents
-
-**Note**: This configuration only applies to those using the [Datadog Agent configuration](#dogstatsd-forwarding-plugin).
-
-1. Collecting traces is disabled by default in the Datadog Agent, enable it in your `datadog.yaml` file:
-
-   ```yaml
-   apm_config:
-     enabled: true
-     apm_non_local_traffic: true
-   ```
-   
-2. In Jenkins, submit the port you specified above as the `Trace Collection Port`. You can set this using [env vars](#dogstatsd-forwarding-env), a [groovy script](#dogstatsd-forwarding-groovy-script), or the [Jenkins UI](#dogstatsd-forwarding-plugin).
-  
-3. [Restart the Agent][14].
 
 
 ### Service checks

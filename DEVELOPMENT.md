@@ -48,12 +48,9 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
     #   environment:
     #      - DATADOG_JENKINS_PLUGIN_REPORT_WITH=DSD
     #      - DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS=false
-    ## Collect build traces only is available if `dogstatsd` host is selected.
-    #      - DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_TRACES=false
     ## Set `DATADOG_JENKINS_PLUGIN_TARGET_HOST` to `dogstatsd` or `datadog` based on the container you wish to use.
     #      - DATADOG_JENKINS_PLUGIN_TARGET_HOST=dogstatsd
     #      - DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT=10518
-    #      - DATADOG_JENKINS_PLUGIN_TARGET_TRACE_COLLECTION_PORT=8126
     #      - DATADOG_JENKINS_PLUGIN_TARGET_API_KEY=$JENKINS_PLUGIN_DATADOG_API_KEY
       
     ## Uncomment the section below to use the standalone DogStatsD server to send metrics to Datadog
@@ -63,7 +60,6 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
     #      - DD_API_KEY=$JENKINS_PLUGIN_DATADOG_API_KEY
     #    ports:
     #      - 8125:8125
-    #      - 8126:8126
     
     ## Uncomment the section below to use the whole Datadog Agent to send metrics (and logs) to Datadog. 
     ## Note that it contains a DogStatsD server as well.
@@ -72,11 +68,8 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
     #    environment:
     #      - DD_API_KEY=$JENKINS_PLUGIN_DATADOG_API_KEY
     #      - DD_LOGS_ENABLED=true
-    #      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
-    #      - DD_TRACES_ENABLED=true
     #     ports:
     #       - 8125:8125
-    #       - 8126:8126
     #       - 10518:10518
     #    volumes:
     #      - /var/run/docker.sock:/var/run/docker.sock:ro
