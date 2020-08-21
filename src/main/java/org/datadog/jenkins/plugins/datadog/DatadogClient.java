@@ -143,13 +143,13 @@ public interface DatadogClient {
      * @param buildData
      * @param run
      */
-    void startBuildTrace(BuildData buildData, Run run);
+    void startBuildTrace(BuildData buildData, Run<?, ?> run);
 
     /**
      * Finish the trace of a certain Jenkins build.
      * @param buildData
      */
-    void finishBuildTrace(BuildData buildData);
+    void finishBuildTrace(BuildData buildData, Run<?, ?> run);
 
     /**
      * Send all traces related to a certain Jenkins pipeline.

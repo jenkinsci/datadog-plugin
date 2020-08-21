@@ -172,13 +172,13 @@ public class DatadogClientStub implements DatadogClient {
     }
 
     @Override
-    public void startBuildTrace(BuildData buildData, Run run) {
+    public void startBuildTrace(BuildData buildData, Run<?, ?> run) {
         this.traceBuildLogic.startBuildTrace(buildData, run);
     }
 
     @Override
-    public void finishBuildTrace(BuildData buildData) {
-        this.traceBuildLogic.finishBuildTrace(buildData);
+    public void finishBuildTrace(BuildData buildData, Run<?, ?> run) {
+        this.traceBuildLogic.finishBuildTrace(buildData, run);
     }
 
     @Override

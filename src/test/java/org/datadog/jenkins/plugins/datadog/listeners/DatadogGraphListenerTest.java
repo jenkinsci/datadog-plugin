@@ -1,6 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.listeners;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -181,58 +182,76 @@ public class DatadogGraphListenerTest {
 
         final List<DDSpan> buildTrace = tracerWriter.get(0);
         assertEquals(1, buildTrace.size());
-        final String buildPrefix = BuildPipelineNode.NodeType.PIPELINE.getNormalizedName();
+        final String buildPrefix = BuildPipelineNode.NodeType.PIPELINE.getTagName();
         final DDSpan buildSpan = buildTrace.get(0);
         assertEquals("jenkins.build", buildSpan.getOperationName());
         assertEquals("jenkins", buildSpan.getServiceName());
         assertEquals("pipelineIntegrationSuccess", buildSpan.getResourceName());
         assertEquals("ci", buildSpan.getType());
-        assertEquals("pipelineIntegrationSuccess", buildSpan.getTag(buildPrefix + CITags._NAME));
-        assertEquals("SUCCESS", buildSpan.getTag(buildPrefix + CITags._RESULT));
-        assertEquals("1", buildSpan.getTag(buildPrefix + CITags._ID));
-        assertEquals("SUCCESS", buildSpan.getTag(CITags.JENKINS_RESULT));
-        assertEquals("jenkins", buildSpan.getTag(CITags.CI_PROVIDER));
-        assertEquals("1", buildSpan.getTag(buildPrefix + CITags._NUMBER));
         assertEquals("anonymous", buildSpan.getTag(CITags.USER_NAME));
+        assertEquals("jenkins", buildSpan.getTag(CITags.CI_PROVIDER_NAME));
+        assertEquals("jenkins-pipelineIntegrationSuccess-1", buildSpan.getTag(buildPrefix + CITags._ID));
+        assertEquals("pipelineIntegrationSuccess", buildSpan.getTag(buildPrefix + CITags._NAME));
+        assertEquals("1", buildSpan.getTag(buildPrefix + CITags._NUMBER));
+        assertEquals("success", buildSpan.getTag(buildPrefix + CITags._RESULT));
+        assertNotNull(buildSpan.getTag(buildPrefix + CITags._URL));
+        assertNotNull(buildSpan.getTag(CITags.NODE_NAME));
+        assertNotNull(buildSpan.getTag(CITags._DD_HOSTNAME));
+        assertEquals("success", buildSpan.getTag(CITags.JENKINS_RESULT));
         assertEquals("jenkins-pipelineIntegrationSuccess-1", buildSpan.getTag(CITags.JENKINS_TAG));
+        assertEquals(false, buildSpan.getTag(CITags._DD_CI_INTERNAL));
 
         final List<DDSpan> pipelineTrace = tracerWriter.get(1);
         assertEquals(4, pipelineTrace.size());
 
-        final String pipelinePrefix = BuildPipelineNode.NodeType.PIPELINE.getNormalizedName();
+        final String pipelinePrefix = BuildPipelineNode.NodeType.PIPELINE.getTagName();
         final DDSpan pipelineSpan = pipelineTrace.get(0);
         assertEquals("jenkins.pipeline.internal", pipelineSpan.getOperationName());
         assertEquals("jenkins", pipelineSpan.getServiceName());
         assertEquals("Start of Pipeline", pipelineSpan.getResourceName());
         assertEquals("ci", pipelineSpan.getType());
         assertEquals("Start of Pipeline", pipelineSpan.getTag(pipelinePrefix + CITags._NAME));
-        assertEquals("2", pipelineSpan.getTag(pipelinePrefix + CITags._ID));
-        assertEquals("SUCCESS", pipelineSpan.getTag(CITags.JENKINS_RESULT));
-        assertEquals("jenkins", pipelineSpan.getTag(CITags.CI_PROVIDER));
+        assertEquals("jenkins-pipelineIntegrationSuccess-1-2", pipelineSpan.getTag(pipelinePrefix + CITags._ID));
+        assertEquals("1", pipelineSpan.getTag(pipelinePrefix + CITags._NUMBER));
+        assertEquals("success", pipelineSpan.getTag(CITags.JENKINS_RESULT));
+        assertEquals("jenkins", pipelineSpan.getTag(CITags.CI_PROVIDER_NAME));
+        assertNotNull(pipelineSpan.getTag(pipelinePrefix + CITags._URL));
+        assertNotNull(pipelineSpan.getTag(CITags.NODE_NAME));
+        assertNotNull(pipelineSpan.getTag(CITags._DD_HOSTNAME));
+        assertEquals(true, pipelineSpan.getTag(CITags._DD_CI_INTERNAL));
 
-        final String stepPrefix = BuildPipelineNode.NodeType.STEP.getNormalizedName();
+        final String stepPrefix = BuildPipelineNode.NodeType.STEP.getTagName();
         final DDSpan stepInternalSpan = pipelineTrace.get(1);
         assertEquals("jenkins.step.internal", stepInternalSpan.getOperationName());
         assertEquals("jenkins", stepInternalSpan.getServiceName());
         assertEquals("Stage : Start", stepInternalSpan.getResourceName());
         assertEquals("ci", stepInternalSpan.getType());
         assertEquals("Stage : Start", stepInternalSpan.getTag(stepPrefix + CITags._NAME));
-        assertEquals("3", stepInternalSpan.getTag(stepPrefix + CITags._ID));
-        assertEquals("SUCCESS", stepInternalSpan.getTag(CITags.JENKINS_RESULT));
-        assertEquals("jenkins", stepInternalSpan.getTag(CITags.CI_PROVIDER));
+        assertEquals("jenkins-pipelineIntegrationSuccess-1-3", stepInternalSpan.getTag(stepPrefix + CITags._ID));
+        assertEquals("success", stepInternalSpan.getTag(CITags.JENKINS_RESULT));
+        assertEquals("jenkins", stepInternalSpan.getTag(CITags.CI_PROVIDER_NAME));
         assertEquals("test", stepInternalSpan.getTag("jenkins.step.args.name"));
         assertNotNull(stepInternalSpan.getTag(stepPrefix + CITags._URL));
+        assertNotNull(stepInternalSpan.getTag(CITags.NODE_NAME));
+        assertNotNull(stepInternalSpan.getTag(CITags._DD_HOSTNAME));
+        assertEquals(true, stepInternalSpan.getTag(CITags._DD_CI_INTERNAL));
+        assertEquals("1", stepInternalSpan.getTag(stepPrefix + CITags._NUMBER));
 
-        final String stagePrefix = BuildPipelineNode.NodeType.STAGE.getNormalizedName();
+        final String stagePrefix = BuildPipelineNode.NodeType.STAGE.getTagName();
         final DDSpan stageSpan = pipelineTrace.get(2);
         assertEquals("jenkins.stage", stageSpan.getOperationName());
         assertEquals("jenkins", stageSpan.getServiceName());
         assertEquals("test", stageSpan.getResourceName());
         assertEquals("ci", stageSpan.getType());
         assertEquals("test", stageSpan.getTag(stagePrefix + CITags._NAME));
-        assertEquals("4", stageSpan.getTag(stagePrefix + CITags._ID));
-        assertEquals("SUCCESS", stageSpan.getTag(CITags.JENKINS_RESULT));
-        assertEquals("jenkins", stageSpan.getTag(CITags.CI_PROVIDER));
+        assertEquals("jenkins-pipelineIntegrationSuccess-1-4", stageSpan.getTag(stagePrefix + CITags._ID));
+        assertEquals("success", stageSpan.getTag(CITags.JENKINS_RESULT));
+        assertEquals("jenkins", stageSpan.getTag(CITags.CI_PROVIDER_NAME));
+        assertNotNull(stageSpan.getTag(stagePrefix + CITags._URL));
+        assertNotNull(stageSpan.getTag(CITags.NODE_NAME));
+        assertNotNull(stageSpan.getTag(CITags._DD_HOSTNAME));
+        assertEquals(false, stageSpan.getTag(CITags._DD_CI_INTERNAL));
+        assertEquals("1", stageSpan.getTag(stagePrefix + CITags._NUMBER));
 
         final DDSpan stepAtomSpan = pipelineTrace.get(3);
         assertEquals("jenkins.step", stepAtomSpan.getOperationName());
@@ -240,11 +259,16 @@ public class DatadogGraphListenerTest {
         assertEquals("Print Message", stepAtomSpan.getResourceName());
         assertEquals("ci", stepAtomSpan.getType());
         assertEquals("Print Message", stepAtomSpan.getTag(stepPrefix + CITags._NAME));
-        assertEquals("5", stepAtomSpan.getTag(stepPrefix + CITags._ID));
-        assertEquals("SUCCESS", stepAtomSpan.getTag(CITags.JENKINS_RESULT));
-        assertEquals("jenkins", stepAtomSpan.getTag(CITags.CI_PROVIDER));
+        assertEquals("jenkins-pipelineIntegrationSuccess-1-5", stepAtomSpan.getTag(stepPrefix + CITags._ID));
+        assertEquals("success", stepAtomSpan.getTag(CITags.JENKINS_RESULT));
+        assertEquals("jenkins", stepAtomSpan.getTag(CITags.CI_PROVIDER_NAME));
         assertEquals("hello", stepAtomSpan.getTag("jenkins.step.args.message"));
         assertNotNull(stepAtomSpan.getTag(stepPrefix + CITags._URL));
+        assertNotNull(stepAtomSpan.getTag(stepPrefix + CITags._URL));
+        assertNotNull(stepAtomSpan.getTag(CITags.NODE_NAME));
+        assertNotNull(stepAtomSpan.getTag(CITags._DD_HOSTNAME));
+        assertEquals(false, stepAtomSpan.getTag(CITags._DD_CI_INTERNAL));
+        assertEquals("1", stepAtomSpan.getTag(stepPrefix + CITags._NUMBER));
     }
 
 

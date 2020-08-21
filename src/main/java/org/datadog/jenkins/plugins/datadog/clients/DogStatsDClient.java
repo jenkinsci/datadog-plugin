@@ -474,13 +474,13 @@ public class DogStatsDClient implements DatadogClient {
     }
 
     @Override
-    public void startBuildTrace(BuildData buildData, Run run) {
+    public void startBuildTrace(BuildData buildData, Run<?, ?> run) {
         traceBuildLogic.startBuildTrace(buildData, run);
     }
 
     @Override
-    public void finishBuildTrace(BuildData buildData) {
-        traceBuildLogic.finishBuildTrace(buildData);
+    public void finishBuildTrace(BuildData buildData, Run<?, ?> run) {
+        traceBuildLogic.finishBuildTrace(buildData, run);
     }
 
     @Override

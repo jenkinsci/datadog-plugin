@@ -1,6 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.listeners;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import datadog.trace.common.writer.ListWriter;
 import datadog.trace.core.DDSpan;
@@ -50,19 +51,23 @@ public class DatadogBuildListenerIT {
         final List<DDSpan> buildTrace = tracerWriter.get(0);
         assertEquals(1, buildTrace.size());
 
-        final String buildPrefix = BuildPipelineNode.NodeType.PIPELINE.getNormalizedName();
+        final String buildPrefix = BuildPipelineNode.NodeType.PIPELINE.getTagName();
         final DDSpan buildSpan = buildTrace.get(0);
         assertEquals("jenkins.build", buildSpan.getOperationName());
         assertEquals("jenkins", buildSpan.getServiceName());
         assertEquals("buildIntegrationSuccess", buildSpan.getResourceName());
         assertEquals("ci", buildSpan.getType());
-        assertEquals("buildIntegrationSuccess", buildSpan.getTag(buildPrefix + CITags._NAME));
-        assertEquals("SUCCESS", buildSpan.getTag(buildPrefix + CITags._RESULT));
-        assertEquals("1", buildSpan.getTag(buildPrefix + CITags._ID));
-        assertEquals("SUCCESS", buildSpan.getTag(CITags.JENKINS_RESULT));
-        assertEquals("jenkins", buildSpan.getTag(CITags.CI_PROVIDER));
-        assertEquals("1", buildSpan.getTag(buildPrefix + CITags._NUMBER));
+        assertEquals("jenkins", buildSpan.getTag(CITags.CI_PROVIDER_NAME));
         assertEquals("anonymous", buildSpan.getTag(CITags.USER_NAME));
+        assertEquals("jenkins-buildIntegrationSuccess-1", buildSpan.getTag(buildPrefix + CITags._ID));
+        assertEquals("buildIntegrationSuccess", buildSpan.getTag(buildPrefix + CITags._NAME));
+        assertEquals("1", buildSpan.getTag(buildPrefix + CITags._NUMBER));
+        assertNotNull(buildSpan.getTag(buildPrefix + CITags._URL));
+        assertNotNull(buildSpan.getTag(CITags.WORKSPACE_PATH));
+        assertEquals("success", buildSpan.getTag(buildPrefix + CITags._RESULT));
+        assertNotNull(buildSpan.getTag(CITags.NODE_NAME));
+        assertNotNull(buildSpan.getTag(CITags._DD_HOSTNAME));
+        assertEquals("success", buildSpan.getTag(CITags.JENKINS_RESULT));
         assertEquals("jenkins-buildIntegrationSuccess-1", buildSpan.getTag(CITags.JENKINS_TAG));
     }
 }

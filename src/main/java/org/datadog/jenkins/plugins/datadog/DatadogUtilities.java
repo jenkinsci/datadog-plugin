@@ -674,6 +674,18 @@ public class DatadogUtilities {
         return flowNode instanceof FlowEndNode;
     }
 
+    public static String getNormalizedResultForTraces(@Nonnull Result result) {
+        if(result.equals(Result.SUCCESS)){
+            return "success";
+        } else if(result.equals(Result.FAILURE)) {
+            return "error";
+        } else if(result.equals(Result.ABORTED)){
+            return "cancelled";
+        } else {
+            return "unstable";
+        }
+    }
+
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH")
     public static void severe(Logger logger, Throwable e, String message){
         if(message == null){
