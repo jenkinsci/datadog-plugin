@@ -28,7 +28,7 @@ public class DatadogQueuePipelinePublisherTest {
         ClientFactory.setTestClient(client);
         DatadogQueuePublisher queuePublisher = new DatadogQueuePublisher();
         String hostname = DatadogUtilities.getHostname(null);
-        WorkflowJob job = jenkins.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationSuccess");
+        WorkflowJob job = jenkins.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationQueue");
         String definition = IOUtils.toString(
                 this.getClass().getResourceAsStream("testPipeline.txt"),
                 "UTF-8"
