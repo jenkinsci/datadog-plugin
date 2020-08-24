@@ -6,13 +6,13 @@ pipeline {
         stage('testing'){
             steps {
                 echo "testing"
-                sh 'sleep 100s'
+                sleep 100
             }
         }
         stage('testing1'){
             steps {
                 echo "testing"
-                sh 'sleep 100s'
+                sleep 100
             }
         }
     }
