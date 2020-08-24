@@ -6,13 +6,11 @@ pipeline {
         stage('testing'){
             steps {
                 echo "testing"
-                sleep 100
             }
         }
         stage('testing1'){
             steps {
                 echo "testing"
-                sleep 100
             }
         }
     }

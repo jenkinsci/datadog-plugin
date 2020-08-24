@@ -1,5 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.publishers;
 
+import hudson.model.queue.QueueTaskFuture;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -37,7 +39,7 @@ public class DatadogQueuePipelinePublisherTest {
         String displayName = job.getDisplayName();
 
         // schedule build and wait for it to get queued
-        job.scheduleBuild2(0);
+        QueueTaskFuture<WorkflowRun> task = job.scheduleBuild2(0);
         Thread.sleep(1000);
 
         final String[] expectedTags = new String[2];
@@ -45,6 +47,7 @@ public class DatadogQueuePipelinePublisherTest {
         expectedTags[1] = "job_name:" + displayName;
         queuePublisher.doRun();
         client.assertMetric("jenkins.queue.job.in_queue", 1, hostname, expectedTags);
+        task.cancel(true);
     }
 
 }
