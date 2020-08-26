@@ -48,6 +48,13 @@ public class DatadogTraceBuildLogic {
                 .start();
 
         getBuildSpanManager().put(buildData.getBuildTag(""), buildSpan);
+
+        // The buildData object is stored in the BuildSpanAction to be updated
+        // by the information that will be calculated when the pipeline listeners
+        // were executed. This is needed because if the user build is based on
+        // Jenkins Pipelines, there are many information that is missing when the
+        // root span is created, such as Git info (this is calculated in an inner step
+        // of the pipeline)
         final BuildSpanAction buildSpanAction = new BuildSpanAction(buildData);
         this.tracer.inject(buildSpan.context(), Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatation()));
         run.addAction(buildSpanAction);
@@ -69,7 +76,12 @@ public class DatadogTraceBuildLogic {
             return;
         }
 
+        // In this point of the execution, the BuildData stored within
+        // BuildSpanAction has been updated by the information available
+        // inside the Pipeline steps. (Only applicable if the build is
+        // based on Jenkins Pipelines).
         final BuildData pipelineData = buildSpanAction.getBuildData();
+
         final String prefix = BuildPipelineNode.NodeType.PIPELINE.getTagName();
         final long endTimeMicros = buildData.getEndTime(0L) * 1000;
         buildSpan.setTag(DDTags.SERVICE_NAME, "jenkins");
