@@ -662,7 +662,7 @@ public class DatadogHttpClient implements DatadogClient {
     }
 
     @Override
-    public void finishBuildTrace(BuildData buildData) {
+    public void finishBuildTrace(BuildData buildData, Run<?, ?> run) {
         logger.fine("Traces are only available using Datadog Agent.");
     }
 

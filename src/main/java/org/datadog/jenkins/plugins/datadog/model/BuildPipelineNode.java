@@ -29,27 +29,16 @@ import java.util.Objects;
 public class BuildPipelineNode {
 
     public enum NodeType {
-        PIPELINE("pipeline"), STAGE("stage"), STEP("step", "job");
+        PIPELINE("ci.pipeline"), STAGE("ci.stage"), STEP("ci.job");
 
-        private final String name;
-        private final String normalizedName;
+        private final String tagName;
 
-        NodeType(final String name) {
-            this.name = name;
-            this.normalizedName = name;
+        NodeType(final String tagName) {
+            this.tagName = tagName;
         }
 
-        NodeType(final String name, final String normalizedName) {
-            this.name = name;
-            this.normalizedName = normalizedName;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public String getNormalizedName() {
-            return normalizedName;
+        public String getTagName() {
+            return tagName;
         }
     }
 

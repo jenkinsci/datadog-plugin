@@ -229,7 +229,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             }
 
             // APM Traces
-            client.finishBuildTrace(buildData);
+            client.finishBuildTrace(buildData, run);
 
             logger.fine("End DatadogBuildListener#onCompleted");
         } catch (Exception e) {

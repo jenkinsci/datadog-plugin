@@ -36,13 +36,16 @@ import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class BuildData {
+public class BuildData implements Serializable {
 
-    private static final Logger LOGGER = Logger.getLogger(BuildData.class.getName());
+    private static final long serialVersionUID = 1L;
+
+    private static transient final Logger LOGGER = Logger.getLogger(BuildData.class.getName());
 
     private String buildNumber;
     private String buildId;
