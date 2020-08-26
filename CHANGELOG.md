@@ -1,5 +1,16 @@
 Changes
 =======
+# 2.1.0 / 2020-08-26
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.0.0...datadog-2.1.0
+
+Sending APM traces from Jenkins Builds/Pipelines
+
+### Changes
+* [Added] Send APM traces. See [#96](https://github.com/jenkinsci/datadog-plugin/pull/96).
+* [Added] Add additional tags to APM traces. See [#111](https://github.com/jenkinsci/datadog-plugin/pull/111).
+* [Added] Add job name tag to pipelines in queues. See [#101](https://github.com/jenkinsci/datadog-plugin/pull/101).
+
 # 2.0.0 / 2020-08-18
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-1.1.3...datadog-2.0.0
