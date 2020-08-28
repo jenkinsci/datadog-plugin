@@ -474,18 +474,57 @@ public class DogStatsDClient implements DatadogClient {
     }
 
     @Override
-    public void startBuildTrace(BuildData buildData, Run<?, ?> run) {
-        traceBuildLogic.startBuildTrace(buildData, run);
+    public boolean startBuildTrace(BuildData buildData, Run<?, ?> run) {
+        try {
+            boolean status = reinitializeTracer(false);
+            if(!status) {
+                return false;
+            }
+
+            logger.fine("Started build trace");
+            this.traceBuildLogic.startBuildTrace(buildData, run);
+            return true;
+        } catch (Exception e) {
+            DatadogUtilities.severe(logger, e, null);
+            reinitializeTracer(true);
+            return false;
+        }
+    }
+
+
+    @Override
+    public boolean finishBuildTrace(BuildData buildData, Run<?, ?> run) {
+        try {
+            boolean status = reinitializeTracer(false);
+            if(!status) {
+                return false;
+            }
+            logger.fine("Finished build trace");
+            this.traceBuildLogic.finishBuildTrace(buildData, run);
+            return true;
+        } catch (Exception e) {
+            DatadogUtilities.severe(logger, e, null);
+            reinitializeTracer(true);
+            return false;
+        }
     }
 
     @Override
-    public void finishBuildTrace(BuildData buildData, Run<?, ?> run) {
-        traceBuildLogic.finishBuildTrace(buildData, run);
-    }
+    public boolean sendPipelineTrace(Run<?, ?> run, FlowNode flowNode) {
+        try {
+            boolean status = reinitializeTracer(false);
+            if(!status) {
+                return false;
+            }
 
-    @Override
-    public void sendPipelineTrace(Run<?, ?> run, FlowNode flowNode) {
-        tracePipelineLogic.execute(run, flowNode);
+            logger.fine("Send pipeline traces.");
+            this.tracePipelineLogic.execute(run, flowNode);
+            return true;
+        } catch (Exception e){
+            DatadogUtilities.severe(logger, e, null);
+            reinitializeTracer(true);
+            return false;
+        }
     }
 
 

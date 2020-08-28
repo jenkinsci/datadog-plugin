@@ -657,18 +657,21 @@ public class DatadogHttpClient implements DatadogClient {
     }
 
     @Override
-    public void startBuildTrace(BuildData buildData, Run run) {
+    public boolean startBuildTrace(BuildData buildData, Run run) {
         logger.fine("Traces are only available using Datadog Agent.");
+        return false;
     }
 
     @Override
-    public void finishBuildTrace(BuildData buildData, Run<?, ?> run) {
+    public boolean finishBuildTrace(BuildData buildData, Run<?, ?> run) {
         logger.fine("Traces are only available using Datadog Agent.");
+        return false;
     }
 
     @Override
-    public void sendPipelineTrace(Run<?, ?> run, FlowNode flowNode) {
+    public boolean sendPipelineTrace(Run<?, ?> run, FlowNode flowNode) {
         logger.fine("Traces are only available using Datadog Agent.");
+        return false;
     }
 
 }

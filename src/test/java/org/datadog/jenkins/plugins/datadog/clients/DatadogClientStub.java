@@ -172,18 +172,21 @@ public class DatadogClientStub implements DatadogClient {
     }
 
     @Override
-    public void startBuildTrace(BuildData buildData, Run<?, ?> run) {
+    public boolean startBuildTrace(BuildData buildData, Run<?, ?> run) {
         this.traceBuildLogic.startBuildTrace(buildData, run);
+        return true;
     }
 
     @Override
-    public void finishBuildTrace(BuildData buildData, Run<?, ?> run) {
+    public boolean finishBuildTrace(BuildData buildData, Run<?, ?> run) {
         this.traceBuildLogic.finishBuildTrace(buildData, run);
+        return true;
     }
 
     @Override
-    public void sendPipelineTrace(Run<?, ?> run, FlowNode flowNode) {
+    public boolean sendPipelineTrace(Run<?, ?> run, FlowNode flowNode) {
         this.tracePipelineLogic.execute(run, flowNode);
+        return true;
     }
 
     public ListWriter tracerWriter() {
