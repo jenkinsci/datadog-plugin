@@ -1,5 +1,13 @@
 Changes
 =======
+# 2.1.1 / 2020-08-28
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.1.0...datadog-2.1.1
+
+### Changes
+* [Fixed] Prevent exception if traces form data is not present. See [#114](https://github.com/jenkinsci/datadog-plugin/pull/114)
+* [Fixed] Fix NPE when traces collection is disabled. See [#115](https://github.com/jenkinsci/datadog-plugin/pull/115)
+
 # 2.1.0 / 2020-08-26
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.0.0...datadog-2.1.0
