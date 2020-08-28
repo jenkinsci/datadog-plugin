@@ -82,6 +82,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static String DEFAULT_TARGET_LOG_INTAKE_URL_VALUE = "https://http-intake.logs.datadoghq.com/v1/input/";
     private static String DEFAULT_TARGET_HOST_VALUE = "localhost";
     private static Integer DEFAULT_TARGET_PORT_VALUE = 8125;
+    private static Integer DEFAULT_TRACES_PORT_VALUE = 8126;
     private static Integer DEFAULT_TARGET_TRACE_COLLECTION_PORT_VALUE = null;
     private static Integer DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE = null;
     private static boolean DEFAULT_EMIT_SECURITY_EVENTS_VALUE = true;
@@ -419,11 +420,21 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             }else{
                 this.setTargetLogCollectionPort(null);
             }
-            String traceCollectionPortStr = formData.getString("targetTraceCollectionPort");
-            if(validatePort(traceCollectionPortStr)){
-                this.setTargetTraceCollectionPort(formData.getInt("targetTraceCollectionPort"));
-            }else{
-                this.setTargetTraceCollectionPort(null);
+
+            try {
+                final String traceCollectionPortStr = formData.getString("targetTraceCollectionPort");
+                if(validatePort(traceCollectionPortStr)){
+                    this.setTargetTraceCollectionPort(formData.getInt("targetTraceCollectionPort"));
+                }else{
+                    this.setTargetTraceCollectionPort(null);
+                }
+            } catch (Exception e) {
+                // As there is no public UI to configure this property,
+                // the value is set to the default port to trace collection.
+                // formData.getString throws an exception
+                // if the key to search does not exist.
+                // NOTE: Change this when APM Traces was released as public feature.
+                this.setTargetTraceCollectionPort(DEFAULT_TRACES_PORT_VALUE);
             }
 
             if(StringUtils.isNotBlank(this.getHostname()) && !DatadogUtilities.isValidHostname(this.getHostname())){
@@ -440,7 +451,18 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.setEmitSecurityEvents(formData.getBoolean("emitSecurityEvents"));
             this.setEmitSystemEvents(formData.getBoolean("emitSystemEvents"));
             this.setCollectBuildLogs(formData.getBoolean("collectBuildLogs"));
-            this.setCollectBuildTraces(formData.getBoolean("collectBuildTraces"));
+
+            try {
+                this.setCollectBuildTraces(formData.getBoolean("collectBuildTraces"));
+            } catch (Exception e) {
+                // As there is no public UI to configure this property,
+                // the value is set to the false to
+                // disable this feature by default
+                // formData.getBoolean throws an exception
+                // if the key to search does not exist
+                // NOTE: Change this when APM Traces was released as public feature.
+                this.setCollectBuildTraces(false);
+            }
 
             //When form is saved....
             DatadogClient client = ClientFactory.getClient(DatadogClient.ClientType.valueOf(this.getReportWith()),
