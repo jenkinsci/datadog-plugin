@@ -42,6 +42,8 @@ import java.util.List;
 
 public class DatadogGraphListenerTest {
 
+    private static final String SAMPLE_SERVICE_NAME = "sampleServiceName";
+
     @ClassRule
     public static JenkinsRule jenkinsRule = new JenkinsRule();
     private DatadogGraphListener listener;
@@ -51,6 +53,7 @@ public class DatadogGraphListenerTest {
     public void beforeEach() {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setCollectBuildTraces(true);
+        cfg.setTraceServiceName(SAMPLE_SERVICE_NAME);
 
         listener = new DatadogGraphListener();
         clientStub = new DatadogClientStub();
@@ -182,7 +185,7 @@ public class DatadogGraphListenerTest {
         final String buildPrefix = BuildPipelineNode.NodeType.PIPELINE.getTagName();
         final DDSpan buildSpan = buildTrace.get(0);
         assertEquals("jenkins.build", buildSpan.getOperationName());
-        assertEquals("jenkins", buildSpan.getServiceName());
+        assertEquals(SAMPLE_SERVICE_NAME, buildSpan.getServiceName());
         assertEquals("pipelineIntegrationSuccess", buildSpan.getResourceName());
         assertEquals("ci", buildSpan.getType());
         assertEquals("anonymous", buildSpan.getTag(CITags.USER_NAME));
@@ -204,7 +207,7 @@ public class DatadogGraphListenerTest {
         final String pipelinePrefix = BuildPipelineNode.NodeType.STEP.getTagName();
         final DDSpan pipelineSpan = pipelineTrace.get(0);
         assertEquals("jenkins.step.internal", pipelineSpan.getOperationName());
-        assertEquals("jenkins", pipelineSpan.getServiceName());
+        assertEquals(SAMPLE_SERVICE_NAME, pipelineSpan.getServiceName());
         assertEquals("Start of Pipeline", pipelineSpan.getResourceName());
         assertEquals("ci", pipelineSpan.getType());
         assertEquals("Start of Pipeline", pipelineSpan.getTag(pipelinePrefix + CITags._NAME));
@@ -219,7 +222,7 @@ public class DatadogGraphListenerTest {
         final String stepPrefix = BuildPipelineNode.NodeType.STEP.getTagName();
         final DDSpan stepInternalSpan = pipelineTrace.get(1);
         assertEquals("jenkins.step.internal", stepInternalSpan.getOperationName());
-        assertEquals("jenkins", stepInternalSpan.getServiceName());
+        assertEquals(SAMPLE_SERVICE_NAME, stepInternalSpan.getServiceName());
         assertEquals("Stage : Start", stepInternalSpan.getResourceName());
         assertEquals("ci", stepInternalSpan.getType());
         assertEquals("Stage : Start", stepInternalSpan.getTag(stepPrefix + CITags._NAME));
@@ -235,7 +238,7 @@ public class DatadogGraphListenerTest {
         final String stagePrefix = BuildPipelineNode.NodeType.STAGE.getTagName();
         final DDSpan stageSpan = pipelineTrace.get(2);
         assertEquals("jenkins.stage", stageSpan.getOperationName());
-        assertEquals("jenkins", stageSpan.getServiceName());
+        assertEquals(SAMPLE_SERVICE_NAME, stageSpan.getServiceName());
         assertEquals("test", stageSpan.getResourceName());
         assertEquals("ci", stageSpan.getType());
         assertEquals("test", stageSpan.getTag(stagePrefix + CITags._NAME));
@@ -249,7 +252,7 @@ public class DatadogGraphListenerTest {
 
         final DDSpan stepAtomSpan = pipelineTrace.get(3);
         assertEquals("jenkins.step", stepAtomSpan.getOperationName());
-        assertEquals("jenkins", stepAtomSpan.getServiceName());
+        assertEquals(SAMPLE_SERVICE_NAME, stepAtomSpan.getServiceName());
         assertEquals("Print Message", stepAtomSpan.getResourceName());
         assertEquals("ci", stepAtomSpan.getType());
         assertEquals("Print Message", stepAtomSpan.getTag(stepPrefix + CITags._NAME));
