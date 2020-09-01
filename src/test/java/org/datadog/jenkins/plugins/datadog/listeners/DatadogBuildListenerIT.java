@@ -13,7 +13,6 @@ import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -26,14 +25,11 @@ public class DatadogBuildListenerIT {
     public static JenkinsRule jenkinsRule = new JenkinsRule();
     private DatadogClientStub clientStub;
 
-    @BeforeClass
-    public static void setup() throws Exception {
-        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
-        cfg.setCollectBuildTraces(true);
-    }
-
     @Before
     public void beforeEach() {
+        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+        cfg.setCollectBuildTraces(true);
+
         clientStub = new DatadogClientStub();
         ClientFactory.setTestClient(clientStub);
         clientStub.tracerWriter.start();
@@ -69,5 +65,18 @@ public class DatadogBuildListenerIT {
         assertNotNull(buildSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals("success", buildSpan.getTag(CITags.JENKINS_RESULT));
         assertEquals("jenkins-buildIntegrationSuccess-1", buildSpan.getTag(CITags.JENKINS_TAG));
+    }
+
+    @Test
+    public void testTracesDisabled() throws Exception {
+        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+        cfg.setCollectBuildTraces(false);
+
+        final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccess-notraces");
+        project.scheduleBuild2(0).get();
+
+        final ListWriter tracerWriter = clientStub.tracerWriter();
+        tracerWriter.waitForTraces(0);
+        assertEquals(0, tracerWriter.size());
     }
 }
