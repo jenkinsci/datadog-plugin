@@ -204,15 +204,14 @@ public class DatadogGraphListenerTest {
         final List<DDSpan> pipelineTrace = tracerWriter.get(1);
         assertEquals(4, pipelineTrace.size());
 
-        final String pipelinePrefix = BuildPipelineNode.NodeType.PIPELINE.getTagName();
+        final String pipelinePrefix = BuildPipelineNode.NodeType.STEP.getTagName();
         final DDSpan pipelineSpan = pipelineTrace.get(0);
-        assertEquals("jenkins.pipeline.internal", pipelineSpan.getOperationName());
+        assertEquals("jenkins.step.internal", pipelineSpan.getOperationName());
         assertEquals("jenkins", pipelineSpan.getServiceName());
         assertEquals("Start of Pipeline", pipelineSpan.getResourceName());
         assertEquals("ci", pipelineSpan.getType());
         assertEquals("Start of Pipeline", pipelineSpan.getTag(pipelinePrefix + CITags._NAME));
-        assertEquals("jenkins-pipelineIntegrationSuccess-1-2", pipelineSpan.getTag(pipelinePrefix + CITags._ID));
-        assertEquals("1", pipelineSpan.getTag(pipelinePrefix + CITags._NUMBER));
+        assertEquals("2", pipelineSpan.getTag(pipelinePrefix + CITags._NUMBER));
         assertEquals("success", pipelineSpan.getTag(CITags.JENKINS_RESULT));
         assertEquals("jenkins", pipelineSpan.getTag(CITags.CI_PROVIDER_NAME));
         assertNotNull(pipelineSpan.getTag(pipelinePrefix + CITags._URL));
@@ -227,7 +226,6 @@ public class DatadogGraphListenerTest {
         assertEquals("Stage : Start", stepInternalSpan.getResourceName());
         assertEquals("ci", stepInternalSpan.getType());
         assertEquals("Stage : Start", stepInternalSpan.getTag(stepPrefix + CITags._NAME));
-        assertEquals("jenkins-pipelineIntegrationSuccess-1-3", stepInternalSpan.getTag(stepPrefix + CITags._ID));
         assertEquals("success", stepInternalSpan.getTag(CITags.JENKINS_RESULT));
         assertEquals("jenkins", stepInternalSpan.getTag(CITags.CI_PROVIDER_NAME));
         assertEquals("test", stepInternalSpan.getTag("jenkins.step.args.name"));
@@ -235,7 +233,7 @@ public class DatadogGraphListenerTest {
         assertNotNull(stepInternalSpan.getTag(CITags.NODE_NAME));
         assertNotNull(stepInternalSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals(true, stepInternalSpan.getTag(CITags._DD_CI_INTERNAL));
-        assertEquals("1", stepInternalSpan.getTag(stepPrefix + CITags._NUMBER));
+        assertEquals("3", stepInternalSpan.getTag(stepPrefix + CITags._NUMBER));
 
         final String stagePrefix = BuildPipelineNode.NodeType.STAGE.getTagName();
         final DDSpan stageSpan = pipelineTrace.get(2);
@@ -244,14 +242,13 @@ public class DatadogGraphListenerTest {
         assertEquals("test", stageSpan.getResourceName());
         assertEquals("ci", stageSpan.getType());
         assertEquals("test", stageSpan.getTag(stagePrefix + CITags._NAME));
-        assertEquals("jenkins-pipelineIntegrationSuccess-1-4", stageSpan.getTag(stagePrefix + CITags._ID));
         assertEquals("success", stageSpan.getTag(CITags.JENKINS_RESULT));
         assertEquals("jenkins", stageSpan.getTag(CITags.CI_PROVIDER_NAME));
         assertNotNull(stageSpan.getTag(stagePrefix + CITags._URL));
         assertNotNull(stageSpan.getTag(CITags.NODE_NAME));
         assertNotNull(stageSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals(false, stageSpan.getTag(CITags._DD_CI_INTERNAL));
-        assertEquals("1", stageSpan.getTag(stagePrefix + CITags._NUMBER));
+        assertEquals("4", stageSpan.getTag(stagePrefix + CITags._NUMBER));
 
         final DDSpan stepAtomSpan = pipelineTrace.get(3);
         assertEquals("jenkins.step", stepAtomSpan.getOperationName());
@@ -259,7 +256,6 @@ public class DatadogGraphListenerTest {
         assertEquals("Print Message", stepAtomSpan.getResourceName());
         assertEquals("ci", stepAtomSpan.getType());
         assertEquals("Print Message", stepAtomSpan.getTag(stepPrefix + CITags._NAME));
-        assertEquals("jenkins-pipelineIntegrationSuccess-1-5", stepAtomSpan.getTag(stepPrefix + CITags._ID));
         assertEquals("success", stepAtomSpan.getTag(CITags.JENKINS_RESULT));
         assertEquals("jenkins", stepAtomSpan.getTag(CITags.CI_PROVIDER_NAME));
         assertEquals("hello", stepAtomSpan.getTag("jenkins.step.args.message"));
@@ -268,7 +264,7 @@ public class DatadogGraphListenerTest {
         assertNotNull(stepAtomSpan.getTag(CITags.NODE_NAME));
         assertNotNull(stepAtomSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals(false, stepAtomSpan.getTag(CITags._DD_CI_INTERNAL));
-        assertEquals("1", stepAtomSpan.getTag(stepPrefix + CITags._NUMBER));
+        assertEquals("5", stepAtomSpan.getTag(stepPrefix + CITags._NUMBER));
     }
 
 
