@@ -40,7 +40,7 @@ public class ClientFactory {
 
     public static DatadogClient getClient(DatadogClient.ClientType type, String apiUrl, String logIntakeUrl,
                                           Secret apiKey, String host, Integer port, Integer logCollectionPort,
-                                          Integer traceCollectionPort){
+                                          Integer traceCollectionPort, String traceServiceName){
         if(testClient != null){
             // Only used for tests
             return testClient;
@@ -65,6 +65,7 @@ public class ClientFactory {
         Integer targetPort = null;
         Integer targetLogCollectionPort = null;
         Integer targetTraceCollectionPort = null;
+        String traceServiceName = null;
         if(descriptor != null){
             reportWith = descriptor.getReportWith();
             targetApiURL = descriptor.getTargetApiURL();
@@ -74,8 +75,9 @@ public class ClientFactory {
             targetPort = descriptor.getTargetPort();
             targetLogCollectionPort = descriptor.getTargetLogCollectionPort();
             targetTraceCollectionPort = descriptor.getTargetTraceCollectionPort();
+            traceServiceName = descriptor.getTraceServiceName();
         }
         return ClientFactory.getClient(DatadogClient.ClientType.valueOf(reportWith), targetApiURL, targetLogIntakeURL,
-                targetApiKey, targetHost, targetPort, targetLogCollectionPort, targetTraceCollectionPort);
+                targetApiKey, targetHost, targetPort, targetLogCollectionPort, targetTraceCollectionPort, traceServiceName);
     }
 }

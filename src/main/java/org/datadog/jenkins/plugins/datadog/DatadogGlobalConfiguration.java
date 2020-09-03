@@ -62,6 +62,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static String TARGET_PORT_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_PORT";
     private static String TARGET_LOG_COLLECTION_PORT_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT";
     private static String TARGET_TRACE_COLLECTION_PORT_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_TRACE_COLLECTION_PORT";
+    private static final String TARGET_TRACE_SERVICE_NAME_PROPERTY = "DATADOG_JENKINS_PLUGIN_TRACE_SERVICE_NAME";
     private static String HOSTNAME_PROPERTY = "DATADOG_JENKINS_PLUGIN_HOSTNAME";
     private static String EXCLUDED_PROPERTY = "DATADOG_JENKINS_PLUGIN_EXCLUDED";
     private static String INCLUDED_PROPERTY = "DATADOG_JENKINS_PLUGIN_INCLUDED";
@@ -83,6 +84,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static String DEFAULT_TARGET_HOST_VALUE = "localhost";
     private static Integer DEFAULT_TARGET_PORT_VALUE = 8125;
     private static Integer DEFAULT_TRACES_PORT_VALUE = 8126;
+    private static String DEFAULT_TRACES_SERVICE_NAME = "jenkins";
     private static Integer DEFAULT_TARGET_TRACE_COLLECTION_PORT_VALUE = null;
     private static Integer DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE = null;
     private static boolean DEFAULT_EMIT_SECURITY_EVENTS_VALUE = true;
@@ -98,6 +100,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private Integer targetPort = DEFAULT_TARGET_PORT_VALUE;
     private Integer targetLogCollectionPort = DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE;
     private Integer targetTraceCollectionPort = DEFAULT_TARGET_TRACE_COLLECTION_PORT_VALUE;
+    private String traceServiceName = DEFAULT_TRACES_SERVICE_NAME;
     private String hostname = null;
     private String blacklist = null;
     private String whitelist = null;
@@ -156,6 +159,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         String targetTraceCollectionPortEnvVar = System.getenv(TARGET_TRACE_COLLECTION_PORT_PROPERTY);
         if(StringUtils.isNotBlank(targetTraceCollectionPortEnvVar) && StringUtils.isNumeric(targetTraceCollectionPortEnvVar)) {
             this.targetTraceCollectionPort = Integer.valueOf(targetTraceCollectionPortEnvVar);
+        }
+
+        String traceServiceNameVar = System.getenv(TARGET_TRACE_SERVICE_NAME_PROPERTY);
+        if(StringUtils.isNotBlank(targetApiKeyEnvVar)) {
+            this.traceServiceName = traceServiceNameVar;
         }
 
         String hostnameEnvVar = System.getenv(HOSTNAME_PROPERTY);
@@ -363,6 +371,14 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         return FormValidation.ok("Valid Trace Collection Port");
     }
 
+    @RequirePOST
+    public FormValidation doCheckTraceServiceName(@QueryParameter("traceServiceName") final String traceServiceName) {
+        if(StringUtils.isBlank(traceServiceName) && collectBuildTraces){
+            return FormValidation.error("Invalid Trace Service Name");
+        }
+        return FormValidation.ok("Valid Trace Service Name");
+    }
+
     /**
      * Indicates if this builder can be used with all kinds of project types.
      *
@@ -437,6 +453,23 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                 this.setTargetTraceCollectionPort(DEFAULT_TRACES_PORT_VALUE);
             }
 
+            try {
+                final String traceServiceName = formData.getString("traceServiceName");
+                if(StringUtils.isNotBlank(traceServiceName)){
+                    this.setTraceServiceName(traceServiceName);
+                } else {
+                    this.setTraceServiceName(DEFAULT_TRACES_SERVICE_NAME);
+                }
+            } catch (Exception e){
+                // As there is no public UI to configure this property,
+                // the value is set to the false to
+                // disable this feature by default
+                // formData.getBoolean throws an exception
+                // if the key to search does not exist
+                // NOTE: Change this when APM Traces was released as public feature.
+                this.setTraceServiceName(DEFAULT_TRACES_SERVICE_NAME);
+            }
+
             if(StringUtils.isNotBlank(this.getHostname()) && !DatadogUtilities.isValidHostname(this.getHostname())){
                 throw new FormException("Your hostname is invalid, likely because it violates the format set in RFC 1123", "hostname");
             }
@@ -467,7 +500,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             //When form is saved....
             DatadogClient client = ClientFactory.getClient(DatadogClient.ClientType.valueOf(this.getReportWith()),
                     this.getTargetApiURL(), this.getTargetLogIntakeURL(), this.getTargetApiKey(), this.getTargetHost(),
-                    this.getTargetPort(), this.getTargetLogCollectionPort(), this.getTargetTraceCollectionPort());
+                    this.getTargetPort(), this.getTargetLogCollectionPort(), this.getTargetTraceCollectionPort(), this.getTraceServiceName());
                 // ...reinitialize the DatadogClient
             if(client == null) {
                 return false;
@@ -643,6 +676,25 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @DataBoundSetter
     public void setTargetTraceCollectionPort(Integer targetTraceCollectionPort) {
         this.targetTraceCollectionPort = targetTraceCollectionPort;
+    }
+
+    /**
+     * Getter function for the traceServiceName global configuration.
+     *
+     * @return a String containing the traceServiceName global configuration.
+     */
+    public String getTraceServiceName() {
+        return traceServiceName;
+    }
+
+    /**
+     * Setter function for the traceServiceName global configuration.
+     *
+     * @param traceServiceName = A string containing the Trace Service Name
+     */
+    @DataBoundSetter
+    public void setTraceServiceName(String traceServiceName) {
+        this.traceServiceName = traceServiceName;
     }
 
     /**

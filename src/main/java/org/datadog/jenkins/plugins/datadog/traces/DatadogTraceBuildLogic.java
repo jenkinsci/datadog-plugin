@@ -85,7 +85,7 @@ public class DatadogTraceBuildLogic {
 
         final String prefix = BuildPipelineNode.NodeType.PIPELINE.getTagName();
         final long endTimeMicros = buildData.getEndTime(0L) * 1000;
-        buildSpan.setTag(DDTags.SERVICE_NAME, "jenkins");
+        buildSpan.setTag(DDTags.SERVICE_NAME, DatadogUtilities.getDatadogGlobalDescriptor().getTraceServiceName());
         buildSpan.setTag(DDTags.RESOURCE_NAME, buildData.getJobName(null));
         buildSpan.setTag(DDTags.SPAN_TYPE, "ci");
         buildSpan.setTag(CITags.CI_PROVIDER_NAME, "jenkins");

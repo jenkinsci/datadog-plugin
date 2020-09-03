@@ -141,7 +141,7 @@ public class DatadogTracePipelineLogic {
         }
 
         spanBuilder
-                .withTag(DDTags.SERVICE_NAME, CI_PROVIDER)
+                .withTag(DDTags.SERVICE_NAME, DatadogUtilities.getDatadogGlobalDescriptor().getTraceServiceName())
                 .withTag(DDTags.RESOURCE_NAME, current.getName())
                 .withTag(DDTags.SPAN_TYPE, "ci")
                 .withTag(DDTags.LANGUAGE_TAG_KEY, "");
