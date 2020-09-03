@@ -47,14 +47,11 @@ public class DatadogGraphListenerTest {
     private DatadogGraphListener listener;
     private DatadogClientStub clientStub;
 
-    @BeforeClass
-    public static void setup() throws Exception {
-        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
-        cfg.setCollectBuildTraces(true);
-    }
-
     @Before
     public void beforeEach() {
+        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+        cfg.setCollectBuildTraces(true);
+
         listener = new DatadogGraphListener();
         clientStub = new DatadogClientStub();
         ClientFactory.setTestClient(clientStub);
@@ -269,6 +266,36 @@ public class DatadogGraphListenerTest {
         assertNotNull(stepAtomSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals(false, stepAtomSpan.getTag(CITags._DD_CI_INTERNAL));
         assertEquals("1", stepAtomSpan.getTag(stepPrefix + CITags._NUMBER));
+    }
+
+    @Test
+    public void testIntegrationTracesDisabled() throws Exception{
+        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+        cfg.setCollectBuildTraces(false);
+
+        jenkinsRule.createOnlineSlave(new LabelAtom("windows"));
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationSuccess-notraces");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineSuccess.txt"),
+                "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        job.scheduleBuild2(0).get();
+        String hostname = DatadogUtilities.getHostname(null);
+        String[] tags = new String[]{
+                "jenkins_url:" + DatadogUtilities.getJenkinsUrl(),
+                "user_id:anonymous",
+                "job:pipelineIntegrationSuccess-notraces",
+                "result:SUCCESS",
+                "stage_depth:0",
+                "stage_name:test",
+                "parent_stage_name:root"
+        };
+        clientStub.assertMetric("jenkins.job.stage_duration", hostname, tags);
+
+        final ListWriter tracerWriter = clientStub.tracerWriter();
+        tracerWriter.waitForTraces(0);
+        assertEquals(0, tracerWriter.size());
     }
 
 
