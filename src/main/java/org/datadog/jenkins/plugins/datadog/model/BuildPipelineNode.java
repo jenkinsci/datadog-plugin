@@ -29,7 +29,9 @@ import java.util.Objects;
 public class BuildPipelineNode {
 
     public enum NodeType {
-        PIPELINE("ci.pipeline"), STAGE("ci.stage"), STEP("ci.job");
+        PIPELINE("ci.pipeline"),
+        STAGE("ci.stage"),
+        STEP("ci.job");
 
         private final String tagName;
 
@@ -86,7 +88,13 @@ public class BuildPipelineNode {
         this.id = startNode.getId();
         this.name = startNode.getDisplayName();
         if(DatadogUtilities.isPipelineNode(endNode)) {
-            this.type = NodeType.PIPELINE;
+            // The pipeline node must be treated as Step.
+            // Only root span must have ci.pipeline.* tags.
+            // https://datadoghq.atlassian.net/browse/CIAPP-190
+            // The pipeline node is not the root span.
+            // In Jenkins, the build span is the root span, and
+            // the pipeline node span is a child of the build span.
+            this.type = NodeType.STEP;
             this.internal = true;
         } else if(DatadogUtilities.isStageNode(startNode)){
             this.type = NodeType.STAGE;

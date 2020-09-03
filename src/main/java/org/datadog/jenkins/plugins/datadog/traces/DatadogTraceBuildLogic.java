@@ -10,6 +10,7 @@ import hudson.model.Run;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
+import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
@@ -137,8 +138,6 @@ public class DatadogTraceBuildLogic {
 
         buildSpan.finish(endTimeMicros);
     }
-
-
 
     protected BuildSpanManager getBuildSpanManager() {
         return BuildSpanManager.get();

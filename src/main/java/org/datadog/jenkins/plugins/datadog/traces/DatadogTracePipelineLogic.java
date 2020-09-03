@@ -11,6 +11,7 @@ import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
+import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipeline;
@@ -175,13 +176,14 @@ public class DatadogTracePipelineLogic {
 
         final Map<String, Object> tags = new HashMap<>();
         tags.put(CITags.CI_PROVIDER_NAME, CI_PROVIDER);
-        tags.put(prefix + CITags._ID, buildData.getBuildTag("")+"-"+current.getId());
         tags.put(prefix + CITags._NAME, current.getName());
-        tags.put(prefix + CITags._NUMBER, buildData.getBuildNumber(""));
+        tags.put(prefix + CITags._NUMBER, current.getId());
         tags.put(prefix + CITags._RESULT, getNormalizedResultForTraces(Result.fromString(current.getResult())));
 
         final String url = envVars.get("BUILD_URL") != null ? envVars.get("BUILD_URL") : buildData.getBuildUrl("");
-        tags.put(prefix + CITags._URL, url);
+        if(StringUtils.isNotBlank(url)) {
+            tags.put(prefix + CITags._URL, url + "execution/node/"+current.getId()+"/");
+        }
 
         final String workspace = current.getWorkspace() != null ? current.getWorkspace() : buildData.getWorkspace("");
         tags.put(CITags.WORKSPACE_PATH, workspace);
