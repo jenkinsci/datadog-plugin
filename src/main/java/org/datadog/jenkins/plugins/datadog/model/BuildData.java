@@ -30,8 +30,10 @@ import hudson.model.*;
 import hudson.triggers.SCMTrigger;
 import hudson.triggers.TimerTrigger;
 import hudson.util.LogTaskListener;
+import io.opentracing.Span;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
@@ -81,6 +83,9 @@ public class BuildData implements Serializable {
     private Long startTime;
     private Long endTime;
     private Long duration;
+
+    private String traceId;
+    private String spanId;
 
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
     public BuildData(Run run, TaskListener listener) throws IOException, InterruptedException {
@@ -139,6 +144,13 @@ public class BuildData implements Serializable {
             jenkinsUrl = envVars.get("JENKINS_URL");
         }
         setJenkinsUrl(jenkinsUrl);
+
+        // Set Tracing IDs
+        final Span buildSpan = BuildSpanManager.get().get(getBuildTag(""));
+        if(buildSpan !=null) {
+            setTraceId(buildSpan.context().toTraceId());
+            setSpanId(buildSpan.context().toSpanId());
+        }
     }
 
     private void populateEnvVariables(EnvVars envVars){
@@ -485,6 +497,14 @@ public class BuildData implements Serializable {
         return null;
     }
 
+    public void setTraceId(String traceId) {
+        this.traceId = traceId;
+    }
+
+    public void setSpanId(String spanId) {
+        this.spanId = spanId;
+    }
+
     public JSONObject addLogAttributes(JSONObject payload){
         JSONObject build = new JSONObject();
         build.put("number", this.buildNumber);
@@ -545,6 +565,14 @@ public class BuildData implements Serializable {
         payload.put("usr", user);
 
         payload.put("hostname", this.hostname);
+
+        if(traceId != null){
+            payload.put("dd.trace_id", this.traceId);
+        }
+
+        if(spanId != null) {
+            payload.put("dd.span_id", this.spanId);
+        }
         return payload;
     }
 
