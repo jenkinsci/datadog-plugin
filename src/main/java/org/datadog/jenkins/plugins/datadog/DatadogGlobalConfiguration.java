@@ -681,7 +681,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     /**
      * Getter function for the traceServiceName global configuration.
      *
-     * @return a Integer containing the traceServiceName global configuration.
+     * @return a String containing the traceServiceName global configuration.
      */
     public String getTraceServiceName() {
         return traceServiceName;
