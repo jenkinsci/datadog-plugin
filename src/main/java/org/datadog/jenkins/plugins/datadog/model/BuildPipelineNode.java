@@ -14,6 +14,7 @@ import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.graph.StepNode;
+import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -107,7 +108,7 @@ public class BuildPipelineNode {
         this.args = ArgumentsAction.getFilteredArguments(startNode);
 
         if(endNode instanceof StepNode){
-            final StepData stepData = StepDataManager.get().remove(((StepNode)endNode).getDescriptor());
+            final StepData stepData = getStepData(((StepNode)endNode).getDescriptor());
             if(stepData != null) {
                 this.envVars = stepData.getEnvVars();
                 this.workspace = stepData.getWorkspace();
@@ -137,7 +138,7 @@ public class BuildPipelineNode {
         this.type = NodeType.STEP;
         this.args = ArgumentsAction.getFilteredArguments(stepNode);
 
-        final StepData stepData = StepDataManager.get().remove(stepNode.getDescriptor());
+        final StepData stepData = getStepData(stepNode.getDescriptor());
         if(stepData != null) {
             this.envVars = stepData.getEnvVars();
             this.workspace = stepData.getWorkspace();
@@ -325,6 +326,24 @@ public class BuildPipelineNode {
     private static Throwable getErrorObj(FlowNode flowNode) {
         final ErrorAction errorAction = flowNode.getAction(ErrorAction.class);
         return (errorAction != null) ? errorAction.getError() : null;
+    }
+
+    /**
+     * Returns the {@code StepData} associated with a certain {@code StepDescriptor}
+     *
+     * The remove() method cannot be used to get the StepData
+     * because the Steps that belongs to the same Stage,
+     * use the same StepDescriptor instance.
+     * For that reason, the get() method is used.
+     *
+     * This logic needs to be combined with the clearUsedDescriptor() method
+     * to avoid memory leaks. See {@code DatadogTracePipelineLogic#execute} method.
+     *
+     * @param descriptor
+     * @return stepData associated with a certain StepDescriptor.
+     */
+    private StepData getStepData(StepDescriptor descriptor) {
+        return StepDataManager.get().get(descriptor);
     }
 
     public static class BuildPipelineNodeKey {
