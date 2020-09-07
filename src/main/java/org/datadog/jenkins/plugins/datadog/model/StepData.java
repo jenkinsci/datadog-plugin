@@ -6,14 +6,17 @@ import hudson.model.Computer;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class StepData {
+public class StepData implements Serializable {
 
-    private static final Logger logger = Logger.getLogger(StepData.class.getName());
+    private static final long serialVersionUID = 1L;
+
+    private static transient final Logger logger = Logger.getLogger(StepData.class.getName());
 
     private final Map<String, String> envVars;
     private final String nodeName;

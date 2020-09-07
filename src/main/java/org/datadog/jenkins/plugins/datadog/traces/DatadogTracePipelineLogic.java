@@ -86,13 +86,6 @@ public class DatadogTracePipelineLogic {
             sendTrace(tracer, buildData, root, spanContext);
         } catch (Exception e){
             logger.severe("Unable to send traces. Exception:" + e);
-        } finally {
-            // As same StepDescriptor instance is used for all Steps
-            // that belong to the same Stage, it's not possible
-            // to use the method remove() to avoid having memory leaks.
-            // For that reason, it's needed to clear used
-            // descriptors manually after traces have been sent.
-            StepDataManager.get().clearUsedDescriptors();
         }
     }
 

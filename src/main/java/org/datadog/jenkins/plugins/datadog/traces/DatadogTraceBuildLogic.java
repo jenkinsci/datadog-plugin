@@ -14,6 +14,7 @@ import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.model.StepData;
 
 import java.util.logging.Logger;
 
@@ -59,6 +60,9 @@ public class DatadogTraceBuildLogic {
         final BuildSpanAction buildSpanAction = new BuildSpanAction(buildData);
         this.tracer.inject(buildSpan.context(), Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatation()));
         run.addAction(buildSpanAction);
+
+        final StepDataAction stepDataAction = new StepDataAction();
+        run.addAction(stepDataAction);
     }
 
     public void finishBuildTrace(final BuildData buildData, final Run<?,?> run) {

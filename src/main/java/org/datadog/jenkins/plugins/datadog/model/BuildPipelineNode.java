@@ -1,10 +1,10 @@
 package org.datadog.jenkins.plugins.datadog.model;
 
 import hudson.console.AnnotatedLargeText;
-import hudson.model.Node;
-import hudson.model.Result;
+import hudson.model.Run;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.traces.StepDataManager;
+import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
+import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.actions.LogAction;
@@ -14,7 +14,6 @@ import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.graph.StepNode;
-import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -23,11 +22,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.logging.Logger;
 
 /**
  * Represent a stage of the Jenkins Pipeline.
  */
 public class BuildPipelineNode {
+
+    private static final Logger logger = Logger.getLogger(BuildPipelineNode.class.getName());
 
     public enum NodeType {
         PIPELINE("ci.pipeline"),
@@ -108,7 +110,7 @@ public class BuildPipelineNode {
         this.args = ArgumentsAction.getFilteredArguments(startNode);
 
         if(endNode instanceof StepNode){
-            final StepData stepData = getStepData(((StepNode)endNode).getDescriptor());
+            final StepData stepData = getStepData(endNode);
             if(stepData != null) {
                 this.envVars = stepData.getEnvVars();
                 this.workspace = stepData.getWorkspace();
@@ -138,7 +140,7 @@ public class BuildPipelineNode {
         this.type = NodeType.STEP;
         this.args = ArgumentsAction.getFilteredArguments(stepNode);
 
-        final StepData stepData = getStepData(stepNode.getDescriptor());
+        final StepData stepData = getStepData(stepNode);
         if(stepData != null) {
             this.envVars = stepData.getEnvVars();
             this.workspace = stepData.getWorkspace();
@@ -328,22 +330,33 @@ public class BuildPipelineNode {
         return (errorAction != null) ? errorAction.getError() : null;
     }
 
-    /**
-     * Returns the {@code StepData} associated with a certain {@code StepDescriptor}
-     *
-     * The remove() method cannot be used to get the StepData
-     * because the Steps that belongs to the same Stage,
-     * use the same StepDescriptor instance.
-     * For that reason, the get() method is used.
-     *
-     * This logic needs to be combined with the clearUsedDescriptor() method
-     * to avoid memory leaks. See {@code DatadogTracePipelineLogic#execute} method.
-     *
-     * @param descriptor
-     * @return stepData associated with a certain StepDescriptor.
-     */
-    private StepData getStepData(StepDescriptor descriptor) {
-        return StepDataManager.get().get(descriptor);
+    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
+    private StepData getStepData(final FlowNode node) {
+        final Run<?, ?> run = getRun(node);
+        if(run == null) {
+            logger.fine("Unable to get StepData from node '"+node.getDisplayName()+"'. Run is null");
+            return null;
+        }
+
+        final StepDataAction stepDataAction = run.getAction(StepDataAction.class);
+        if(stepDataAction == null) {
+            logger.fine("Unable to get StepData from node '"+node.getDisplayName()+"'. StepDataAction is null");
+            return null;
+        }
+
+        return stepDataAction.get(((StepNode) node).getDescriptor());
+    }
+
+    private Run<?, ?> getRun(final FlowNode node) {
+        if(node == null ||  node.getExecution() == null || node.getExecution().getOwner() == null) {
+            return null;
+        }
+
+        try {
+            return (Run<?, ?>) node.getExecution().getOwner().getExecutable();
+        } catch (Exception e){
+            return null;
+        }
     }
 
     public static class BuildPipelineNodeKey {
