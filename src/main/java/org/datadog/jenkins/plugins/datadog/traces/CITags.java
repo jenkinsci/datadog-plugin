@@ -12,6 +12,7 @@ public class CITags {
     public static final String _NUMBER = ".number";
     public static final String _URL = ".url";
     public static final String _RESULT = ".result";
+    public static final String _CONFIGURATION = ".configuration";
 
     public static final String CI_PROVIDER_NAME = "ci.provider.name";
     public static final String USER_NAME = "user.name";
