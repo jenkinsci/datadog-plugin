@@ -82,7 +82,11 @@ public class DatadogTracePipelineLogic {
 
         final SpanContext spanContext = tracer.extract(Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatation()));
         final BuildPipelineNode root = pipeline.buildTree();
-        sendTrace(tracer, buildData, root, spanContext);
+        try {
+            sendTrace(tracer, buildData, root, spanContext);
+        } catch (Exception e){
+            logger.severe("Unable to send traces. Exception:" + e);
+        }
     }
 
     private void updateBuildData(BuildData buildData, FlowNode node) {
