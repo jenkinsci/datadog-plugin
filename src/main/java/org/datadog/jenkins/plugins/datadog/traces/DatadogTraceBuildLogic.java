@@ -10,12 +10,12 @@ import hudson.model.Run;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
-import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.StepData;
 
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -90,14 +90,12 @@ public class DatadogTraceBuildLogic {
         final String prefix = BuildPipelineNode.NodeType.PIPELINE.getTagName();
         final long endTimeMicros = buildData.getEndTime(0L) * 1000;
         buildSpan.setTag(DDTags.SERVICE_NAME, DatadogUtilities.getDatadogGlobalDescriptor().getTraceServiceName());
-        buildSpan.setTag(DDTags.RESOURCE_NAME, buildData.getJobName(null));
         buildSpan.setTag(DDTags.SPAN_TYPE, "ci");
         buildSpan.setTag(CITags.CI_PROVIDER_NAME, "jenkins");
         buildSpan.setTag(DDTags.LANGUAGE_TAG_KEY, "");
         buildSpan.setTag(CITags._DD_CI_INTERNAL, false);
         buildSpan.setTag(CITags.USER_NAME, buildData.getUserId());
         buildSpan.setTag(prefix + CITags._ID, buildData.getBuildTag(""));
-        buildSpan.setTag(prefix + CITags._NAME, buildData.getJobName(""));
         buildSpan.setTag(prefix + CITags._NUMBER, buildData.getBuildNumber(""));
         buildSpan.setTag(prefix + CITags._URL, buildData.getBuildUrl(""));
 
@@ -117,6 +115,7 @@ public class DatadogTraceBuildLogic {
         final String gitCommit = buildData.getGitCommit("").isEmpty() ? pipelineData.getGitCommit("") : buildData.getGitCommit("");
         buildSpan.setTag(CITags.GIT_COMMIT_SHA, gitCommit);
 
+
         final String rawGitBranch = buildData.getBranch("").isEmpty() ? pipelineData.getBranch("") : buildData.getBranch("");
         final String gitBranch = normalizeBranch(rawGitBranch);
         if(gitBranch != null) {
@@ -126,6 +125,16 @@ public class DatadogTraceBuildLogic {
         final String gitTag = normalizeTag(rawGitBranch);
         if(gitTag != null) {
             buildSpan.setTag(CITags.GIT_TAG, gitTag);
+        }
+
+        final JobNameWrapper jobNameWrapper = new JobNameWrapper(buildData.getJobName(""), gitBranch != null ? gitBranch : gitTag);
+        buildSpan.setTag(DDTags.RESOURCE_NAME, jobNameWrapper.getTraceJobName());
+        buildSpan.setTag(prefix + CITags._NAME, jobNameWrapper.getTraceJobName());
+
+        if(!jobNameWrapper.getConfigurations().isEmpty()){
+            for(Map.Entry<String, String> entry : jobNameWrapper.getConfigurations().entrySet()) {
+                buildSpan.setTag(prefix + CITags._CONFIGURATION + "." + entry.getKey(), entry.getValue());
+            }
         }
 
         // Jenkins specific
