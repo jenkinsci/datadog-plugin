@@ -35,6 +35,7 @@ import java.util.logging.Logger;
 public class DatadogTracePipelineLogic {
 
     private static final String CI_PROVIDER = "jenkins";
+    private static final String HOSTNAME_NONE = "none";
     private static final Logger logger = Logger.getLogger(DatadogTracePipelineLogic.class.getName());
 
     private final Tracer tracer;
@@ -225,11 +226,25 @@ public class DatadogTracePipelineLogic {
         tags.put(CITags.USER_NAME, user);
 
         //Node info
-        final String nodeName = current.getNodeName() != null ? current.getNodeName() : buildData.getNodeName("");
-        tags.put(CITags.NODE_NAME, nodeName);
+        if(current.getNodeName() != null) {
+            tags.put(CITags.NODE_NAME, current.getNodeName());
 
-        final String nodeHostname = current.getNodeHostname() != null ? current.getNodeHostname() : buildData.getHostname("");
-        tags.put(CITags._DD_HOSTNAME, nodeHostname);
+            String nodeHostname = HOSTNAME_NONE;
+            if(current.getNodeHostname() != null) {
+                nodeHostname = current.getNodeHostname();
+            } else if(current.getNodeName().equals("master")) {
+                // If the nodeName is master,
+                // we can set the hostname from the buildData.
+                nodeHostname = buildData.getHostname("");
+            }
+
+            tags.put(CITags._DD_HOSTNAME, nodeHostname);
+        } else {
+            // If there is no node explicitly set for the step,
+            // we consider that is the node from the build.
+            tags.put(CITags.NODE_NAME, buildData.getNodeName(""));
+            tags.put(CITags._DD_HOSTNAME, buildData.getHostname(""));
+        }
 
         // Arguments
         final String nodePrefix = current.getType().name().toLowerCase();
