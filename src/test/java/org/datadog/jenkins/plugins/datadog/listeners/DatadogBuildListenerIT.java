@@ -59,6 +59,7 @@ public class DatadogBuildListenerIT {
         assertEquals("jenkins", buildSpan.getTag(CITags.CI_PROVIDER_NAME));
         assertEquals("anonymous", buildSpan.getTag(CITags.USER_NAME));
         assertEquals("jenkins-buildIntegrationSuccess-1", buildSpan.getTag(buildPrefix + CITags._ID));
+        assertNotNull(buildSpan.getTag(buildPrefix + CITags._QUEUE_TIME));
         assertEquals("buildIntegrationSuccess", buildSpan.getTag(buildPrefix + CITags._NAME));
         assertEquals("1", buildSpan.getTag(buildPrefix + CITags._NUMBER));
         assertNotNull(buildSpan.getTag(buildPrefix + CITags._URL));
