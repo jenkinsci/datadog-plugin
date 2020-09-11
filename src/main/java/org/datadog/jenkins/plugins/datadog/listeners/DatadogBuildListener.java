@@ -41,6 +41,7 @@ import org.datadog.jenkins.plugins.datadog.events.BuildAbortedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildFinishedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildStartedEventImpl;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.model.TimeInQueueAction;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import javax.annotation.Nonnull;
@@ -107,6 +108,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             try {
                 long waiting = (DatadogUtilities.currentTimeMillis() - item.getInQueueSince()) / 1000;
                 client.gauge("jenkins.job.waiting", waiting, hostname, tags);
+                run.addAction(new TimeInQueueAction(waiting));
             } catch (NullPointerException e) {
                 logger.warning("Unable to compute 'waiting' metric. " +
                         "item.getInQueueSince() unavailable, possibly due to worker instance provisioning");
