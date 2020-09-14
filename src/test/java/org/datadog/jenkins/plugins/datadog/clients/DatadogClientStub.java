@@ -52,7 +52,7 @@ public class DatadogClientStub implements DatadogClient {
 
     public List<DatadogMetric> metrics;
     public List<DatadogMetric> serviceChecks;
-    public List<String> logLines;
+    public List<JSONObject> logLines;
     public ListWriter tracerWriter;
     public Tracer tracer;
 
@@ -167,7 +167,7 @@ public class DatadogClientStub implements DatadogClient {
     @Override
     public boolean sendLogs(String payloadLogs) {
         JSONObject payload = JSONObject.fromObject(payloadLogs);
-        this.logLines.add(payload.get("message").toString());
+        this.logLines.add(payload);
         return true;
     }
 

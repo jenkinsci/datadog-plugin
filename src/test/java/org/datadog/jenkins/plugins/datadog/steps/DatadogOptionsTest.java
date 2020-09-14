@@ -1,15 +1,13 @@
 package org.datadog.jenkins.plugins.datadog.steps;
 
-import hudson.EnvVars;
 import hudson.ExtensionList;
 import hudson.model.labels.LabelAtom;
-import java.util.List;
+import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
-import org.datadog.jenkins.plugins.datadog.clients.DatadogMetric;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.Assert;
@@ -17,6 +15,8 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+
+import java.util.List;
 
 public class DatadogOptionsTest {
     @ClassRule
@@ -41,7 +41,7 @@ public class DatadogOptionsTest {
         );
         p.setDefinition(new CpsFlowDefinition(definition, true));
         p.scheduleBuild2(0).get();
-        Assert.assertTrue(stubClient.logLines.contains("foo"));
+        assertLogs("foo", false);
     }
 
     @Test
@@ -64,5 +64,21 @@ public class DatadogOptionsTest {
                 "bar:foo"
         };
         stubClient.assertMetric("jenkins.job.duration", hostname, expectedTags);
+    }
+
+    private void assertLogs(final String expectedMessage, final boolean checkTraces) {
+        boolean hasExpectedMessage = false;
+        List<JSONObject> logLines = stubClient.logLines;
+        for(final JSONObject logLine : logLines) {
+            if(checkTraces) {
+                Assert.assertNotNull(logLine.get("dd.trace_id"));
+                Assert.assertNotNull(logLine.get("dd.span_id"));
+            }
+
+            if(!hasExpectedMessage) {
+                hasExpectedMessage = expectedMessage.equals(logLine.get("message"));
+            }
+        }
+        Assert.assertTrue("loglines does not contain '"+expectedMessage+"' message.", hasExpectedMessage);
     }
 }
