@@ -54,13 +54,52 @@ import java.util.logging.Logger;
 
 /**
  * This class registers an {@link RunListener} to trigger events and calculate metrics:
+ * - When a build initializes, the {@link #onInitialize(Run)} method will be invoked.
  * - When a build starts, the {@link #onStarted(Run, TaskListener)} method will be invoked.
- * - When a build finishes, the {@link #onCompleted(Run, TaskListener)} method will be invoked.
+ * - When a build completes, the {@link #onCompleted(Run, TaskListener)} method will be invoked.
+ * - When a build finalizes, the {@link #onFinalized(Run)} method will be invoked.
  */
 @Extension
 public class DatadogBuildListener extends RunListener<Run> {
 
     private static final Logger logger = Logger.getLogger(DatadogBuildListener.class.getName());
+
+
+    /**
+     * Called when a build is first initialized.
+     * @param run - A Run object representing a particular execution of Job.
+     */
+    @Override
+    public void onInitialize(Run run) {
+        try {
+            // Process only if job is NOT in excluded and is in included
+            if (!DatadogUtilities.isJobTracked(run.getParent().getFullName())) {
+                return;
+            }
+            logger.fine("Start DatadogBuildListener#onInitialize");
+
+            // Get Datadog Client Instance
+            DatadogClient client = getDatadogClient();
+            if (client == null) {
+                return;
+            }
+
+            // Collect Build Data
+            BuildData buildData;
+            try {
+                buildData = new BuildData(run, null);
+            } catch (IOException | InterruptedException e) {
+                DatadogUtilities.severe(logger, e, null);
+                return;
+            }
+
+            // Traces
+            client.startBuildTrace(buildData, run);
+            logger.fine("End DatadogBuildListener#onInitialize");
+        } catch (Exception e) {
+            DatadogUtilities.severe(logger, e, null);
+        }
+    }
 
     /**
      * Called when a build is first started.
@@ -76,7 +115,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             if (!DatadogUtilities.isJobTracked(run.getParent().getFullName())) {
                 return;
             }
-            logger.fine("End DatadogBuildListener#onStarted");
+            logger.fine("Start DatadogBuildListener#onStarted");
 
             // Get Datadog Client Instance
             DatadogClient client = getDatadogClient();
@@ -116,9 +155,6 @@ public class DatadogBuildListener extends RunListener<Run> {
 
             // Submit counter
             client.incrementCounter("jenkins.job.started", hostname, tags);
-
-            // Traces
-            client.startBuildTrace(buildData, run);
 
             logger.fine("End DatadogBuildListener#onStarted");
         } catch (Exception e) {
@@ -230,10 +266,44 @@ public class DatadogBuildListener extends RunListener<Run> {
                 }
             }
 
+            logger.fine("End DatadogBuildListener#onCompleted");
+        } catch (Exception e) {
+            DatadogUtilities.severe(logger, e, null);
+        }
+    }
+
+
+    /**
+     * Called when a build is finalized.
+     * @param run - A Run object representing a particular execution of Job.
+     */
+    @Override
+    public void onFinalized(Run run) {
+        try {
+            // Process only if job in NOT in excluded and is in included
+            if (!DatadogUtilities.isJobTracked(run.getParent().getFullName())) {
+                return;
+            }
+            logger.fine("Start DatadogBuildListener#onFinalized");
+
+            // Get Datadog Client Instance
+            DatadogClient client = getDatadogClient();
+            if (client == null) {
+                return;
+            }
+
+            // Collect Build Data
+            BuildData buildData;
+            try {
+                buildData = new BuildData(run, null);
+            } catch (IOException | InterruptedException e) {
+                DatadogUtilities.severe(logger, e, null);
+                return;
+            }
+
             // APM Traces
             client.finishBuildTrace(buildData, run);
-
-            logger.fine("End DatadogBuildListener#onCompleted");
+            logger.fine("End DatadogBuildListener#onFinalized");
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, null);
         }
