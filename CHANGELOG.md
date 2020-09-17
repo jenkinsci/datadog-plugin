@@ -1,5 +1,20 @@
 Changes
 =======
+# 2.2.0 / 2020-09-17
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.1.1...datadog-2.2.0
+
+Fixes and improvements for APM Traces for Jenkins Builds/Pipelines.
+
+### Changes
+* [Added] Service name configurable for traces collection. See [#117](https://github.com/jenkinsci/datadog-plugin/pull/117)
+* [Added] Attach logs to APM traces. See [#121](https://github.com/jenkinsci/datadog-plugin/pull/121)
+* [Added] Add queue time metric in APM traces as tag. See [#127](https://github.com/jenkinsci/datadog-plugin/pull/127)
+* [Fixed] Update several tags for traces in Jenkins pipelines. See [#119](https://github.com/jenkinsci/datadog-plugin/pull/119)
+* [Fixed] Fix mismatching between StepData/Step in traces. See [#123](https://github.com/jenkinsci/datadog-plugin/pull/123)
+* [Fixed] Update the job name for APM traces. See [#124](https://github.com/jenkinsci/datadog-plugin/pull/124)
+* [Fixed] Fix hostname resolution for APM traces in pipeline nodes. See [#125](https://github.com/jenkinsci/datadog-plugin/pull/125)
+
 # 2.1.1 / 2020-08-28
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.1.0...datadog-2.1.1
