@@ -30,7 +30,11 @@ import com.timgroup.statsd.NonBlockingStatsDClient;
 import com.timgroup.statsd.ServiceCheck;
 import com.timgroup.statsd.StatsDClient;
 import datadog.opentracing.DDTracer;
+import datadog.trace.api.sampling.PrioritySampling;
+import datadog.trace.bootstrap.instrumentation.api.SamplerConstants;
+import datadog.trace.common.sampling.ForcePrioritySampler;
 import datadog.trace.common.writer.DDAgentWriter;
+import datadog.trace.core.monitor.Monitoring;
 import hudson.model.Run;
 import hudson.util.Secret;
 import io.opentracing.Tracer;
@@ -252,14 +256,23 @@ public class DogStatsDClient implements DatadogClient {
             return false;
         }
 
-        logger.info("Re/Initialize Datadog-Plugin Tracer: hostname = " + this.hostname + ", traceCollectionPort = " + this.traceCollectionPort);
-        final DDTracer.DDTracerBuilder tracerBuilder = DDTracer.builder();
-        tracerBuilder.writer(DDAgentWriter.builder().traceAgentPort(traceCollectionPort).build());
+        try {
+            logger.info("Re/Initialize Datadog-Plugin Tracer: hostname = " + this.hostname + ", traceCollectionPort = " + this.traceCollectionPort);
+            final DDTracer.DDTracerBuilder tracerBuilder = DDTracer.builder();
+            tracerBuilder
+                    .sampler(new ForcePrioritySampler(PrioritySampling.SAMPLER_KEEP))
+                    .writer(DDAgentWriter.builder()
+                    .traceAgentPort(traceCollectionPort)
+                    .monitoring(Monitoring.DISABLED).build());
 
-        final Tracer ddTracer = tracerBuilder.build();
-        traceBuildLogic = new DatadogTraceBuildLogic(ddTracer);
-        tracePipelineLogic = new DatadogTracePipelineLogic(ddTracer);
-        return true;
+            final Tracer ddTracer = tracerBuilder.build();
+            traceBuildLogic = new DatadogTraceBuildLogic(ddTracer);
+            tracePipelineLogic = new DatadogTracePipelineLogic(ddTracer);
+            return true;
+        } catch (Exception e) {
+            logger.severe("Unable to create DDTracer. " + e);
+            return false;
+        }
     }
 
     private boolean stop(){
