@@ -44,15 +44,17 @@ To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure S
 1. Select the radio button next to **Use Datadog API URL and Key to report to Datadog** (selected by default).
 2. Paste your [Datadog API key][4] in the `API Key` textbox on the Jenkins configuration screen.
 3. Test your Datadog API key by using the `Test Key` button on the Jenkins configuration screen directly below the API key textbox.
-4. (optional) Enter your [Datadog Log Intake URL][15] and select "Enable Log Collection" in the Advanced tab.
-5. Save your configuration.
+4. (optional) Enter the hostname of the Jenkins server in the Advanced tab to include it with the events.
+5. (optional) Enter your [Datadog Log Intake URL][15] and select "Enable Log Collection" in the Advanced tab.
+6. Save your configuration.
 
 ##### DogStatsD forwarding {#dogstatsd-forwarding-plugin}
 
 1. Select the radio button next to **Use the Datadog Agent to report to Datadog**.
 2. Specify your DogStatsD server `hostname` and `port`.
-3. (optional) Enter your Log Collection Port and configure [log collection](#log-collection) and select "Enable Log Collection" in the Advanced tab.
-4. Save your configuration.
+3. (optional) Enter the hostname of the Jenkins server in the Advanced tab to include it with the events.
+4. (optional) Enter your Log Collection Port and configure [log collection](#log-collection) and select "Enable Log Collection" in the Advanced tab.
+5. Save your configuration.
 
 #### Groovy script
 
