@@ -635,7 +635,7 @@ public class DatadogUtilities {
         }
         // Other possibilities are queued, launched, unknown: https://javadoc.jenkins.io/plugin/workflow-api/org/jenkinsci/plugins/workflow/actions/QueueItemAction.QueueState.html
         if (QueueItemAction.getNodeState(endNode) == QueueItemAction.QueueState.CANCELLED) {
-            return "CANCELLED";
+            return "CANCELED";
         }
         FlowExecution exec = endNode.getExecution();
         if ((exec != null && exec.isComplete()) || NotExecutedNodeAction.isExecuted(endNode)) {
@@ -680,7 +680,7 @@ public class DatadogUtilities {
         } else if(result.equals(Result.FAILURE)) {
             return "error";
         } else if(result.equals(Result.ABORTED)){
-            return "cancelled";
+            return "canceled";
         } else {
             return "unstable";
         }
