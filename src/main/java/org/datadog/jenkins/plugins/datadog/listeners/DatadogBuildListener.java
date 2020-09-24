@@ -334,6 +334,21 @@ public class DatadogBuildListener extends RunListener<Run> {
                 return;
             }
 
+            // If the build already has a result, this could be a Jenkins cleanup operation
+            if (buildData.getResult(null) != null) {
+                String result = buildData.getResult(null);
+                String number = buildData.getBuildNumber("unknown");
+                String jobName = buildData.getJobName("unknown");
+
+                // Build title
+                // eg: `job_name build #1 aborted on hostname`
+                String text = "Ignoring deletion event for completed Job " + jobName +
+                        " build #" + number + " with result " + result;
+
+                logger.fine(text);
+                return;
+            }
+
             // Get the list of global tags to apply
             String hostname = buildData.getHostname("unknown");
 
