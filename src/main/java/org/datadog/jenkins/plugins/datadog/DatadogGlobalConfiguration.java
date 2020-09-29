@@ -935,16 +935,15 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     }
 
     /**
-     *
-     * @return
+     * @return - A {@link IdGenerationStrategy} to be used for generating spanIDs
      */
     public IdGenerationStrategy getTraceIdsGenerator() {
         return traceIdsGenerator;
     }
 
     /**
-     *
-     * @param traceIdsGenerator
+     * Set the IdGenerationStrategy, used to generate spanIDs.
+     * @param traceIdsGenerator - The IdGenerationStrategy
      */
     public void setTraceIdsGenerator(IdGenerationStrategy traceIdsGenerator) {
         this.traceIdsGenerator = traceIdsGenerator;
