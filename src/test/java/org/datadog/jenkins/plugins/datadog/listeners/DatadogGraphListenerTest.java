@@ -7,6 +7,8 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import datadog.trace.api.DDId;
+import datadog.trace.api.IdGenerationStrategy;
 import datadog.trace.common.writer.ListWriter;
 import datadog.trace.core.DDSpan;
 import hudson.model.labels.LabelAtom;
@@ -54,6 +56,7 @@ public class DatadogGraphListenerTest {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setCollectBuildTraces(true);
         cfg.setTraceServiceName(SAMPLE_SERVICE_NAME);
+        cfg.setTraceIdsGenerator(IdGenerationStrategy.RANDOM);
 
         listener = new DatadogGraphListener();
         clientStub = new DatadogClientStub();
@@ -155,6 +158,9 @@ public class DatadogGraphListenerTest {
     
     @Test
     public void testIntegrationNoFailureTag() throws Exception {
+        final DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+        cfg.setTraceIdsGenerator(IdGenerationStrategy.SEQUENTIAL);
+
         jenkinsRule.createOnlineSlave(new LabelAtom("windows"));
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationSuccess");
         String definition = IOUtils.toString(
@@ -221,6 +227,7 @@ public class DatadogGraphListenerTest {
 
         final String stepPrefix = BuildPipelineNode.NodeType.STEP.getTagName();
         final DDSpan stepInternalSpan = pipelineTrace.get(1);
+        assertEquals("1", stepInternalSpan.context().getSpanId().toString());
         assertEquals("jenkins.step.internal", stepInternalSpan.getOperationName());
         assertEquals(SAMPLE_SERVICE_NAME, stepInternalSpan.getServiceName());
         assertEquals("Stage : Start", stepInternalSpan.getResourceName());
@@ -237,6 +244,7 @@ public class DatadogGraphListenerTest {
 
         final String stagePrefix = BuildPipelineNode.NodeType.STAGE.getTagName();
         final DDSpan stageSpan = pipelineTrace.get(2);
+        assertEquals("1", stageSpan.context().getParentId().toString());
         assertEquals("jenkins.stage", stageSpan.getOperationName());
         assertEquals(SAMPLE_SERVICE_NAME, stageSpan.getServiceName());
         assertEquals("test", stageSpan.getResourceName());
@@ -251,6 +259,7 @@ public class DatadogGraphListenerTest {
         assertEquals("4", stageSpan.getTag(stagePrefix + CITags._NUMBER));
 
         final DDSpan stepAtomSpan = pipelineTrace.get(3);
+        assertEquals("2", stepAtomSpan.context().getSpanId().toString());
         assertEquals("jenkins.step", stepAtomSpan.getOperationName());
         assertEquals(SAMPLE_SERVICE_NAME, stepAtomSpan.getServiceName());
         assertEquals("Print Message", stepAtomSpan.getResourceName());
