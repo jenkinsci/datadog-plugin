@@ -13,6 +13,9 @@ import java.io.IOException;
 @Extension
 public class TraceStepEnvironmentContributor extends StepEnvironmentContributor {
 
+    public static final String TRACE_ID_ENVVAR_KEY = "X-DATADOG-TRACE-ID";
+    public static final String SPAN_ID_ENVVAR_KEY = "X-DATADOG-PARENT-ID";
+
     @Override
     public void buildEnvironmentFor(StepContext stepContext, EnvVars envs, TaskListener listener) throws IOException, InterruptedException {
         final Run<?,?> run = stepContext.get(Run.class);
@@ -22,14 +25,14 @@ public class TraceStepEnvironmentContributor extends StepEnvironmentContributor 
             // into the buildSpanPropagation map. As we don't have access to the tracer here,
             // we use the key directly to obtain the traceID value.
             final String traceId = buildSpanAction.getBuildSpanPropatation().get("x-datadog-trace-id");
-            envs.put("X-DATADOG-TRACE-ID", String.valueOf(traceId));
+            envs.put(TRACE_ID_ENVVAR_KEY, String.valueOf(traceId));
         }
 
         final FlowNode flowNode = stepContext.get(FlowNode.class);
         if(flowNode != null) {
             final GeneratedSpanIdAction idsAction = flowNode.getAction(GeneratedSpanIdAction.class);
             if(idsAction != null) {
-                envs.put("X-DATADOG-PARENT-ID", idsAction.getDDSpanId().toString());
+                envs.put(SPAN_ID_ENVVAR_KEY, idsAction.getDDSpanId().toString());
             }
         }
     }
