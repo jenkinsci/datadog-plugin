@@ -12,8 +12,8 @@ import java.io.IOException;
 import java.util.logging.Logger;
 
 /**
- * Contributes the X-DATADOG-TRACE-ID and X-DATADOG-PARENT-ID environment variables to workflow steps.
- * The value of the X-DATADOG-PARENT-ID is the spanID of the span that is going to be executed, therefore
+ * Contributes the X_DATADOG_TRACE_ID and X_DATADOG_PARENT_ID environment variables to workflow steps.
+ * The value of the X_DATADOG_PARENT_ID is the spanID of the span that is going to be executed, therefore
  * this method is executed as many as workflow steps the pipeline have.
  */
 @Extension
@@ -21,8 +21,8 @@ public class TraceStepEnvironmentContributor extends StepEnvironmentContributor 
 
     private static final Logger logger = Logger.getLogger(TraceStepEnvironmentContributor.class.getName());
 
-    public static final String TRACE_ID_ENVVAR_KEY = "X-DATADOG-TRACE-ID";
-    public static final String SPAN_ID_ENVVAR_KEY = "X-DATADOG-PARENT-ID";
+    public static final String TRACE_ID_ENVVAR_KEY = "X_DATADOG_TRACE_ID";
+    public static final String SPAN_ID_ENVVAR_KEY = "X_DATADOG_PARENT_ID";
 
     @Override
     public void buildEnvironmentFor(StepContext stepContext, EnvVars envs, TaskListener listener) throws IOException, InterruptedException {
