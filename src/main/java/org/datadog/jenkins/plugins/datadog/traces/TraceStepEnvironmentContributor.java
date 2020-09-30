@@ -9,31 +9,44 @@ import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepEnvironmentContributor;
 
 import java.io.IOException;
+import java.util.logging.Logger;
 
+/**
+ * Contributes the X-DATADOG-TRACE-ID and X-DATADOG-PARENT-ID environment variables to workflow steps.
+ * The value of the X-DATADOG-PARENT-ID is the spanID of the span that is going to be executed, therefore
+ * this method is executed as many as workflow steps the pipeline have.
+ */
 @Extension
 public class TraceStepEnvironmentContributor extends StepEnvironmentContributor {
+
+    private static final Logger logger = Logger.getLogger(TraceStepEnvironmentContributor.class.getName());
 
     public static final String TRACE_ID_ENVVAR_KEY = "X-DATADOG-TRACE-ID";
     public static final String SPAN_ID_ENVVAR_KEY = "X-DATADOG-PARENT-ID";
 
     @Override
     public void buildEnvironmentFor(StepContext stepContext, EnvVars envs, TaskListener listener) throws IOException, InterruptedException {
-        final Run<?,?> run = stepContext.get(Run.class);
-        final BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
-        if(buildSpanAction != null) {
-            // The key 'x-datadog-trace-id' is used by the Java Tracer to inject the SpanContext
-            // into the buildSpanPropagation map. As we don't have access to the tracer here,
-            // we use the key directly to obtain the traceID value.
-            final String traceId = buildSpanAction.getBuildSpanPropatation().get("x-datadog-trace-id");
-            envs.put(TRACE_ID_ENVVAR_KEY, String.valueOf(traceId));
+        try {
+            final Run<?,?> run = stepContext.get(Run.class);
+            final BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
+            if(buildSpanAction != null) {
+                // The key 'x-datadog-trace-id' is used by the Java Tracer to inject the SpanContext
+                // into the buildSpanPropagation map. As we don't have access to the tracer here,
+                // we use the key directly to obtain the traceID value.
+                final String traceId = buildSpanAction.getBuildSpanPropatation().get("x-datadog-trace-id");
+                envs.put(TRACE_ID_ENVVAR_KEY, String.valueOf(traceId));
+            }
+
+            final FlowNode flowNode = stepContext.get(FlowNode.class);
+            if(flowNode != null) {
+                final GeneratedSpanIdAction idsAction = flowNode.getAction(GeneratedSpanIdAction.class);
+                if(idsAction != null) {
+                    envs.put(SPAN_ID_ENVVAR_KEY, idsAction.getDDSpanId().toString());
+                }
+            }
+        } catch (Exception ex) {
+            logger.severe("Unable to set traces IDs as environment variables before step execution. " + ex);
         }
 
-        final FlowNode flowNode = stepContext.get(FlowNode.class);
-        if(flowNode != null) {
-            final GeneratedSpanIdAction idsAction = flowNode.getAction(GeneratedSpanIdAction.class);
-            if(idsAction != null) {
-                envs.put(SPAN_ID_ENVVAR_KEY, idsAction.getDDSpanId().toString());
-            }
-        }
     }
 }

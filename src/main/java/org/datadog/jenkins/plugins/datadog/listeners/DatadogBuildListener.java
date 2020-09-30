@@ -116,31 +116,37 @@ public class DatadogBuildListener extends RunListener<Run> {
      */
     @Override
     public Environment setUpEnvironment(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException, Run.RunnerAbortedException {
-        logger.fine("Start DatadogBuildListener#setUpEnvironment");
+        try {
+            logger.fine("Start DatadogBuildListener#setUpEnvironment");
 
-        final BuildSpanAction buildSpanAction = build.getAction(BuildSpanAction.class);
-        if(buildSpanAction == null) {
+            final BuildSpanAction buildSpanAction = build.getAction(BuildSpanAction.class);
+            if(buildSpanAction == null) {
+                return new Environment() {
+                };
+            }
+
+            final Map<String, String> buildSpanPropatation = buildSpanAction.getBuildSpanPropatation();
+            // The key 'x-datadog-trace-id' and 'x-datadog-parent-id' keys are used by
+            // the Java Tracer to inject the SpanContext into the buildSpanPropagation map.
+            // As we don't have access to the tracer here, we use the key directly to obtain the traceID value.
+            final String traceId = buildSpanPropatation.get("x-datadog-trace-id");
+            final String spanId = buildSpanPropatation.get("x-datadog-parent-id");
+
+            Environment newEnv = new Environment() {
+                @Override
+                public void buildEnvVars(Map<String, String> env) {
+                    env.put(TRACE_ID_ENVVAR_KEY, traceId);
+                    env.put(SPAN_ID_ENVVAR_KEY, spanId);
+                }
+            };
+
+            logger.fine("End DatadogBuildListener#setUpEnvironment");
+            return newEnv;
+        } catch (Exception e) {
+            DatadogUtilities.severe(logger, e, null);
             return new Environment() {
             };
         }
-
-        final Map<String, String> buildSpanPropatation = buildSpanAction.getBuildSpanPropatation();
-        // The key 'x-datadog-trace-id' and 'x-datadog-parent-id' keys are used by
-        // the Java Tracer to inject the SpanContext into the buildSpanPropagation map.
-        // As we don't have access to the tracer here, we use the key directly to obtain the traceID value.
-        final String traceId = buildSpanPropatation.get("x-datadog-trace-id");
-        final String spanId = buildSpanPropatation.get("x-datadog-parent-id");
-
-        Environment newEnv = new Environment() {
-            @Override
-            public void buildEnvVars(Map<String, String> env) {
-                env.put(TRACE_ID_ENVVAR_KEY, traceId);
-                env.put(SPAN_ID_ENVVAR_KEY, spanId);
-            }
-        };
-
-        logger.fine("End DatadogBuildListener#setUpEnvironment");
-        return newEnv;
     }
 
     /**
