@@ -29,6 +29,8 @@ import com.cloudbees.workflow.rest.external.StageNodeExt;
 import hudson.EnvVars;
 import hudson.model.*;
 import jenkins.model.Jenkins;
+import org.datadog.jenkins.plugins.datadog.DatadogEvent.AlertType;
+import org.datadog.jenkins.plugins.datadog.DatadogEvent.Priority;
 import org.datadog.jenkins.plugins.datadog.stubs.BuildStub;
 import org.datadog.jenkins.plugins.datadog.stubs.ProjectStub;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
@@ -122,6 +124,8 @@ public class DatadogBuildListenerTest {
         client.assertMetric("jenkins.job.duration", 121, "test-hostname-2", metricExpectedTags1);
         client.assertMetric("jenkins.job.leadtime", 121, "test-hostname-2", metricExpectedTags1);
         client.assertServiceCheck("jenkins.job.status", 0, "test-hostname-2", scExpectedTags1);
+        client.assertEvent("Job ParentFullName/JobName build #1 success on test-hostname-2",
+                Priority.LOW, AlertType.SUCCESS, 1121L);
 
         datadogBuildListener.onCompleted(previousFailedRun1, mock(TaskListener.class));
         String[] metricExpectedTags2 = new String[6];
@@ -130,12 +134,16 @@ public class DatadogBuildListenerTest {
         client.assertMetric("jenkins.job.duration", 122, "test-hostname-2", metricExpectedTags2);
         client.assertMetric("jenkins.job.feedbacktime", 122, "test-hostname-2", metricExpectedTags2);
         client.assertServiceCheck("jenkins.job.status", 2, "test-hostname-2", scExpectedTags1);
+        client.assertEvent("Job ParentFullName/JobName build #2 failure on test-hostname-2",
+                Priority.NORMAL, AlertType.ERROR, 2122L);
 
         datadogBuildListener.onCompleted(previousFailedRun2, mock(TaskListener.class));
         client.assertMetric("jenkins.job.duration", 123, "test-hostname-2", metricExpectedTags2);
         client.assertMetric("jenkins.job.feedbacktime", 123, "test-hostname-2", metricExpectedTags2);
         client.assertMetric("jenkins.job.completed", 2, "test-hostname-2", metricExpectedTags2);
         client.assertServiceCheck("jenkins.job.status", 2, "test-hostname-2", scExpectedTags1);
+        client.assertEvent("Job ParentFullName/JobName build #3 failure on test-hostname-2",
+                Priority.NORMAL, AlertType.ERROR, 3123L);
 
         datadogBuildListener.onCompleted(successRun, mock(TaskListener.class));
         client.assertMetric("jenkins.job.duration", 124, "test-hostname-2", metricExpectedTags1);
@@ -144,7 +152,10 @@ public class DatadogBuildListenerTest {
         client.assertMetric("jenkins.job.mttr", 4000-2000, "test-hostname-2", metricExpectedTags1);
         client.assertServiceCheck("jenkins.job.status", 0, "test-hostname-2", scExpectedTags1);
         client.assertMetric("jenkins.job.completed", 2, "test-hostname-2", metricExpectedTags1);
+        client.assertEvent("Job ParentFullName/JobName build #4 success on test-hostname-2",
+                Priority.LOW, AlertType.SUCCESS, 4124L);
         client.assertedAllMetricsAndServiceChecks();
+        client.assertedAllEvents();
     }
 
     @Test
@@ -215,6 +226,8 @@ public class DatadogBuildListenerTest {
         client.assertMetric("jenkins.job.leadtime", 123, "test-hostname-2", metricExpectedTags1);
         client.assertMetric("jenkins.job.completed", 1, "test-hostname-2", metricExpectedTags1);
         client.assertServiceCheck("jenkins.job.status", 0, "test-hostname-2", scExpectedTags);
+        client.assertEvent("Job ParentFullName/JobName build #1 success on test-hostname-2",
+                Priority.LOW, AlertType.SUCCESS, 1123L);
         client.assertedAllMetricsAndServiceChecks();
 
         datadogBuildListener.onCompleted(failedRun, mock(TaskListener.class));
@@ -226,7 +239,46 @@ public class DatadogBuildListenerTest {
         client.assertMetric("jenkins.job.feedbacktime", 124, "test-hostname-2", metricExpectedTags2);
         client.assertMetric("jenkins.job.completed", 1, "test-hostname-2", metricExpectedTags2);
         client.assertServiceCheck("jenkins.job.status", 2, "test-hostname-2", scExpectedTags);
+        client.assertEvent("Job ParentFullName/JobName build #2 failure on test-hostname-2",
+                Priority.NORMAL, AlertType.ERROR, 2124L);
         client.assertedAllMetricsAndServiceChecks();
+        client.assertedAllEvents();
+    }
+
+    @Test
+    public void testEvents() throws Exception {
+        BuildStub previousSuccessfulRun = new BuildStub(this.job, Result.SUCCESS, envVars, null,
+                123000L, 1, null, 1000000L, null);
+
+        BuildStub failedRun = new BuildStub(this.job, Result.FAILURE, envVars, null,
+                124000L, 2, null, 2000000L, previousSuccessfulRun);
+
+        datadogBuildListener.onCompleted(previousSuccessfulRun, mock(TaskListener.class));
+        client.assertEvent("Job ParentFullName/JobName build #1 success on test-hostname-2",
+                Priority.LOW, AlertType.SUCCESS, 1123L);
+
+        datadogBuildListener.onCompleted(failedRun, mock(TaskListener.class));
+        client.assertEvent("Job ParentFullName/JobName build #2 failure on test-hostname-2",
+                Priority.NORMAL, AlertType.ERROR, 2124L);
+        client.assertedAllEvents();
+
+        // build has already completed, no new events will be sent
+        datadogBuildListener.onDeleted(failedRun);
+        client.assertedAllEvents();
+
+        BuildStub notBuiltRun = new BuildStub(this.job, Result.NOT_BUILT, envVars, null,
+                124000L, 3, null, 2000000L, null);
+        datadogBuildListener.onDeleted(notBuiltRun);
+        client.assertEvent("Job ParentFullName/JobName build #3 aborted on test-hostname-2",
+                Priority.LOW, AlertType.INFO, 2124L);
+        client.assertedAllEvents();
+
+        BuildStub abortedRun = new BuildStub(this.job, Result.ABORTED, envVars, null,
+                124000L, 4, null, 2000000L, null);
+        datadogBuildListener.onDeleted(abortedRun);
+        client.assertEvent("Job ParentFullName/JobName build #4 aborted on test-hostname-2",
+                Priority.LOW, AlertType.INFO, 2124L);
+        client.assertedAllEvents();
     }
 
     @Test

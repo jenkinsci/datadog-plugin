@@ -334,8 +334,8 @@ public class DatadogBuildListener extends RunListener<Run> {
                 return;
             }
 
-            // If the build already has a result, this could be a Jenkins cleanup operation
-            if (buildData.getResult(null) != null) {
+            // If the build already complete, this could be a Jenkins cleanup operation
+            if (buildData.isCompleted()) {
                 String result = buildData.getResult(null);
                 String number = buildData.getBuildNumber("unknown");
                 String jobName = buildData.getJobName("unknown");
