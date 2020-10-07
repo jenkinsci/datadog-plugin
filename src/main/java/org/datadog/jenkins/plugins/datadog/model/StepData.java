@@ -23,7 +23,6 @@ public class StepData implements Serializable {
     private final String nodeHostname;
     private final String workspace;
 
-
     public StepData(final StepContext stepContext){
         this.envVars = getEnvVars(stepContext);
         this.nodeName = getNodeName(stepContext);
@@ -47,12 +46,13 @@ public class StepData implements Serializable {
         return workspace;
     }
 
+
     /**
      * Returns the workspace filepath of the remote node which is executing a determined {@code Step}
      * @param stepContext
      * @return absolute filepath of the workspace of the remote node.
      */
-    private static String getNodeWorkspace(final StepContext stepContext) {
+    private String getNodeWorkspace(final StepContext stepContext) {
         FilePath filePath = null;
         try {
             filePath = stepContext.get(FilePath.class);
@@ -73,7 +73,7 @@ public class StepData implements Serializable {
      * @param stepContext
      * @return hostname of the remote node.
      */
-    private static String getNodeHostname(final StepContext stepContext) {
+    private String getNodeHostname(final StepContext stepContext) {
         try {
             Computer computer = stepContext.get(Computer.class);
             if(computer == null) {
@@ -93,7 +93,7 @@ public class StepData implements Serializable {
      * @param stepContext
      * @return node name of the remote node.
      */
-    private static String getNodeName(StepContext stepContext) {
+    private String getNodeName(StepContext stepContext) {
         try {
             Computer computer = stepContext.get(Computer.class);
             return DatadogUtilities.getNodeName(computer);
@@ -109,7 +109,7 @@ public class StepData implements Serializable {
      * @param stepContext
      * @return map with environment variables of a stepContext.
      */
-    private static Map<String, String> getEnvVars(StepContext stepContext) {
+    private Map<String, String> getEnvVars(StepContext stepContext) {
         EnvVars envVarsObj = null;
         try {
             envVarsObj = stepContext.get(EnvVars.class);
