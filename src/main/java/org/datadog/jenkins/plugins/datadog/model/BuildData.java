@@ -26,7 +26,6 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.model;
 
 import hudson.EnvVars;
-import hudson.FilePath;
 import hudson.model.Cause;
 import hudson.model.CauseAction;
 import hudson.model.Run;
@@ -41,14 +40,9 @@ import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
-import org.datadog.jenkins.plugins.datadog.util.git.RevCommitRepositoryCallback;
-import org.eclipse.jgit.lib.PersonIdent;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.jenkinsci.plugins.gitclient.Git;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -128,7 +122,7 @@ public class BuildData implements Serializable {
         // Populate instance using GitClient if possible.
         // Set all Git commit related variables.
         if(isGit(envVars)){
-            populateGitVariables(listener, envVars);
+            populateGitVariables(run, listener, envVars);
         }
 
         // Populate instance using run instance
@@ -180,53 +174,6 @@ public class BuildData implements Serializable {
         }
     }
 
-    private void populateGitVariables(TaskListener listener, EnvVars envVars) {
-        if(gitCommit == null) {
-            LOGGER.fine("Unable to populate git variables. Either GitCommit is null");
-            return;
-        }
-
-        try {
-            final FilePath ws = GitUtils.buildFilePath(nodeName, workspace);
-            if(ws == null){
-                LOGGER.fine("Unable to populate git variables. FilePath['"+nodeName+"','"+workspace+"'] is null");
-                return;
-            }
-
-            final Git git = Git.with(listener, envVars).in(ws);
-            final RevCommit revCommit = git.getClient().withRepository(new RevCommitRepositoryCallback(gitCommit));
-            if(revCommit == null) {
-                LOGGER.fine("Unable to populate git variables. RevCommit("+gitCommit+") is null");
-                return;
-            }
-
-            this.gitMessage = revCommit.getShortMessage();
-            final PersonIdent authorIdent = revCommit.getAuthorIdent();
-            if(authorIdent != null) {
-                this.gitAuthorName = authorIdent.getName();
-                this.gitAuthorEmail = authorIdent.getEmailAddress();
-                this.gitAuthorDate = DatadogUtilities.toISO8601(authorIdent.getWhen());
-            }
-
-            final PersonIdent committerIdent = revCommit.getCommitterIdent();
-            if(committerIdent != null){
-                this.gitCommitterName = committerIdent.getName();
-                this.gitCommitterEmail = committerIdent.getEmailAddress();
-                this.gitCommitterDate = DatadogUtilities.toISO8601(committerIdent.getWhen());
-            }
-        } catch (Exception e) {
-            LOGGER.fine("Unable to populate git variables. Error: " + e.getMessage());
-        }
-    }
-
-    private boolean isGit(EnvVars envVars) {
-        if(envVars == null){
-            return false;
-        }
-
-        return envVars.get("GIT_BRANCH") != null;
-    }
-
     private void populateEnvVariables(EnvVars envVars){
         if (envVars == null) {
             return;
@@ -253,6 +200,27 @@ public class BuildData implements Serializable {
         setPromotedUserName(envVars.get("PROMOTED_USER_NAME"));
         setPromotedUserId(envVars.get("PROMOTED_USER_ID"));
         setPromotedJobFullName(envVars.get("PROMOTED_JOB_FULL_NAME"));
+    }
+
+
+    private void populateGitVariables(Run<?,?> run, TaskListener listener, EnvVars envVars) {
+        final GitCommitAction action = GitUtils.buildGitCommitAction(run, listener, envVars, this.gitCommit, this.nodeName, this.workspace);
+        if(action != null) {
+            this.gitMessage = action.getMessage();
+            this.gitAuthorName = action.getAuthorName();
+            this.gitAuthorEmail = action.getAuthorEmail();
+            this.gitAuthorDate = action.getAuthorDate();
+            this.gitCommitterName = action.getCommitterName();
+            this.gitCommitterEmail = action.getCommitterEmail();
+            this.gitCommitterDate = action.getCommitterDate();
+        }
+    }
+
+    private boolean isGit(EnvVars envVars) {
+        if(envVars == null){
+            return false;
+        }
+        return envVars.get("GIT_BRANCH") != null;
     }
 
     /**

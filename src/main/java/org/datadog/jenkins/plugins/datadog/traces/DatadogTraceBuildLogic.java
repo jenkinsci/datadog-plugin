@@ -118,6 +118,7 @@ public class DatadogTraceBuildLogic {
         buildSpan.setTag(CITags.GIT_REPOSITORY_URL, gitUrl);
 
         final String gitCommit = buildData.getGitCommit("").isEmpty() ? pipelineData.getGitCommit("") : buildData.getGitCommit("");
+        buildSpan.setTag(CITags.GIT_COMMIT__SHA, gitCommit); //Maintain retrocompatibility
         buildSpan.setTag(CITags.GIT_COMMIT_SHA, gitCommit);
 
         final String gitMessage = buildData.getGitMessage("").isEmpty() ? pipelineData.getGitMessage("") : buildData.getGitMessage("");

@@ -9,7 +9,6 @@ import datadog.trace.api.DDTags;
 import datadog.trace.core.DDSpan;
 import datadog.trace.core.DDSpanContext;
 import hudson.EnvVars;
-import hudson.FilePath;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
@@ -22,11 +21,8 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipeline;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
-import org.datadog.jenkins.plugins.datadog.util.git.RevCommitRepositoryCallback;
-import org.eclipse.jgit.lib.PersonIdent;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
@@ -98,7 +94,7 @@ public class DatadogTracePipelineLogic {
 
         final BuildData buildData = buildSpanAction.getBuildData();
         if(!isLastNode(flowNode)){
-            updateBuildData(buildData, flowNode);
+            updateBuildData(buildData, run, flowNode);
             return;
         }
 
@@ -127,7 +123,7 @@ public class DatadogTracePipelineLogic {
         }
     }
 
-    private void updateBuildData(BuildData buildData, FlowNode node) {
+    private void updateBuildData(BuildData buildData, Run<?, ?> run, FlowNode node) {
         BuildPipelineNode pipelineNode = null;
         if(node instanceof BlockEndNode) {
             pipelineNode = new BuildPipelineNode((BlockEndNode) node);
@@ -154,40 +150,34 @@ public class DatadogTracePipelineLogic {
             buildData.setGitCommit(gitCommit);
         }
 
-        final RevCommit revCommit = searchRevCommit(pipelineNode, node);
-        if(revCommit != null) {
-            if(buildData.getGitMessage("").isEmpty()) {
-                buildData.setGitMessage(revCommit.getShortMessage());
+        final GitCommitAction commitAction = buildGitCommitAction(run,pipelineNode, node);
+        if(commitAction != null) {
+            if(buildData.getGitMessage("").isEmpty()){
+                buildData.setGitMessage(commitAction.getMessage());
             }
 
-            final PersonIdent authorIdent = revCommit.getAuthorIdent();
-            if(authorIdent != null ){
-                if(buildData.getGitAuthorName("").isEmpty()) {
-                    buildData.setGitAuthorName(authorIdent.getName());
-                }
-
-                if(buildData.getGitAuthorEmail("").isEmpty()) {
-                    buildData.setGitAuthorEmail(authorIdent.getEmailAddress());
-                }
-
-                if(buildData.getGitAuthorDate("").isEmpty()) {
-                    buildData.setGitAuthorDate(DatadogUtilities.toISO8601(authorIdent.getWhen()));
-                }
+            if(buildData.getGitAuthorName("").isEmpty()) {
+                buildData.setGitAuthorName(commitAction.getAuthorName());
             }
 
-            final PersonIdent committerIdent = revCommit.getCommitterIdent();
-            if(committerIdent != null){
-                if(buildData.getGitCommitterName("").isEmpty()){
-                    buildData.setGitCommitterName(committerIdent.getName());
-                }
+            if(buildData.getGitAuthorEmail("").isEmpty()){
+                buildData.setGitAuthorEmail(commitAction.getAuthorEmail());
+            }
 
-                if(buildData.getGitCommitterEmail("").isEmpty()) {
-                    buildData.setGitCommitterEmail(committerIdent.getEmailAddress());
-                }
+            if(buildData.getGitAuthorDate("").isEmpty()){
+                buildData.setGitAuthorDate(commitAction.getAuthorDate());
+            }
 
-                if(buildData.getGitCommitterDate("").isEmpty()){
-                    buildData.setGitCommitterDate(DatadogUtilities.toISO8601(committerIdent.getWhen()));
-                }
+            if(buildData.getGitCommitterName("").isEmpty()){
+                buildData.setGitCommitterName(commitAction.getCommitterName());
+            }
+
+            if(buildData.getGitCommitterEmail("").isEmpty()){
+                buildData.setGitCommitterEmail(commitAction.getCommitterEmail());
+            }
+
+            if(buildData.getGitCommitterDate("").isEmpty()){
+                buildData.setGitCommitterDate(commitAction.getCommitterDate());
             }
         }
 
@@ -204,26 +194,6 @@ public class DatadogTracePipelineLogic {
         final String nodeHostname = pipelineNode.getNodeHostname();
         if(nodeHostname != null && buildData.getHostname("").isEmpty()) {
             buildData.setHostname(nodeHostname);
-        }
-    }
-
-    private RevCommit searchRevCommit(final BuildPipelineNode pipelineNode, final FlowNode node) {
-        try {
-            final String workspace = pipelineNode.getWorkspace();
-            final String nodeName = pipelineNode.getNodeName();
-            final String gitCommit = pipelineNode.getEnvVars().get("GIT_COMMIT");
-
-            final FilePath ws = GitUtils.buildFilePath(nodeName, workspace);
-            if(ws == null){
-                return null;
-            }
-
-            final TaskListener listener = node.getExecution().getOwner().getListener();
-            final Git git = Git.with(listener, new EnvVars(pipelineNode.getEnvVars())).in(ws);
-            return git.getClient().withRepository(new RevCommitRepositoryCallback(gitCommit));
-        } catch (Exception e) {
-            logger.fine("Unable to search RevCommit. Error: " + e);
-            return null;
         }
     }
 
@@ -321,6 +291,7 @@ public class DatadogTracePipelineLogic {
 
         final String gitCommit = envVars.get("GIT_COMMIT") !=  null ? envVars.get("GIT_COMMIT") : buildData.getGitCommit("");
         if(gitCommit != null && !gitCommit.isEmpty()) {
+            tags.put(CITags.GIT_COMMIT__SHA, gitCommit); //Maintain retrocompatibility
             tags.put(CITags.GIT_COMMIT_SHA, gitCommit);
         }
 
@@ -458,6 +429,20 @@ public class DatadogTracePipelineLogic {
             ddSpanIdField.set(spanContext, generatedSpanId);
         } catch (Exception e) {
             logger.fine("Unable to substitute the spanId in the span: "+span+". Error: " + e.getMessage());
+        }
+    }
+
+    private GitCommitAction buildGitCommitAction(Run<?, ?> run, BuildPipelineNode pipelineNode, FlowNode node) {
+        try {
+            final TaskListener listener = node.getExecution().getOwner().getListener();
+            final EnvVars envVars = new EnvVars(pipelineNode.getEnvVars());
+            final String gitCommit = pipelineNode.getEnvVars().get("GIT_COMMIT");
+            final String nodeName = pipelineNode.getNodeName();
+            final String workspace = pipelineNode.getWorkspace();
+            return GitUtils.buildGitCommitAction(run, listener, envVars, gitCommit, nodeName, workspace);
+        } catch (Exception e) {
+            logger.fine("Unable to build GitCommitAction. Error: " + e);
+            return null;
         }
     }
 }

@@ -20,6 +20,8 @@ public class CITags {
 
 
     public static final String GIT_REPOSITORY_URL = "git.repository_url";
+    @Deprecated
+    public static final String GIT_COMMIT__SHA = "git.commit_sha"; //Maintain retrocompatibility
     public static final String GIT_COMMIT_SHA = "git.commit.sha";
     public static final String GIT_COMMIT_MESSAGE = "git.commit.message";
     public static final String GIT_COMMIT_AUTHOR_NAME = "git.commit.author.name";
