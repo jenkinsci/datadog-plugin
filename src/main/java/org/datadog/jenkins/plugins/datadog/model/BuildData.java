@@ -40,11 +40,11 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
+import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.datadog.jenkins.plugins.datadog.util.git.RevCommitRepositoryCallback;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.jenkinsci.plugins.gitclient.Git;
-import org.jenkinsci.plugins.workflow.FilePathUtils;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -61,7 +61,6 @@ public class BuildData implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private static transient final Logger LOGGER = Logger.getLogger(BuildData.class.getName());
-    private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX";
 
     private String buildNumber;
     private String buildId;
@@ -182,13 +181,13 @@ public class BuildData implements Serializable {
     }
 
     private void populateGitVariables(TaskListener listener, EnvVars envVars) {
-        if(gitCommit == null || nodeName == null || workspace == null) {
-            LOGGER.fine("Unable to populate git variables. Either GitCommit or NodeName or Workspace is null");
+        if(gitCommit == null) {
+            LOGGER.fine("Unable to populate git variables. Either GitCommit is null");
             return;
         }
 
         try {
-            final FilePath ws = "master".equals(nodeName) ? new FilePath(FilePath.localChannel, workspace):  FilePathUtils.find(nodeName, workspace);
+            final FilePath ws = GitUtils.buildFilePath(nodeName, workspace);
             if(ws == null){
                 LOGGER.fine("Unable to populate git variables. FilePath['"+nodeName+"','"+workspace+"'] is null");
                 return;
@@ -203,22 +202,17 @@ public class BuildData implements Serializable {
 
             this.gitMessage = revCommit.getShortMessage();
             final PersonIdent authorIdent = revCommit.getAuthorIdent();
-            final SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
             if(authorIdent != null) {
                 this.gitAuthorName = authorIdent.getName();
                 this.gitAuthorEmail = authorIdent.getEmailAddress();
-                if(authorIdent.getWhen() != null) {
-                    this.gitAuthorDate = sdf.format(authorIdent.getWhen());
-                }
+                this.gitAuthorDate = DatadogUtilities.toISO8601(authorIdent.getWhen());
             }
 
             final PersonIdent committerIdent = revCommit.getCommitterIdent();
             if(committerIdent != null){
                 this.gitCommitterName = committerIdent.getName();
                 this.gitCommitterEmail = committerIdent.getEmailAddress();
-                if(committerIdent.getWhen() != null){
-                    this.gitCommitterDate = sdf.format(committerIdent.getWhen());
-                }
+                this.gitCommitterDate = DatadogUtilities.toISO8601(committerIdent.getWhen());
             }
         } catch (Exception e) {
             LOGGER.fine("Unable to populate git variables. Error: " + e.getMessage());

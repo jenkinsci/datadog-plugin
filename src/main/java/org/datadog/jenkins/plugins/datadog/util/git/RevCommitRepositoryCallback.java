@@ -17,8 +17,11 @@ public final class RevCommitRepositoryCallback implements RepositoryCallback<Rev
     }
 
     @Override
-    public RevCommit invoke(Repository repository, VirtualChannel virtualChannel)
-            throws IOException, InterruptedException {
+    public RevCommit invoke(final Repository repository, final VirtualChannel virtualChannel) throws IOException {
+        if(this.commit == null || this.commit.isEmpty()) {
+            return null;
+        }
+
         try (RevWalk walk = new RevWalk(repository)) {
             return walk.parseCommit(repository.resolve(commit));
         }

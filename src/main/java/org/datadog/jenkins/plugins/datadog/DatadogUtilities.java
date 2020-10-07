@@ -57,6 +57,7 @@ import java.io.*;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -68,6 +69,7 @@ public class DatadogUtilities {
     private static final Logger logger = Logger.getLogger(DatadogUtilities.class.getName());
 
     private static final Integer MAX_HOSTNAME_LEN = 255;
+    private static final String DATE_FORMAT_ISO8601 = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX";
 
     /**
      * @return - The descriptor for the Datadog plugin. In this case the global configuration.
@@ -703,6 +705,15 @@ public class DatadogUtilities {
     
     public static int toInt(boolean b) {
         return b ? 1 : 0;
+    }
+
+
+    public static String toISO8601(Date date) {
+        if(date == null) {
+            return null;
+        }
+
+        return new SimpleDateFormat(DATE_FORMAT_ISO8601).format(date);
     }
 
 }
