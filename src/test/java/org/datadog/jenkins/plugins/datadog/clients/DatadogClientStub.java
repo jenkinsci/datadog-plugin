@@ -132,7 +132,6 @@ public class DatadogClientStub implements DatadogClient {
     @Override
     public boolean event(DatadogEvent event) {
         this.events.add(new DatadogEventStub(event));
-        //NO-OP
         return true;
     }
 
