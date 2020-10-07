@@ -52,6 +52,7 @@ public class DatadogClientStub implements DatadogClient {
 
     public List<DatadogMetric> metrics;
     public List<DatadogMetric> serviceChecks;
+    public List<DatadogEventStub> events;
     public List<JSONObject> logLines;
     public ListWriter tracerWriter;
     public Tracer tracer;
@@ -62,6 +63,7 @@ public class DatadogClientStub implements DatadogClient {
     public DatadogClientStub() {
         this.metrics = new ArrayList<>();
         this.serviceChecks = new ArrayList<>();
+        this.events = new ArrayList<>();
         this.logLines = new ArrayList<>();
 
         this.tracerWriter = new ListWriter() {
@@ -129,7 +131,7 @@ public class DatadogClientStub implements DatadogClient {
 
     @Override
     public boolean event(DatadogEvent event) {
-        //NO-OP
+        this.events.add(new DatadogEventStub(event));
         return true;
     }
 
@@ -265,6 +267,31 @@ public class DatadogClientStub implements DatadogClient {
 
         Assert.fail("metrics: {" + this.metrics.toString() + " }, serviceChecks : {" +
                 this.serviceChecks.toString() + "}");
+        return false;
+    }
+
+    public boolean assertEvent(String title, DatadogEvent.Priority priority, DatadogEvent.AlertType alertType, Long date) {
+        for (DatadogEventStub event : this.events) {
+            if (event.same(title, priority, alertType, date)) {
+                this.events.remove(event);
+                return true;
+            }
+        }
+        Assert.fail("event matching: { " +
+                "title='" + title + '\'' +
+                ", priority=" + priority +
+                ", alertType=" + alertType +
+                ", date=" + date + "} not found. " +
+                "events: {" + this.events.toString() + "}");
+        return false;
+    }
+
+    public boolean assertedAllEvents() {
+        if (this.events.size() == 0) {
+            return true;
+        }
+
+        Assert.fail("Not all events asserted: {" + this.metrics.toString() + " }");
         return false;
     }
 

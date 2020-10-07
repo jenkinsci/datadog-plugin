@@ -76,6 +76,7 @@ public class BuildData implements Serializable {
     private String promotedJobFullName;
 
     private String result;
+    private boolean isCompleted;
     private String hostname;
     private String userId;
     private Map<String, Set<String>> tags;
@@ -122,8 +123,10 @@ public class BuildData implements Serializable {
         setJenkinsUrl(DatadogUtilities.getJenkinsUrl());
         // Set UserId
         setUserId(getUserId(run));
-        // Set Result
+        // Set Result and completed status
         setResult(run.getResult() == null ? null : run.getResult().toString());
+        setCompleted(run.getResult() != null && run.getResult().completeBuild);
+
         // Set Build Number
         setBuildNumber(String.valueOf(run.getNumber()));
         // Set Hostname
@@ -245,6 +248,15 @@ public class BuildData implements Serializable {
     public void setResult(String result) {
         this.result = result;
     }
+
+    public boolean isCompleted() {
+        return isCompleted;
+    }
+
+    public void setCompleted(boolean completed) {
+        this.isCompleted = completed;
+    }
+
 
     public String getHostname(String value) {
         return defaultIfNull(hostname, value);
