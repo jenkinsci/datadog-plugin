@@ -16,6 +16,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.SingleFileSCM;
 
 import java.util.List;
 
@@ -41,6 +42,7 @@ public class DatadogBuildListenerIT {
     @Test
     public void testTraces() throws Exception {
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccess");
+        project.setScm(new SingleFileSCM("greeting.txt", "hello"));
         project.scheduleBuild2(0).get();
 
         final ListWriter tracerWriter = clientStub.tracerWriter();

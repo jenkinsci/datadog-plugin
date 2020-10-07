@@ -26,7 +26,11 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.model;
 
 import hudson.EnvVars;
-import hudson.model.*;
+import hudson.FilePath;
+import hudson.model.Cause;
+import hudson.model.CauseAction;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.triggers.SCMTrigger;
 import hudson.triggers.TimerTrigger;
 import hudson.util.LogTaskListener;
@@ -36,10 +40,19 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
+import org.datadog.jenkins.plugins.datadog.util.git.RevCommitRepositoryCallback;
+import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.jenkinsci.plugins.gitclient.Git;
+import org.jenkinsci.plugins.workflow.FilePathUtils;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.*;
+import java.text.SimpleDateFormat;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -48,6 +61,7 @@ public class BuildData implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private static transient final Logger LOGGER = Logger.getLogger(BuildData.class.getName());
+    private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX";
 
     private String buildNumber;
     private String buildId;
@@ -63,6 +77,14 @@ public class BuildData implements Serializable {
     private String branch;
     private String gitUrl;
     private String gitCommit;
+    private String gitMessage;
+    private String gitAuthorName;
+    private String gitAuthorEmail;
+    private String gitAuthorDate;
+    private String gitCommitterName;
+    private String gitCommitterEmail;
+    private String gitCommitterDate;
+
     // Environment variable from the promoted build plugin
     // - See https://plugins.jenkins.io/promoted-builds
     // - See https://wiki.jenkins.io/display/JENKINS/Promoted+Builds+Plugin
@@ -103,6 +125,12 @@ public class BuildData implements Serializable {
 
         // Populate instance using environment variables.
         populateEnvVariables(envVars);
+
+        // Populate instance using GitClient if possible.
+        // Set all Git commit related variables.
+        if(isGit(envVars)){
+            populateGitVariables(listener, envVars);
+        }
 
         // Populate instance using run instance
         // Set StartTime, EndTime and Duration
@@ -151,6 +179,58 @@ public class BuildData implements Serializable {
             setTraceId(buildSpan.context().toTraceId());
             setSpanId(buildSpan.context().toSpanId());
         }
+    }
+
+    private void populateGitVariables(TaskListener listener, EnvVars envVars) {
+        if(gitCommit == null || nodeName == null || workspace == null) {
+            LOGGER.fine("Unable to populate git variables. Either GitCommit or NodeName or Workspace is null");
+            return;
+        }
+
+        try {
+            final FilePath ws = "master".equals(nodeName) ? new FilePath(FilePath.localChannel, workspace):  FilePathUtils.find(nodeName, workspace);
+            if(ws == null){
+                LOGGER.fine("Unable to populate git variables. FilePath['"+nodeName+"','"+workspace+"'] is null");
+                return;
+            }
+
+            final Git git = Git.with(listener, envVars).in(ws);
+            final RevCommit revCommit = git.getClient().withRepository(new RevCommitRepositoryCallback(gitCommit));
+            if(revCommit == null) {
+                LOGGER.fine("Unable to populate git variables. RevCommit("+gitCommit+") is null");
+                return;
+            }
+
+            this.gitMessage = revCommit.getShortMessage();
+            final PersonIdent authorIdent = revCommit.getAuthorIdent();
+            final SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
+            if(authorIdent != null) {
+                this.gitAuthorName = authorIdent.getName();
+                this.gitAuthorEmail = authorIdent.getEmailAddress();
+                if(authorIdent.getWhen() != null) {
+                    this.gitAuthorDate = sdf.format(authorIdent.getWhen());
+                }
+            }
+
+            final PersonIdent committerIdent = revCommit.getCommitterIdent();
+            if(committerIdent != null){
+                this.gitCommitterName = committerIdent.getName();
+                this.gitCommitterEmail = committerIdent.getEmailAddress();
+                if(committerIdent.getWhen() != null){
+                    this.gitCommitterDate = sdf.format(committerIdent.getWhen());
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.fine("Unable to populate git variables. Error: " + e.getMessage());
+        }
+    }
+
+    private boolean isGit(EnvVars envVars) {
+        if(envVars == null){
+            return false;
+        }
+
+        return envVars.get("GIT_BRANCH") != null;
     }
 
     private void populateEnvVariables(EnvVars envVars){
@@ -372,6 +452,62 @@ public class BuildData implements Serializable {
 
     public void setGitCommit(String gitCommit) {
         this.gitCommit = gitCommit;
+    }
+
+    public String getGitMessage(String value) {
+        return defaultIfNull(gitMessage, value);
+    }
+
+    public void setGitMessage(String gitMessage) {
+        this.gitMessage = gitMessage;
+    }
+
+    public String getGitAuthorName(final String value) {
+        return defaultIfNull(gitAuthorName, value);
+    }
+
+    public void setGitAuthorName(String gitAuthorName) {
+        this.gitAuthorName = gitAuthorName;
+    }
+
+    public String getGitAuthorEmail(final String value) {
+        return defaultIfNull(gitAuthorEmail, value);
+    }
+
+    public void setGitAuthorEmail(String gitAuthorEmail) {
+        this.gitAuthorEmail = gitAuthorEmail;
+    }
+
+    public String getGitCommitterName(final String value) {
+        return defaultIfNull(gitCommitterName, value);
+    }
+
+    public void setGitCommitterName(String gitCommitterName) {
+        this.gitCommitterName = gitCommitterName;
+    }
+
+    public String getGitCommitterEmail(final String value) {
+        return defaultIfNull(gitCommitterEmail, value);
+    }
+
+    public void setGitCommitterEmail(String gitCommitterEmail) {
+        this.gitCommitterEmail = gitCommitterEmail;
+    }
+
+    public String getGitAuthorDate(final String value) {
+        return defaultIfNull(gitAuthorDate, value);
+    }
+
+    public void setGitAuthorDate(String gitAuthorDate) {
+        this.gitAuthorDate = gitAuthorDate;
+    }
+
+    public String getGitCommitterDate(final String value) {
+        return defaultIfNull(gitCommitterDate, value);
+    }
+
+    public void setGitCommitterDate(String gitCommitterDate) {
+        this.gitCommitterDate = gitCommitterDate;
     }
 
     public String getPromotedUrl(String value) {
