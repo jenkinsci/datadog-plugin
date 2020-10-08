@@ -11,7 +11,11 @@ import datadog.trace.api.DDId;
 import datadog.trace.api.IdGenerationStrategy;
 import datadog.trace.common.writer.ListWriter;
 import datadog.trace.core.DDSpan;
+import hudson.EnvVars;
+import hudson.FilePath;
 import hudson.model.labels.LabelAtom;
+import hudson.slaves.EnvironmentVariablesNodeProperty;
+import jenkins.model.Jenkins;
 import org.apache.commons.io.IOUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
@@ -38,6 +42,7 @@ import org.jvnet.hudson.test.JenkinsRule;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -52,7 +57,7 @@ public class DatadogGraphListenerTest {
     private DatadogClientStub clientStub;
 
     @Before
-    public void beforeEach() {
+    public void beforeEach() throws IOException {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setCollectBuildTraces(true);
         cfg.setTraceServiceName(SAMPLE_SERVICE_NAME);
@@ -62,6 +67,9 @@ public class DatadogGraphListenerTest {
         clientStub = new DatadogClientStub();
         ClientFactory.setTestClient(clientStub);
         clientStub.tracerWriter.start();
+
+        Jenkins jenkins = jenkinsRule.jenkins;
+        jenkins.getGlobalNodeProperties().remove(EnvironmentVariablesNodeProperty.class);
     }
 
     private StepStartNode makeMonitorableStartNode(String label) {
@@ -155,7 +163,58 @@ public class DatadogGraphListenerTest {
         final List<DDSpan> pipelineTrace = tracerWriter.get(1);
         assertEquals(29, pipelineTrace.size());
     }
-    
+
+    @Test
+    public void testIntegrationGitInfo() throws Exception {
+        Jenkins jenkins = jenkinsRule.jenkins;
+        final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
+        EnvVars env = prop.getEnvVars();
+        env.put("GIT_BRANCH", "master");
+        env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
+        env.put("GIT_URL", "https://github.com/johndoe/foobar.git");
+
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationSingleCommit");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineSuccess.txt"),
+                "UTF-8"
+        );
+
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        final FilePath ws = jenkins.getWorkspaceFor(job);
+        env.put("NODE_NAME", "master");
+        env.put("WORKSPACE", ws.getRemote());
+        InputStream gitZip = getClass().getClassLoader().getResourceAsStream("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
+        if(gitZip != null) {
+            ws.unzipFrom(gitZip);
+        }
+        jenkins.getGlobalNodeProperties().add(prop);
+        job.scheduleBuild2(0).get();
+
+        final ListWriter tracerWriter = clientStub.tracerWriter();
+        tracerWriter.waitForTraces(2);
+        assertEquals(2, tracerWriter.size());
+        final List<DDSpan> buildTrace = tracerWriter.get(0);
+        assertEquals(1, buildTrace.size());
+        final DDSpan buildSpan = buildTrace.get(0);
+        assertGitVariables(buildSpan);
+
+        final List<DDSpan> pipelineTrace = tracerWriter.get(1);
+        assertEquals(4, pipelineTrace.size());
+
+        final DDSpan pipelineSpan = pipelineTrace.get(0);
+        assertGitVariables(pipelineSpan);
+
+        final DDSpan stepInternalSpan = pipelineTrace.get(1);
+        assertGitVariables(stepInternalSpan);
+
+        final DDSpan stageSpan = pipelineTrace.get(2);
+        assertGitVariables(stageSpan);
+
+        final DDSpan stepAtomSpan = pipelineTrace.get(3);
+        assertGitVariables(stepAtomSpan);
+    }
+
+
     @Test
     public void testIntegrationNoFailureTag() throws Exception {
         final DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
@@ -341,6 +400,21 @@ public class DatadogGraphListenerTest {
         when(endNode.getAction(TimingAction.class)).thenReturn(endAction);
 
         assertEquals(endTime - startTime, listener.getTime(startNode, endNode));
+    }
+
+
+    private void assertGitVariables(DDSpan span) {
+        assertEquals("Initial commit\n", span.getTag(CITags.GIT_COMMIT_MESSAGE));
+        assertEquals("John Doe", span.getTag(CITags.GIT_COMMIT_AUTHOR_NAME));
+        assertEquals("john@doe.com", span.getTag(CITags.GIT_COMMIT_AUTHOR_EMAIL));
+        assertEquals("2020-10-08T09:49:32.000+02:00", span.getTag(CITags.GIT_COMMIT_AUTHOR_DATE));
+        assertEquals("John Doe", span.getTag(CITags.GIT_COMMIT_COMMITTER_NAME));
+        assertEquals("john@doe.com", span.getTag(CITags.GIT_COMMIT_COMMITTER_EMAIL));
+        assertEquals("2020-10-08T09:49:32.000+02:00", span.getTag(CITags.GIT_COMMIT_COMMITTER_DATE));
+        assertEquals("401d997a6eede777602669ccaec059755c98161f", span.getTag(CITags.GIT_COMMIT__SHA));
+        assertEquals("401d997a6eede777602669ccaec059755c98161f", span.getTag(CITags.GIT_COMMIT_SHA));
+        assertEquals("master", span.getTag(CITags.GIT_BRANCH));
+        assertEquals("https://github.com/johndoe/foobar.git", span.getTag(CITags.GIT_REPOSITORY_URL));
     }
 
 }

@@ -13,7 +13,6 @@ import io.opentracing.propagation.Format;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
-import org.datadog.jenkins.plugins.datadog.model.StepData;
 import org.datadog.jenkins.plugins.datadog.model.TimeInQueueAction;
 
 import java.util.Map;
@@ -119,7 +118,29 @@ public class DatadogTraceBuildLogic {
         buildSpan.setTag(CITags.GIT_REPOSITORY_URL, gitUrl);
 
         final String gitCommit = buildData.getGitCommit("").isEmpty() ? pipelineData.getGitCommit("") : buildData.getGitCommit("");
+        buildSpan.setTag(CITags.GIT_COMMIT__SHA, gitCommit); //Maintain retrocompatibility
         buildSpan.setTag(CITags.GIT_COMMIT_SHA, gitCommit);
+
+        final String gitMessage = buildData.getGitMessage("").isEmpty() ? pipelineData.getGitMessage("") : buildData.getGitMessage("");
+        buildSpan.setTag(CITags.GIT_COMMIT_MESSAGE, gitMessage);
+
+        final String gitAuthor = buildData.getGitAuthorName("").isEmpty() ? pipelineData.getGitAuthorName("") : buildData.getGitAuthorName("");
+        buildSpan.setTag(CITags.GIT_COMMIT_AUTHOR_NAME, gitAuthor);
+
+        final String gitAuthorEmail = buildData.getGitAuthorEmail("").isEmpty() ? pipelineData.getGitAuthorEmail("") : buildData.getGitAuthorEmail("");
+        buildSpan.setTag(CITags.GIT_COMMIT_AUTHOR_EMAIL, gitAuthorEmail);
+
+        final String gitAuthorDate = buildData.getGitAuthorDate("").isEmpty() ? pipelineData.getGitAuthorDate("") : buildData.getGitAuthorDate("");
+        buildSpan.setTag(CITags.GIT_COMMIT_AUTHOR_DATE, gitAuthorDate);
+
+        final String gitCommitter = buildData.getGitCommitterName("").isEmpty() ? pipelineData.getGitCommitterName("") : buildData.getGitCommitterName("");
+        buildSpan.setTag(CITags.GIT_COMMIT_COMMITTER_NAME, gitCommitter);
+
+        final String gitCommitterEmail = buildData.getGitCommitterEmail("").isEmpty() ? pipelineData.getGitCommitterEmail("") : buildData.getGitCommitterEmail("");
+        buildSpan.setTag(CITags.GIT_COMMIT_COMMITTER_EMAIL, gitCommitterEmail);
+
+        final String gitCommitterDate = buildData.getGitCommitterDate("").isEmpty() ? pipelineData.getGitCommitterDate("") : buildData.getGitCommitterDate("");
+        buildSpan.setTag(CITags.GIT_COMMIT_COMMITTER_DATE, gitCommitterDate);
 
 
         final String rawGitBranch = buildData.getBranch("").isEmpty() ? pipelineData.getBranch("") : buildData.getBranch("");

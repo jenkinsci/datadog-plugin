@@ -26,7 +26,10 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.model;
 
 import hudson.EnvVars;
-import hudson.model.*;
+import hudson.model.Cause;
+import hudson.model.CauseAction;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.triggers.SCMTrigger;
 import hudson.triggers.TimerTrigger;
 import hudson.util.LogTaskListener;
@@ -36,10 +39,14 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
+import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -63,6 +70,14 @@ public class BuildData implements Serializable {
     private String branch;
     private String gitUrl;
     private String gitCommit;
+    private String gitMessage;
+    private String gitAuthorName;
+    private String gitAuthorEmail;
+    private String gitAuthorDate;
+    private String gitCommitterName;
+    private String gitCommitterEmail;
+    private String gitCommitterDate;
+
     // Environment variable from the promoted build plugin
     // - See https://plugins.jenkins.io/promoted-builds
     // - See https://wiki.jenkins.io/display/JENKINS/Promoted+Builds+Plugin
@@ -104,6 +119,12 @@ public class BuildData implements Serializable {
 
         // Populate instance using environment variables.
         populateEnvVariables(envVars);
+
+        // Populate instance using Git info if possible.
+        // Set all Git commit related variables.
+        if(isGit(envVars)){
+            populateGitVariables(run, listener, envVars);
+        }
 
         // Populate instance using run instance
         // Set StartTime, EndTime and Duration
@@ -182,6 +203,39 @@ public class BuildData implements Serializable {
         setPromotedUserName(envVars.get("PROMOTED_USER_NAME"));
         setPromotedUserId(envVars.get("PROMOTED_USER_ID"));
         setPromotedJobFullName(envVars.get("PROMOTED_JOB_FULL_NAME"));
+    }
+
+
+    /**
+     * Populate git commit related information in the BuildData instance.
+     * @param run
+     * @param listener
+     * @param envVars
+     */
+    private void populateGitVariables(Run<?,?> run, TaskListener listener, EnvVars envVars) {
+        final GitCommitAction action = GitUtils.buildGitCommitAction(run, listener, envVars, this.gitCommit, this.nodeName, this.workspace);
+        if(action != null) {
+            this.gitMessage = action.getMessage();
+            this.gitAuthorName = action.getAuthorName();
+            this.gitAuthorEmail = action.getAuthorEmail();
+            this.gitAuthorDate = action.getAuthorDate();
+            this.gitCommitterName = action.getCommitterName();
+            this.gitCommitterEmail = action.getCommitterEmail();
+            this.gitCommitterDate = action.getCommitterDate();
+        }
+    }
+
+    /**
+     * Return if the Run is based on Git repository checking
+     * the GIT_BRANCH environment variable.
+     * @param envVars
+     * @return true if GIT_BRANCH is set.
+     */
+    private boolean isGit(EnvVars envVars) {
+        if(envVars == null){
+            return false;
+        }
+        return envVars.get("GIT_BRANCH") != null;
     }
 
     /**
@@ -384,6 +438,62 @@ public class BuildData implements Serializable {
 
     public void setGitCommit(String gitCommit) {
         this.gitCommit = gitCommit;
+    }
+
+    public String getGitMessage(String value) {
+        return defaultIfNull(gitMessage, value);
+    }
+
+    public void setGitMessage(String gitMessage) {
+        this.gitMessage = gitMessage;
+    }
+
+    public String getGitAuthorName(final String value) {
+        return defaultIfNull(gitAuthorName, value);
+    }
+
+    public void setGitAuthorName(String gitAuthorName) {
+        this.gitAuthorName = gitAuthorName;
+    }
+
+    public String getGitAuthorEmail(final String value) {
+        return defaultIfNull(gitAuthorEmail, value);
+    }
+
+    public void setGitAuthorEmail(String gitAuthorEmail) {
+        this.gitAuthorEmail = gitAuthorEmail;
+    }
+
+    public String getGitCommitterName(final String value) {
+        return defaultIfNull(gitCommitterName, value);
+    }
+
+    public void setGitCommitterName(String gitCommitterName) {
+        this.gitCommitterName = gitCommitterName;
+    }
+
+    public String getGitCommitterEmail(final String value) {
+        return defaultIfNull(gitCommitterEmail, value);
+    }
+
+    public void setGitCommitterEmail(String gitCommitterEmail) {
+        this.gitCommitterEmail = gitCommitterEmail;
+    }
+
+    public String getGitAuthorDate(final String value) {
+        return defaultIfNull(gitAuthorDate, value);
+    }
+
+    public void setGitAuthorDate(String gitAuthorDate) {
+        this.gitAuthorDate = gitAuthorDate;
+    }
+
+    public String getGitCommitterDate(final String value) {
+        return defaultIfNull(gitCommitterDate, value);
+    }
+
+    public void setGitCommitterDate(String gitCommitterDate) {
+        this.gitCommitterDate = gitCommitterDate;
     }
 
     public String getPromotedUrl(String value) {

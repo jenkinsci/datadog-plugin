@@ -8,8 +8,10 @@ import datadog.trace.api.DDId;
 import datadog.trace.api.DDTags;
 import datadog.trace.core.DDSpan;
 import datadog.trace.core.DDSpanContext;
+import hudson.EnvVars;
 import hudson.model.Result;
 import hudson.model.Run;
+import hudson.model.TaskListener;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
@@ -19,6 +21,8 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipeline;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
+import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
@@ -90,7 +94,7 @@ public class DatadogTracePipelineLogic {
 
         final BuildData buildData = buildSpanAction.getBuildData();
         if(!isLastNode(flowNode)){
-            updateBuildData(buildData, flowNode);
+            updateBuildData(buildData, run, flowNode);
             return;
         }
 
@@ -119,7 +123,7 @@ public class DatadogTracePipelineLogic {
         }
     }
 
-    private void updateBuildData(BuildData buildData, FlowNode node) {
+    private void updateBuildData(BuildData buildData, Run<?, ?> run, FlowNode node) {
         BuildPipelineNode pipelineNode = null;
         if(node instanceof BlockEndNode) {
             pipelineNode = new BuildPipelineNode((BlockEndNode) node);
@@ -144,6 +148,37 @@ public class DatadogTracePipelineLogic {
         final String gitCommit = pipelineNode.getEnvVars().get("GIT_COMMIT");
         if(gitCommit != null && buildData.getGitCommit("").isEmpty()) {
             buildData.setGitCommit(gitCommit);
+        }
+
+        final GitCommitAction commitAction = buildGitCommitAction(run,pipelineNode, node);
+        if(commitAction != null) {
+            if(buildData.getGitMessage("").isEmpty()){
+                buildData.setGitMessage(commitAction.getMessage());
+            }
+
+            if(buildData.getGitAuthorName("").isEmpty()) {
+                buildData.setGitAuthorName(commitAction.getAuthorName());
+            }
+
+            if(buildData.getGitAuthorEmail("").isEmpty()){
+                buildData.setGitAuthorEmail(commitAction.getAuthorEmail());
+            }
+
+            if(buildData.getGitAuthorDate("").isEmpty()){
+                buildData.setGitAuthorDate(commitAction.getAuthorDate());
+            }
+
+            if(buildData.getGitCommitterName("").isEmpty()){
+                buildData.setGitCommitterName(commitAction.getCommitterName());
+            }
+
+            if(buildData.getGitCommitterEmail("").isEmpty()){
+                buildData.setGitCommitterEmail(commitAction.getCommitterEmail());
+            }
+
+            if(buildData.getGitCommitterDate("").isEmpty()){
+                buildData.setGitCommitterDate(commitAction.getCommitterDate());
+            }
         }
 
         final String workspace = pipelineNode.getWorkspace();
@@ -256,12 +291,48 @@ public class DatadogTracePipelineLogic {
 
         final String gitCommit = envVars.get("GIT_COMMIT") !=  null ? envVars.get("GIT_COMMIT") : buildData.getGitCommit("");
         if(gitCommit != null && !gitCommit.isEmpty()) {
+            tags.put(CITags.GIT_COMMIT__SHA, gitCommit); //Maintain retrocompatibility
             tags.put(CITags.GIT_COMMIT_SHA, gitCommit);
         }
 
         final String gitRepoUrl = envVars.get("GIT_URL") != null ? envVars.get("GIT_URL") : buildData.getGitUrl("");
         if (gitRepoUrl != null && !gitRepoUrl.isEmpty()) {
             tags.put(CITags.GIT_REPOSITORY_URL, gitRepoUrl);
+        }
+
+        final String gitMessage = buildData.getGitMessage("");
+        if(!gitMessage.isEmpty()){
+            tags.put(CITags.GIT_COMMIT_MESSAGE, gitMessage);
+        }
+
+        final String gitAuthorName = buildData.getGitAuthorName("");
+        if(!gitAuthorName.isEmpty()){
+            tags.put(CITags.GIT_COMMIT_AUTHOR_NAME, gitAuthorName);
+        }
+
+        final String gitAuthorEmail = buildData.getGitAuthorEmail("");
+        if(!gitAuthorEmail.isEmpty()){
+            tags.put(CITags.GIT_COMMIT_AUTHOR_EMAIL, gitAuthorEmail);
+        }
+
+        final String gitAuthorDate = buildData.getGitAuthorDate("");
+        if(!gitAuthorDate.isEmpty()){
+            tags.put(CITags.GIT_COMMIT_AUTHOR_DATE, gitAuthorDate);
+        }
+
+        final String gitCommitterName = buildData.getGitCommitterName("");
+        if(!gitCommitterName.isEmpty()){
+            tags.put(CITags.GIT_COMMIT_COMMITTER_NAME, gitCommitterName);
+        }
+
+        final String gitCommitterEmail = buildData.getGitCommitterEmail("");
+        if(!gitCommitterEmail.isEmpty()) {
+            tags.put(CITags.GIT_COMMIT_COMMITTER_EMAIL, gitCommitterEmail);
+        }
+
+        final String gitCommitterDate = buildData.getGitCommitterDate("");
+        if(!gitCommitterDate.isEmpty()){
+            tags.put(CITags.GIT_COMMIT_COMMITTER_DATE, gitCommitterDate);
         }
 
         // User info
@@ -358,6 +429,20 @@ public class DatadogTracePipelineLogic {
             ddSpanIdField.set(spanContext, generatedSpanId);
         } catch (Exception e) {
             logger.fine("Unable to substitute the spanId in the span: "+span+". Error: " + e.getMessage());
+        }
+    }
+
+    private GitCommitAction buildGitCommitAction(Run<?, ?> run, BuildPipelineNode pipelineNode, FlowNode node) {
+        try {
+            final TaskListener listener = node.getExecution().getOwner().getListener();
+            final EnvVars envVars = new EnvVars(pipelineNode.getEnvVars());
+            final String gitCommit = pipelineNode.getEnvVars().get("GIT_COMMIT");
+            final String nodeName = pipelineNode.getNodeName();
+            final String workspace = pipelineNode.getWorkspace();
+            return GitUtils.buildGitCommitAction(run, listener, envVars, gitCommit, nodeName, workspace);
+        } catch (Exception e) {
+            logger.fine("Unable to build GitCommitAction. Error: " + e);
+            return null;
         }
     }
 }

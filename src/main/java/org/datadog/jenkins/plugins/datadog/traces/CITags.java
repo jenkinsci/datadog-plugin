@@ -20,7 +20,16 @@ public class CITags {
 
 
     public static final String GIT_REPOSITORY_URL = "git.repository_url";
-    public static final String GIT_COMMIT_SHA = "git.commit_sha";
+    @Deprecated
+    public static final String GIT_COMMIT__SHA = "git.commit_sha"; //Maintain retrocompatibility
+    public static final String GIT_COMMIT_SHA = "git.commit.sha";
+    public static final String GIT_COMMIT_MESSAGE = "git.commit.message";
+    public static final String GIT_COMMIT_AUTHOR_NAME = "git.commit.author.name";
+    public static final String GIT_COMMIT_AUTHOR_EMAIL = "git.commit.author.email";
+    public static final String GIT_COMMIT_AUTHOR_DATE = "git.commit.author.date";
+    public static final String GIT_COMMIT_COMMITTER_NAME = "git.commit.committer.name";
+    public static final String GIT_COMMIT_COMMITTER_EMAIL = "git.commit.committer.email";
+    public static final String GIT_COMMIT_COMMITTER_DATE = "git.commit.committer.date";
     public static final String GIT_BRANCH = "git.branch";
     public static final String GIT_TAG = "git.tag";
 
