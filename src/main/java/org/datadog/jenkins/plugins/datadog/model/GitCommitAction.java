@@ -8,6 +8,7 @@ public class GitCommitAction extends InvisibleAction implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    private final String commit;
     private final String message;
     private final String authorName;
     private final String authorEmail;
@@ -17,6 +18,7 @@ public class GitCommitAction extends InvisibleAction implements Serializable {
     private final String committerDate;
 
     private GitCommitAction(Builder builder) {
+        this.commit = builder.commit;
         this.message = builder.message;
         this.authorName = builder.authorName;
         this.authorEmail = builder.authorEmail;
@@ -31,6 +33,7 @@ public class GitCommitAction extends InvisibleAction implements Serializable {
     }
 
     public static class Builder {
+        private String commit;
         private String message;
         private String authorName;
         private String authorEmail;
@@ -40,6 +43,11 @@ public class GitCommitAction extends InvisibleAction implements Serializable {
         private String committerDate;
 
         private Builder(){}
+
+        public Builder withCommit(final String commit) {
+            this.commit = commit;
+            return this;
+        }
 
         public Builder withMessage(final String message) {
             this.message = message;
@@ -79,6 +87,10 @@ public class GitCommitAction extends InvisibleAction implements Serializable {
         public GitCommitAction build() {
             return new GitCommitAction(this);
         }
+    }
+
+    public String getCommit() {
+        return commit;
     }
 
     public String getMessage() {

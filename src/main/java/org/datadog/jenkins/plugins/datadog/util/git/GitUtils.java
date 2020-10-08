@@ -2,8 +2,10 @@ package org.datadog.jenkins.plugins.datadog.util.git;
 
 import hudson.EnvVars;
 import hudson.FilePath;
+import hudson.model.Executor;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.eclipse.jgit.lib.PersonIdent;
@@ -33,10 +35,34 @@ public final class GitUtils {
         }
     }
 
-    public static RevCommit searchRevCommit(final TaskListener listener, final EnvVars envVars, final String gitCommit, final String nodeName, final String workspace) {
+    public static FilePath buildFilePath(final Run<?, ?> run){
         try {
-            final FilePath ws = GitUtils.buildFilePath(nodeName, workspace);
+            if(run == null) {
+                LOGGER.fine("Unable to build FilePath. Run is null");
+                return null;
+            }
+
+            final Executor executor = run.getExecutor();
+            if(executor == null) {
+                LOGGER.fine("Unable to build FilePath. Run is null");
+                return null;
+            }
+
+            return executor.getCurrentWorkspace();
+        } catch (Exception e) {
+            LOGGER.fine("Unable to build FilePath. Error: " + e);
+            return null;
+        }
+    }
+
+    public static RevCommit searchRevCommit(final Run<?,?> run, final TaskListener listener, final EnvVars envVars, final String gitCommit, final String nodeName, final String workspace) {
+        try {
+            FilePath ws = GitUtils.buildFilePath(run);
             if(ws == null){
+                ws = GitUtils.buildFilePath(nodeName, workspace);
+            }
+
+            if(ws == null) {
                 return null;
             }
 
@@ -50,30 +76,43 @@ public final class GitUtils {
 
     public static GitCommitAction buildGitCommitAction(Run<?, ?> run, TaskListener listener, EnvVars envVars, final String gitCommit, final String nodeName, final String workspace) {
         GitCommitAction commitAction = run.getAction(GitCommitAction.class);
-        if(commitAction == null) {
-            final RevCommit revCommit = GitUtils.searchRevCommit(listener, envVars, gitCommit, nodeName, workspace);
-            if(revCommit == null) {
-                return null;
-            }
+        if(commitAction == null || !gitCommit.equals(commitAction.getCommit())) {
+            try {
+                final RevCommit revCommit = GitUtils.searchRevCommit(run, listener, envVars, gitCommit, nodeName, workspace);
+                if(revCommit == null) {
+                    return null;
+                }
 
-            final GitCommitAction.Builder builder = GitCommitAction.newBuilder();
-            builder.withMessage(revCommit.getShortMessage());
-            final PersonIdent authorIdent = revCommit.getAuthorIdent();
-            if(authorIdent != null){
-                builder.withAuthorName(authorIdent.getName())
-                        .withAuthorEmail(authorIdent.getEmailAddress())
-                        .withAuthorDate(DatadogUtilities.toISO8601(authorIdent.getWhen()));
-            }
+                final GitCommitAction.Builder builder = GitCommitAction.newBuilder();
+                builder.withCommit(gitCommit);
+                String message;
+                try {
+                    message = StringUtils.abbreviate(revCommit.getFullMessage(), 1500);
+                } catch (Exception e) {
+                    LOGGER.fine("Unable to obtain git commit full message. Selecting short message. Error: " + e);
+                    message = revCommit.getShortMessage();
+                }
+                builder.withMessage(message);
 
-            final PersonIdent committerIdent = revCommit.getCommitterIdent();
-            if(committerIdent != null) {
-                builder.withCommitterName(committerIdent.getName())
-                        .withCommitterEmail(committerIdent.getEmailAddress())
-                        .withCommitterDate(DatadogUtilities.toISO8601(committerIdent.getWhen()));
-            }
+                final PersonIdent authorIdent = revCommit.getAuthorIdent();
+                if(authorIdent != null){
+                    builder.withAuthorName(authorIdent.getName())
+                            .withAuthorEmail(authorIdent.getEmailAddress())
+                            .withAuthorDate(DatadogUtilities.toISO8601(authorIdent.getWhen()));
+                }
 
-            commitAction = builder.build();
-            run.addOrReplaceAction(commitAction);
+                final PersonIdent committerIdent = revCommit.getCommitterIdent();
+                if(committerIdent != null) {
+                    builder.withCommitterName(committerIdent.getName())
+                            .withCommitterEmail(committerIdent.getEmailAddress())
+                            .withCommitterDate(DatadogUtilities.toISO8601(committerIdent.getWhen()));
+                }
+
+                commitAction = builder.build();
+                run.addOrReplaceAction(commitAction);
+            } catch (Exception e) {
+                LOGGER.fine("Unable to build GitCommitAction. Error: " + e);
+            }
         }
         return commitAction;
     }
