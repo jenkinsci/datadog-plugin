@@ -197,21 +197,6 @@ public class DatadogGraphListenerTest {
         assertEquals(1, buildTrace.size());
         final DDSpan buildSpan = buildTrace.get(0);
         assertGitVariables(buildSpan);
-
-        final List<DDSpan> pipelineTrace = tracerWriter.get(1);
-        assertEquals(4, pipelineTrace.size());
-
-        final DDSpan pipelineSpan = pipelineTrace.get(0);
-        assertGitVariables(pipelineSpan);
-
-        final DDSpan stepInternalSpan = pipelineTrace.get(1);
-        assertGitVariables(stepInternalSpan);
-
-        final DDSpan stageSpan = pipelineTrace.get(2);
-        assertGitVariables(stageSpan);
-
-        final DDSpan stepAtomSpan = pipelineTrace.get(3);
-        assertGitVariables(stepAtomSpan);
     }
 
 
