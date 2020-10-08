@@ -21,6 +21,12 @@ public final class GitUtils {
 
     private GitUtils(){}
 
+    /**
+     * Return the FilePath based on the Node name and the Workspace.
+     * @param nodeName
+     * @param workspace
+     * @return filePath for (nodeName, workspace)
+     */
     public static FilePath buildFilePath(final String nodeName, final String workspace) {
         if(nodeName == null || workspace == null){
             LOGGER.fine("Unable to build FilePath. Either NodeName or Workspace is null");
@@ -35,6 +41,11 @@ public final class GitUtils {
         }
     }
 
+    /**
+     * Return the FilePath associated with the run instance
+     * @param run
+     * @return filePath for the run.
+     */
     public static FilePath buildFilePath(final Run<?, ?> run){
         try {
             if(run == null) {
@@ -55,6 +66,17 @@ public final class GitUtils {
         }
     }
 
+    /**
+     * Return the RevCommit for a certain commit based on the information
+     * stored in a certain workspace of a certain node.
+     * @param run
+     * @param listener
+     * @param envVars
+     * @param gitCommit
+     * @param nodeName
+     * @param workspace
+     * @return revCommit
+     */
     public static RevCommit searchRevCommit(final Run<?,?> run, final TaskListener listener, final EnvVars envVars, final String gitCommit, final String nodeName, final String workspace) {
         try {
             FilePath ws = GitUtils.buildFilePath(run);
@@ -74,6 +96,24 @@ public final class GitUtils {
         }
     }
 
+    /**
+     * Returns the GitCommitAction of the Run instance.
+     * If the Run instance does not have GitCommitAction or
+     * the current commit hash is different from the commit hash
+     * stored in the GitCommitAction, then a new GitCommitAction
+     * is built and stored in the Run instance.
+     *
+     * The GitCommit information is stored in an action because
+     * it's fairly expensive to calculate. To avoid calculating
+     * every time, it's store in the Run instance as an action.
+     * @param run
+     * @param listener
+     * @param envVars
+     * @param gitCommit
+     * @param nodeName
+     * @param workspace
+     * @return
+     */
     public static GitCommitAction buildGitCommitAction(Run<?, ?> run, TaskListener listener, EnvVars envVars, final String gitCommit, final String nodeName, final String workspace) {
         GitCommitAction commitAction = run.getAction(GitCommitAction.class);
         if(commitAction == null || !gitCommit.equals(commitAction.getCommit())) {

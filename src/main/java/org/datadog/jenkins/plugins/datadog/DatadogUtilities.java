@@ -708,6 +708,11 @@ public class DatadogUtilities {
     }
 
 
+    /**
+     * Returns a date as String in the ISO8601 format
+     * @param date
+     * @return date as String in the ISO8601 format
+     */
     public static String toISO8601(Date date) {
         if(date == null) {
             return null;

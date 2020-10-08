@@ -119,7 +119,7 @@ public class BuildData implements Serializable {
         // Populate instance using environment variables.
         populateEnvVariables(envVars);
 
-        // Populate instance using GitClient if possible.
+        // Populate instance using Git info if possible.
         // Set all Git commit related variables.
         if(isGit(envVars)){
             populateGitVariables(run, listener, envVars);
@@ -203,6 +203,12 @@ public class BuildData implements Serializable {
     }
 
 
+    /**
+     * Populate git commit related information in the BuildData instance.
+     * @param run
+     * @param listener
+     * @param envVars
+     */
     private void populateGitVariables(Run<?,?> run, TaskListener listener, EnvVars envVars) {
         final GitCommitAction action = GitUtils.buildGitCommitAction(run, listener, envVars, this.gitCommit, this.nodeName, this.workspace);
         if(action != null) {
@@ -216,6 +222,12 @@ public class BuildData implements Serializable {
         }
     }
 
+    /**
+     * Return if the Run is based on Git repository checking
+     * the GIT_BRANCH environment variable.
+     * @param envVars
+     * @return true if GIT_BRANCH is set.
+     */
     private boolean isGit(EnvVars envVars) {
         if(envVars == null){
             return false;

@@ -8,6 +8,13 @@ import org.jenkinsci.plugins.gitclient.RepositoryCallback;
 
 import java.io.IOException;
 
+/**
+ * Returns the RevCommit instance for a certain commit
+ * using the JGit.
+ *
+ * This must be called using gitClient.withRepository(...) method.
+ * See GitUtils.
+ */
 public final class RevCommitRepositoryCallback implements RepositoryCallback<RevCommit> {
     private static final long serialVersionUID = 1L;
     private final String commit;

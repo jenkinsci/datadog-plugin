@@ -4,6 +4,9 @@ import hudson.model.InvisibleAction;
 
 import java.io.Serializable;
 
+/**
+ * Keeps the Git commit related information.
+ */
 public class GitCommitAction extends InvisibleAction implements Serializable {
 
     private static final long serialVersionUID = 1L;
