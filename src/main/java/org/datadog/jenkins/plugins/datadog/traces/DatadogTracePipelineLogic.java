@@ -255,6 +255,7 @@ public class DatadogTracePipelineLogic {
 
     private Map<String, Object> buildTraceTags(final BuildPipelineNode current, final BuildData buildData) {
         final String prefix = current.getType().getTagName();
+        final String buildLevel = current.getType().getBuildLevel();
         final Map<String, String> envVars = current.getEnvVars();
 
         final Map<String, Object> tags = new HashMap<>();
@@ -262,6 +263,7 @@ public class DatadogTracePipelineLogic {
         tags.put(prefix + CITags._NAME, current.getName());
         tags.put(prefix + CITags._NUMBER, current.getId());
         tags.put(prefix + CITags._RESULT, getNormalizedResultForTraces(Result.fromString(current.getResult())));
+        tags.put(CITags._DD_CI_BUILD_LEVEL, buildLevel);
 
         final String url = envVars.get("BUILD_URL") != null ? envVars.get("BUILD_URL") : buildData.getBuildUrl("");
         if(StringUtils.isNotBlank(url)) {

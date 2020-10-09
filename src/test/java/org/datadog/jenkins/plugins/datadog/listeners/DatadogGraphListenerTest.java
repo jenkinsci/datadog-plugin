@@ -250,6 +250,7 @@ public class DatadogGraphListenerTest {
         assertEquals("success", buildSpan.getTag(CITags.JENKINS_RESULT));
         assertEquals("jenkins-pipelineIntegrationSuccess-1", buildSpan.getTag(CITags.JENKINS_TAG));
         assertEquals(false, buildSpan.getTag(CITags._DD_CI_INTERNAL));
+        assertEquals(BuildPipelineNode.NodeType.PIPELINE.getBuildLevel(), buildSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
 
         final List<DDSpan> pipelineTrace = tracerWriter.get(1);
         assertEquals(4, pipelineTrace.size());
@@ -268,6 +269,7 @@ public class DatadogGraphListenerTest {
         assertNotNull(pipelineSpan.getTag(CITags.NODE_NAME));
         assertNotNull(pipelineSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals(true, pipelineSpan.getTag(CITags._DD_CI_INTERNAL));
+        assertEquals(BuildPipelineNode.NodeType.STEP.getBuildLevel(), pipelineSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
 
         final String stepPrefix = BuildPipelineNode.NodeType.STEP.getTagName();
         final DDSpan stepInternalSpan = pipelineTrace.get(1);
@@ -285,6 +287,7 @@ public class DatadogGraphListenerTest {
         assertNotNull(stepInternalSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals(true, stepInternalSpan.getTag(CITags._DD_CI_INTERNAL));
         assertEquals("3", stepInternalSpan.getTag(stepPrefix + CITags._NUMBER));
+        assertEquals(BuildPipelineNode.NodeType.STEP.getBuildLevel(), stepInternalSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
 
         final String stagePrefix = BuildPipelineNode.NodeType.STAGE.getTagName();
         final DDSpan stageSpan = pipelineTrace.get(2);
@@ -301,6 +304,7 @@ public class DatadogGraphListenerTest {
         assertNotNull(stageSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals(false, stageSpan.getTag(CITags._DD_CI_INTERNAL));
         assertEquals("4", stageSpan.getTag(stagePrefix + CITags._NUMBER));
+        assertEquals(BuildPipelineNode.NodeType.STAGE.getBuildLevel(), stageSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
 
         final DDSpan stepAtomSpan = pipelineTrace.get(3);
         assertEquals("2", stepAtomSpan.context().getSpanId().toString());
@@ -318,6 +322,7 @@ public class DatadogGraphListenerTest {
         assertNotNull(stepAtomSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals(false, stepAtomSpan.getTag(CITags._DD_CI_INTERNAL));
         assertEquals("5", stepAtomSpan.getTag(stepPrefix + CITags._NUMBER));
+        assertEquals(BuildPipelineNode.NodeType.STEP.getBuildLevel(), stepAtomSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
     }
 
     @Test

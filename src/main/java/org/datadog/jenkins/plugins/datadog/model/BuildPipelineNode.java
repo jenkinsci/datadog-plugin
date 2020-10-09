@@ -34,18 +34,24 @@ public class BuildPipelineNode {
     private static final Logger logger = Logger.getLogger(BuildPipelineNode.class.getName());
 
     public enum NodeType {
-        PIPELINE("ci.pipeline"),
-        STAGE("ci.stage"),
-        STEP("ci.job");
+        PIPELINE("ci.pipeline", "pipeline"),
+        STAGE("ci.stage", "stage"),
+        STEP("ci.job", "job");
 
         private final String tagName;
+        private final String buildLevel;
 
-        NodeType(final String tagName) {
+        NodeType(final String tagName, final String buildLevel) {
             this.tagName = tagName;
+            this.buildLevel = buildLevel;
         }
 
         public String getTagName() {
             return tagName;
+        }
+
+        public String getBuildLevel() {
+            return buildLevel;
         }
     }
 
