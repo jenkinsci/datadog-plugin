@@ -88,12 +88,14 @@ public class DatadogTraceBuildLogic {
         final BuildData pipelineData = buildSpanAction.getBuildData();
 
         final String prefix = BuildPipelineNode.NodeType.PIPELINE.getTagName();
+        final String buildLevel = BuildPipelineNode.NodeType.PIPELINE.getBuildLevel();
         final long endTimeMicros = buildData.getEndTime(0L) * 1000;
         buildSpan.setTag(DDTags.SERVICE_NAME, DatadogUtilities.getDatadogGlobalDescriptor().getTraceServiceName());
         buildSpan.setTag(DDTags.SPAN_TYPE, "ci");
         buildSpan.setTag(CITags.CI_PROVIDER_NAME, "jenkins");
         buildSpan.setTag(DDTags.LANGUAGE_TAG_KEY, "");
         buildSpan.setTag(CITags._DD_CI_INTERNAL, false);
+        buildSpan.setTag(CITags._DD_CI_BUILD_LEVEL, buildLevel);
         buildSpan.setTag(CITags.USER_NAME, buildData.getUserId());
         buildSpan.setTag(prefix + CITags._ID, buildData.getBuildTag(""));
         buildSpan.setTag(prefix + CITags._NUMBER, buildData.getBuildNumber(""));

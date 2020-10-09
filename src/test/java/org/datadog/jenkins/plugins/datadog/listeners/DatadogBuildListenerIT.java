@@ -75,6 +75,7 @@ public class DatadogBuildListenerIT {
         final String buildPrefix = BuildPipelineNode.NodeType.PIPELINE.getTagName();
         final DDSpan buildSpan = buildTrace.get(0);
         assertGitVariables(buildSpan);
+        assertEquals(BuildPipelineNode.NodeType.PIPELINE.getBuildLevel(), buildSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
         assertEquals("jenkins.build", buildSpan.getOperationName());
         assertEquals(SAMPLE_SERVICE_NAME, buildSpan.getServiceName());
         assertEquals("buildIntegrationSuccess", buildSpan.getResourceName());

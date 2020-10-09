@@ -6,6 +6,7 @@ public class CITags {
     public static final String NODE_NAME = "ci.node.name";
     public static final String _DD_HOSTNAME = "_dd.hostname";
     public static final String _DD_CI_INTERNAL = "_dd.ci.internal";
+    public static final String _DD_CI_BUILD_LEVEL = "_dd.ci.build_level";
 
     public static final String _ID = ".id";
     public static final String _NAME = ".name";
