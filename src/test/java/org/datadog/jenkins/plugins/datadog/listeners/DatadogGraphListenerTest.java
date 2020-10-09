@@ -3,6 +3,7 @@ package org.datadog.jenkins.plugins.datadog.listeners;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -269,7 +270,7 @@ public class DatadogGraphListenerTest {
         assertNotNull(pipelineSpan.getTag(CITags.NODE_NAME));
         assertNotNull(pipelineSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals(true, pipelineSpan.getTag(CITags._DD_CI_INTERNAL));
-        assertEquals(BuildPipelineNode.NodeType.STEP.getBuildLevel(), pipelineSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
+        assertNull(pipelineSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
 
         final String stepPrefix = BuildPipelineNode.NodeType.STEP.getTagName();
         final DDSpan stepInternalSpan = pipelineTrace.get(1);
@@ -287,7 +288,7 @@ public class DatadogGraphListenerTest {
         assertNotNull(stepInternalSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals(true, stepInternalSpan.getTag(CITags._DD_CI_INTERNAL));
         assertEquals("3", stepInternalSpan.getTag(stepPrefix + CITags._NUMBER));
-        assertEquals(BuildPipelineNode.NodeType.STEP.getBuildLevel(), stepInternalSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
+        assertNull(stepInternalSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
 
         final String stagePrefix = BuildPipelineNode.NodeType.STAGE.getTagName();
         final DDSpan stageSpan = pipelineTrace.get(2);
