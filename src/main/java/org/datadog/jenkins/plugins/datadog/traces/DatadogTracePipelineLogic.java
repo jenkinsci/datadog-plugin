@@ -300,41 +300,6 @@ public class DatadogTracePipelineLogic {
             tags.put(CITags.GIT_REPOSITORY_URL, gitRepoUrl);
         }
 
-        final String gitMessage = buildData.getGitMessage("");
-        if(!gitMessage.isEmpty()){
-            tags.put(CITags.GIT_COMMIT_MESSAGE, gitMessage);
-        }
-
-        final String gitAuthorName = buildData.getGitAuthorName("");
-        if(!gitAuthorName.isEmpty()){
-            tags.put(CITags.GIT_COMMIT_AUTHOR_NAME, gitAuthorName);
-        }
-
-        final String gitAuthorEmail = buildData.getGitAuthorEmail("");
-        if(!gitAuthorEmail.isEmpty()){
-            tags.put(CITags.GIT_COMMIT_AUTHOR_EMAIL, gitAuthorEmail);
-        }
-
-        final String gitAuthorDate = buildData.getGitAuthorDate("");
-        if(!gitAuthorDate.isEmpty()){
-            tags.put(CITags.GIT_COMMIT_AUTHOR_DATE, gitAuthorDate);
-        }
-
-        final String gitCommitterName = buildData.getGitCommitterName("");
-        if(!gitCommitterName.isEmpty()){
-            tags.put(CITags.GIT_COMMIT_COMMITTER_NAME, gitCommitterName);
-        }
-
-        final String gitCommitterEmail = buildData.getGitCommitterEmail("");
-        if(!gitCommitterEmail.isEmpty()) {
-            tags.put(CITags.GIT_COMMIT_COMMITTER_EMAIL, gitCommitterEmail);
-        }
-
-        final String gitCommitterDate = buildData.getGitCommitterDate("");
-        if(!gitCommitterDate.isEmpty()){
-            tags.put(CITags.GIT_COMMIT_COMMITTER_DATE, gitCommitterDate);
-        }
-
         // User info
         final String user = envVars.get("USER") != null ? envVars.get("USER") : buildData.getUserId();
         tags.put(CITags.USER_NAME, user);
