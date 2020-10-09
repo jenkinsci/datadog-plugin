@@ -263,7 +263,6 @@ public class DatadogTracePipelineLogic {
         tags.put(prefix + CITags._NAME, current.getName());
         tags.put(prefix + CITags._NUMBER, current.getId());
         tags.put(prefix + CITags._RESULT, getNormalizedResultForTraces(Result.fromString(current.getResult())));
-        tags.put(CITags._DD_CI_BUILD_LEVEL, buildLevel);
 
         final String url = envVars.get("BUILD_URL") != null ? envVars.get("BUILD_URL") : buildData.getBuildUrl("");
         if(StringUtils.isNotBlank(url)) {
@@ -274,6 +273,9 @@ public class DatadogTracePipelineLogic {
         tags.put(CITags.WORKSPACE_PATH, workspace);
 
         tags.put(CITags._DD_CI_INTERNAL, current.isInternal());
+        if(!current.isInternal()) {
+            tags.put(CITags._DD_CI_BUILD_LEVEL, buildLevel);
+        }
         tags.put(CITags.JENKINS_RESULT, current.getResult().toLowerCase());
         tags.put(CITags.ERROR, String.valueOf(current.isError()));
 
