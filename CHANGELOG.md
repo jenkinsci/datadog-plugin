@@ -1,6 +1,10 @@
 Changes
 =======
 ## 2.3.0 / 2020-10-13
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.2.0...datadog-2.3.0
+
+Improvements to APM tracing and reduction in unnecessary BuildAborted events.
 
 * [Added] Add commit message, author, and committer info to traces. See [#135](https://github.com/jenkinsci/datadog-plugin/pull/135).
 * [Added] Expose trace IDs as environment variables. See [#134](https://github.com/jenkinsci/datadog-plugin/pull/134).
