@@ -1,5 +1,12 @@
 Changes
 =======
+## 2.3.0 / 2020-10-13
+
+* [Added] Add commit message, author, and committer info to traces. See [#135](https://github.com/jenkinsci/datadog-plugin/pull/135).
+* [Added] Expose trace IDs as environment variables. See [#134](https://github.com/jenkinsci/datadog-plugin/pull/134).
+* [Fixed] Avoid sending deleted events for already completed jobs. See [#133](https://github.com/jenkinsci/datadog-plugin/pull/133).
+* [Fixed] Change 'CANCELLED' to 'CANCELED' as build result tag. (US spelling). See [#132](https://github.com/jenkinsci/datadog-plugin/pull/132).
+
 # 2.2.0 / 2020-09-17
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.1.1...datadog-2.2.0
