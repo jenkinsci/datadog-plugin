@@ -104,6 +104,7 @@ public class DatadogGraphListener implements GraphListener {
             // Add custom result tag
             TagsUtil.addTagToTags(tags, "result", result);
             client.gauge("jenkins.job.stage_duration", getTime(startNode, endNode), hostname, tags);
+            client.gauge("jenkins.job.stage_completed", 1, hostname, tags);
         } catch (IOException | InterruptedException e) {
             DatadogUtilities.severe(logger, e, "Unable to submit the stage duration metric for " + getStageName(startNode));
         }
