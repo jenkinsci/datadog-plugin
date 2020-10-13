@@ -718,7 +718,9 @@ public class DatadogUtilities {
             return null;
         }
 
-        return new SimpleDateFormat(DATE_FORMAT_ISO8601).format(date);
+        SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT_ISO8601);
+        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return sdf.format(date);
     }
 
 }

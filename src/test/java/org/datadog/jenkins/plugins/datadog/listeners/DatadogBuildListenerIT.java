@@ -113,10 +113,10 @@ public class DatadogBuildListenerIT {
         assertEquals("Initial commit\n", span.getTag(CITags.GIT_COMMIT_MESSAGE));
         assertEquals("John Doe", span.getTag(CITags.GIT_COMMIT_AUTHOR_NAME));
         assertEquals("john@doe.com", span.getTag(CITags.GIT_COMMIT_AUTHOR_EMAIL));
-        assertEquals("2020-10-08T09:49:32.000+02:00", span.getTag(CITags.GIT_COMMIT_AUTHOR_DATE));
+        assertEquals("2020-10-08T07:49:32.000Z", span.getTag(CITags.GIT_COMMIT_AUTHOR_DATE));
         assertEquals("John Doe", span.getTag(CITags.GIT_COMMIT_COMMITTER_NAME));
         assertEquals("john@doe.com", span.getTag(CITags.GIT_COMMIT_COMMITTER_EMAIL));
-        assertEquals("2020-10-08T09:49:32.000+02:00", span.getTag(CITags.GIT_COMMIT_COMMITTER_DATE));
+        assertEquals("2020-10-08T07:49:32.000Z", span.getTag(CITags.GIT_COMMIT_COMMITTER_DATE));
         assertEquals("401d997a6eede777602669ccaec059755c98161f", span.getTag(CITags.GIT_COMMIT__SHA));
         assertEquals("401d997a6eede777602669ccaec059755c98161f", span.getTag(CITags.GIT_COMMIT_SHA));
         assertEquals("master", span.getTag(CITags.GIT_BRANCH));
