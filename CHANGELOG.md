@@ -1,6 +1,6 @@
 Changes
 =======
-## 2.3.0 / 2020-10-13
+# 2.3.0 / 2020-10-13
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.2.0...datadog-2.3.0
 
