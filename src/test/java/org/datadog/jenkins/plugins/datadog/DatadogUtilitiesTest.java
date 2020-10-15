@@ -32,8 +32,10 @@ import hudson.model.Result;
 import org.apache.commons.math3.exception.NullArgumentException;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
+import org.jenkinsci.plugins.workflow.actions.TagsAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.actions.WarningAction;
+import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.junit.Assert;
@@ -120,6 +122,19 @@ public class DatadogUtilitiesTest {
         // when the result is unknown
         when(node.getPersistentAction(WarningAction.class)).thenReturn(null);
         Assert.assertEquals(DatadogUtilities.getResultTag(node), "SUCCESS");
+
+        // when the node is a Stage node and the stage is skipped
+        BlockStartNode startNode = mock(BlockStartNode.class);
+        TagsAction tagsAction = new TagsAction();
+        tagsAction.addTag("STAGE_STATUS", "SKIPPED_FOR_UNSTABLE");
+        when(startNode.getPersistentAction(TagsAction.class)).thenReturn(tagsAction);
+        Assert.assertEquals(DatadogUtilities.getResultTag(startNode), "SKIPPED");
+
+        // when the node is a BlockEndNode and the stage containing it was skipped
+        BlockEndNode endNode = mock(BlockEndNode.class);
+        when(endNode.getStartNode()).thenReturn(startNode);
+        Assert.assertEquals(DatadogUtilities.getResultTag(endNode), "SKIPPED");
+
 
     }
 
