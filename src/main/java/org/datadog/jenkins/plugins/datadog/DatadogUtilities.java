@@ -36,6 +36,7 @@ import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.steps.DatadogPipelineAction;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
+import org.jenkinsci.plugins.pipeline.StageStatus;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
 import org.jenkinsci.plugins.workflow.actions.LogAction;
@@ -624,23 +625,32 @@ public class DatadogUtilities {
         }
     }
 
-    public static String getResultTag(@Nonnull FlowNode endNode) {
-        ErrorAction error = endNode.getError();
+    public static String getResultTag(@Nonnull FlowNode node) {
+        if (StageStatus.isSkippedStage(node)) {
+            return  "SKIPPED";
+        }
+        if (node instanceof BlockEndNode) {
+            BlockStartNode startNode = ((BlockEndNode) node).getStartNode();
+            if (StageStatus.isSkippedStage(startNode)) {
+                return  "SKIPPED";
+            }
+        }
+        ErrorAction error = node.getError();
         if (error != null) {
             return "ERROR";
         }
-        WarningAction warningAction = endNode.getPersistentAction(WarningAction.class);
+        WarningAction warningAction = node.getPersistentAction(WarningAction.class);
         if (warningAction != null) {
             Result result = warningAction.getResult();
             // Result could be SUCCESS, NOT_BUILT, FAILURE, etc https://javadoc.jenkins-ci.org/hudson/model/Result.html
             return result.toString();
         }
         // Other possibilities are queued, launched, unknown: https://javadoc.jenkins.io/plugin/workflow-api/org/jenkinsci/plugins/workflow/actions/QueueItemAction.QueueState.html
-        if (QueueItemAction.getNodeState(endNode) == QueueItemAction.QueueState.CANCELLED) {
+        if (QueueItemAction.getNodeState(node) == QueueItemAction.QueueState.CANCELLED) {
             return "CANCELED";
         }
-        FlowExecution exec = endNode.getExecution();
-        if ((exec != null && exec.isComplete()) || NotExecutedNodeAction.isExecuted(endNode)) {
+        FlowExecution exec = node.getExecution();
+        if ((exec != null && exec.isComplete()) || NotExecutedNodeAction.isExecuted(node)) {
             return "SUCCESS";
         }
         return "UNKNOWN";
