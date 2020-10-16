@@ -115,6 +115,7 @@ public class DatadogGraphListenerTest {
         String[] expectedTags = new String[] { "jenkins_url:" + DatadogUtilities.getJenkinsUrl(), "user_id:anonymous",
                 "stage_name:low", "job:pipeline", "parent_stage_name:medium", "stage_depth:2", "result:SUCCESS" };
         clientStub.assertMetric("jenkins.job.stage_duration", endTime - startTime, hostname, expectedTags);
+        clientStub.assertMetric("jenkins.job.stage_completed", 1, hostname, expectedTags);
     }
 
     @Test
