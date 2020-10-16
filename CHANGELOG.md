@@ -1,5 +1,15 @@
 Changes
 =======
+# 2.4.0 / 2020-10-16
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.3.0...datadog-2.4.0
+
+Couple additions to better support stage-level metrics.
+
+### Changes
+* [Added] Support jenkins.job.stage_completed. See [#145](https://github.com/jenkinsci/datadog-plugin/pull/145). Thanks [patelronak](https://github.com/patelronak).
+* [Added] Add a SKIPPED result status for stages. See [#147](https://github.com/jenkinsci/datadog-plugin/pull/147).
+
 # 2.3.0 / 2020-10-13
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.2.0...datadog-2.3.0
