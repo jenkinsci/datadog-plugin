@@ -281,13 +281,15 @@ public class DatadogTracePipelineLogic {
 
         //Git Info
         final String rawGitBranch = envVars.get("GIT_BRANCH") != null ? envVars.get("GIT_BRANCH") : buildData.getBranch("");
+        String gitBranch = null;
+        String gitTag = null;
         if(rawGitBranch != null && !rawGitBranch.isEmpty()) {
-            final String gitBranch = normalizeBranch(rawGitBranch);
+            gitBranch = normalizeBranch(rawGitBranch);
             if(gitBranch != null) {
                 tags.put(CITags.GIT_BRANCH, gitBranch);
             }
 
-            final String gitTag = normalizeTag(rawGitBranch);
+            gitTag = normalizeTag(rawGitBranch);
             if(gitTag != null) {
                 tags.put(CITags.GIT_TAG, gitTag);
             }
@@ -348,6 +350,21 @@ public class DatadogTracePipelineLogic {
             final StringWriter errorString = new StringWriter();
             error.printStackTrace(new PrintWriter(errorString));
             tags.put(DDTags.ERROR_STACK, errorString.toString());
+        }
+
+        // Propagate Pipeline Name
+        final JobNameWrapper jobNameWrapper = new JobNameWrapper(buildData.getJobName(""), gitBranch != null ? gitBranch : gitTag);
+        tags.put(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._NAME, jobNameWrapper.getTraceJobName());
+        tags.put(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._ID, buildData.getBuildTag(""));
+
+        // Propagate Stage Name
+        final List<BuildPipelineNode> parents = current.getParents();
+        for(final BuildPipelineNode parent : parents) {
+            // If the Stage is found, the tags are set and the loop is finished.
+            if(BuildPipelineNode.NodeType.STAGE.equals(parent.getType())){
+                tags.put(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME, parent.getName());
+                break;
+            }
         }
 
         return tags;

@@ -56,6 +56,7 @@ public class BuildPipelineNode {
     }
 
     private final BuildPipelineNodeKey key;
+    private final List<BuildPipelineNode> parents;
     private final List<BuildPipelineNode> children;
     private final String id;
     private final String name;
@@ -89,6 +90,7 @@ public class BuildPipelineNode {
 
     public BuildPipelineNode(final BuildPipelineNodeKey key) {
         this.key = key;
+        this.parents = new ArrayList<>();
         this.children = new ArrayList<>();
         this.id = key.id;
         this.name = key.name;
@@ -97,6 +99,7 @@ public class BuildPipelineNode {
     public BuildPipelineNode(final BlockEndNode endNode) {
         final BlockStartNode startNode = endNode.getStartNode();
         this.key = new BuildPipelineNodeKey(startNode.getId(), startNode.getDisplayName());
+        this.parents = new ArrayList<>();
         this.children = new ArrayList<>();
 
         this.id = startNode.getId();
@@ -155,6 +158,7 @@ public class BuildPipelineNode {
 
     public BuildPipelineNode(final StepAtomNode stepNode) {
         this.key = new BuildPipelineNodeKey(stepNode.getId(), stepNode.getDisplayName());
+        this.parents = new ArrayList<>();
         this.children = new ArrayList<>();
         this.internal = false;
         this.id = stepNode.getId();
@@ -260,6 +264,8 @@ public class BuildPipelineNode {
         return error;
     }
 
+    public List<BuildPipelineNode> getParents(){ return parents; }
+
     public List<BuildPipelineNode> getChildren() {
         return children;
     }
@@ -306,6 +312,9 @@ public class BuildPipelineNode {
         children.add(child);
     }
 
+    public void addParent(BuildPipelineNode parent) {
+        parents.add(parent);
+    }
 
     @Override
     public boolean equals(Object o) {

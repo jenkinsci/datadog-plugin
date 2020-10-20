@@ -118,6 +118,7 @@ public class BuildPipeline {
         if(pathStages.size() == 1){
             final BuildPipelineNode child = parent.getChild(buildNodeKey);
             if (child == null) {
+                stage.addParent(parent);
                 parent.addChild(stage);
             } else {
                 child.updateData(stage);
