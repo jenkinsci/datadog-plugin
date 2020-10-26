@@ -35,14 +35,14 @@ public class TraceStepEnvironmentContributor extends StepEnvironmentContributor 
                 // into the buildSpanPropagation map. As we don't have access to the tracer here,
                 // we use the key directly to obtain the traceID value.
                 final String traceId = buildSpanAction.getBuildSpanPropatation().get("x-datadog-trace-id");
-                envs.put(TRACE_ID_ENVVAR_KEY, DDId.from(traceId).toHexString());
+                envs.put(TRACE_ID_ENVVAR_KEY, DDId.from(traceId).toString());
             }
 
             final FlowNode flowNode = stepContext.get(FlowNode.class);
             if(flowNode != null) {
                 final GeneratedSpanIdAction idsAction = flowNode.getAction(GeneratedSpanIdAction.class);
                 if(idsAction != null) {
-                    envs.put(SPAN_ID_ENVVAR_KEY, idsAction.getDDSpanId().toHexString());
+                    envs.put(SPAN_ID_ENVVAR_KEY, idsAction.getDDSpanId().toString());
                 }
             }
         } catch (Exception ex) {
