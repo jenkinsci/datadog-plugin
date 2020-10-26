@@ -252,7 +252,7 @@ public class DogStatsDClient implements DatadogClient {
             return true;
         }
 
-        if(!DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildTraces() || this.traceCollectionPort == null) {
+        if(!DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildTraces() || this.hostname == null || this.traceCollectionPort == null) {
             return false;
         }
 
@@ -262,6 +262,7 @@ public class DogStatsDClient implements DatadogClient {
             tracerBuilder
                     .sampler(new ForcePrioritySampler(PrioritySampling.SAMPLER_KEEP))
                     .writer(DDAgentWriter.builder()
+                    .agentHost(this.hostname)
                     .traceAgentPort(traceCollectionPort)
                     .monitoring(Monitoring.DISABLED).build());
 
