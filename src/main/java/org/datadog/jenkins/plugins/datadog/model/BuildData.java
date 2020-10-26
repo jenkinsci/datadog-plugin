@@ -77,6 +77,7 @@ public class BuildData implements Serializable {
     private String gitCommitterName;
     private String gitCommitterEmail;
     private String gitCommitterDate;
+    private String gitDefaultBranch;
 
     // Environment variable from the promoted build plugin
     // - See https://plugins.jenkins.io/promoted-builds
@@ -213,15 +214,20 @@ public class BuildData implements Serializable {
      * @param envVars
      */
     private void populateGitVariables(Run<?,?> run, TaskListener listener, EnvVars envVars) {
-        final GitCommitAction action = GitUtils.buildGitCommitAction(run, listener, envVars, this.gitCommit, this.nodeName, this.workspace);
-        if(action != null) {
-            this.gitMessage = action.getMessage();
-            this.gitAuthorName = action.getAuthorName();
-            this.gitAuthorEmail = action.getAuthorEmail();
-            this.gitAuthorDate = action.getAuthorDate();
-            this.gitCommitterName = action.getCommitterName();
-            this.gitCommitterEmail = action.getCommitterEmail();
-            this.gitCommitterDate = action.getCommitterDate();
+        final GitCommitAction gitCommitAction = GitUtils.buildGitCommitAction(run, listener, envVars, this.gitCommit, this.nodeName, this.workspace);
+        if(gitCommitAction != null) {
+            this.gitMessage = gitCommitAction.getMessage();
+            this.gitAuthorName = gitCommitAction.getAuthorName();
+            this.gitAuthorEmail = gitCommitAction.getAuthorEmail();
+            this.gitAuthorDate = gitCommitAction.getAuthorDate();
+            this.gitCommitterName = gitCommitAction.getCommitterName();
+            this.gitCommitterEmail = gitCommitAction.getCommitterEmail();
+            this.gitCommitterDate = gitCommitAction.getCommitterDate();
+        }
+
+        final GitRepositoryAction gitRepositoryAction = GitUtils.buildGitRepositoryAction(run, listener, envVars, this.nodeName, this.workspace);
+        if(gitRepositoryAction != null) {
+            this.gitDefaultBranch = gitRepositoryAction.getDefaultBranch();
         }
     }
 
@@ -494,6 +500,14 @@ public class BuildData implements Serializable {
 
     public void setGitCommitterDate(String gitCommitterDate) {
         this.gitCommitterDate = gitCommitterDate;
+    }
+
+    public String getGitDefaultBranch(String value) {
+        return defaultIfNull(gitDefaultBranch, value);
+    }
+
+    public void setGitDefaultBranch(String gitDefaultBranch) {
+        this.gitDefaultBranch = gitDefaultBranch;
     }
 
     public String getPromotedUrl(String value) {

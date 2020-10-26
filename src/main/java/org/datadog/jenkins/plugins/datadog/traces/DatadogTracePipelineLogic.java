@@ -22,6 +22,7 @@ import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipeline;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
+import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
@@ -181,6 +182,13 @@ public class DatadogTracePipelineLogic {
             }
         }
 
+        final GitRepositoryAction repositoryAction = buildGitRepositoryAction(run, pipelineNode, node);
+        if(repositoryAction != null) {
+            if(buildData.getGitDefaultBranch("").isEmpty()) {
+                buildData.setGitDefaultBranch(repositoryAction.getDefaultBranch());
+            }
+        }
+
         final String workspace = pipelineNode.getWorkspace();
         if(workspace != null && buildData.getWorkspace("").isEmpty()){
             buildData.setWorkspace(workspace);
@@ -196,6 +204,7 @@ public class DatadogTracePipelineLogic {
             buildData.setHostname(nodeHostname);
         }
     }
+
 
     private void sendTrace(final Tracer tracer, final BuildData buildData, final BuildPipelineNode current, final SpanContext parentSpanContext) {
         if(!isTraceable(current)){
@@ -428,6 +437,20 @@ public class DatadogTracePipelineLogic {
             return GitUtils.buildGitCommitAction(run, listener, envVars, gitCommit, nodeName, workspace);
         } catch (Exception e) {
             logger.fine("Unable to build GitCommitAction. Error: " + e);
+            return null;
+        }
+    }
+
+
+    private GitRepositoryAction buildGitRepositoryAction(Run<?, ?> run, BuildPipelineNode pipelineNode, FlowNode node) {
+        try {
+            final TaskListener listener = node.getExecution().getOwner().getListener();
+            final EnvVars envVars = new EnvVars(pipelineNode.getEnvVars());
+            final String nodeName = pipelineNode.getNodeName();
+            final String workspace = pipelineNode.getWorkspace();
+            return GitUtils.buildGitRepositoryAction(run, listener, envVars, nodeName, workspace);
+        } catch (Exception e) {
+            logger.fine("Unable to build GitRepositoryAction. Error: " + e);
             return null;
         }
     }

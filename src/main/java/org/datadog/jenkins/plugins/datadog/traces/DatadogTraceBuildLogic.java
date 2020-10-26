@@ -144,6 +144,8 @@ public class DatadogTraceBuildLogic {
         final String gitCommitterDate = buildData.getGitCommitterDate("").isEmpty() ? pipelineData.getGitCommitterDate("") : buildData.getGitCommitterDate("");
         buildSpan.setTag(CITags.GIT_COMMIT_COMMITTER_DATE, gitCommitterDate);
 
+        final String gitDefaultBranch = buildData.getGitDefaultBranch("").isEmpty() ? pipelineData.getGitDefaultBranch("") : buildData.getGitDefaultBranch("");
+        buildSpan.setTag(CITags.GIT_DEFAULT_BRANCH, gitDefaultBranch);
 
         final String rawGitBranch = buildData.getBranch("").isEmpty() ? pipelineData.getBranch("") : buildData.getBranch("");
         final String gitBranch = normalizeBranch(rawGitBranch);
