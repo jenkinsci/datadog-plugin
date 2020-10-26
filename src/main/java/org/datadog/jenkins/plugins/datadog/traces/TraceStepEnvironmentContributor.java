@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.util.logging.Logger;
 
 /**
- * Contributes the X_DATADOG_TRACE_ID and X_DATADOG_PARENT_ID environment variables to workflow steps.
+ * Contributes the X_DATADOG_TRACE_ID/X_DATADOG_TRACE_ID_HEX and X_DATADOG_PARENT_ID/X_DATADOG_PARENT_ID_HEX environment variables to workflow steps.
  * The value of the X_DATADOG_PARENT_ID is the spanID of the span that is going to be executed, therefore
  * this method is executed as many as workflow steps the pipeline have.
  */
@@ -23,7 +23,9 @@ public class TraceStepEnvironmentContributor extends StepEnvironmentContributor 
     private static final Logger logger = Logger.getLogger(TraceStepEnvironmentContributor.class.getName());
 
     public static final String TRACE_ID_ENVVAR_KEY = "X_DATADOG_TRACE_ID";
+    public static final String TRACE_ID_HEX_ENVVAR_KEY = "X_DATADOG_TRACE_ID_HEX";
     public static final String SPAN_ID_ENVVAR_KEY = "X_DATADOG_PARENT_ID";
+    public static final String SPAN_ID_HEX_ENVVAR_KEY = "X_DATADOG_PARENT_ID_HEX";
 
     @Override
     public void buildEnvironmentFor(StepContext stepContext, EnvVars envs, TaskListener listener) throws IOException, InterruptedException {
@@ -35,14 +37,18 @@ public class TraceStepEnvironmentContributor extends StepEnvironmentContributor 
                 // into the buildSpanPropagation map. As we don't have access to the tracer here,
                 // we use the key directly to obtain the traceID value.
                 final String traceId = buildSpanAction.getBuildSpanPropatation().get("x-datadog-trace-id");
-                envs.put(TRACE_ID_ENVVAR_KEY, DDId.from(traceId).toString());
+                DDId ddTraceId = DDId.from(traceId);
+                envs.put(TRACE_ID_ENVVAR_KEY, ddTraceId.toString());
+                envs.put(TRACE_ID_HEX_ENVVAR_KEY, ddTraceId.toHexString());
             }
 
             final FlowNode flowNode = stepContext.get(FlowNode.class);
             if(flowNode != null) {
                 final GeneratedSpanIdAction idsAction = flowNode.getAction(GeneratedSpanIdAction.class);
                 if(idsAction != null) {
-                    envs.put(SPAN_ID_ENVVAR_KEY, idsAction.getDDSpanId().toString());
+                    DDId ddSpanId = idsAction.getDDSpanId();
+                    envs.put(SPAN_ID_ENVVAR_KEY, ddSpanId.toString());
+                    envs.put(SPAN_ID_HEX_ENVVAR_KEY, ddSpanId.toHexString());
                 }
             }
         } catch (Exception ex) {
