@@ -31,6 +31,7 @@ public class CITags {
     public static final String GIT_COMMIT_COMMITTER_NAME = "git.commit.committer.name";
     public static final String GIT_COMMIT_COMMITTER_EMAIL = "git.commit.committer.email";
     public static final String GIT_COMMIT_COMMITTER_DATE = "git.commit.committer.date";
+    public static final String GIT_DEFAULT_BRANCH = "git.default_branch";
     public static final String GIT_BRANCH = "git.branch";
     public static final String GIT_TAG = "git.tag";
 

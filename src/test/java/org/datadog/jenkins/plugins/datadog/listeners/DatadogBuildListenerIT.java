@@ -121,5 +121,6 @@ public class DatadogBuildListenerIT {
         assertEquals("401d997a6eede777602669ccaec059755c98161f", span.getTag(CITags.GIT_COMMIT_SHA));
         assertEquals("master", span.getTag(CITags.GIT_BRANCH));
         assertEquals("https://github.com/johndoe/foobar.git", span.getTag(CITags.GIT_REPOSITORY_URL));
+        assertEquals("master", span.getTag(CITags.GIT_DEFAULT_BRANCH));
     }
 }
