@@ -250,9 +250,9 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @throws ServletException if there is a servlet exception.
      */
     @RequirePOST
-    public FormValidation doTestConnection(@QueryParameter("targetApiKey") final String targetApiKey)
+    public FormValidation doTestConnection(@QueryParameter("targetApiKey") final String targetApiKey, @QueryParameter("targetApiURL") final String targetApiURL)
             throws IOException, ServletException {
-        if (DatadogHttpClient.validateDefaultIntakeConnection(this.getTargetApiURL(), Secret.fromString(targetApiKey))) {
+        if (DatadogHttpClient.validateDefaultIntakeConnection(targetApiURL, Secret.fromString(targetApiKey))) {
             return FormValidation.ok("Great! Your API key is valid.");
         } else {
             return FormValidation.error("Hmmm, your API key seems to be invalid.");
