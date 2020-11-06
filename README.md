@@ -269,6 +269,10 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 | `jenkins.node_status.count`            | If this node is present.                                       | `jenkins_url`, `node_hostname`, `node_name`, `node_label`                  |
 | `jenkins.node_status.up`               | If a given node is online, value 1. Otherwise, 0.              | `jenkins_url`, `node_hostname`, `node_name`, `node_label`                  |
 | `jenkins.plugin.count`                 | Plugins count.                                                 | `jenkins_url`                                                              |
+| `jenkins.plugin.active`                | Plugins active.                                                | `jenkins_url`                                                              |
+| `jenkins.plugin.failed`                | Plugins failed.                                                | `jenkins_url`                                                              |
+| `jenkins.plugin.inactivate`            | Plugins inactive.                                              | `jenkins_url`                                                              |
+| `jenkins.plugin.withUpdate`            | Plugins with update.                                           | `jenkins_url`                                                              |
 | `jenkins.project.count`                | Project count.                                                 | `jenkins_url`                                                              |
 | `jenkins.queue.size`                   | Queue Size.                                                    | `jenkins_url`                                                              |
 | `jenkins.queue.buildable`              | Number of Buildable item in Queue.                             | `jenkins_url`                                                              |
