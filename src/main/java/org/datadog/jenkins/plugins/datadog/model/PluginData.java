@@ -1,7 +1,5 @@
 package org.datadog.jenkins.plugins.datadog.model;
 
-import jdk.tools.jlink.plugin.Plugin;
-
 import java.io.Serializable;
 
 public class PluginData implements Serializable {
