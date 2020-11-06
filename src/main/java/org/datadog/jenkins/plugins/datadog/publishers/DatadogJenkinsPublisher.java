@@ -26,15 +26,18 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.publishers;
 
 import hudson.Extension;
+import hudson.PluginManager;
+import hudson.PluginWrapper;
 import hudson.model.PeriodicWork;
 import hudson.model.Project;
 import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.model.PluginData;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -73,24 +76,48 @@ public class DatadogJenkinsPublisher extends PeriodicWork {
             tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
 
             long projectCount = 0;
-            try {
-                projectCount = Jenkins.getInstance().getAllItems(Project.class).size();
-            } catch (NullPointerException e){
+            Jenkins instance = Jenkins.getInstanceOrNull();
+            if (instance == null) {
                 logger.fine("Could not retrieve projects");
+            } else {
+                projectCount = instance.getAllItems(Project.class).size();
             }
-            long pluginCount = 0;
-            try {
-                pluginCount = Jenkins.getInstance().pluginManager.getPlugins().size();
-            } catch (NullPointerException e){
-                logger.fine("Could not retrieve plugins");
-            }
-            client.gauge("jenkins.project.count", projectCount, hostname, tags);
-            client.gauge("jenkins.plugin.count", pluginCount, hostname, tags);
 
+            PluginData pluginData = collectPluginData();
+            client.gauge("jenkins.project.count", projectCount, hostname, tags);
+            client.gauge("jenkins.plugin.count", pluginData.getCount(), hostname, tags);
+            client.gauge("jenkins.plugin.active", pluginData.getActive(), hostname, tags);
+            client.gauge("jenkins.plugin.failed", pluginData.getFailed(), hostname, tags);
+            client.gauge("jenkins.plugin.inactivate", pluginData.getInactive(), hostname, tags);
+            client.gauge("jenkins.plugin.withUpdate", pluginData.getUpdatable(), hostname, tags);
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, null);
         }
-
     }
 
+    private PluginData collectPluginData() {
+        PluginData.Builder pluginData = PluginData.newBuilder();
+
+        Jenkins instance = Jenkins.getInstanceOrNull();
+        if (instance == null) {
+            logger.fine("Could not retrieve plugins");
+        } else {
+            PluginManager pluginManager = instance.getPluginManager();
+            List<PluginWrapper> plugins = pluginManager.getPlugins();
+            pluginData.withCount(plugins.size())
+                    .withFailed(pluginManager.getFailedPlugins().size());
+            for (PluginWrapper w : plugins) {
+                if (w.hasUpdate()) {
+                    pluginData.incrementUpdatable();
+                }
+                if (w.isActive()) {
+                    pluginData.incrementActive();
+                } else {
+                    pluginData.incrementInactive();
+                }
+            }
+        }
+
+        return pluginData.build();
+    }
 }
