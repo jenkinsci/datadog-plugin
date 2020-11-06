@@ -83,7 +83,7 @@ public class DatadogJenkinsPublisher extends PeriodicWork {
                 projectCount = instance.getAllItems(Project.class).size();
             }
 
-            PluginData pluginData = collectPluginData();
+            PluginData pluginData = collectPluginData(instance);
             client.gauge("jenkins.project.count", projectCount, hostname, tags);
             client.gauge("jenkins.plugin.count", pluginData.getCount(), hostname, tags);
             client.gauge("jenkins.plugin.active", pluginData.getActive(), hostname, tags);
@@ -95,26 +95,26 @@ public class DatadogJenkinsPublisher extends PeriodicWork {
         }
     }
 
-    private PluginData collectPluginData() {
+    private PluginData collectPluginData(Jenkins instance) {
         PluginData.Builder pluginData = PluginData.newBuilder();
 
-        Jenkins instance = Jenkins.getInstanceOrNull();
         if (instance == null) {
             logger.fine("Could not retrieve plugins");
-        } else {
-            PluginManager pluginManager = instance.getPluginManager();
-            List<PluginWrapper> plugins = pluginManager.getPlugins();
-            pluginData.withCount(plugins.size())
-                    .withFailed(pluginManager.getFailedPlugins().size());
-            for (PluginWrapper w : plugins) {
-                if (w.hasUpdate()) {
-                    pluginData.incrementUpdatable();
-                }
-                if (w.isActive()) {
-                    pluginData.incrementActive();
-                } else {
-                    pluginData.incrementInactive();
-                }
+            return pluginData.build();
+        }
+
+        PluginManager pluginManager = instance.getPluginManager();
+        List<PluginWrapper> plugins = pluginManager.getPlugins();
+        pluginData.withCount(plugins.size())
+                .withFailed(pluginManager.getFailedPlugins().size());
+        for (PluginWrapper w : plugins) {
+            if (w.hasUpdate()) {
+                pluginData.incrementUpdatable();
+            }
+            if (w.isActive()) {
+                pluginData.incrementActive();
+            } else {
+                pluginData.incrementInactive();
             }
         }
 
