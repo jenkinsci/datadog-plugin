@@ -53,7 +53,7 @@
         <f:entry title="Datadog API Key" field="targetApiKeyEntry">
           <f:password field="targetApiKey" default="${targetApiKey}" checkMethod="post" />
         </f:entry>
-        <f:validateButton title="${%Test Key}" progress="${%Testing...}" method="testConnection" with="targetApiKey" checkMethod="post" />
+        <f:validateButton title="${%Test Key}" progress="${%Testing...}" method="testConnection" with="targetApiKey,targetApiURL" checkMethod="post" />
 
     </f:radioBlock>
 
