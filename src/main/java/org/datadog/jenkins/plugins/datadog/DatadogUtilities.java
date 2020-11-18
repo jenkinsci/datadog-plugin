@@ -33,6 +33,7 @@ import hudson.console.AnnotatedLargeText;
 import hudson.model.*;
 import hudson.model.labels.LabelAtom;
 import jenkins.model.Jenkins;
+import org.apache.commons.lang.ObjectUtils.Null;
 import org.datadog.jenkins.plugins.datadog.steps.DatadogPipelineAction;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
@@ -78,8 +79,8 @@ public class DatadogUtilities {
     public static DatadogGlobalConfiguration getDatadogGlobalDescriptor() {
         try {
             return ExtensionList.lookupSingleton(DatadogGlobalConfiguration.class);
-        } catch (IllegalStateException e) {
-            // It can only throw a IllegalStateException when running tests
+        } catch (IllegalStateException | NullPointerException e) {
+            // It can only throw such an exception when running tests
             return null;
         }
     }

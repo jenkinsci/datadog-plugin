@@ -56,6 +56,10 @@ public class ClientFactory {
     }
 
     public static DatadogClient getClient() {
+        if(testClient != null){
+            // Only used for tests
+            return testClient;
+        }
         DatadogGlobalConfiguration descriptor = DatadogUtilities.getDatadogGlobalDescriptor();
         String reportWith = null;
         String targetApiURL = null;
