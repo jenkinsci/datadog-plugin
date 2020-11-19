@@ -4,6 +4,7 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * Keeps the information of a Stage to calculate the Stage breakdown.
@@ -58,6 +59,19 @@ public class StageData implements Serializable, Comparable<StageData> {
         } else {
             return 0;
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        StageData stageData = (StageData) o;
+        return startTimeInMicros == stageData.startTimeInMicros;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(startTimeInMicros);
     }
 
     public static class Builder {
