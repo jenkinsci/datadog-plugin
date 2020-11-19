@@ -23,6 +23,8 @@ import org.datadog.jenkins.plugins.datadog.model.BuildPipeline;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
+import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
+import org.datadog.jenkins.plugins.datadog.model.StageData;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
@@ -95,10 +97,11 @@ public class DatadogTracePipelineLogic {
 
         final BuildData buildData = buildSpanAction.getBuildData();
         if(!isLastNode(flowNode)){
-            updateBuildData(buildData, run, flowNode);
+            final BuildPipelineNode pipelineNode = buildPipelineNode(flowNode);
+            updateStageBreakdown(run, pipelineNode);
+            updateBuildData(buildData, run, pipelineNode, flowNode);
             return;
         }
-
 
         final FlowEndNode flowEndNode = (FlowEndNode) flowNode;
         final BuildPipeline pipeline = new BuildPipeline();
@@ -124,14 +127,7 @@ public class DatadogTracePipelineLogic {
         }
     }
 
-    private void updateBuildData(BuildData buildData, Run<?, ?> run, FlowNode node) {
-        BuildPipelineNode pipelineNode = null;
-        if(node instanceof BlockEndNode) {
-            pipelineNode = new BuildPipelineNode((BlockEndNode) node);
-        } else if(node instanceof StepAtomNode) {
-            pipelineNode = new BuildPipelineNode((StepAtomNode) node);
-        }
-
+    private void updateBuildData(BuildData buildData, Run<?, ?> run, BuildPipelineNode pipelineNode, FlowNode node) {
         if(pipelineNode == null){
             return;
         }
@@ -259,8 +255,6 @@ public class DatadogTracePipelineLogic {
 
         span.finish(current.getEndTimeMicros());
     }
-
-
 
     private Map<String, Object> buildTraceTags(final BuildPipelineNode current, final BuildData buildData) {
         final String prefix = current.getType().getTagName();
@@ -441,7 +435,6 @@ public class DatadogTracePipelineLogic {
         }
     }
 
-
     private GitRepositoryAction buildGitRepositoryAction(Run<?, ?> run, BuildPipelineNode pipelineNode, FlowNode node) {
         try {
             final TaskListener listener = node.getExecution().getOwner().getListener();
@@ -453,5 +446,38 @@ public class DatadogTracePipelineLogic {
             logger.fine("Unable to build GitRepositoryAction. Error: " + e);
             return null;
         }
+    }
+
+    private BuildPipelineNode buildPipelineNode(FlowNode flowNode) {
+        BuildPipelineNode pipelineNode = null;
+        if(flowNode instanceof BlockEndNode) {
+            pipelineNode = new BuildPipelineNode((BlockEndNode) flowNode);
+        } else if(flowNode instanceof StepAtomNode) {
+            pipelineNode = new BuildPipelineNode((StepAtomNode) flowNode);
+        }
+        return pipelineNode;
+    }
+
+    private void updateStageBreakdown(final Run<?,?> run, BuildPipelineNode pipelineNode) {
+        final StageBreakdownAction stageBreakdownAction = run.getAction(StageBreakdownAction.class);
+        if(stageBreakdownAction == null){
+            return;
+        }
+
+        if(pipelineNode == null){
+            return;
+        }
+
+        if(!BuildPipelineNode.NodeType.STAGE.equals(pipelineNode.getType())){
+            return;
+        }
+
+        final StageData stageData = StageData.builder()
+                .withName(pipelineNode.getName())
+                .withStartTimeInMicros(pipelineNode.getStartTimeMicros())
+                .withEndTimeInMicros(pipelineNode.getEndTimeMicros())
+                .build();
+
+        stageBreakdownAction.put(stageData.getName(), stageData);
     }
 }

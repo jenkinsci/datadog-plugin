@@ -93,6 +93,8 @@ public class DatadogBuildListenerIT {
         assertNotNull(buildSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals("success", buildSpan.getTag(CITags.JENKINS_RESULT));
         assertEquals("jenkins-buildIntegrationSuccess-1", buildSpan.getTag(CITags.JENKINS_TAG));
+        assertNotNull(buildSpan.getTag(CITags._DD_CI_STAGES));
+        assertEquals("[]", buildSpan.getTag(CITags._DD_CI_STAGES));
     }
 
     @Test
