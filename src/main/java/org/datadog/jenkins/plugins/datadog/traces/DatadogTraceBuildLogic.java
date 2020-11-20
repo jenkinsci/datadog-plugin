@@ -4,6 +4,8 @@ import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getNormalized
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import datadog.trace.api.DDTags;
 import hudson.model.Result;
 import hudson.model.Run;
@@ -13,8 +15,13 @@ import io.opentracing.propagation.Format;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
+import org.datadog.jenkins.plugins.datadog.model.StageData;
 import org.datadog.jenkins.plugins.datadog.model.TimeInQueueAction;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -26,9 +33,11 @@ public class DatadogTraceBuildLogic {
     private static final Logger logger = Logger.getLogger(DatadogTraceBuildLogic.class.getName());
 
     private final Tracer tracer;
+    private final Gson gson;
 
     public DatadogTraceBuildLogic(final Tracer tracer) {
         this.tracer = tracer;
+        this.gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
     }
 
     public void startBuildTrace(final BuildData buildData, Run run) {
@@ -63,6 +72,9 @@ public class DatadogTraceBuildLogic {
 
         final StepDataAction stepDataAction = new StepDataAction();
         run.addAction(stepDataAction);
+
+        final StageBreakdownAction stageBreakdownAction = new StageBreakdownAction();
+        run.addAction(stageBreakdownAction);
     }
 
     public void finishBuildTrace(final BuildData buildData, final Run<?,?> run) {
@@ -166,6 +178,17 @@ public class DatadogTraceBuildLogic {
             for(Map.Entry<String, String> entry : jobNameWrapper.getConfigurations().entrySet()) {
                 buildSpan.setTag(prefix + CITags._CONFIGURATION + "." + entry.getKey(), entry.getValue());
             }
+        }
+
+        // Stage breakdown
+        final StageBreakdownAction stageBreakdownAction = run.getAction(StageBreakdownAction.class);
+        if(stageBreakdownAction != null){
+            final Map<String, StageData> stageDataByName = stageBreakdownAction.getStageDataByName();
+            final List<StageData> stages = new ArrayList<>(stageDataByName.values());
+            Collections.sort(stages);
+
+            final String stagesJson = gson.toJson(stages);
+            buildSpan.setTag(CITags._DD_CI_STAGES, stagesJson);
         }
 
         // Jenkins specific

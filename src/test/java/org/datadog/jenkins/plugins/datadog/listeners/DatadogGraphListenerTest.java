@@ -253,6 +253,8 @@ public class DatadogGraphListenerTest {
         assertEquals("jenkins-pipelineIntegrationSuccess-1", buildSpan.getTag(CITags.JENKINS_TAG));
         assertEquals(false, buildSpan.getTag(CITags._DD_CI_INTERNAL));
         assertEquals(BuildPipelineNode.NodeType.PIPELINE.getBuildLevel(), buildSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
+        assertNotNull(buildSpan.getTag(CITags._DD_CI_STAGES));
+        assertTrue(((String) buildSpan.getTag(CITags._DD_CI_STAGES)).contains("{\"name\":\"test\",\"duration\""));
 
         final List<DDSpan> pipelineTrace = tracerWriter.get(1);
         assertEquals(4, pipelineTrace.size());
