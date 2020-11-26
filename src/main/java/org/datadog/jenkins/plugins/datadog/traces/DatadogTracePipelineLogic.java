@@ -23,6 +23,7 @@ import org.datadog.jenkins.plugins.datadog.model.BuildPipeline;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
+import org.datadog.jenkins.plugins.datadog.model.QueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
@@ -102,6 +103,9 @@ public class DatadogTracePipelineLogic {
             updateBuildData(buildData, run, pipelineNode, flowNode);
             return;
         }
+
+        final QueueInfoAction queueInfoAction = run.getAction(QueueInfoAction.class);
+        System.out.println("--- Trace: QueueInfo: " + queueInfoAction);
 
         final FlowEndNode flowEndNode = (FlowEndNode) flowNode;
         final BuildPipeline pipeline = new BuildPipeline();
@@ -266,6 +270,7 @@ public class DatadogTracePipelineLogic {
         tags.put(prefix + CITags._NAME, current.getName());
         tags.put(prefix + CITags._NUMBER, current.getId());
         tags.put(prefix + CITags._RESULT, getNormalizedResultForTraces(Result.fromString(current.getResult())));
+        tags.put(CITags.QUEUE_TIME, Math.max(current.getSecondsInQueue(), 0));
 
         final String url = envVars.get("BUILD_URL") != null ? envVars.get("BUILD_URL") : buildData.getBuildUrl("");
         if(StringUtils.isNotBlank(url)) {
@@ -366,6 +371,16 @@ public class DatadogTracePipelineLogic {
             // If the Stage is found, the tags are set and the loop is finished.
             if(BuildPipelineNode.NodeType.STAGE.equals(parent.getType())){
                 tags.put(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME, parent.getName());
+                break;
+            }
+        }
+
+        // Propagate Time in Queue
+        final List<BuildPipelineNode> children = current.getChildren();
+        for(final BuildPipelineNode child : children) {
+            long secsInQueue = child.getSecondsInQueue();
+            if(secsInQueue != -1) {
+                tags.put(CITags.QUEUE_TIME, child.getSecondsInQueue());
                 break;
             }
         }

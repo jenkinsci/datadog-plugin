@@ -46,6 +46,8 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -92,6 +94,8 @@ public class DatadogGraphListener implements GraphListener {
         if(run == null){
             return;
         }
+
+
 
         try {
             String result = DatadogUtilities.getResultTag(endNode);

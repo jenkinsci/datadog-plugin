@@ -15,6 +15,7 @@ import io.opentracing.propagation.Format;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.model.QueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
 import org.datadog.jenkins.plugins.datadog.model.TimeInQueueAction;
@@ -75,6 +76,9 @@ public class DatadogTraceBuildLogic {
 
         final StageBreakdownAction stageBreakdownAction = new StageBreakdownAction();
         run.addAction(stageBreakdownAction);
+
+        final QueueInfoAction queueInfoAction = new QueueInfoAction();
+        run.addAction(queueInfoAction);
     }
 
     public void finishBuildTrace(final BuildData buildData, final Run<?,?> run) {
@@ -115,7 +119,7 @@ public class DatadogTraceBuildLogic {
 
         final TimeInQueueAction timeInQueueAction = run.getAction(TimeInQueueAction.class);
         if(timeInQueueAction != null) {
-            buildSpan.setTag(prefix + CITags._QUEUE_TIME, timeInQueueAction.getSecondsInQueue());
+            buildSpan.setTag(CITags.QUEUE_TIME, Math.max(timeInQueueAction.getSecondsInQueue(), 0));
         }
 
         final String workspace = buildData.getWorkspace("").isEmpty() ? pipelineData.getWorkspace("") : buildData.getWorkspace("");
