@@ -95,8 +95,6 @@ public class DatadogGraphListener implements GraphListener {
             return;
         }
 
-
-
         try {
             String result = DatadogUtilities.getResultTag(endNode);
             BuildData buildData = new BuildData(run, flowNode.getExecution().getOwner().getListener());
