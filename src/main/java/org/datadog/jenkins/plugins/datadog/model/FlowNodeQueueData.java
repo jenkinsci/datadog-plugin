@@ -3,6 +3,9 @@ package org.datadog.jenkins.plugins.datadog.model;
 import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Keeps the timestamps of a certain FlowNode based on the onEnterBuildable and onLeaveBuildable callbacks.
+ */
 public class FlowNodeQueueData implements Serializable {
 
     private static final long serialVersionUID = 1L;

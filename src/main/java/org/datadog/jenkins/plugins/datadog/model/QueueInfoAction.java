@@ -6,6 +6,9 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Keeps the Queue Info related to the FlowNode scheduled to be executed.
+ */
 public class QueueInfoAction extends InvisibleAction implements Serializable {
 
     private static final long serialVersionUID = 1L;
