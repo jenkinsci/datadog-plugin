@@ -74,6 +74,7 @@ public class BuildPipelineNode {
     private long endTime;
     private long endTimeMicros;
     private long secondsInQueue = -1L;
+    private long propagatedSecondsInQueue = -1L;
     private String result;
 
     // Flag that indicates if the node must be marked as error.
@@ -199,6 +200,7 @@ public class BuildPipelineNode {
         }
     }
 
+
     public BuildPipelineNodeKey getKey() {
         return key;
     }
@@ -264,6 +266,18 @@ public class BuildPipelineNode {
         this.endTimeMicros = this.endTime * 1000;
     }
 
+    public void setSecondsInQueue(long secondsInQueue) {
+        this.secondsInQueue = secondsInQueue;
+    }
+
+    public long getPropagatedSecondsInQueue() {
+        return propagatedSecondsInQueue;
+    }
+
+    public void setPropagatedSecondsInQueue(long propagatedSecondsInQueue) {
+        this.propagatedSecondsInQueue = propagatedSecondsInQueue;
+    }
+
     public String getResult() {
         return result;
     }
@@ -323,10 +337,12 @@ public class BuildPipelineNode {
         this.error = buildNode.error;
         this.errorObj = buildNode.errorObj;
         this.generatedSpanId = buildNode.generatedSpanId;
+        this.parents.addAll(buildNode.parents);
     }
 
     public void addChild(final BuildPipelineNode child) {
         children.add(child);
+        child.addParent(this);
     }
 
     public void addParent(BuildPipelineNode parent) {

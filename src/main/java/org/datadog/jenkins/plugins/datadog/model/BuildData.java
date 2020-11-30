@@ -100,6 +100,8 @@ public class BuildData implements Serializable {
     private Long startTime;
     private Long endTime;
     private Long duration;
+    private Long secondsInQueue;
+    private Long propagatedSecondsInQueue;
 
     private String traceId;
     private String spanId;
@@ -380,6 +382,22 @@ public class BuildData implements Serializable {
 
     public void setStartTime(Long startTime) {
         this.startTime = startTime;
+    }
+
+    public Long getSecondsInQueue(Long value) {
+        return defaultIfNull(secondsInQueue, value);
+    }
+
+    public void setSecondsInQueue(Long secondsInQueue) {
+        this.secondsInQueue = secondsInQueue;
+    }
+
+    public Long getPropagatedSecondsInQueue(Long value) {
+        return defaultIfNull(propagatedSecondsInQueue, value);
+    }
+
+    public void setPropagatedSecondsInQueue(Long propagatedSecondsInQueue) {
+        this.propagatedSecondsInQueue = propagatedSecondsInQueue;
     }
 
     public String getBuildId(String value) {

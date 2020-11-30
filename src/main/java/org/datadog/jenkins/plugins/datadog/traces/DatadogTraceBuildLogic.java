@@ -18,7 +18,6 @@ import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.QueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
-import org.datadog.jenkins.plugins.datadog.model.TimeInQueueAction;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -116,11 +115,9 @@ public class DatadogTraceBuildLogic {
         buildSpan.setTag(prefix + CITags._ID, buildData.getBuildTag(""));
         buildSpan.setTag(prefix + CITags._NUMBER, buildData.getBuildNumber(""));
         buildSpan.setTag(prefix + CITags._URL, buildData.getBuildUrl(""));
-
-        final TimeInQueueAction timeInQueueAction = run.getAction(TimeInQueueAction.class);
-        if(timeInQueueAction != null) {
-            buildSpan.setTag(CITags.QUEUE_TIME, Math.max(timeInQueueAction.getSecondsInQueue(), 0));
-        }
+        buildSpan.setTag(CITags.QUEUE_TIME, buildData.getSecondsInQueue(-1L) == -1L ?
+                Math.max(Math.max(pipelineData.getSecondsInQueue(-1L), pipelineData.getPropagatedSecondsInQueue(-1L)),0) :
+                Math.max(buildData.getSecondsInQueue(-1L), 0));
 
         final String workspace = buildData.getWorkspace("").isEmpty() ? pipelineData.getWorkspace("") : buildData.getWorkspace("");
         buildSpan.setTag(CITags.WORKSPACE_PATH, workspace);

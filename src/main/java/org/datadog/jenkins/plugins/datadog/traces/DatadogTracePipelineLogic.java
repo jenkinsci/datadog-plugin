@@ -1,6 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getNormalizedResultForTraces;
+import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.NodeType.PIPELINE;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 
@@ -104,9 +105,6 @@ public class DatadogTracePipelineLogic {
             return;
         }
 
-        final QueueInfoAction queueInfoAction = run.getAction(QueueInfoAction.class);
-        System.out.println("--- Trace: QueueInfo: " + queueInfoAction);
-
         final FlowEndNode flowEndNode = (FlowEndNode) flowNode;
         final BuildPipeline pipeline = new BuildPipeline();
 
@@ -135,6 +133,8 @@ public class DatadogTracePipelineLogic {
         if(pipelineNode == null){
             return;
         }
+
+        buildData.setPropagatedSecondsInQueue(Math.max(pipelineNode.getSecondsInQueue(), pipelineNode.getPropagatedSecondsInQueue()));
 
         final String gitBranch = pipelineNode.getEnvVars().get("GIT_BRANCH");
         if(gitBranch != null && buildData.getBranch("").isEmpty()) {
@@ -270,7 +270,12 @@ public class DatadogTracePipelineLogic {
         tags.put(prefix + CITags._NAME, current.getName());
         tags.put(prefix + CITags._NUMBER, current.getId());
         tags.put(prefix + CITags._RESULT, getNormalizedResultForTraces(Result.fromString(current.getResult())));
-        tags.put(CITags.QUEUE_TIME, Math.max(current.getSecondsInQueue(), 0));
+
+        if(current.getSecondsInQueue() == -1L) {
+            tags.put(CITags.QUEUE_TIME, Math.max(current.getPropagatedSecondsInQueue(), 0));
+        } else {
+            tags.put(CITags.QUEUE_TIME, Math.max(current.getSecondsInQueue(), 0));
+        }
 
         final String url = envVars.get("BUILD_URL") != null ? envVars.get("BUILD_URL") : buildData.getBuildUrl("");
         if(StringUtils.isNotBlank(url)) {
@@ -362,8 +367,8 @@ public class DatadogTracePipelineLogic {
 
         // Propagate Pipeline Name
         final JobNameWrapper jobNameWrapper = new JobNameWrapper(buildData.getJobName(""), gitBranch != null ? gitBranch : gitTag);
-        tags.put(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._NAME, jobNameWrapper.getTraceJobName());
-        tags.put(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._ID, buildData.getBuildTag(""));
+        tags.put(PIPELINE.getTagName() + CITags._NAME, jobNameWrapper.getTraceJobName());
+        tags.put(PIPELINE.getTagName() + CITags._ID, buildData.getBuildTag(""));
 
         // Propagate Stage Name
         final List<BuildPipelineNode> parents = current.getParents();
@@ -371,16 +376,6 @@ public class DatadogTracePipelineLogic {
             // If the Stage is found, the tags are set and the loop is finished.
             if(BuildPipelineNode.NodeType.STAGE.equals(parent.getType())){
                 tags.put(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME, parent.getName());
-                break;
-            }
-        }
-
-        // Propagate Time in Queue
-        final List<BuildPipelineNode> children = current.getChildren();
-        for(final BuildPipelineNode child : children) {
-            long secsInQueue = child.getSecondsInQueue();
-            if(secsInQueue != -1) {
-                tags.put(CITags.QUEUE_TIME, child.getSecondsInQueue());
                 break;
             }
         }
