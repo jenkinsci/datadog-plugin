@@ -24,7 +24,6 @@ import org.datadog.jenkins.plugins.datadog.model.BuildPipeline;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
-import org.datadog.jenkins.plugins.datadog.model.QueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
@@ -271,6 +270,8 @@ public class DatadogTracePipelineLogic {
         tags.put(prefix + CITags._NUMBER, current.getId());
         tags.put(prefix + CITags._RESULT, getNormalizedResultForTraces(Result.fromString(current.getResult())));
 
+        // If the concrete queue time for this node is not set
+        // we look for the queue time propagated by its children.
         if(current.getSecondsInQueue() == -1L) {
             tags.put(CITags.QUEUE_TIME, Math.max(current.getPropagatedSecondsInQueue(), 0));
         } else {

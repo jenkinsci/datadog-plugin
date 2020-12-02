@@ -5,7 +5,7 @@ import hudson.model.Queue;
 import hudson.model.Run;
 import hudson.model.queue.QueueListener;
 import org.datadog.jenkins.plugins.datadog.model.FlowNodeQueueData;
-import org.datadog.jenkins.plugins.datadog.model.QueueInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
@@ -47,7 +47,7 @@ public class DatadogQueueListener extends QueueListener {
                 return;
             }
 
-            final QueueInfoAction queueAction = run.getAction(QueueInfoAction.class);
+            final PipelineQueueInfoAction queueAction = run.getAction(PipelineQueueInfoAction.class);
             if(queueAction == null){
                 logger.fine("onEnterBuildable: queueAction: is null");
                 return;
@@ -95,7 +95,7 @@ public class DatadogQueueListener extends QueueListener {
                 return;
             }
 
-            QueueInfoAction queueAction = run.getAction(QueueInfoAction.class);
+            PipelineQueueInfoAction queueAction = run.getAction(PipelineQueueInfoAction.class);
             if(queueAction == null){
                 logger.fine("onLeaveBuildable: queueAction: is null");
                 return;

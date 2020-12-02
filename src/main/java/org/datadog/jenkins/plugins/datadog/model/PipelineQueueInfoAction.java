@@ -9,13 +9,13 @@ import java.util.Map;
 /**
  * Keeps the Queue Info related to the FlowNode scheduled to be executed.
  */
-public class QueueInfoAction extends InvisibleAction implements Serializable {
+public class PipelineQueueInfoAction extends InvisibleAction implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     private final Map<String, FlowNodeQueueData> queueDataByFlowNode;
 
-    public QueueInfoAction() {
+    public PipelineQueueInfoAction() {
         this.queueDataByFlowNode = new HashMap<>();
     }
 
@@ -29,7 +29,7 @@ public class QueueInfoAction extends InvisibleAction implements Serializable {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("QueueInfoAction{");
+        final StringBuilder sb = new StringBuilder("PipelineQueueInfoAction{");
         sb.append("queueDataByFlowNode=").append(queueDataByFlowNode);
         sb.append('}');
         return sb.toString();

@@ -105,6 +105,8 @@ public class BuildPipeline {
                 }
             }
 
+            // As the agent information will be stored in the Allocate node children
+            // we need to propagate the information to the indexed span.
             for(final BuildPipelineNode parentIter : node.getParents()) {
                 parentIter.setPropagatedSecondsInQueue(node.getSecondsInQueue());
             }

@@ -424,13 +424,13 @@ public class BuildPipelineNode {
             return null;
         }
 
-        QueueInfoAction queueInfoAction = run.getAction(QueueInfoAction.class);
-        if (queueInfoAction == null) {
+        PipelineQueueInfoAction pipelineQueueInfoAction = run.getAction(PipelineQueueInfoAction.class);
+        if (pipelineQueueInfoAction == null) {
             logger.fine("Unable to get QueueInfoAction from node '"+node.getDisplayName()+"'. QueueInfoAction is null");
             return null;
         }
 
-        return queueInfoAction.get(node.getId());
+        return pipelineQueueInfoAction.get(node.getId());
     }
 
     private Run<?, ?> getRun(final FlowNode node) {

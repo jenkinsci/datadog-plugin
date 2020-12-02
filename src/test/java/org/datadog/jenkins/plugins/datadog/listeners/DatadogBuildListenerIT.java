@@ -2,11 +2,13 @@ package org.datadog.jenkins.plugins.datadog.listeners;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import datadog.trace.common.writer.ListWriter;
 import datadog.trace.core.DDSpan;
 import hudson.EnvVars;
 import hudson.model.FreeStyleProject;
+import hudson.model.Label;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
@@ -46,6 +48,32 @@ public class DatadogBuildListenerIT {
 
         Jenkins jenkins = jenkinsRule.jenkins;
         jenkins.getGlobalNodeProperties().remove(EnvironmentVariablesNodeProperty.class);
+    }
+
+    @Test
+    public void testTracesQueueTime() throws Exception{
+        final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessQueue");
+        project.setAssignedLabel(Label.get("testBuild"));
+        new Thread(() -> {
+            try {
+                project.scheduleBuild2(0).get();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
+        Thread.sleep(5000);
+        jenkinsRule.createOnlineSlave(Label.get("testBuild"));
+
+        final ListWriter tracerWriter = clientStub.tracerWriter();
+        tracerWriter.waitForTraces(1);
+        assertEquals(1, tracerWriter.size());
+
+        final List<DDSpan> buildTrace = tracerWriter.get(0);
+        assertEquals(1, buildTrace.size());
+
+        final DDSpan buildSpan = buildTrace.get(0);
+        long queueTime = (long) buildSpan.getTag(CITags.QUEUE_TIME);
+        assertTrue(queueTime > 0L);
     }
 
     @Test

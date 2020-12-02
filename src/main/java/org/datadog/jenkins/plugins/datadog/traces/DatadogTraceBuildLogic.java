@@ -15,7 +15,7 @@ import io.opentracing.propagation.Format;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
-import org.datadog.jenkins.plugins.datadog.model.QueueInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
 
@@ -76,8 +76,8 @@ public class DatadogTraceBuildLogic {
         final StageBreakdownAction stageBreakdownAction = new StageBreakdownAction();
         run.addAction(stageBreakdownAction);
 
-        final QueueInfoAction queueInfoAction = new QueueInfoAction();
-        run.addAction(queueInfoAction);
+        final PipelineQueueInfoAction pipelineQueueInfoAction = new PipelineQueueInfoAction();
+        run.addAction(pipelineQueueInfoAction);
     }
 
     public void finishBuildTrace(final BuildData buildData, final Run<?,?> run) {

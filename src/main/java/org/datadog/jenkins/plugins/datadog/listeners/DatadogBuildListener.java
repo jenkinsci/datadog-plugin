@@ -194,7 +194,11 @@ public class DatadogBuildListener extends RunListener<Run> {
             try {
                 long waiting = (DatadogUtilities.currentTimeMillis() - item.getInQueueSince()) / 1000;
                 client.gauge("jenkins.job.waiting", waiting, hostname, tags);
-                buildData.setSecondsInQueue(waiting);
+
+                final BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
+                if(buildSpanAction != null && buildSpanAction.getBuildData() != null) {
+                    buildSpanAction.getBuildData().setSecondsInQueue(waiting);
+                }
             } catch (NullPointerException e) {
                 logger.warning("Unable to compute 'waiting' metric. " +
                         "item.getInQueueSince() unavailable, possibly due to worker instance provisioning");

@@ -1,14 +1,12 @@
 package org.datadog.jenkins.plugins.datadog.listeners;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import datadog.trace.api.DDId;
 import datadog.trace.api.IdGenerationStrategy;
 import datadog.trace.common.writer.ListWriter;
 import datadog.trace.core.DDSpan;
@@ -16,7 +14,6 @@ import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
-import hudson.model.queue.QueueTaskFuture;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import jenkins.model.Jenkins;
 import org.apache.commons.io.IOUtils;
@@ -38,7 +35,6 @@ import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -49,7 +45,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class DatadogGraphListenerTest {
 
