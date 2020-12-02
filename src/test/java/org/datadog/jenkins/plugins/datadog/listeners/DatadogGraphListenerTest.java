@@ -14,7 +14,9 @@ import datadog.trace.common.writer.ListWriter;
 import datadog.trace.core.DDSpan;
 import hudson.EnvVars;
 import hudson.FilePath;
+import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
+import hudson.model.queue.QueueTaskFuture;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import jenkins.model.Jenkins;
 import org.apache.commons.io.IOUtils;
@@ -47,6 +49,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class DatadogGraphListenerTest {
 
@@ -201,6 +204,141 @@ public class DatadogGraphListenerTest {
         assertGitVariables(buildSpan);
     }
 
+    @Test
+    public void testIntegrationPipelineQueueTimeOnStages() throws Exception {
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationQueueTimeOnStages");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineQueueOnStages.txt"),
+                "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        // schedule build and wait for it to get queued
+        new Thread(() -> {
+            try {
+                job.scheduleBuild2(0).get();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
+        Thread.sleep(5000);
+        jenkinsRule.createOnlineSlave(Label.get("testStage"));
+
+        final ListWriter tracerWriter = clientStub.tracerWriter();
+        tracerWriter.waitForTraces(2);
+        assertEquals(2, tracerWriter.size());
+
+        final List<DDSpan> buildTrace = tracerWriter.get(0);
+        assertEquals(1, buildTrace.size());
+        final DDSpan buildSpan = buildTrace.get(0);
+        assertEquals(0L, buildSpan.getTag(CITags.QUEUE_TIME));
+
+        final List<DDSpan> pipelineTrace = tracerWriter.get(1);
+        assertEquals(16, pipelineTrace.size());
+
+        final DDSpan startPipeline = pipelineTrace.get(0);
+        assertEquals(0L, startPipeline.getTag(CITags.QUEUE_TIME));
+
+        final DDSpan stageStart = pipelineTrace.get(1);
+        assertEquals(0L, startPipeline.getTag(CITags.QUEUE_TIME));
+
+        final DDSpan runStages = pipelineTrace.get(2);
+        assertEquals(0L, runStages.getTag(CITags.QUEUE_TIME));
+
+        final DDSpan executeInParallelStart = pipelineTrace.get(3);
+        assertEquals(0L, executeInParallelStart.getTag(CITags.QUEUE_TIME));
+
+        final DDSpan branchStage2 = pipelineTrace.get(4);
+        assertEquals(0L, branchStage2.getTag(CITags.QUEUE_TIME));
+
+        final DDSpan stage2Start = pipelineTrace.get(5);
+        System.out.println("--5 " + stage2Start.getResourceName() + ", " + stage2Start.getTag(CITags.QUEUE_TIME));
+        assertEquals(0L, stage2Start.getTag(CITags.QUEUE_TIME));
+
+        final DDSpan stage2 = pipelineTrace.get(6);
+        long stage2QueueTime = (long) stage2.getTag(CITags.QUEUE_TIME);
+        assertTrue(stage2QueueTime > 0L);
+
+        final DDSpan allocateNodeStart2 = pipelineTrace.get(7);
+        assertEquals(stage2QueueTime, allocateNodeStart2.getTag(CITags.QUEUE_TIME));
+
+        final DDSpan allocateNodeBodyStart2 = pipelineTrace.get(8);
+        assertEquals(0L, allocateNodeBodyStart2.getTag(CITags.QUEUE_TIME));
+
+        final DDSpan stepStage2 = pipelineTrace.get(9);
+        assertEquals(0L, stepStage2.getTag(CITags.QUEUE_TIME));
+
+        final DDSpan branchStage1 = pipelineTrace.get(10);
+        assertEquals(0L, branchStage1.getTag(CITags.QUEUE_TIME));
+
+        final DDSpan stage1Start = pipelineTrace.get(11);
+        assertEquals(0L, stage1Start.getTag(CITags.QUEUE_TIME));
+
+        final DDSpan stage1 = pipelineTrace.get(12);
+        long stage1QueueTime = (long) stage1.getTag(CITags.QUEUE_TIME);
+        assertTrue(stage1QueueTime > 0L);
+
+        final DDSpan allocateNodeStart1 = pipelineTrace.get(13);
+        assertEquals(stage1QueueTime, allocateNodeStart1.getTag(CITags.QUEUE_TIME));
+
+        final DDSpan allocateNodeBodyStart1 = pipelineTrace.get(14);
+        assertEquals(0L, allocateNodeBodyStart1.getTag(CITags.QUEUE_TIME));
+
+        final DDSpan stepStage1 = pipelineTrace.get(15);
+        assertEquals(0L, stepStage1.getTag(CITags.QUEUE_TIME));
+    }
+
+
+    @Test
+    public void testIntegrationPipelineQueueTimeOnPipeline() throws Exception {
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationQueueTimeOnPipeline");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineQueueOnPipeline.txt"),
+                "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+
+        // schedule build and wait for it to get queued
+        new Thread(() -> {
+            try {
+                job.scheduleBuild2(0).get();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
+        Thread.sleep(5000);
+        jenkinsRule.createOnlineSlave(Label.get("testPipeline"));
+
+        final ListWriter tracerWriter = clientStub.tracerWriter();
+        tracerWriter.waitForTraces(2);
+        assertEquals(2, tracerWriter.size());
+
+        final List<DDSpan> buildTrace = tracerWriter.get(0);
+        assertEquals(1, buildTrace.size());
+        final DDSpan buildSpan = buildTrace.get(0);
+        long queueTime = (long) buildSpan.getTag(CITags.QUEUE_TIME);
+        assertTrue(queueTime > 0L);
+
+        final List<DDSpan> pipelineTrace = tracerWriter.get(1);
+        assertEquals(6, pipelineTrace.size());
+
+        final DDSpan startPipeline = pipelineTrace.get(0);
+        assertEquals(queueTime, startPipeline.getTag(CITags.QUEUE_TIME));
+
+        final DDSpan allocateNode = pipelineTrace.get(1);
+        assertEquals(queueTime, allocateNode.getTag(CITags.QUEUE_TIME));
+
+        final DDSpan allocateNodeStart = pipelineTrace.get(2);
+        assertEquals(0L, allocateNodeStart.getTag(CITags.QUEUE_TIME));
+
+        final DDSpan stageStart = pipelineTrace.get(3);
+        assertEquals(0L, stageStart.getTag(CITags.QUEUE_TIME));
+
+        final DDSpan stage = pipelineTrace.get(4);
+        assertEquals(0L, stage.getTag(CITags.QUEUE_TIME));
+
+        final DDSpan step = pipelineTrace.get(5);
+        assertEquals(0L, step.getTag(CITags.QUEUE_TIME));
+    }
 
     @Test
     public void testIntegrationNoFailureTag() throws Exception {
@@ -341,6 +479,7 @@ public class DatadogGraphListenerTest {
         assertEquals("test", stepAtomSpan.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));
         assertNotNull(stepAtomSpan.getTag(CITags.QUEUE_TIME));
     }
+
 
     @Test
     public void testIntegrationTracesDisabled() throws Exception{

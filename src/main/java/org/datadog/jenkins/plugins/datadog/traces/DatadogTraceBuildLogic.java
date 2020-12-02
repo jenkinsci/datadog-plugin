@@ -115,9 +115,7 @@ public class DatadogTraceBuildLogic {
         buildSpan.setTag(prefix + CITags._ID, buildData.getBuildTag(""));
         buildSpan.setTag(prefix + CITags._NUMBER, buildData.getBuildNumber(""));
         buildSpan.setTag(prefix + CITags._URL, buildData.getBuildUrl(""));
-        buildSpan.setTag(CITags.QUEUE_TIME, buildData.getSecondsInQueue(-1L) == -1L ?
-                Math.max(Math.max(pipelineData.getSecondsInQueue(-1L), pipelineData.getPropagatedSecondsInQueue(-1L)),0) :
-                Math.max(buildData.getSecondsInQueue(-1L), 0));
+        buildSpan.setTag(CITags.QUEUE_TIME, getSecondsInQueue(buildData, pipelineData));
 
         final String workspace = buildData.getWorkspace("").isEmpty() ? pipelineData.getWorkspace("") : buildData.getWorkspace("");
         buildSpan.setTag(CITags.WORKSPACE_PATH, workspace);
@@ -205,6 +203,16 @@ public class DatadogTraceBuildLogic {
         }
 
         buildSpan.finish(endTimeMicros);
+    }
+
+    private long getSecondsInQueue(BuildData buildData, BuildData pipelineData) {
+        if(buildData.getSecondsInQueue(-1L) != -1L) {
+            return Math.max(buildData.getSecondsInQueue(-1L), 0);
+        } else {
+            final long secsInQueue = pipelineData.getSecondsInQueue(-1L);
+            final long propagatedSecsInQueue = pipelineData.getPropagatedSecondsInQueue(-1L);
+            return Math.max(Math.max(secsInQueue, propagatedSecsInQueue), 0);
+        }
     }
 
     protected BuildSpanManager getBuildSpanManager() {
