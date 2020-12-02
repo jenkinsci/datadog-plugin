@@ -246,7 +246,6 @@ public class DatadogGraphListenerTest {
         assertEquals(0L, branchStage2.getTag(CITags.QUEUE_TIME));
 
         final DDSpan stage2Start = pipelineTrace.get(5);
-        System.out.println("--5 " + stage2Start.getResourceName() + ", " + stage2Start.getTag(CITags.QUEUE_TIME));
         assertEquals(0L, stage2Start.getTag(CITags.QUEUE_TIME));
 
         final DDSpan stage2 = pipelineTrace.get(6);
