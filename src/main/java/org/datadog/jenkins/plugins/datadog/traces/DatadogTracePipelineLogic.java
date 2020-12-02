@@ -361,18 +361,12 @@ public class DatadogTracePipelineLogic {
         tags.put(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._ID, buildData.getBuildTag(""));
 
         // Propagate Stage Name
-        final List<BuildPipelineNode> parents = current.getParents();
-        for(final BuildPipelineNode parent : parents) {
-            // If the Stage is found, the tags are set and the loop is finished.
-            if(BuildPipelineNode.NodeType.STAGE.equals(parent.getType())){
-                tags.put(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME, parent.getName());
-                break;
-            }
+        if(!BuildPipelineNode.NodeType.STAGE.equals(current.getType()) && current.getStageName() != null) {
+            tags.put(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME, current.getStageName());
         }
 
         return tags;
     }
-
 
     private String buildOperationName(BuildPipelineNode current) {
         return CI_PROVIDER + "." + current.getType().name().toLowerCase() + ((current.isInternal()) ? ".internal" : "");

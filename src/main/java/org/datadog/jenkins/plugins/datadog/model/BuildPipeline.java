@@ -105,6 +105,15 @@ public class BuildPipeline {
                 }
             }
 
+            // Propagate Stage Name to its children
+            if(!BuildPipelineNode.NodeType.STAGE.equals(node.getType())) {
+                if(BuildPipelineNode.NodeType.STAGE.equals(parent.getType())) {
+                    node.setStageName(parent.getName());
+                } else if(parent.getStageName() != null){
+                    node.setStageName(parent.getStageName());
+                }
+            }
+
             completeInformation(node.getChildren(), node);
         }
     }
@@ -118,7 +127,6 @@ public class BuildPipeline {
         if(pathStages.size() == 1){
             final BuildPipelineNode child = parent.getChild(buildNodeKey);
             if (child == null) {
-                stage.addParent(parent);
                 parent.addChild(stage);
             } else {
                 child.updateData(stage);
