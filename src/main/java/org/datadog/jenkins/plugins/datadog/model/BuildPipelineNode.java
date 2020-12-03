@@ -60,6 +60,7 @@ public class BuildPipelineNode {
     private final List<BuildPipelineNode> children;
     private final String id;
     private final String name;
+    private String stageName;
 
     private NodeType type;
     private boolean internal;
@@ -199,6 +200,14 @@ public class BuildPipelineNode {
         return name;
     }
 
+    public String getStageName() {
+        return stageName;
+    }
+
+    public void setStageName(String stageName) {
+        this.stageName = stageName;
+    }
+
     public boolean isInternal() {
         return internal;
     }
@@ -290,6 +299,7 @@ public class BuildPipelineNode {
 
     // Used during the tree is being built in BuildPipeline class.
     public void updateData(final BuildPipelineNode buildNode) {
+        this.stageName = buildNode.stageName;
         this.type = buildNode.type;
         this.internal = buildNode.internal;
         this.args = buildNode.args;
@@ -306,14 +316,12 @@ public class BuildPipelineNode {
         this.error = buildNode.error;
         this.errorObj = buildNode.errorObj;
         this.generatedSpanId = buildNode.generatedSpanId;
+        this.parents.addAll(buildNode.parents);
     }
 
     public void addChild(final BuildPipelineNode child) {
         children.add(child);
-    }
-
-    public void addParent(BuildPipelineNode parent) {
-        parents.add(parent);
+        child.parents.add(this);
     }
 
     @Override
