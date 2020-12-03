@@ -105,6 +105,15 @@ public class BuildPipeline {
                 }
             }
 
+            // Propagate Stage Name to its children
+            if(!BuildPipelineNode.NodeType.STAGE.equals(node.getType())) {
+                if(BuildPipelineNode.NodeType.STAGE.equals(parent.getType())) {
+                    node.setStageName(parent.getName());
+                } else if(parent.getStageName() != null){
+                    node.setStageName(parent.getStageName());
+                }
+            }
+
             // As the agent information will be stored in the Allocate node children
             // we need to propagate the information to the indexed span.
             for(final BuildPipelineNode parentIter : node.getParents()) {

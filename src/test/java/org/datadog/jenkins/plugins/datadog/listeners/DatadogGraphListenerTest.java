@@ -200,6 +200,60 @@ public class DatadogGraphListenerTest {
     }
 
     @Test
+    public void testStageNamePropagation() throws Exception{
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationStages");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineStages.txt"),
+                "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        new Thread(() -> {
+            try {
+                job.scheduleBuild2(0).get();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
+        jenkinsRule.createOnlineSlave(Label.get("testStageName"));
+
+        final ListWriter tracerWriter = clientStub.tracerWriter();
+        tracerWriter.waitForTraces(2);
+        assertEquals(2, tracerWriter.size());
+
+        final List<DDSpan> buildTrace = tracerWriter.get(0);
+        assertEquals(1, buildTrace.size());
+
+        final List<DDSpan> pipelineTrace = tracerWriter.get(1);
+        assertEquals(16, pipelineTrace.size());
+
+        final DDSpan stage2 = pipelineTrace.get(6);
+        final String stage2Name = (String) stage2.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME);
+        assertTrue(stage2Name != null && !stage2Name.isEmpty());
+
+        final DDSpan allocateNodeStart2 = pipelineTrace.get(7);
+        assertEquals(stage2Name, allocateNodeStart2.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));
+
+        final DDSpan allocateNodeBodyStart2 = pipelineTrace.get(8);
+        assertEquals(stage2Name, allocateNodeBodyStart2.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));
+
+        final DDSpan stepStage2 = pipelineTrace.get(9);
+        assertEquals(stage2Name, stepStage2.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));
+
+        final DDSpan stage1 = pipelineTrace.get(12);
+        final String stage1Name = (String) stage1.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME);
+        assertTrue(stage1Name != null && !stage1Name.isEmpty());
+
+        final DDSpan allocateNodeStart1 = pipelineTrace.get(13);
+        assertEquals(stage1Name, allocateNodeStart1.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));
+
+        final DDSpan allocateNodeBodyStart1 = pipelineTrace.get(14);
+        assertEquals(stage1Name, allocateNodeBodyStart1.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));
+
+        final DDSpan stepStage1 = pipelineTrace.get(15);
+        assertEquals(stage1Name, stepStage1.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));
+    }
+
+    @Test
     public void testIntegrationPipelineQueueTimeOnStages() throws Exception {
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationQueueTimeOnStages");
         String definition = IOUtils.toString(
@@ -218,12 +272,14 @@ public class DatadogGraphListenerTest {
         Thread.sleep(5000);
         jenkinsRule.createOnlineSlave(Label.get("testStage"));
 
+
         final ListWriter tracerWriter = clientStub.tracerWriter();
         tracerWriter.waitForTraces(2);
         assertEquals(2, tracerWriter.size());
 
         final List<DDSpan> buildTrace = tracerWriter.get(0);
         assertEquals(1, buildTrace.size());
+
         final DDSpan buildSpan = buildTrace.get(0);
         assertEquals(0L, buildSpan.getTag(CITags.QUEUE_TIME));
 
@@ -504,6 +560,8 @@ public class DatadogGraphListenerTest {
         tracerWriter.waitForTraces(0);
         assertEquals(0, tracerWriter.size());
     }
+
+
 
 
     @Test
