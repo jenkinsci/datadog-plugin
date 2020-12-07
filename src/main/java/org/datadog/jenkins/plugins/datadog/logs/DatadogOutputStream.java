@@ -27,14 +27,25 @@ package org.datadog.jenkins.plugins.datadog.logs;
 
 import hudson.console.ConsoleNote;
 import hudson.console.LineTransformationOutputStream;
+import hudson.model.AbstractBuild;
+import hudson.model.Run;
+import org.jenkinsci.plugins.credentialsbinding.masking.SecretPatterns;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collection;
+import java.util.Map;
+import java.util.WeakHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class DatadogOutputStream extends LineTransformationOutputStream {
     private OutputStream delegate;
     private DatadogWriter writer;
+    private Run<?, ?> run;
+    private Pattern p;
 
+    private final static Map<AbstractBuild<?, ?>, Collection<String>> secretsForBuild = new WeakHashMap<>();
 
     public DatadogOutputStream(OutputStream delegate, DatadogWriter writer) {
         super();
@@ -42,14 +53,45 @@ public class DatadogOutputStream extends LineTransformationOutputStream {
         this.writer = writer;
     }
 
+    public DatadogOutputStream(OutputStream delegate, DatadogWriter writer, Run<?, ?> run) {
+        super();
+        this.delegate = delegate;
+        this.writer = writer;
+        this.run = run;
+    }
+
+    public static Pattern getPatternForBuild(AbstractBuild<?, ?> build) {
+        if (secretsForBuild.containsKey(build)) {
+            return SecretPatterns.getAggregateSecretPattern(secretsForBuild.get(build));
+        } else {
+            return null;
+        }
+    }
+
     @Override
     protected void eol(byte[] b, int len) throws IOException {
         delegate.write(b, 0, len);
         this.flush();
 
+        if (p == null) {
+            p = getPatternForBuild((AbstractBuild<?, ?>) run);
+        }
+
         String line = new String(b, 0, len, writer.getCharset());
         line = ConsoleNote.removeNotes(line).trim();
-        writer.write(line);
+
+        String filteredLine = filterCredentials(line);
+        writer.write(filteredLine);
+    }
+
+    private String filterCredentials(String line) {
+        Matcher m = p.matcher(line);
+
+        if (m.find()) {
+            line = m.replaceAll("****");
+        }
+
+        return line;
     }
 
     @Override
