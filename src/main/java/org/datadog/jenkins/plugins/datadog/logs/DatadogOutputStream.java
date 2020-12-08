@@ -29,7 +29,6 @@ import hudson.console.ConsoleNote;
 import hudson.console.LineTransformationOutputStream;
 import hudson.model.AbstractBuild;
 import hudson.model.Run;
-import org.jenkinsci.plugins.credentialsbinding.masking.SecretPatterns;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -62,11 +61,18 @@ public class DatadogOutputStream extends LineTransformationOutputStream {
 
     public static Pattern getPatternForBuild(AbstractBuild<?, ?> build) {
         if (secretsForBuild.containsKey(build)) {
-            return SecretPatterns.getAggregateSecretPattern(secretsForBuild.get(build));
+            return getAggregateSecretPattern(secretsForBuild.get(build));
         } else {
             return null;
         }
     }
+
+    public static Pattern getAggregateSecretPattern(Collection<String> inputs) {
+        // dummy input, would eventually need to scale to all forms of Secrets
+        String pattern = "hello";
+        return Pattern.compile(pattern);
+    }
+
 
     @Override
     protected void eol(byte[] b, int len) throws IOException {
