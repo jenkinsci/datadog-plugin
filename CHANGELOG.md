@@ -1,5 +1,19 @@
 Changes
 =======
+## 2.5.0 / 2020-12-14
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.4.0...datadog-2.5.0
+
+### Changes
+* [Added] Add stage breakdown to Jenkins Build/Pipelines traces.. See [#158](https://github.com/jenkinsci/datadog-plugin/pull/158).
+* [Added] Add new plugin metrics . See [#156](https://github.com/jenkinsci/datadog-plugin/pull/156). Thanks [hoshsadiq](https://github.com/hoshsadiq).
+* [Added] Add git.default_branch tag to Jenkins Build/Pipeline traces. See [#150](https://github.com/jenkinsci/datadog-plugin/pull/150).
+* [Added] Propagate CI parents tags in Jenkins Pipelines traces. See [#149](https://github.com/jenkinsci/datadog-plugin/pull/149).
+* [Fixed] Fix stage.name propagation for all children jobs in Jenkins Pipelines. See [#160](https://github.com/jenkinsci/datadog-plugin/pull/160).
+* [Fixed] Fix API key form validation. See [#154](https://github.com/jenkinsci/datadog-plugin/pull/154).
+* [Fixed] Configure hostname in the tracer. See [#151](https://github.com/jenkinsci/datadog-plugin/pull/151).
+* [Changed] Add dec and hex flavour to the environment variable trace IDs.. See [#152](https://github.com/jenkinsci/datadog-plugin/pull/152).
+
 # 2.4.0 / 2020-10-16
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.3.0...datadog-2.4.0
