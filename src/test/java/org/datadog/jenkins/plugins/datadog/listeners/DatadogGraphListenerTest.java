@@ -442,6 +442,7 @@ public class DatadogGraphListenerTest {
         assertEquals("jenkins-pipelineIntegrationSuccess-1", buildSpan.getTag(CITags.JENKINS_TAG));
         assertEquals(false, buildSpan.getTag(CITags._DD_CI_INTERNAL));
         assertEquals(BuildPipelineNode.NodeType.PIPELINE.getBuildLevel(), buildSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
+        assertEquals(BuildPipelineNode.NodeType.PIPELINE.getBuildLevel(), buildSpan.getTag(CITags._DD_CI_LEVEL));
         assertNotNull(buildSpan.getTag(CITags._DD_CI_STAGES));
         assertTrue(((String) buildSpan.getTag(CITags._DD_CI_STAGES)).contains("{\"name\":\"test\",\"duration\""));
 
@@ -463,6 +464,7 @@ public class DatadogGraphListenerTest {
         assertNotNull(pipelineSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals(true, pipelineSpan.getTag(CITags._DD_CI_INTERNAL));
         assertNull(pipelineSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
+        assertNull(pipelineSpan.getTag(CITags._DD_CI_LEVEL));
         assertEquals("jenkins-pipelineIntegrationSuccess-1", pipelineSpan.getTag(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._ID));
         assertEquals("pipelineIntegrationSuccess", pipelineSpan.getTag(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._NAME));
         assertNotNull(pipelineSpan.getTag(CITags.QUEUE_TIME));
@@ -484,6 +486,7 @@ public class DatadogGraphListenerTest {
         assertEquals(true, stepInternalSpan.getTag(CITags._DD_CI_INTERNAL));
         assertEquals("3", stepInternalSpan.getTag(stepPrefix + CITags._NUMBER));
         assertNull(stepInternalSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
+        assertNull(stepInternalSpan.getTag(CITags._DD_CI_LEVEL));
         assertEquals("jenkins-pipelineIntegrationSuccess-1", stepInternalSpan.getTag(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._ID));
         assertEquals("pipelineIntegrationSuccess", stepInternalSpan.getTag(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._NAME));
         assertNotNull(stepInternalSpan.getTag(CITags.QUEUE_TIME));
@@ -504,6 +507,7 @@ public class DatadogGraphListenerTest {
         assertEquals(false, stageSpan.getTag(CITags._DD_CI_INTERNAL));
         assertEquals("4", stageSpan.getTag(stagePrefix + CITags._NUMBER));
         assertEquals(BuildPipelineNode.NodeType.STAGE.getBuildLevel(), stageSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
+        assertEquals(BuildPipelineNode.NodeType.STAGE.getBuildLevel(), stageSpan.getTag(CITags._DD_CI_LEVEL));
         assertEquals("jenkins-pipelineIntegrationSuccess-1", stageSpan.getTag(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._ID));
         assertEquals("pipelineIntegrationSuccess", stageSpan.getTag(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._NAME));
         assertNotNull(stageSpan.getTag(CITags.QUEUE_TIME));
@@ -525,6 +529,7 @@ public class DatadogGraphListenerTest {
         assertEquals(false, stepAtomSpan.getTag(CITags._DD_CI_INTERNAL));
         assertEquals("5", stepAtomSpan.getTag(stepPrefix + CITags._NUMBER));
         assertEquals(BuildPipelineNode.NodeType.STEP.getBuildLevel(), stepAtomSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
+        assertEquals(BuildPipelineNode.NodeType.STEP.getBuildLevel(), stepAtomSpan.getTag(CITags._DD_CI_LEVEL));
         assertEquals("jenkins-pipelineIntegrationSuccess-1", stepAtomSpan.getTag(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._ID));
         assertEquals("pipelineIntegrationSuccess", stepAtomSpan.getTag(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._NAME));
         assertEquals("test", stepAtomSpan.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));

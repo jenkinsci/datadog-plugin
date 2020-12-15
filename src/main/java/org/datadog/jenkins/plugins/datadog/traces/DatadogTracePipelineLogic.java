@@ -291,6 +291,7 @@ public class DatadogTracePipelineLogic {
         tags.put(CITags._DD_CI_INTERNAL, current.isInternal());
         if(!current.isInternal()) {
             tags.put(CITags._DD_CI_BUILD_LEVEL, buildLevel);
+            tags.put(CITags._DD_CI_LEVEL, buildLevel);
         }
         tags.put(CITags.JENKINS_RESULT, current.getResult().toLowerCase());
         tags.put(CITags.ERROR, String.valueOf(current.isError()));

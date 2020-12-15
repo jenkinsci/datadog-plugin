@@ -8,7 +8,9 @@ public class CITags {
     public static final String QUEUE_TIME = "ci.queue_time";
     public static final String _DD_HOSTNAME = "_dd.hostname";
     public static final String _DD_CI_INTERNAL = "_dd.ci.internal";
-    public static final String _DD_CI_BUILD_LEVEL = "_dd.ci.build_level";
+    public static final String _DD_CI_LEVEL = "_dd.ci.level";
+    @Deprecated
+    public static final String _DD_CI_BUILD_LEVEL = "_dd.ci.build_level"; //Maintain retrocompatibility
     public static final String _DD_CI_STAGES = "_dd.ci.stages";
 
     public static final String _ID = ".id";
