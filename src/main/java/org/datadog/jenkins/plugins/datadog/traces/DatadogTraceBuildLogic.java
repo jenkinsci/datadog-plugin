@@ -111,6 +111,7 @@ public class DatadogTraceBuildLogic {
         buildSpan.setTag(DDTags.LANGUAGE_TAG_KEY, "");
         buildSpan.setTag(CITags._DD_CI_INTERNAL, false);
         buildSpan.setTag(CITags._DD_CI_BUILD_LEVEL, buildLevel);
+        buildSpan.setTag(CITags._DD_CI_LEVEL, buildLevel);
         buildSpan.setTag(CITags.USER_NAME, buildData.getUserId());
         buildSpan.setTag(prefix + CITags._ID, buildData.getBuildTag(""));
         buildSpan.setTag(prefix + CITags._NUMBER, buildData.getBuildNumber(""));
