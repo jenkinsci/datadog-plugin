@@ -64,6 +64,7 @@ public class BuildPipelineNode {
 
     private NodeType type;
     private boolean internal;
+    private boolean initial;
     private Map<String, Object> args = new HashMap<>();
     private Map<String, String> envVars = new HashMap<>();
     private String workspace;
@@ -116,6 +117,7 @@ public class BuildPipelineNode {
             // the pipeline node span is a child of the build span.
             this.type = NodeType.STEP;
             this.internal = true;
+            this.initial = true;
         } else if(DatadogUtilities.isStageNode(startNode)){
             this.type = NodeType.STAGE;
             this.internal = false;
@@ -226,6 +228,10 @@ public class BuildPipelineNode {
         return internal;
     }
 
+    public boolean isInitial() {
+        return initial;
+    }
+
     public Map<String, Object> getArgs() {
         return args;
     }
@@ -332,6 +338,7 @@ public class BuildPipelineNode {
         this.stageName = buildNode.stageName;
         this.type = buildNode.type;
         this.internal = buildNode.internal;
+        this.initial = buildNode.initial;
         this.args = buildNode.args;
         this.envVars = buildNode.envVars;
         this.workspace = buildNode.workspace;
