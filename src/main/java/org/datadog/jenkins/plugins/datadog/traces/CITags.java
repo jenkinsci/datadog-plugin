@@ -5,6 +5,7 @@ public class CITags {
     public static final String STATUS = "ci.status";
     public static final String WORKSPACE_PATH = "ci.workspace_path";
     public static final String NODE_NAME = "ci.node.name";
+    public static final String QUEUE_TIME = "ci.queue_time";
     public static final String _DD_HOSTNAME = "_dd.hostname";
     public static final String _DD_CI_INTERNAL = "_dd.ci.internal";
     public static final String _DD_CI_BUILD_LEVEL = "_dd.ci.build_level";
@@ -17,7 +18,6 @@ public class CITags {
     @Deprecated
     public static final String _RESULT = ".result"; //Maintain retrocompatibility
     public static final String _CONFIGURATION = ".configuration";
-    public static final String _QUEUE_TIME = ".queue_time";
 
     public static final String CI_PROVIDER_NAME = "ci.provider.name";
     public static final String USER_NAME = "user.name";

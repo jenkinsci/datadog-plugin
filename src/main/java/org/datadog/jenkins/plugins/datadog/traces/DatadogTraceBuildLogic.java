@@ -15,9 +15,9 @@ import io.opentracing.propagation.Format;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
-import org.datadog.jenkins.plugins.datadog.model.TimeInQueueAction;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -75,6 +75,9 @@ public class DatadogTraceBuildLogic {
 
         final StageBreakdownAction stageBreakdownAction = new StageBreakdownAction();
         run.addAction(stageBreakdownAction);
+
+        final PipelineQueueInfoAction pipelineQueueInfoAction = new PipelineQueueInfoAction();
+        run.addAction(pipelineQueueInfoAction);
     }
 
     public void finishBuildTrace(final BuildData buildData, final Run<?,?> run) {
@@ -112,11 +115,7 @@ public class DatadogTraceBuildLogic {
         buildSpan.setTag(prefix + CITags._ID, buildData.getBuildTag(""));
         buildSpan.setTag(prefix + CITags._NUMBER, buildData.getBuildNumber(""));
         buildSpan.setTag(prefix + CITags._URL, buildData.getBuildUrl(""));
-
-        final TimeInQueueAction timeInQueueAction = run.getAction(TimeInQueueAction.class);
-        if(timeInQueueAction != null) {
-            buildSpan.setTag(prefix + CITags._QUEUE_TIME, timeInQueueAction.getSecondsInQueue());
-        }
+        buildSpan.setTag(CITags.QUEUE_TIME, getSecondsInQueue(buildData, pipelineData));
 
         final String workspace = buildData.getWorkspace("").isEmpty() ? pipelineData.getWorkspace("") : buildData.getWorkspace("");
         buildSpan.setTag(CITags.WORKSPACE_PATH, workspace);
@@ -205,6 +204,16 @@ public class DatadogTraceBuildLogic {
         }
 
         buildSpan.finish(endTimeMicros);
+    }
+
+    private long getSecondsInQueue(BuildData buildData, BuildData pipelineData) {
+        if(buildData.getSecondsInQueue(-1L) != -1L) {
+            return Math.max(buildData.getSecondsInQueue(-1L), 0);
+        } else {
+            final long secsInQueue = pipelineData.getSecondsInQueue(-1L);
+            final long propagatedSecsInQueue = pipelineData.getPropagatedSecondsInQueue(-1L);
+            return Math.max(Math.max(secsInQueue, propagatedSecsInQueue), 0);
+        }
     }
 
     protected BuildSpanManager getBuildSpanManager() {

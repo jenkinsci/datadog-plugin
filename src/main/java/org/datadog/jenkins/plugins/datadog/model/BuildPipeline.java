@@ -114,6 +114,18 @@ public class BuildPipeline {
                 }
             }
 
+            // Propagate queue time from "Allocate node" child:
+            // If the node is the initial (Start of Pipeline) or is a Stage,
+            // we need to propagate the queue time stored in its child node ("Allocate node").
+            // This is necessary because the stage/pipeline node does not have the queue time itself,
+            // but it's stored in the "Allocate node" which is its child.
+            if((node.isInitial() || BuildPipelineNode.NodeType.STAGE.equals(node.getType())) && node.getChildren().size() == 1){
+                BuildPipelineNode child = node.getChildren().get(0);
+                if(child.getName().contains("Allocate node")) {
+                    node.setPropagatedSecondsInQueue(child.getSecondsInQueue());
+                }
+            }
+
             completeInformation(node.getChildren(), node);
         }
     }

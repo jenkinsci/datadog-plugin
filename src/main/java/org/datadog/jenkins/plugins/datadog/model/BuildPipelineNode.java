@@ -64,6 +64,7 @@ public class BuildPipelineNode {
 
     private NodeType type;
     private boolean internal;
+    private boolean initial;
     private Map<String, Object> args = new HashMap<>();
     private Map<String, String> envVars = new HashMap<>();
     private String workspace;
@@ -74,6 +75,8 @@ public class BuildPipelineNode {
     private long startTimeMicros;
     private long endTime;
     private long endTimeMicros;
+    private long secondsInQueue = -1L;
+    private long propagatedSecondsInQueue = -1L;
     private String result;
 
     // Flag that indicates if the node must be marked as error.
@@ -114,6 +117,7 @@ public class BuildPipelineNode {
             // the pipeline node span is a child of the build span.
             this.type = NodeType.STEP;
             this.internal = true;
+            this.initial = true;
         } else if(DatadogUtilities.isStageNode(startNode)){
             this.type = NodeType.STAGE;
             this.internal = false;
@@ -133,7 +137,11 @@ public class BuildPipelineNode {
                 this.nodeHostname = stepData.getNodeHostname();
                 this.generatedSpanId = getGeneratedSpanId(endNode);
             }
+        }
 
+        final FlowNodeQueueData queueData = getQueueData(startNode);
+        if(queueData != null) {
+            this.secondsInQueue = queueData.getSecondsInQueue();
         }
 
         this.logText = getLogText(endNode);
@@ -147,6 +155,8 @@ public class BuildPipelineNode {
             this.error = true;
         }
     }
+
+
 
     private DDId getGeneratedSpanId(final FlowNode node) {
         GeneratedSpanIdAction action = node.getAction(GeneratedSpanIdAction.class);
@@ -176,6 +186,11 @@ public class BuildPipelineNode {
             this.generatedSpanId = getGeneratedSpanId(stepNode);
         }
 
+        final FlowNodeQueueData queueData = getQueueData(stepNode);
+        if(queueData != null) {
+            this.secondsInQueue = queueData.getSecondsInQueue();
+        }
+
         this.logText = getLogText(stepNode);
         this.startTime = getTime(stepNode);
         this.startTimeMicros = this.startTime * 1000;
@@ -187,6 +202,7 @@ public class BuildPipelineNode {
             this.error = true;
         }
     }
+
 
     public BuildPipelineNodeKey getKey() {
         return key;
@@ -210,6 +226,10 @@ public class BuildPipelineNode {
 
     public boolean isInternal() {
         return internal;
+    }
+
+    public boolean isInitial() {
+        return initial;
     }
 
     public Map<String, Object> getArgs() {
@@ -252,9 +272,25 @@ public class BuildPipelineNode {
         return endTimeMicros;
     }
 
+    public long getSecondsInQueue() {
+        return secondsInQueue;
+    }
+
     public void setEndTime(long endTime) {
         this.endTime = endTime;
         this.endTimeMicros = this.endTime * 1000;
+    }
+
+    public void setSecondsInQueue(long secondsInQueue) {
+        this.secondsInQueue = secondsInQueue;
+    }
+
+    public long getPropagatedSecondsInQueue() {
+        return propagatedSecondsInQueue;
+    }
+
+    public void setPropagatedSecondsInQueue(long propagatedSecondsInQueue) {
+        this.propagatedSecondsInQueue = propagatedSecondsInQueue;
     }
 
     public String getResult() {
@@ -302,6 +338,7 @@ public class BuildPipelineNode {
         this.stageName = buildNode.stageName;
         this.type = buildNode.type;
         this.internal = buildNode.internal;
+        this.initial = buildNode.initial;
         this.args = buildNode.args;
         this.envVars = buildNode.envVars;
         this.workspace = buildNode.workspace;
@@ -312,6 +349,7 @@ public class BuildPipelineNode {
         this.startTimeMicros = buildNode.startTimeMicros;
         this.endTime = buildNode.endTime;
         this.endTimeMicros = buildNode.endTimeMicros;
+        this.secondsInQueue = buildNode.secondsInQueue;
         this.result = buildNode.result;
         this.error = buildNode.error;
         this.errorObj = buildNode.errorObj;
@@ -390,6 +428,22 @@ public class BuildPipelineNode {
         }
 
         return stepDataAction.get(((StepNode) node).getDescriptor());
+    }
+
+    private FlowNodeQueueData getQueueData(FlowNode node) {
+        final Run<?, ?> run = getRun(node);
+        if(run == null) {
+            logger.fine("Unable to get QueueData from node '"+node.getDisplayName()+"'. Run is null");
+            return null;
+        }
+
+        PipelineQueueInfoAction pipelineQueueInfoAction = run.getAction(PipelineQueueInfoAction.class);
+        if (pipelineQueueInfoAction == null) {
+            logger.fine("Unable to get QueueInfoAction from node '"+node.getDisplayName()+"'. QueueInfoAction is null");
+            return null;
+        }
+
+        return pipelineQueueInfoAction.get(node.getId());
     }
 
     private Run<?, ?> getRun(final FlowNode node) {

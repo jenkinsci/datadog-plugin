@@ -1,6 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getNormalizedResultForTraces;
+import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.NodeType.PIPELINE;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 
@@ -131,6 +132,8 @@ public class DatadogTracePipelineLogic {
         if(pipelineNode == null){
             return;
         }
+
+        buildData.setPropagatedSecondsInQueue(Math.max(pipelineNode.getSecondsInQueue(), pipelineNode.getPropagatedSecondsInQueue()));
 
         final String gitBranch = pipelineNode.getEnvVars().get("GIT_BRANCH");
         if(gitBranch != null && buildData.getBranch("").isEmpty()) {
@@ -269,6 +272,14 @@ public class DatadogTracePipelineLogic {
         tags.put(prefix + CITags._RESULT, status);
         tags.put(CITags.STATUS, status);
 
+        // If the concrete queue time for this node is not set
+        // we look for the queue time propagated by its children.
+        if(current.getSecondsInQueue() == -1L) {
+            tags.put(CITags.QUEUE_TIME, Math.max(current.getPropagatedSecondsInQueue(), 0));
+        } else {
+            tags.put(CITags.QUEUE_TIME, Math.max(current.getSecondsInQueue(), 0));
+        }
+
         final String url = envVars.get("BUILD_URL") != null ? envVars.get("BUILD_URL") : buildData.getBuildUrl("");
         if(StringUtils.isNotBlank(url)) {
             tags.put(prefix + CITags._URL, url + "execution/node/"+current.getId()+"/");
@@ -359,8 +370,8 @@ public class DatadogTracePipelineLogic {
 
         // Propagate Pipeline Name
         final JobNameWrapper jobNameWrapper = new JobNameWrapper(buildData.getJobName(""), gitBranch != null ? gitBranch : gitTag);
-        tags.put(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._NAME, jobNameWrapper.getTraceJobName());
-        tags.put(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._ID, buildData.getBuildTag(""));
+        tags.put(PIPELINE.getTagName() + CITags._NAME, jobNameWrapper.getTraceJobName());
+        tags.put(PIPELINE.getTagName() + CITags._ID, buildData.getBuildTag(""));
 
         // Propagate Stage Name
         if(!BuildPipelineNode.NodeType.STAGE.equals(current.getType()) && current.getStageName() != null) {

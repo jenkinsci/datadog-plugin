@@ -2,11 +2,13 @@ package org.datadog.jenkins.plugins.datadog.listeners;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import datadog.trace.common.writer.ListWriter;
 import datadog.trace.core.DDSpan;
 import hudson.EnvVars;
 import hudson.model.FreeStyleProject;
+import hudson.model.Label;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
@@ -49,6 +51,32 @@ public class DatadogBuildListenerIT {
     }
 
     @Test
+    public void testTracesQueueTime() throws Exception{
+        final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessQueue");
+        project.setAssignedLabel(Label.get("testBuild"));
+        new Thread(() -> {
+            try {
+                project.scheduleBuild2(0).get();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
+        Thread.sleep(5000);
+        jenkinsRule.createOnlineSlave(Label.get("testBuild"));
+
+        final ListWriter tracerWriter = clientStub.tracerWriter();
+        tracerWriter.waitForTraces(1);
+        assertEquals(1, tracerWriter.size());
+
+        final List<DDSpan> buildTrace = tracerWriter.get(0);
+        assertEquals(1, buildTrace.size());
+
+        final DDSpan buildSpan = buildTrace.get(0);
+        long queueTime = (long) buildSpan.getTag(CITags.QUEUE_TIME);
+        assertTrue(queueTime > 0L);
+    }
+
+    @Test
     public void testTraces() throws Exception {
         Jenkins jenkins = jenkinsRule.jenkins;
         final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
@@ -83,7 +111,7 @@ public class DatadogBuildListenerIT {
         assertEquals("jenkins", buildSpan.getTag(CITags.CI_PROVIDER_NAME));
         assertEquals("anonymous", buildSpan.getTag(CITags.USER_NAME));
         assertEquals("jenkins-buildIntegrationSuccess-1", buildSpan.getTag(buildPrefix + CITags._ID));
-        assertNotNull(buildSpan.getTag(buildPrefix + CITags._QUEUE_TIME));
+        assertNotNull(buildSpan.getTag(CITags.QUEUE_TIME));
         assertEquals("buildIntegrationSuccess", buildSpan.getTag(buildPrefix + CITags._NAME));
         assertEquals("1", buildSpan.getTag(buildPrefix + CITags._NUMBER));
         assertNotNull(buildSpan.getTag(buildPrefix + CITags._URL));
