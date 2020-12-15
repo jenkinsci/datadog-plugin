@@ -1,5 +1,14 @@
 Changes
 =======
+## 2.6.0 / 2020-12-15
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.5.0...datadog-2.6.0
+
+### Changes
+* [Added] Add ci.queue_time for pipeline/stage/job traces. See [#159](https://github.com/jenkinsci/datadog-plugin/pull/159)
+* [Added] Add ci.status for Jenkins Build/Pipelines. See [#164](https://github.com/jenkinsci/datadog-plugin/pull/164)
+* [Added] Add _dd.ci.level tag to Jenkins Build/Pipelines. See [#165](https://github.com/jenkinsci/datadog-plugin/pull/165)
+
 ## 2.5.0 / 2020-12-14
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.4.0...datadog-2.5.0
