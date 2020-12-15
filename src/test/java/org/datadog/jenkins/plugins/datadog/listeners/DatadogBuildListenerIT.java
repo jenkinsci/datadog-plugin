@@ -89,6 +89,7 @@ public class DatadogBuildListenerIT {
         assertNotNull(buildSpan.getTag(buildPrefix + CITags._URL));
         assertNotNull(buildSpan.getTag(CITags.WORKSPACE_PATH));
         assertEquals("success", buildSpan.getTag(buildPrefix + CITags._RESULT));
+        assertEquals("success", buildSpan.getTag(CITags.STATUS));
         assertNotNull(buildSpan.getTag(CITags.NODE_NAME));
         assertNotNull(buildSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals("success", buildSpan.getTag(CITags.JENKINS_RESULT));
