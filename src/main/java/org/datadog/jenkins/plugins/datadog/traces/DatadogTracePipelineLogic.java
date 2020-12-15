@@ -265,7 +265,9 @@ public class DatadogTracePipelineLogic {
         tags.put(CITags.CI_PROVIDER_NAME, CI_PROVIDER);
         tags.put(prefix + CITags._NAME, current.getName());
         tags.put(prefix + CITags._NUMBER, current.getId());
-        tags.put(prefix + CITags._RESULT, getNormalizedResultForTraces(Result.fromString(current.getResult())));
+        final String status = getNormalizedResultForTraces(Result.fromString(current.getResult()));
+        tags.put(prefix + CITags._RESULT, status);
+        tags.put(CITags.STATUS, status);
 
         final String url = envVars.get("BUILD_URL") != null ? envVars.get("BUILD_URL") : buildData.getBuildUrl("");
         if(StringUtils.isNotBlank(url)) {

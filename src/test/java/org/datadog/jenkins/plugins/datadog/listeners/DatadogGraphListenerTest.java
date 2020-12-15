@@ -301,6 +301,7 @@ public class DatadogGraphListenerTest {
         assertEquals("pipelineIntegrationSuccess", buildSpan.getTag(buildPrefix + CITags._NAME));
         assertEquals("1", buildSpan.getTag(buildPrefix + CITags._NUMBER));
         assertEquals("success", buildSpan.getTag(buildPrefix + CITags._RESULT));
+        assertEquals("success", buildSpan.getTag(CITags.STATUS));
         assertNotNull(buildSpan.getTag(buildPrefix + CITags._URL));
         assertNotNull(buildSpan.getTag(CITags.NODE_NAME));
         assertNotNull(buildSpan.getTag(CITags._DD_HOSTNAME));

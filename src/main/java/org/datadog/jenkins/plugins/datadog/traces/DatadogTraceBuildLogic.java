@@ -198,6 +198,7 @@ public class DatadogTraceBuildLogic {
         final String jenkinsResult = buildData.getResult("");
         final String pipelineResult = getNormalizedResultForTraces(Result.fromString(jenkinsResult));
         buildSpan.setTag(prefix + CITags._RESULT, pipelineResult);
+        buildSpan.setTag(CITags.STATUS, pipelineResult);
         buildSpan.setTag(CITags.JENKINS_RESULT, jenkinsResult.toLowerCase());
         if(Result.FAILURE.toString().equals(jenkinsResult)) {
             buildSpan.setTag(CITags.ERROR, true);
