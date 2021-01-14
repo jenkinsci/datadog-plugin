@@ -35,6 +35,8 @@ import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 @Extension
@@ -43,12 +45,16 @@ public class DatadogConsoleLogFilter extends ConsoleLogFilter implements Seriali
     private static final Logger logger = Logger.getLogger(DatadogConsoleLogFilter.class.getName());
     public transient Run<?, ?> run;
     private static final long serialVersionUID = 1L;
+    private ExecutorService service;
 
     public DatadogConsoleLogFilter() {
+        service = Executors.newFixedThreadPool(10);
     }
 
     public DatadogConsoleLogFilter(Run<?, ?> run) {
+        service = Executors.newFixedThreadPool(10);
         this.run = run;
+
     }
 
     public OutputStream decorateLogger(Run build, OutputStream outputStream) throws IOException, InterruptedException {
@@ -59,10 +65,10 @@ public class DatadogConsoleLogFilter extends ConsoleLogFilter implements Seriali
             }
 
             if (build != null) {
-                DatadogWriter writer = new DatadogWriter(build, outputStream, build.getCharset());
+                DatadogWriter writer = new DatadogWriter(build, outputStream, build.getCharset(), service);
                 return new DatadogOutputStream(outputStream, writer);
             } else if (run != null) {
-                DatadogWriter writer = new DatadogWriter(run, outputStream, run.getCharset());
+                DatadogWriter writer = new DatadogWriter(run, outputStream, run.getCharset(), service);
                 return new DatadogOutputStream(outputStream, writer);
             } else {
                 return outputStream;

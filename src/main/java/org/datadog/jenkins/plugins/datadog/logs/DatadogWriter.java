@@ -37,6 +37,8 @@ import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.Queue;
+import java.util.concurrent.*;
 import java.util.logging.Logger;
 
 public class DatadogWriter {
@@ -46,11 +48,15 @@ public class DatadogWriter {
     private OutputStream errorStream;
     private Charset charset;
     private Run<?, ?> run;
+    private DatadogWriterBuffer buffer;
+    private ExecutorService service;
 
-    public DatadogWriter(Run<?, ?> run, OutputStream error, Charset charset) {
+    public DatadogWriter(Run<?, ?> run, OutputStream error, Charset charset, ExecutorService service) {
         this.errorStream = error != null ? error : System.err;
         this.charset = charset;
         this.run = run;
+        this.service = service; // when to shut down?
+        this.buffer = new DatadogWriterBuffer(new LinkedBlockingQueue<>(1000));
     }
 
     public Charset getCharset() {
@@ -71,19 +77,29 @@ public class DatadogWriter {
             payload.put("message", line);
             payload.put("ddsource", "jenkins");
             payload.put("service", "jenkins");
+//
+//            // Get Datadog Client Instance
+//            DatadogClient client = ClientFactory.getClient();
+//            if(client == null){
+//                return;
+//            }
+//            boolean status = client.sendLogs(payload.toString());
+//            if(!status){
+//                // we try again in case a connection has to be re-established.
+//                client.sendLogs(payload.toString());
+//            }
 
-            // Get Datadog Client Instance
-            DatadogClient client = ClientFactory.getClient();
-            if(client == null){
-                return;
+            try {
+                buffer.put(payload);
+            } catch (Exception e) {
+                DatadogUtilities.severe(logger, null, "Unable to add payload to buffer.");
             }
-            boolean status = client.sendLogs(payload.toString());
-            if(!status){
-                // we try again in case a connection has to be re-established.
-                client.sendLogs(payload.toString());
-            }
+
+            service.execute(new DatadogWriterConsumer(buffer, ClientFactory.getClient()));
+
+
         } catch (Exception e){
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "There was an issue sending logs to Datadog.");
         }
     }
 

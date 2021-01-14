@@ -28,6 +28,8 @@ import hudson.Extension;
 import hudson.model.Queue;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nonnull;
@@ -42,15 +44,17 @@ public class DatadogTaskListenerDecorator extends TaskListenerDecorator {
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(DatadogTaskListenerDecorator.class.getName());
     private transient WorkflowRun run;
+    private ExecutorService service;
 
     public DatadogTaskListenerDecorator(WorkflowRun run) {
         this.run = run;
+        this.service = Executors.newFixedThreadPool(1);
     }
 
     @Nonnull
     @Override
     public OutputStream decorate(@Nonnull OutputStream outputStream) {
-        DatadogWriter writer = new DatadogWriter(run, outputStream, run.getCharset());
+        DatadogWriter writer = new DatadogWriter(run, outputStream, run.getCharset(), service);
         return new DatadogOutputStream(outputStream, writer);
     }
 
