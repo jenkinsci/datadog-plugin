@@ -44,17 +44,15 @@ public class DatadogTaskListenerDecorator extends TaskListenerDecorator {
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(DatadogTaskListenerDecorator.class.getName());
     private transient WorkflowRun run;
-    private ExecutorService service;
 
     public DatadogTaskListenerDecorator(WorkflowRun run) {
         this.run = run;
-        this.service = Executors.newFixedThreadPool(1);
     }
 
     @Nonnull
     @Override
     public OutputStream decorate(@Nonnull OutputStream outputStream) {
-        DatadogWriter writer = new DatadogWriter(run, outputStream, run.getCharset(), service);
+        DatadogWriter writer = new DatadogWriter(run, outputStream, run.getCharset());
         return new DatadogOutputStream(outputStream, writer);
     }
 

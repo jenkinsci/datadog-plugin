@@ -62,5 +62,6 @@ public class DatadogOutputStream extends LineTransformationOutputStream {
     public void close() throws IOException {
         delegate.close();
         super.close();
+        // TODO: should call writer.close() here
     }
 }

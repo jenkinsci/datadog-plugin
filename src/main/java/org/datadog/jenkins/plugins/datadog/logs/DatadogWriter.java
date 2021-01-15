@@ -49,14 +49,13 @@ public class DatadogWriter {
     private Charset charset;
     private Run<?, ?> run;
     private DatadogWriterBuffer buffer;
-    private ExecutorService service;
 
-    public DatadogWriter(Run<?, ?> run, OutputStream error, Charset charset, ExecutorService service) {
+    public DatadogWriter(Run<?, ?> run, OutputStream error, Charset charset) {
         this.errorStream = error != null ? error : System.err;
         this.charset = charset;
         this.run = run;
-        this.service = service; // when to shut down?
-        this.buffer = new DatadogWriterBuffer(new LinkedBlockingQueue<>(1000));
+        this.buffer = new DatadogWriterBuffer(new LinkedBlockingQueue<>(1000)); // TODO: Can cahnge type of queue
+        // new thread.start()
     }
 
     public Charset getCharset() {
@@ -77,17 +76,6 @@ public class DatadogWriter {
             payload.put("message", line);
             payload.put("ddsource", "jenkins");
             payload.put("service", "jenkins");
-//
-//            // Get Datadog Client Instance
-//            DatadogClient client = ClientFactory.getClient();
-//            if(client == null){
-//                return;
-//            }
-//            boolean status = client.sendLogs(payload.toString());
-//            if(!status){
-//                // we try again in case a connection has to be re-established.
-//                client.sendLogs(payload.toString());
-//            }
 
             try {
                 buffer.put(payload);
@@ -95,12 +83,13 @@ public class DatadogWriter {
                 DatadogUtilities.severe(logger, null, "Unable to add payload to buffer.");
             }
 
-            service.execute(new DatadogWriterConsumer(buffer, ClientFactory.getClient()));
-
 
         } catch (Exception e){
             DatadogUtilities.severe(logger, e, "There was an issue sending logs to Datadog.");
         }
     }
+
+    // TODO: implement something like a close() function here
+    // thread.close()
 
 }

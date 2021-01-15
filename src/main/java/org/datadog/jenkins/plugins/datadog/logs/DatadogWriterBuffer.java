@@ -21,6 +21,7 @@ public class DatadogWriterBuffer {
     }
 
     public void put(JSONObject payload) {
+        // TODO: Do a check to see if queue is full, then can log
         queue.offer(payload);
     }
 }
