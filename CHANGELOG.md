@@ -1,5 +1,12 @@
 Changes
 =======
+## 2.7.0 / 2021-01-15
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.6.0...datadog-2.7.0
+
+### Changes
+* [Added] Configure the default branch using environment variable. See [#168](https://github.com/jenkinsci/datadog-plugin/pull/168)
+
 ## 2.6.0 / 2020-12-15
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.5.0...datadog-2.6.0
