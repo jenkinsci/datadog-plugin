@@ -9,6 +9,7 @@ import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
+import org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.jenkinsci.plugins.gitclient.Git;
@@ -77,6 +78,7 @@ public final class GitUtils {
     public static RevCommit searchRevCommit(final GitClient gitClient, final String gitCommit) {
         try {
             if(gitClient == null) {
+                LOGGER.fine("Unable to search RevCommit. GitClient is null");
                 return null;
             }
 
@@ -90,11 +92,23 @@ public final class GitUtils {
     /**
      * Return the {@code RepositoryInfo} for a certain Git repository.
      * @param gitClient
+     * @param envVars
      * @return repositoryInfo
      */
-    public static RepositoryInfo searchRepositoryInfo(final GitClient gitClient) {
+    public static RepositoryInfo searchRepositoryInfo(final GitClient gitClient, EnvVars envVars) {
         try {
+            // Check if the default branch has been configured using an environment variable by the user.
+            // This is needed because the automatic detection of the default branch using
+            // the Git client is not always possible cause it depends on how Jenkins checkouts
+            // the repository. Not always there is a symbolic reference to the default branch.
+            final String defaultBranch = GitInfoUtils.normalizeBranch(envVars.get("DD_GIT_DEFAULT_BRANCH", null));
+            LOGGER.fine("Detected default branch from environment variables: " + defaultBranch);
+            if(defaultBranch != null && !defaultBranch.isEmpty()) {
+                return new RepositoryInfo(defaultBranch);
+            }
+
             if(gitClient == null){
+                LOGGER.fine("Unable to search RevCommit. GitClient is null");
                 return null;
             }
 
@@ -130,11 +144,13 @@ public final class GitUtils {
             try {
                 final GitClient gitClient = GitUtils.newGitClient(run, listener, envVars, nodeName, workspace);
                 if(gitClient == null){
+                    LOGGER.fine("Unable to build GitCommitAction. GitClient is null");
                     return null;
                 }
 
                 final RevCommit revCommit = GitUtils.searchRevCommit(gitClient, gitCommit);
                 if(revCommit == null) {
+                    LOGGER.fine("Unable to build GitCommitAction. RevCommit is null. [gitCommit: "+gitCommit+"]");
                     return null;
                 }
 
@@ -194,11 +210,13 @@ public final class GitUtils {
             try {
                 final GitClient gitClient = GitUtils.newGitClient(run, listener, envVars, nodeName, workspace);
                 if(gitClient == null){
+                    LOGGER.fine("Unable to build GitRepositoryAction. GitClient is null");
                     return null;
                 }
 
-                final RepositoryInfo repositoryInfo = GitUtils.searchRepositoryInfo(gitClient);
+                final RepositoryInfo repositoryInfo = GitUtils.searchRepositoryInfo(gitClient, envVars);
                 if(repositoryInfo == null) {
+                    LOGGER.fine("Unable to build GitRepositoryAction. RepositoryInfo is null");
                     return null;
                 }
 
@@ -237,7 +255,7 @@ public final class GitUtils {
             final Git git = Git.with(listener, envVars).in(ws);
             return git.getClient();
         } catch (Exception e) {
-            LOGGER.fine("Unable to search RevCommit. Error: " + e);
+            LOGGER.fine("Unable to create GitClient. Error: " + e);
             return null;
         }
     }

@@ -23,6 +23,8 @@ import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
+import org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils;
+import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.actions.TimingAction;
@@ -196,7 +198,44 @@ public class DatadogGraphListenerTest {
         final List<DDSpan> buildTrace = tracerWriter.get(0);
         assertEquals(1, buildTrace.size());
         final DDSpan buildSpan = buildTrace.get(0);
-        assertGitVariables(buildSpan);
+        assertGitVariables(buildSpan, "master");
+    }
+
+    @Test
+    public void testIntegrationGitInfoDefaultBranchEnvVar() throws Exception {
+        Jenkins jenkins = jenkinsRule.jenkins;
+        final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
+        EnvVars env = prop.getEnvVars();
+        env.put("GIT_BRANCH", "master");
+        env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
+        env.put("GIT_URL", "https://github.com/johndoe/foobar.git");
+        final String defaultBranch = "refs/heads/hardcoded-master";
+        env.put("DD_GIT_DEFAULT_BRANCH", defaultBranch);
+
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationSingleCommitDefaultBranchEnvVar");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineSuccess.txt"),
+                "UTF-8"
+        );
+
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        final FilePath ws = jenkins.getWorkspaceFor(job);
+        env.put("NODE_NAME", "master");
+        env.put("WORKSPACE", ws.getRemote());
+        InputStream gitZip = getClass().getClassLoader().getResourceAsStream("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
+        if(gitZip != null) {
+            ws.unzipFrom(gitZip);
+        }
+        jenkins.getGlobalNodeProperties().add(prop);
+        job.scheduleBuild2(0).get();
+
+        final ListWriter tracerWriter = clientStub.tracerWriter();
+        tracerWriter.waitForTraces(2);
+        assertEquals(2, tracerWriter.size());
+        final List<DDSpan> buildTrace = tracerWriter.get(0);
+        assertEquals(1, buildTrace.size());
+        final DDSpan buildSpan = buildTrace.get(0);
+        assertGitVariables(buildSpan, "hardcoded-master");
     }
 
     @Test
@@ -607,7 +646,7 @@ public class DatadogGraphListenerTest {
     }
 
 
-    private void assertGitVariables(DDSpan span) {
+    private void assertGitVariables(DDSpan span, String defaultBranch) {
         assertEquals("Initial commit\n", span.getTag(CITags.GIT_COMMIT_MESSAGE));
         assertEquals("John Doe", span.getTag(CITags.GIT_COMMIT_AUTHOR_NAME));
         assertEquals("john@doe.com", span.getTag(CITags.GIT_COMMIT_AUTHOR_EMAIL));
@@ -619,7 +658,7 @@ public class DatadogGraphListenerTest {
         assertEquals("401d997a6eede777602669ccaec059755c98161f", span.getTag(CITags.GIT_COMMIT_SHA));
         assertEquals("master", span.getTag(CITags.GIT_BRANCH));
         assertEquals("https://github.com/johndoe/foobar.git", span.getTag(CITags.GIT_REPOSITORY_URL));
-        assertEquals("master", span.getTag(CITags.GIT_DEFAULT_BRANCH));
+        assertEquals(defaultBranch, span.getTag(CITags.GIT_DEFAULT_BRANCH));
     }
 
 }
