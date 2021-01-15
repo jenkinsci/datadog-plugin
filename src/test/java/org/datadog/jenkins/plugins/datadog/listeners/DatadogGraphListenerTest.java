@@ -209,7 +209,7 @@ public class DatadogGraphListenerTest {
         env.put("GIT_BRANCH", "master");
         env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
         env.put("GIT_URL", "https://github.com/johndoe/foobar.git");
-        final String defaultBranch = "refs/head/hardcoded-master";
+        final String defaultBranch = "refs/heads/hardcoded-master";
         env.put("DD_GIT_DEFAULT_BRANCH", defaultBranch);
 
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationSingleCommitDefaultBranchEnvVar");
@@ -235,7 +235,7 @@ public class DatadogGraphListenerTest {
         final List<DDSpan> buildTrace = tracerWriter.get(0);
         assertEquals(1, buildTrace.size());
         final DDSpan buildSpan = buildTrace.get(0);
-        assertGitVariables(buildSpan, GitInfoUtils.normalizeBranch(defaultBranch));
+        assertGitVariables(buildSpan, "hardcoded-master");
     }
 
     @Test
