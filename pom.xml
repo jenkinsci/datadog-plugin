@@ -15,7 +15,7 @@
   <url>https://github.com/jenkinsci/datadog-plugin</url>
   <groupId>org.datadog.jenkins.plugins</groupId>
   <artifactId>datadog</artifactId>
-  <version>2.7.0</version>
+  <version>2.7.1-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <properties>
@@ -44,7 +44,7 @@
     <connection>scm:git:git://github.com/jenkinsci/datadog-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/datadog-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/datadog-plugin</url>
-    <tag>datadog-2.7.0</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <repositories>
