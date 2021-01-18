@@ -1,26 +1,22 @@
 package org.datadog.jenkins.plugins.datadog.model;
 
-import com.google.gson.annotations.Expose;
-import com.google.gson.annotations.SerializedName;
+import org.datadog.jenkins.plugins.datadog.util.json.ToJson;
 
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.logging.Logger;
 
 /**
  * Keeps the information of a Stage to calculate the Stage breakdown.
  */
-public class StageData implements Serializable, Comparable<StageData> {
+public class StageData implements Serializable, Comparable<StageData>, ToJson {
 
     private static final long serialVersionUID = 1L;
+    private static final transient Logger logger = Logger.getLogger(StageData.class.getName());
 
-    @Expose
     private final String name;
-    @Expose(serialize = false)
     private final long startTimeInMicros;
-    @Expose(serialize = false)
     private final long endTimeInMicros;
-    @Expose
-    @SerializedName("duration")
     private final long durationInNanos;
 
     private StageData(final Builder builder) {
@@ -107,6 +103,20 @@ public class StageData implements Serializable, Comparable<StageData> {
         sb.append(", endTimeInMicros=").append(endTimeInMicros);
         sb.append(", durationInMicros=").append(durationInNanos);
         sb.append('}');
+        return sb.toString();
+    }
+
+    @Override
+    public String toJson() {
+        if(name == null || name.isEmpty()){
+            logger.fine("Cannot extract StageData as JSON. Stage name is null or empty.");
+            return "";
+        }
+
+        final StringBuilder sb = new StringBuilder("{");
+        sb.append("\"name\"").append(":").append("\"").append(name).append("\"").append(",");
+        sb.append("\"duration\"").append(":").append(durationInNanos);
+        sb.append("}");
         return sb.toString();
     }
 }

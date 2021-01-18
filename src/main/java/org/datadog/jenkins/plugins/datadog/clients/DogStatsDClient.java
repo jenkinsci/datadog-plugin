@@ -270,8 +270,8 @@ public class DogStatsDClient implements DatadogClient {
             traceBuildLogic = new DatadogTraceBuildLogic(ddTracer);
             tracePipelineLogic = new DatadogTracePipelineLogic(ddTracer);
             return true;
-        } catch (Exception e) {
-            logger.severe("Unable to create DDTracer. " + e);
+        } catch (Throwable e){
+            DatadogUtilities.severe(logger, e, "Failed to reinitialize Datadog-Plugin Tracer");
             return false;
         }
     }
