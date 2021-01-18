@@ -4,8 +4,6 @@ import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getNormalized
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import datadog.trace.api.DDTags;
 import hudson.model.Result;
 import hudson.model.Run;
@@ -18,6 +16,7 @@ import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
+import org.datadog.jenkins.plugins.datadog.util.json.JsonUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,11 +32,9 @@ public class DatadogTraceBuildLogic {
     private static final Logger logger = Logger.getLogger(DatadogTraceBuildLogic.class.getName());
 
     private final Tracer tracer;
-    private final Gson gson;
 
     public DatadogTraceBuildLogic(final Tracer tracer) {
         this.tracer = tracer;
-        this.gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
     }
 
     public void startBuildTrace(final BuildData buildData, Run run) {
@@ -187,7 +184,7 @@ public class DatadogTraceBuildLogic {
             final List<StageData> stages = new ArrayList<>(stageDataByName.values());
             Collections.sort(stages);
 
-            final String stagesJson = gson.toJson(stages);
+            final String stagesJson = JsonUtils.toJson(new ArrayList<>(stages));
             buildSpan.setTag(CITags._DD_CI_STAGES, stagesJson);
         }
 
