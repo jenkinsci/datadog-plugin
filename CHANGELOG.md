@@ -1,5 +1,14 @@
 Changes
 =======
+## 2.8.0 / 2021-01-19
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.7.0...datadog-2.8.0
+
+### Changes
+* [Fixed] Avoid dropping spans in Jenkins Build/Pipelines traces. See [#173](https://github.com/jenkinsci/datadog-plugin/pull/173)
+* [Changed] Update dd-trace-java version to 0.71.0. See [#172](https://github.com/jenkinsci/datadog-plugin/pull/172)
+* [Changed] Avoid using Gson instance in Datadog Traces. See [#171](https://github.com/jenkinsci/datadog-plugin/pull/171)
+
 ## 2.7.0 / 2021-01-15
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.6.0...datadog-2.7.0
