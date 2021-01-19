@@ -34,6 +34,7 @@ import datadog.trace.api.sampling.PrioritySampling;
 import datadog.trace.bootstrap.instrumentation.api.SamplerConstants;
 import datadog.trace.common.sampling.ForcePrioritySampler;
 import datadog.trace.common.writer.DDAgentWriter;
+import datadog.trace.common.writer.ddagent.Prioritization;
 import datadog.trace.core.monitor.Monitoring;
 import hudson.model.Run;
 import hudson.util.Secret;
@@ -264,7 +265,8 @@ public class DogStatsDClient implements DatadogClient {
                     .writer(DDAgentWriter.builder()
                     .agentHost(this.hostname)
                     .traceAgentPort(traceCollectionPort)
-                    .monitoring(Monitoring.DISABLED).build());
+                    .monitoring(Monitoring.DISABLED)
+                    .prioritization(Prioritization.ENSURE_TRACE).build());
 
             final Tracer ddTracer = tracerBuilder.build();
             traceBuildLogic = new DatadogTraceBuildLogic(ddTracer);
