@@ -98,7 +98,7 @@ d.setTargetHost('localhost')
 d.setTargetPort(8125)
 
 // If you want to collect logs
-d.setLogCollectionPort(8125)
+d.setTargetLogCollectionPort(8125)
 
 // Customization, see dedicated section below
 d.setExcluded('job1,job2')
