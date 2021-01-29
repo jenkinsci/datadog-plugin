@@ -30,6 +30,7 @@ There are two ways to configure your plugin to submit data to Datadog:
 
 * **RECOMMENDED**: Using a DogStatsD server / Datadog Agent that acts as a forwarder between Jenkins and Datadog.
   - Build Logs collection only works with a full Datadog Agent installed.
+  - For metrics submitted from an external host, the Datadog Agent requires the following configuration for DogStatsD: `dogstatsd_non_local_traffic: true`. This can be configured using the `datadog.yaml` configuration file. 
 * Sending data directly to Datadog through HTTP.
   - The HTTP client implementation used is blocking with a timeout duration of 1 minute. If there is a connection problem with Datadog, it may slow your Jenkins instance down.
 
