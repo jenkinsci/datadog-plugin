@@ -157,3 +157,8 @@ When accessing your jenkins instance, you may run into the following warning
 WARNING o.eclipse.jetty.http.HttpParser#parseFields: Header is too large 8193>8192
 ```
 In this case, use your browser in incognito mode.
+
+
+### Unsupported class file major version 57
+
+If pipeline jobs fail with the error `java.lang.IllegalArgumentException: Unsupported class file major version 57`, then double-check the version of Java running the server is `1.8`.  Note that `mvn` can find a different version that what may be in your path, you can verify via `mvn --version`.
