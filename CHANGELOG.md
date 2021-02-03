@@ -1,5 +1,13 @@
 Changes
 =======
+## 2.8.1 / 2021-02-32
+###
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.8.0...datadog-2.8.1
+
+### Changes
+* [Fixed] Fix deadlock if FlowNode cannot be located in DatadogQueueListener. See [#178](https://github.com/jenkinsci/datadog-plugin/pull/178)
+* [Fixed] Store `ci.queue_time` as span metric. See [#179](https://github.com/jenkinsci/datadog-plugin/pull/179)
+
 ## 2.8.0 / 2021-01-19
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.7.0...datadog-2.8.0
