@@ -72,7 +72,7 @@ public class DatadogBuildListenerIT {
         assertEquals(1, buildTrace.size());
 
         final DDSpan buildSpan = buildTrace.get(0);
-        long queueTime = (long) buildSpan.getTag(CITags.QUEUE_TIME);
+        long queueTime = (long) buildSpan.getUnsafeMetrics().get(CITags.QUEUE_TIME);
         assertTrue(queueTime > 0L);
     }
 
@@ -112,7 +112,7 @@ public class DatadogBuildListenerIT {
         assertEquals("jenkins", buildSpan.getTag(CITags.CI_PROVIDER_NAME));
         assertEquals("anonymous", buildSpan.getTag(CITags.USER_NAME));
         assertEquals("jenkins-buildIntegrationSuccess-1", buildSpan.getTag(buildPrefix + CITags._ID));
-        assertNotNull(buildSpan.getTag(CITags.QUEUE_TIME));
+        assertNotNull(buildSpan.getUnsafeMetrics().get(CITags.QUEUE_TIME));
         assertEquals("buildIntegrationSuccess", buildSpan.getTag(buildPrefix + CITags._NAME));
         assertEquals("1", buildSpan.getTag(buildPrefix + CITags._NUMBER));
         assertNotNull(buildSpan.getTag(buildPrefix + CITags._URL));

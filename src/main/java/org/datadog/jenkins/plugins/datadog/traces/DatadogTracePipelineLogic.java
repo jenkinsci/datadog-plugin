@@ -7,6 +7,7 @@ import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeT
 
 import datadog.trace.api.DDId;
 import datadog.trace.api.DDTags;
+import datadog.trace.api.interceptor.MutableSpan;
 import datadog.trace.core.DDSpan;
 import datadog.trace.core.DDSpanContext;
 import hudson.EnvVars;
@@ -224,6 +225,8 @@ public class DatadogTracePipelineLogic {
                 .withTag(DDTags.LANGUAGE_TAG_KEY, "");
 
         final Map<String, Object> traceTags = buildTraceTags(current, buildData);
+
+        // Set tags
         for(Map.Entry<String, Object> traceTag : traceTags.entrySet()) {
             if(traceTag.getValue() instanceof Number) {
                 spanBuilder.withTag(traceTag.getKey(), (Number) traceTag.getValue());
@@ -235,6 +238,22 @@ public class DatadogTracePipelineLogic {
         }
 
         final Span span = spanBuilder.start();
+
+        try {
+            // Set metrics
+            if(span instanceof MutableSpan) {
+                final MutableSpan mutableSpan = (MutableSpan) span;
+                final Map<String, Long> traceMetrics = buildTraceMetrics(current);
+                for(Map.Entry<String, Long> traceMetric : traceMetrics.entrySet()) {
+                    if(traceMetric.getValue() != null) {
+                        mutableSpan.setMetric(traceMetric.getKey(), traceMetric.getValue());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.severe("Unable to set metrics in the span, exception: " + e);
+        }
+
         final DDId generatedSpanId = current.getGeneratedSpanId();
 
         // If the generated spanID exists, we need to set it
@@ -259,6 +278,18 @@ public class DatadogTracePipelineLogic {
         span.finish(current.getEndTimeMicros());
     }
 
+    private Map<String, Long> buildTraceMetrics(BuildPipelineNode current) {
+        final Map<String, Long> metrics = new HashMap<>();
+        // If the concrete queue time for this node is not set
+        // we look for the queue time propagated by its children.
+        if(current.getSecondsInQueue() == -1L) {
+            metrics.put(CITags.QUEUE_TIME, Math.max(current.getPropagatedSecondsInQueue(), 0));
+        } else {
+            metrics.put(CITags.QUEUE_TIME, Math.max(current.getSecondsInQueue(), 0));
+        }
+        return metrics;
+    }
+
     private Map<String, Object> buildTraceTags(final BuildPipelineNode current, final BuildData buildData) {
         final String prefix = current.getType().getTagName();
         final String buildLevel = current.getType().getBuildLevel();
@@ -271,14 +302,6 @@ public class DatadogTracePipelineLogic {
         final String status = getNormalizedResultForTraces(Result.fromString(current.getResult()));
         tags.put(prefix + CITags._RESULT, status);
         tags.put(CITags.STATUS, status);
-
-        // If the concrete queue time for this node is not set
-        // we look for the queue time propagated by its children.
-        if(current.getSecondsInQueue() == -1L) {
-            tags.put(CITags.QUEUE_TIME, Math.max(current.getPropagatedSecondsInQueue(), 0));
-        } else {
-            tags.put(CITags.QUEUE_TIME, Math.max(current.getSecondsInQueue(), 0));
-        }
 
         final String url = envVars.get("BUILD_URL") != null ? envVars.get("BUILD_URL") : buildData.getBuildUrl("");
         if(StringUtils.isNotBlank(url)) {
