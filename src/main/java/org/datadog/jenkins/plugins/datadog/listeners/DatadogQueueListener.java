@@ -141,7 +141,7 @@ public class DatadogQueueListener extends QueueListener {
             Executors.newCachedThreadPool().submit(() -> f.complete(placeholderTask.getNode()));
             return f.get(timeoutMs, TimeUnit.MILLISECONDS);
         } catch (Exception ex){
-            logger.severe("Error getNodeAsync for task:"+placeholderTask+", exception: " + ex);
+            logger.fine("Error getNodeAsync for task:"+placeholderTask+", exception: " + ex);
             return null;
         }
     }
