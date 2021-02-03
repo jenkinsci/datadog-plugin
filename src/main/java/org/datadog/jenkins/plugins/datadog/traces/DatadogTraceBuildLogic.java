@@ -5,6 +5,7 @@ import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeB
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 
 import datadog.trace.api.DDTags;
+import datadog.trace.api.interceptor.MutableSpan;
 import hudson.model.Result;
 import hudson.model.Run;
 import io.opentracing.Span;
@@ -113,7 +114,9 @@ public class DatadogTraceBuildLogic {
         buildSpan.setTag(prefix + CITags._ID, buildData.getBuildTag(""));
         buildSpan.setTag(prefix + CITags._NUMBER, buildData.getBuildNumber(""));
         buildSpan.setTag(prefix + CITags._URL, buildData.getBuildUrl(""));
-        buildSpan.setTag(CITags.QUEUE_TIME, getSecondsInQueue(buildData, pipelineData));
+        if (buildSpan instanceof MutableSpan) {
+            ((MutableSpan) buildSpan).setMetric(CITags.QUEUE_TIME, getSecondsInQueue(buildData, pipelineData));
+        }
 
         final String workspace = buildData.getWorkspace("").isEmpty() ? pipelineData.getWorkspace("") : buildData.getWorkspace("");
         buildSpan.setTag(CITags.WORKSPACE_PATH, workspace);
