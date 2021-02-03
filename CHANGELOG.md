@@ -1,7 +1,7 @@
 Changes
 =======
 ## 2.8.1 / 2021-02-32
-###
+### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.8.0...datadog-2.8.1
 
 ### Changes
