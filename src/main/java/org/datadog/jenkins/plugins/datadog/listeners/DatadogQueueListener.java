@@ -6,12 +6,19 @@ import hudson.model.Run;
 import hudson.model.queue.QueueListener;
 import org.datadog.jenkins.plugins.datadog.model.FlowNodeQueueData;
 import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
+import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
 
 import javax.annotation.CheckForNull;
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
 @Extension
@@ -34,7 +41,9 @@ public class DatadogQueueListener extends QueueListener {
             }
 
             final ExecutorStepExecution.PlaceholderTask placeholderTask = (ExecutorStepExecution.PlaceholderTask) task;
-            final FlowNode flowNode = placeholderTask.getNode();
+            // Use async method to avoid deadlock.
+            // It fixes https://github.com/jenkinsci/datadog-plugin/issues/170
+            final FlowNode flowNode = getNodeAsync(placeholderTask, 5000);
 
             if(flowNode == null) {
                 logger.fine("onEnterBuildable PlaceholderTask: " + placeholderTask + ", FlowNode: is null");
@@ -65,7 +74,6 @@ public class DatadogQueueListener extends QueueListener {
         } catch (Exception e){
             logger.severe("Error onEnterBuildable: item:" + item + ", exception: " + e);
         }
-
     }
 
     @Override
@@ -83,7 +91,9 @@ public class DatadogQueueListener extends QueueListener {
             }
 
             final ExecutorStepExecution.PlaceholderTask placeholderTask = (ExecutorStepExecution.PlaceholderTask) task;
-            final FlowNode flowNode = placeholderTask.getNode();
+            // Use async method to avoid deadlock.
+            // It fixes https://github.com/jenkinsci/datadog-plugin/issues/170
+            final FlowNode flowNode = getNodeAsync(placeholderTask, 5000);
             if(flowNode == null) {
                 logger.fine("onLeaveBuildable PlaceholderTask: " + placeholderTask + ", FlowNode: is null");
                 return;
@@ -107,6 +117,32 @@ public class DatadogQueueListener extends QueueListener {
             }
         } catch (Exception e){
             logger.severe("Error onLeaveBuildable: item:" + item + ", exception: " + e);
+        }
+    }
+
+    /**
+     * Gets the FlowNode from the PlaceholderTask asynchronous.
+     *
+     * This method is needed because there is a deadlock when a job is being executed and
+     * the Jenkins instances is killed. After restarting it, the placeholderTask is
+     * trying to obtain the FlowNode forever.
+     *
+     * Related to: [BUG] https://issues.jenkins.io/browse/JENKINS-64688
+     * Related to: [BUG] https://github.com/jenkinsci/datadog-plugin/issues/170
+     *
+     * @param placeholderTask
+     * @param timeoutMs
+     * @return FlowNode or null
+     */
+    @SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_BAD_PRACTICE")
+    private FlowNode getNodeAsync(ExecutorStepExecution.PlaceholderTask placeholderTask, int timeoutMs) {
+        try {
+            final CompletableFuture<FlowNode> f = new CompletableFuture<>();
+            Executors.newCachedThreadPool().submit(() -> f.complete(placeholderTask.getNode()));
+            return f.get(timeoutMs, TimeUnit.MILLISECONDS);
+        } catch (Exception ex){
+            logger.severe("Error getNodeAsync for task:"+placeholderTask+", exception: " + ex);
+            return null;
         }
     }
 
