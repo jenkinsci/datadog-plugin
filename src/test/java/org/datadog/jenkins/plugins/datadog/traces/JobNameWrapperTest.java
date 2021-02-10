@@ -33,6 +33,7 @@ public class JobNameWrapperTest {
                 {"jobName/master", "master", "jobName", EMPTY_MAP},
                 {"jobName/another", "master", "jobName/another", EMPTY_MAP},
                 {"jobName/another/branch", "another/branch", "jobName", EMPTY_MAP},
+                {"jobName/another%2Fbranch", "another/branch", "jobName", EMPTY_MAP},
                 {"jobName/KEY1=VALUE1,KEY2=VALUE2", "master", "jobName", sampleMap},
                 {"jobName/KEY1=VALUE1,KEY2=VALUE2/master", "master", "jobName", sampleMap},
                 {"jobName/KEY1=VALUE1,KEY2=VALUE2/another-branch", "master", "jobName", sampleMap}

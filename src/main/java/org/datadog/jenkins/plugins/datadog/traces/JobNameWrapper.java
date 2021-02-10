@@ -1,5 +1,10 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
+import org.apache.http.client.utils.URLEncodedUtils;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,18 +31,28 @@ public class JobNameWrapper {
     private final String traceJobName;
     private final Map<String, String> configurations = new HashMap<>();
 
-    public JobNameWrapper(final String rawJobName, final String gitBranch) {
-        if(rawJobName == null) {
+    public JobNameWrapper(final String jobName, final String gitBranch) {
+        if(jobName == null) {
             this.traceJobName = null;
             return;
         }
 
+        final String rawJobName = jobName.trim();
+        String jobNameNoBranch = rawJobName;
         // First, the git branch is removed from the raw jobName
-        final String jobNameNoBranch;
         if(gitBranch != null && !gitBranch.isEmpty()) {
-            jobNameNoBranch = rawJobName.trim().replace("/" + gitBranch, "");
-        } else {
-            jobNameNoBranch = rawJobName;
+            // First, we try to remove the non-encoded git branch.
+            jobNameNoBranch = rawJobName.replace("/" + gitBranch, "");
+
+            try {
+                // If the job name contains the git branch, that can have encoded characters.
+                // e.g. jobname: pipeline/feature%2F/one --> it corresponds with the real git branch feature/one
+                if(jobNameNoBranch.equals(rawJobName)) {
+                    jobNameNoBranch = rawJobName.replace("/" + URLEncoder.encode(gitBranch, "UTF-8"), "");
+                }
+            } catch (UnsupportedEncodingException e){
+                jobNameNoBranch = rawJobName;
+            }
         }
 
         // Once the branch has been removed, we try to extract
