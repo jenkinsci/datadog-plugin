@@ -46,7 +46,7 @@ public class JobNameWrapper {
 
             try {
                 // If the job name contains the git branch, that can have encoded characters.
-                // e.g. jobname: pipeline/feature%2F/one --> it corresponds with the real git branch feature/one
+                // e.g. jobname: pipeline/feature%2Fone --> it corresponds with the real git branch feature/one
                 if(jobNameNoBranch.equals(rawJobName)) {
                     jobNameNoBranch = rawJobName.replace("/" + URLEncoder.encode(gitBranch, "UTF-8"), "");
                 }
