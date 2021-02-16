@@ -1,6 +1,13 @@
 Changes
 =======
-## 2.8.1 / 2021-02-32
+## 2.8.2 / 2021-02-16
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.8.1...datadog-2.8.2
+
+### Changes
+* [Fixed] Remove branch with escaped characters from `pipeline.name`. See [#181](https://github.com/jenkinsci/datadog-plugin/pull/181)
+
+## 2.8.1 / 2021-02-03
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.8.0...datadog-2.8.1
 
