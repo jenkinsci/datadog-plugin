@@ -30,6 +30,7 @@ import java.util.logging.Logger;
  */
 public class DatadogTraceBuildLogic {
 
+    private static final String HOSTNAME_NONE = "none";
     private static final Logger logger = Logger.getLogger(DatadogTraceBuildLogic.class.getName());
 
     private final Tracer tracer;
@@ -123,9 +124,11 @@ public class DatadogTraceBuildLogic {
 
         final String nodeName = buildData.getNodeName("").isEmpty() ? pipelineData.getNodeName("") : buildData.getNodeName("");
         buildSpan.setTag(CITags.NODE_NAME, nodeName);
-
-        final String nodeHostname = buildData.getHostname("").isEmpty() ? pipelineData.getHostname("") : buildData.getHostname("");
-        buildSpan.setTag(CITags._DD_HOSTNAME, nodeHostname);
+        // If the NodeName == master, we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
+        // If the NodeName != master, we set _dd.hostname to 'none' explicitly, cause we cannot calculate the worker hostname.
+        if(!"master".equalsIgnoreCase(nodeName)) {
+            buildSpan.setTag(CITags._DD_HOSTNAME, HOSTNAME_NONE);
+        }
 
         // Git Info
         final String gitUrl = buildData.getGitUrl("").isEmpty() ? pipelineData.getGitUrl("") : buildData.getGitUrl("");

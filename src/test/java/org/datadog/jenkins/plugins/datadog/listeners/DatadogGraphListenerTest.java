@@ -23,8 +23,6 @@ import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
-import org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils;
-import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.actions.TimingAction;
@@ -379,6 +377,10 @@ public class DatadogGraphListenerTest {
 
     @Test
     public void testIntegrationPipelineQueueTimeOnPipeline() throws Exception {
+        final EnvironmentVariablesNodeProperty envProps = new EnvironmentVariablesNodeProperty();
+        EnvVars env = envProps.getEnvVars();
+        env.put("NODE_NAME", "testPipeline");
+        jenkinsRule.jenkins.getGlobalNodeProperties().add(envProps);
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationQueueTimeOnPipeline");
         String definition = IOUtils.toString(
                 this.getClass().getResourceAsStream("testPipelineQueueOnPipeline.txt"),
@@ -406,27 +408,43 @@ public class DatadogGraphListenerTest {
         final DDSpan buildSpan = buildTrace.get(0);
         long queueTime = (long) buildSpan.getUnsafeMetrics().get(CITags.QUEUE_TIME);
         assertTrue(queueTime > 0L);
+        assertEquals("testPipeline", buildSpan.getTag(CITags.NODE_NAME));
+        assertEquals("none",buildSpan.getTag(CITags._DD_HOSTNAME));
 
         final List<DDSpan> pipelineTrace = tracerWriter.get(1);
         assertEquals(6, pipelineTrace.size());
+        assertEquals("testPipeline", buildSpan.getTag(CITags.NODE_NAME));
+        assertEquals("none",buildSpan.getTag(CITags._DD_HOSTNAME));
 
         final DDSpan startPipeline = pipelineTrace.get(0);
         assertEquals(queueTime, startPipeline.getUnsafeMetrics().get(CITags.QUEUE_TIME));
+        assertEquals("testPipeline", buildSpan.getTag(CITags.NODE_NAME));
+        assertEquals("none",buildSpan.getTag(CITags._DD_HOSTNAME));
 
         final DDSpan allocateNode = pipelineTrace.get(1);
         assertEquals(queueTime, allocateNode.getUnsafeMetrics().get(CITags.QUEUE_TIME));
+        assertEquals("testPipeline", buildSpan.getTag(CITags.NODE_NAME));
+        assertEquals("none",buildSpan.getTag(CITags._DD_HOSTNAME));
 
         final DDSpan allocateNodeStart = pipelineTrace.get(2);
         assertEquals(0L, allocateNodeStart.getUnsafeMetrics().get(CITags.QUEUE_TIME));
+        assertEquals("testPipeline", buildSpan.getTag(CITags.NODE_NAME));
+        assertEquals("none",buildSpan.getTag(CITags._DD_HOSTNAME));
 
         final DDSpan stageStart = pipelineTrace.get(3);
         assertEquals(0L, stageStart.getUnsafeMetrics().get(CITags.QUEUE_TIME));
+        assertEquals("testPipeline", buildSpan.getTag(CITags.NODE_NAME));
+        assertEquals("none",buildSpan.getTag(CITags._DD_HOSTNAME));
 
         final DDSpan stage = pipelineTrace.get(4);
         assertEquals(0L, stage.getUnsafeMetrics().get(CITags.QUEUE_TIME));
+        assertEquals("testPipeline", buildSpan.getTag(CITags.NODE_NAME));
+        assertEquals("none",buildSpan.getTag(CITags._DD_HOSTNAME));
 
         final DDSpan step = pipelineTrace.get(5);
         assertEquals(0L, step.getUnsafeMetrics().get(CITags.QUEUE_TIME));
+        assertEquals("testPipeline", buildSpan.getTag(CITags.NODE_NAME));
+        assertEquals("none",buildSpan.getTag(CITags._DD_HOSTNAME));
     }
 
     @Test
@@ -476,7 +494,7 @@ public class DatadogGraphListenerTest {
         assertEquals("success", buildSpan.getTag(CITags.STATUS));
         assertNotNull(buildSpan.getTag(buildPrefix + CITags._URL));
         assertNotNull(buildSpan.getTag(CITags.NODE_NAME));
-        assertNotNull(buildSpan.getTag(CITags._DD_HOSTNAME));
+        assertNull(buildSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals("success", buildSpan.getTag(CITags.JENKINS_RESULT));
         assertEquals("jenkins-pipelineIntegrationSuccess-1", buildSpan.getTag(CITags.JENKINS_TAG));
         assertEquals(false, buildSpan.getTag(CITags._DD_CI_INTERNAL));
@@ -500,7 +518,7 @@ public class DatadogGraphListenerTest {
         assertEquals("jenkins", pipelineSpan.getTag(CITags.CI_PROVIDER_NAME));
         assertNotNull(pipelineSpan.getTag(pipelinePrefix + CITags._URL));
         assertNotNull(pipelineSpan.getTag(CITags.NODE_NAME));
-        assertNotNull(pipelineSpan.getTag(CITags._DD_HOSTNAME));
+        assertNull(pipelineSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals(true, pipelineSpan.getTag(CITags._DD_CI_INTERNAL));
         assertNull(pipelineSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
         assertNull(pipelineSpan.getTag(CITags._DD_CI_LEVEL));
@@ -521,7 +539,7 @@ public class DatadogGraphListenerTest {
         assertEquals("test", stepInternalSpan.getTag("jenkins.step.args.name"));
         assertNotNull(stepInternalSpan.getTag(stepPrefix + CITags._URL));
         assertNotNull(stepInternalSpan.getTag(CITags.NODE_NAME));
-        assertNotNull(stepInternalSpan.getTag(CITags._DD_HOSTNAME));
+        assertNull(stepInternalSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals(true, stepInternalSpan.getTag(CITags._DD_CI_INTERNAL));
         assertEquals("3", stepInternalSpan.getTag(stepPrefix + CITags._NUMBER));
         assertNull(stepInternalSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
@@ -542,7 +560,7 @@ public class DatadogGraphListenerTest {
         assertEquals("jenkins", stageSpan.getTag(CITags.CI_PROVIDER_NAME));
         assertNotNull(stageSpan.getTag(stagePrefix + CITags._URL));
         assertNotNull(stageSpan.getTag(CITags.NODE_NAME));
-        assertNotNull(stageSpan.getTag(CITags._DD_HOSTNAME));
+        assertNull(stageSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals(false, stageSpan.getTag(CITags._DD_CI_INTERNAL));
         assertEquals("4", stageSpan.getTag(stagePrefix + CITags._NUMBER));
         assertEquals(BuildPipelineNode.NodeType.STAGE.getBuildLevel(), stageSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
@@ -564,7 +582,7 @@ public class DatadogGraphListenerTest {
         assertNotNull(stepAtomSpan.getTag(stepPrefix + CITags._URL));
         assertNotNull(stepAtomSpan.getTag(stepPrefix + CITags._URL));
         assertNotNull(stepAtomSpan.getTag(CITags.NODE_NAME));
-        assertNotNull(stepAtomSpan.getTag(CITags._DD_HOSTNAME));
+        assertNull(stepAtomSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals(false, stepAtomSpan.getTag(CITags._DD_CI_INTERNAL));
         assertEquals("5", stepAtomSpan.getTag(stepPrefix + CITags._NUMBER));
         assertEquals(BuildPipelineNode.NodeType.STEP.getBuildLevel(), stepAtomSpan.getTag(CITags._DD_CI_BUILD_LEVEL));

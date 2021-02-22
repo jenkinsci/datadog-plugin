@@ -2,6 +2,7 @@ package org.datadog.jenkins.plugins.datadog.listeners;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import datadog.trace.common.writer.ListWriter;
@@ -17,7 +18,6 @@ import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
-import org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -74,6 +74,7 @@ public class DatadogBuildListenerIT {
         final DDSpan buildSpan = buildTrace.get(0);
         long queueTime = (long) buildSpan.getUnsafeMetrics().get(CITags.QUEUE_TIME);
         assertTrue(queueTime > 0L);
+        assertEquals("none", buildSpan.getTag(CITags._DD_HOSTNAME));
     }
 
     @Test
@@ -120,7 +121,7 @@ public class DatadogBuildListenerIT {
         assertEquals("success", buildSpan.getTag(buildPrefix + CITags._RESULT));
         assertEquals("success", buildSpan.getTag(CITags.STATUS));
         assertNotNull(buildSpan.getTag(CITags.NODE_NAME));
-        assertNotNull(buildSpan.getTag(CITags._DD_HOSTNAME));
+        assertNull(buildSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals("success", buildSpan.getTag(CITags.JENKINS_RESULT));
         assertEquals("jenkins-buildIntegrationSuccess-1", buildSpan.getTag(CITags.JENKINS_TAG));
         assertNotNull(buildSpan.getTag(CITags._DD_CI_STAGES));
