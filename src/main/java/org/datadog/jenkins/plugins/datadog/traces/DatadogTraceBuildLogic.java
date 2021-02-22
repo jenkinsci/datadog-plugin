@@ -124,7 +124,7 @@ public class DatadogTraceBuildLogic {
 
         final String nodeName = buildData.getNodeName("").isEmpty() ? pipelineData.getNodeName("") : buildData.getNodeName("");
         buildSpan.setTag(CITags.NODE_NAME, nodeName);
-        // If the NodeName == master, we don't set _dd.hostname. It will be overridden by the Datadog Agent.
+        // If the NodeName == master, we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
         // If the NodeName != master, we set _dd.hostname to 'none' explicitly, cause we cannot calculate the worker hostname.
         if(!"master".equalsIgnoreCase(nodeName)) {
             buildSpan.setTag(CITags._DD_HOSTNAME, HOSTNAME_NONE);

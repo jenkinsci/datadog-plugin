@@ -350,11 +350,12 @@ public class DatadogTracePipelineLogic {
         final String user = envVars.get("USER") != null ? envVars.get("USER") : buildData.getUserId();
         tags.put(CITags.USER_NAME, user);
 
-        //Node info
+        // Node info
+        // If there is no node explicitly set for the step, we consider that is the node from the build.
         final String nodeName = current.getNodeName() != null ? current.getNodeName() : buildData.getNodeName("");
         tags.put(CITags.NODE_NAME, nodeName);
-        // If the NodeName == master, we don't set _dd.hostname. It will be overridden by the Datadog Agent.
-        // If the NodeName != master, we set _dd.hostname to 'none' explicitly, cause we cannot calculate the worker hostname.
+        // If the NodeName == "master", we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
+        // If the NodeName != "master", we set _dd.hostname to 'none' explicitly, cause we cannot calculate the worker hostname.
         if(!"master".equalsIgnoreCase(nodeName)){
             tags.put(CITags._DD_HOSTNAME, HOSTNAME_NONE);
         }
