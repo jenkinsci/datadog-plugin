@@ -1,5 +1,13 @@
 Changes
 =======
+## 2.8.3 / 2021-02-22
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.8.2...datadog-2.8.3
+
+### Changes
+* [Fixed] Avoid calculating `_dd.hostname` for Jenkins workers. See [#184](https://github.com/jenkinsci/datadog-plugin/pull/184)
+* [Enhancement] Improve log message on incompatibilities when `dd-java-agent` is used as `javaagent`. See [#185](https://github.com/jenkinsci/datadog-plugin/pull/185) 
+
 ## 2.8.2 / 2021-02-16
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.8.1...datadog-2.8.2
