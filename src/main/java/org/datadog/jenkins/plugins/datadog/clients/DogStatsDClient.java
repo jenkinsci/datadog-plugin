@@ -272,6 +272,21 @@ public class DogStatsDClient implements DatadogClient {
             traceBuildLogic = new DatadogTraceBuildLogic(ddTracer);
             tracePipelineLogic = new DatadogTracePipelineLogic(ddTracer);
             return true;
+        } catch (NoSuchMethodError err) {
+            // If the user is using the dd-java-agent as -javaagent in the Jenkins startup command
+            // the traces collection initialization will throw NoSuchMethodError, due to the dd-java-agent
+            // packages its classes with a package renaming (to avoid issues during auto-instrumentation).
+            // It’s not allowed to have the library that sends the traces manually
+            // (used by the Jenkins plugin, in this case) and the dd-java-agent (as -javaagent, for example)
+            // in the classpath together.
+            // E.g: java.lang.NoSuchMethodError: datadog.trace.api.IOLogger.<init>(Lorg/slf4j/Logger;)V
+            final String message = err.getMessage() != null ? err.getMessage() : "";
+            if(message.contains("datadog.trace")) {
+                DatadogUtilities.severe(logger, err, "Failed to reinitialize Datadog-Plugin Tracer, Cannot enable traces collection via plugin if the Datadog Java Tracer is being used as javaagent in the Jenkins startup command. This error will not affect your pipelines executions.");
+            } else {
+                DatadogUtilities.severe(logger, err, "Failed to reinitialize Datadog-Plugin Tracer due to unrecoverable error. Set logger level to FINER to know more details. This error will not affect your pipelines executions.");
+            }
+            return false;
         } catch (Throwable e){
             DatadogUtilities.severe(logger, e, "Failed to reinitialize Datadog-Plugin Tracer");
             return false;
