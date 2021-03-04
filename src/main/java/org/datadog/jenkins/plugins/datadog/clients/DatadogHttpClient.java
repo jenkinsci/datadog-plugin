@@ -279,7 +279,7 @@ public class DatadogHttpClient implements DatadogClient {
             payload.put("alert_type", event.getAlertType().name().toLowerCase());
             status = post(payload, EVENT);
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to send event");
             status = false;
         }
         return status;
@@ -366,7 +366,7 @@ public class DatadogHttpClient implements DatadogClient {
         try {
             status = post(payload, METRIC);
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to send metric payload");
             status = false;
         }
         return status;
@@ -445,12 +445,12 @@ public class DatadogHttpClient implements DatadogClient {
             try {
                 if (conn != null && conn.getResponseCode() == HTTP_FORBIDDEN) {
                     logger.severe("Hmmm, your API key may be invalid. We received a 403 error.");
-                    DatadogUtilities.severe(logger, e, null);
+                    DatadogUtilities.severe(logger, e, "API key is invalid, please check your config");
                 } else {
                     DatadogUtilities.severe(logger, e, "Unknown client error, please check your config");
                 }
             } catch (IOException ex) {
-                DatadogUtilities.severe(logger, e, null);
+                DatadogUtilities.severe(logger, e, "Failed to inspect HTTP response");
             }
             status = false;
         } finally {
@@ -535,7 +535,7 @@ public class DatadogHttpClient implements DatadogClient {
                     DatadogUtilities.severe(logger, e, "Unknown client error, please check your config");
                 }
             } catch (IOException ex) {
-                DatadogUtilities.severe(logger, ex, null);
+                DatadogUtilities.severe(logger, ex, "Failed to inspect HTTP response");
             }
             return false;
         } finally {

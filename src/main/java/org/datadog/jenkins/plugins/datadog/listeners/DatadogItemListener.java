@@ -100,7 +100,7 @@ public class DatadogItemListener extends ItemListener {
 
             logger.fine("End DatadogItemListener#on" + action);
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to process item '" + action + "' CRUD event");
         }
     }
 
@@ -135,7 +135,7 @@ public class DatadogItemListener extends ItemListener {
 
             logger.fine("End DatadogItemListener#onCopied");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to process item copied event");
         }
     }
 
@@ -170,7 +170,7 @@ public class DatadogItemListener extends ItemListener {
 
             logger.fine("End DatadogItemListener#onLocationChanged");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to process item location changed event");
         }
     }
 

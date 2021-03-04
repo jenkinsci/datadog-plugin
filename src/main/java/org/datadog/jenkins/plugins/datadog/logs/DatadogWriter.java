@@ -83,7 +83,7 @@ public class DatadogWriter {
                 client.sendLogs(payload.toString());
             }
         } catch (Exception e){
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to send log payload");
         }
     }
 

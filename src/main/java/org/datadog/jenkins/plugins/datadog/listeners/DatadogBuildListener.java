@@ -97,7 +97,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             try {
                 buildData = new BuildData(run, null);
             } catch (IOException | InterruptedException e) {
-                DatadogUtilities.severe(logger, e, null);
+                DatadogUtilities.severe(logger, e, "Failed to parse initialized build data");
                 return;
             }
 
@@ -105,7 +105,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             client.startBuildTrace(buildData, run);
             logger.fine("End DatadogBuildListener#onInitialize");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to process build initialization");
         }
     }
 
@@ -142,7 +142,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             logger.fine("End DatadogBuildListener#setUpEnvironment");
             return newEnv;
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to set up environment");
             return new Environment() {
             };
         }
@@ -175,7 +175,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             try {
                 buildData = new BuildData(run, listener);
             } catch (IOException | InterruptedException e) {
-                DatadogUtilities.severe(logger, e, null);
+                DatadogUtilities.severe(logger, e, "Failed to parse started build data");
                 return;
             }
 
@@ -209,7 +209,7 @@ public class DatadogBuildListener extends RunListener<Run> {
 
             logger.fine("End DatadogBuildListener#onStarted");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to process build start");
         }
     }
 
@@ -241,7 +241,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             try {
                 buildData = new BuildData(run, listener);
             } catch (IOException | InterruptedException e) {
-                DatadogUtilities.severe(logger, e, null);
+                DatadogUtilities.severe(logger, e, "Failed to parse completed build data");
                 return;
             }
 
@@ -319,7 +319,7 @@ public class DatadogBuildListener extends RunListener<Run> {
 
             logger.fine("End DatadogBuildListener#onCompleted");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to process build completion");
         }
     }
 
@@ -348,7 +348,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             try {
                 buildData = new BuildData(run, null);
             } catch (IOException | InterruptedException e) {
-                DatadogUtilities.severe(logger, e, null);
+                DatadogUtilities.severe(logger, e, "Failed to parse finalized build data");
                 return;
             }
 
@@ -356,7 +356,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             client.finishBuildTrace(buildData, run);
             logger.fine("End DatadogBuildListener#onFinalized");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to process build finalization");
         }
     }
 
@@ -381,7 +381,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             try {
                 buildData = new BuildData(run, null);
             } catch (IOException | InterruptedException e) {
-                DatadogUtilities.severe(logger, e, null);
+                DatadogUtilities.severe(logger, e, "Failed to parse deleted build data");
                 return;
             }
 
@@ -413,7 +413,7 @@ public class DatadogBuildListener extends RunListener<Run> {
 
             logger.fine("End DatadogBuildListener#onDeleted");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to process build deletion");
         }
     }
 

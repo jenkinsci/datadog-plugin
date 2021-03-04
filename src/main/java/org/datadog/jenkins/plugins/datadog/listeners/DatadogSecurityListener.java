@@ -84,7 +84,7 @@ public class DatadogSecurityListener extends SecurityListener {
 
             logger.fine("End DatadogSecurityListener#authenticated");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to process user authenticated event");
         }
     }
 
@@ -119,7 +119,7 @@ public class DatadogSecurityListener extends SecurityListener {
 
             logger.fine("End DatadogSecurityListener#failedToAuthenticate");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to process authentication failure event");
         }
     }
 
@@ -164,7 +164,7 @@ public class DatadogSecurityListener extends SecurityListener {
 
             logger.fine("End DatadogSecurityListener#loggedOut");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to process logout event");
         }
     }
 }
