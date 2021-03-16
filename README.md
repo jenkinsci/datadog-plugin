@@ -136,6 +136,7 @@ Logging is done by utilizing the `java.util.Logger`, which follows the [best log
 
 The Datadog plugin adds a "datadog" step that provides some configuration option for your pipeline-based jobs.
 In declarative pipelines, add the step to a top-level option block like so:
+
 ```groovy
 pipeline {
     agent any
@@ -153,6 +154,7 @@ pipeline {
 ```
 
 In scripted pipeline, wrap the relevant section with the datadog step like so:
+
 ```groovy
 datadog(collectLogs: true, tags: ["foo:bar", "bar:baz"]){
   node {
@@ -290,7 +292,6 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 | `jenkins.user.authenticated`           | Rate of users authenticating.                                  | `jenkins_url`, `user_id`                                                   |
 | `jenkins.user.logout`                  | Rate of users logging out.                                     | `jenkins_url`, `user_id`                                                   |
 
-
 #### Log Collection for Agents
 
 **Note**: This configuration only applies to those using the [Datadog Agent configuration](#dogstatsd-forwarding-plugin).
@@ -336,7 +337,6 @@ First of all and most importantly, **thank you** for sharing.
 
 Checkout the [contributing guidelines][11] before you submit an issue or a pull request.
 Checkout the [development document][12] for tips on spinning up a quick development environment locally.
-
 
 [1]: https://plugins.jenkins.io/datadog
 [2]: http://updates.jenkins-ci.org/download/war/1.632/jenkins.war
