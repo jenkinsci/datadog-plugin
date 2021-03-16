@@ -30,6 +30,7 @@ import hudson.console.ConsoleLogFilter;
 import hudson.model.*;
 
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.model.BuildData;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -59,10 +60,10 @@ public class DatadogConsoleLogFilter extends ConsoleLogFilter implements Seriali
             }
 
             if (build != null) {
-                DatadogWriter writer = new DatadogWriter(build, outputStream, build.getCharset());
+                DatadogWriter writer = new DatadogWriter(new BuildData(build, null), outputStream);
                 return new DatadogOutputStream(outputStream, writer);
             } else if (run != null) {
-                DatadogWriter writer = new DatadogWriter(run, outputStream, run.getCharset());
+                DatadogWriter writer = new DatadogWriter(new BuildData(run, null), outputStream);
                 return new DatadogOutputStream(outputStream, writer);
             } else {
                 return outputStream;

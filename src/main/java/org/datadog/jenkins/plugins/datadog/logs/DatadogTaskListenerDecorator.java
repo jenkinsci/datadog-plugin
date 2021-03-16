@@ -34,6 +34,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.log.TaskListenerDecorator;
@@ -41,16 +42,20 @@ import org.jenkinsci.plugins.workflow.log.TaskListenerDecorator;
 public class DatadogTaskListenerDecorator extends TaskListenerDecorator {
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(DatadogTaskListenerDecorator.class.getName());
-    private transient WorkflowRun run;
+    private BuildData buildData;
 
     public DatadogTaskListenerDecorator(WorkflowRun run) {
-        this.run = run;
+        try {
+            this.buildData = new BuildData(run, null);
+        } catch (Exception e) {
+            DatadogUtilities.severe(LOGGER, e, null);
+        }
     }
 
     @Nonnull
     @Override
     public OutputStream decorate(@Nonnull OutputStream outputStream) {
-        DatadogWriter writer = new DatadogWriter(run, outputStream, run.getCharset());
+        DatadogWriter writer = new DatadogWriter(this.buildData, outputStream);
         return new DatadogOutputStream(outputStream, writer);
     }
 
