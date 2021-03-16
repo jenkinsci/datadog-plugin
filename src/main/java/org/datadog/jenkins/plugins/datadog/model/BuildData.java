@@ -342,6 +342,8 @@ public class BuildData implements Serializable {
 
     public Charset getCharset() {
         if (charsetName != null) {
+            // Will throw an exception if there is an issue with
+            // the charset canonical name.
             return Charset.forName(charsetName);
         }
         return Charset.defaultCharset();
