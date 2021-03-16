@@ -54,7 +54,7 @@ To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure S
 1. Select the radio button next to **Use the Datadog Agent to report to Datadog**.
 2. Specify your DogStatsD server `hostname` and `port`.
 3. (optional) Enter the hostname of the Jenkins server in the Advanced tab to include it with the events.
-4. (optional) Enter your Log Collection Port and configure [log collection](#log-collection) and select "Enable Log Collection" in the Advanced tab.
+4. (optional) Enter your Log Collection Port and configure [log collection](#log-collection-for-agents) and select "Enable Log Collection" in the Advanced tab.
 5. Save your configuration.
 
 #### Groovy script
