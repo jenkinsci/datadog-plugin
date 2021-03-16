@@ -18,7 +18,7 @@ This plugin can be installed from the [Update Center][3] (found at `Manage Jenki
 
 1. Select the `Available` tab, search for `Datadog`, and select the checkbox next to `Datadog Plugin`.
 2. Install the plugin by using one of the two install buttons at the bottom of the screen.
-3. To verify the plugin is installed, search for `Datadog Plugin` on the `Installed` tab. 
+3. To verify the plugin is installed, search for `Datadog Plugin` on the `Installed` tab.
 
   Continue below for configuration.
 
@@ -30,7 +30,7 @@ There are two ways to configure your plugin to submit data to Datadog:
 
 * **RECOMMENDED**: Using a DogStatsD server / Datadog Agent that acts as a forwarder between Jenkins and Datadog.
   - Build Logs collection only works with a full Datadog Agent installed.
-  - For metrics submitted from an external host, the Datadog Agent requires the following configuration for DogStatsD: `dogstatsd_non_local_traffic: true`. This can be configured using the `datadog.yaml` [configuration file][17]. 
+  - For metrics submitted from an external host, the Datadog Agent requires the following configuration for DogStatsD: `dogstatsd_non_local_traffic: true`. This can be configured using the `datadog.yaml` [configuration file][17].
 * Sending data directly to Datadog through HTTP.
   - The HTTP client implementation used is blocking with a timeout duration of 1 minute. If there is a connection problem with Datadog, it may slow your Jenkins instance down.
 
@@ -305,14 +305,14 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 2. To collect Jenkins logs, create a [custom log source file][13] for your Agent by creating a `conf.yaml` inside `conf.d/jenkins.d` with the following:
     ```
     logs:
-      - type: tcp 
-        port: <PORT> 
+      - type: tcp
+        port: <PORT>
         service: <SERVICE>
         source: jenkins
     ```
-    
+
 3. In Jenkins, submit the port you specified above as the `Log Collection Port`. You can set this using [env vars](#dogstatsd-forwarding-env), a [groovy script](#dogstatsd-forwarding-groovy-script), or the [Jenkins UI](#dogstatsd-forwarding-plugin).
-  
+
 4. [Restart the Agent][14].
 
 ### Service checks
@@ -321,7 +321,7 @@ Build status `jenkins.job.status` with the default tags: : `jenkins_url`, `job`,
 
 ## Issue Tracking
 
-GitHub's built-in issue tracking system is used to track all issues relating to this plugin: [jenkinsci/datadog-plugin/issues][7]. 
+GitHub's built-in issue tracking system is used to track all issues relating to this plugin: [jenkinsci/datadog-plugin/issues][7].
 However, given how Jenkins plugins are hosted, there may be issues that are posted to JIRA as well. You can check [this jenkins issue][8] for those issue postings.
 
 **Note**: [Unresolved issues on JIRA mentioning Datadog][9].
@@ -332,9 +332,9 @@ See the [CHANGELOG.md][10].
 
 ## How to contribute code
 
-First of all and most importantly, **thank you** for sharing.  
+First of all and most importantly, **thank you** for sharing.
 
-Checkout the [contributing guidelines][11] before you submit an issue or a pull request.  
+Checkout the [contributing guidelines][11] before you submit an issue or a pull request.
 Checkout the [development document][12] for tips on spinning up a quick development environment locally.
 
 
