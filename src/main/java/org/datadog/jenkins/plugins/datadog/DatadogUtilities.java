@@ -139,7 +139,7 @@ public class DatadogUtilities {
         }
         result = TagsUtil.merge(result, computeTagListFromVarList(envVars, tagProperties));
 
-        result = TagsUtil.merge(result, getTagsFromGlobalJobTags(jobName, globalJobTags));
+        result = TagsUtil.merge(result, getTagsFromGlobalJobTags(jobName, globalJobTags, envVars));
 
         // pipeline defined tags
         DatadogPipelineAction action = run.getAction(DatadogPipelineAction.class);
@@ -194,7 +194,7 @@ public class DatadogUtilities {
      * @param globalJobTags - globalJobTags string
      * @return - A Map of values containing the key and values of each Datadog tag to apply to the metric/event
      */
-    private static Map<String, Set<String>> getTagsFromGlobalJobTags(String jobName, final String globalJobTags) {
+    private static Map<String, Set<String>> getTagsFromGlobalJobTags(String jobName, final String globalJobTags, EnvVars envVars) {
         Map<String, Set<String>> tags = new HashMap<>();
         List<String> globalJobTagsLines = linesToList(globalJobTags);
         logger.fine(String.format("The list of Global Job Tags are: %s", globalJobTagsLines));
@@ -219,6 +219,7 @@ public class DatadogUtilities {
                             try {
                                 tagValue = jobNameMatcher.group(Character.getNumericValue(tagValue.charAt(1)));
                             } catch (IndexOutOfBoundsException e) {
+                                tagValue = envVars.get(tagValue.substring(1, tagValue.length()), tagValue);
                                 logger.fine(String.format(
                                         "Specified a capture group that doesn't exist, not applying tag: %s Exception: %s",
                                         Arrays.toString(tagItem), e));
@@ -713,7 +714,7 @@ public class DatadogUtilities {
             logger.finer(message + ": " + sw.toString());
         }
     }
-    
+
     public static int toInt(boolean b) {
         return b ? 1 : 0;
     }
