@@ -45,12 +45,12 @@ public class DatadogWriter {
 
     private OutputStream errorStream;
     private Charset charset;
-    private Run<?, ?> run;
+    private BuildData buildData;
 
-    public DatadogWriter(Run<?, ?> run, OutputStream error, Charset charset) {
+    public DatadogWriter(BuildData buildData, OutputStream error) {
         this.errorStream = error != null ? error : System.err;
-        this.charset = charset;
-        this.run = run;
+        this.charset = buildData.getCharset();
+        this.buildData = buildData;
     }
 
     public Charset getCharset() {
@@ -65,8 +65,7 @@ public class DatadogWriter {
 
             JSONObject payload = new JSONObject();
 
-            BuildData buildData = new BuildData(this.run, null);
-            payload.put("ddtags", String.join(",", TagsUtil.convertTagsToArray(buildData.getTags())));
+            payload.put("ddtags", String.join(",", TagsUtil.convertTagsToArray(this.buildData.getTags())));
             payload = buildData.addLogAttributes(payload);
             payload.put("message", line);
             payload.put("ddsource", "jenkins");

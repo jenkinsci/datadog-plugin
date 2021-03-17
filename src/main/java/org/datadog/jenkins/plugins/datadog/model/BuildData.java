@@ -43,6 +43,7 @@ import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +60,7 @@ public class BuildData implements Serializable {
     private String buildNumber;
     private String buildId;
     private String buildUrl;
+    private String charsetName;
     private String nodeName;
     private String jobName;
     private String buildTag;
@@ -155,6 +157,8 @@ public class BuildData implements Serializable {
         setBuildNumber(String.valueOf(run.getNumber()));
         // Set Hostname
         setHostname(DatadogUtilities.getHostname(envVars));
+        // Save charset canonical name
+        setCharset(run.getCharset());
 
         // Set Job Name
         String jobName = null;
@@ -334,6 +338,21 @@ public class BuildData implements Serializable {
 
     public void setBuildUrl(String buildUrl) {
         this.buildUrl = buildUrl;
+    }
+
+    public Charset getCharset() {
+        if (charsetName != null) {
+            // Will throw an exception if there is an issue with
+            // the charset canonical name.
+            return Charset.forName(charsetName);
+        }
+        return Charset.defaultCharset();
+    }
+
+    public void setCharset(Charset charset) {
+        if (charset != null) {
+            this.charsetName = charset.name();
+        }
     }
 
     public String getNodeName(String value) {
