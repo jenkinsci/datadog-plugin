@@ -214,15 +214,27 @@ public class DatadogUtilities {
                         String tagName = tagItem[0];
                         String tagValue = tagItem[1];
                         // Fills regex group values from the regex job name to tag values
-                        // eg: (.*?)-job, owner:$1
+                        // eg: (.*?)-job, owner:$1 or (.*?)-job
+                        // Also fills environment variables defined in the tag value.
+                        // eg: (.*?)-job, custom_tag:$ENV_VAR
                         if (Character.toString(tagValue.charAt(0)).equals("$")) {
                             try {
                                 tagValue = jobNameMatcher.group(Character.getNumericValue(tagValue.charAt(1)));
                             } catch (IndexOutOfBoundsException e) {
-                                tagValue = envVars.get(tagValue.substring(1, tagValue.length()), tagValue);
-                                logger.fine(String.format(
+
+                                String tagNameEnvVar = tagValue.substring(1);
+                                if (envVars.containsKey(tagNameEnvVar)){
+                                    tagValue = envVars.get(tagNameEnvVar);
+                                }
+                                else if (EnvVars.masterEnvVars.containsKey(tagNameEnvVar)){
+                                    tagValue = EnvVars.masterEnvVars.get(tagNameEnvVar);
+                                }
+                                else {
+                                    tagValue = "unknown";
+                                    logger.fine(String.format(
                                         "Specified a capture group that doesn't exist, not applying tag: %s Exception: %s",
                                         Arrays.toString(tagItem), e));
+                                }
                             }
                         }
                         Set<String> tagValues = tags.containsKey(tagName) ? tags.get(tagName) : new HashSet<String>();
