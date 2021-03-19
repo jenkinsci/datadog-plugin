@@ -92,7 +92,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static Integer DEFAULT_TARGET_TRACE_COLLECTION_PORT_VALUE = null;
     private static Integer DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE = null;
     private static boolean DEFAULT_EMIT_SECURITY_EVENTS_VALUE = true;
-    private static boolean DEFAULT_EMIT_SYSTEM_EVENTS_VALUE = true;
+    private static boolean DEFAULT_EMIT_SYSTEM_EVENTS_VALUE = false;
     private static boolean DEFAULT_COLLECT_BUILD_LOGS_VALUE = false;
     private static boolean DEFAULT_COLLECT_BUILD_TRACES_VALUE = false;
 
