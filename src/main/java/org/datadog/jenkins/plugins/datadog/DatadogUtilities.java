@@ -230,7 +230,6 @@ public class DatadogUtilities {
                                     tagValue = EnvVars.masterEnvVars.get(tagNameEnvVar);
                                 }
                                 else {
-                                    tagValue = "unknown";
                                     logger.fine(String.format(
                                         "Specified a capture group that doesn't exist, not applying tag: %s Exception: %s",
                                         Arrays.toString(tagItem), e));

@@ -23,80 +23,122 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
  */
 
-package org.datadog.jenkins.plugins.datadog.events;
+package org.datadog.jenkins.plugins.datadog;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import hudson.EnvVars;
-import hudson.model.*;
+import hudson.model.Run;
+import hudson.model.TaskListener;
+import hudson.model.labels.LabelAtom;
 import jenkins.model.Jenkins;
-import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
-import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.stubs.BuildStub;
+import org.apache.commons.io.IOUtils;
+import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
+import org.datadog.jenkins.plugins.datadog.clients.DatadogEventStub;
+import org.datadog.jenkins.plugins.datadog.clients.DatadogMetric;
+import org.datadog.jenkins.plugins.datadog.listeners.DatadogBuildListener;
+import org.datadog.jenkins.plugins.datadog.listeners.DatadogBuildListenerTestWrapper;
 import org.datadog.jenkins.plugins.datadog.stubs.ProjectStub;
+import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 
-import java.util.Arrays;
-
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.*;
-
-
-import org.datadog.jenkins.plugins.datadog.DatadogEvent;
-import org.datadog.jenkins.plugins.datadog.model.BuildData;
 
 public class DatadogBuildTagTest {
 
     @ClassRule
     public static JenkinsRule jenkinsRule = new JenkinsRule();
+    private DatadogClientStub client;
+    private DatadogBuildListener datadogBuildListener;
+    EnvVars envVars;
+
+    @Before
+    public void setUpMocks() {
+      this.client = new DatadogClientStub();
+
+      this.datadogBuildListener = new DatadogBuildListenerTestWrapper();
+      ((DatadogBuildListenerTestWrapper) datadogBuildListener).setDatadogClient(client);
+
+
+      DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+      cfg.setGlobalJobTags("(.*?)_job, custom_tag:$ENV_VAR");
+
+      this.envVars = new EnvVars();
+      envVars.put("HOSTNAME", "test-hostname");
+      envVars.put("JENKINS_URL", "unknown");
+      envVars.put("ENV_VAR", "value");
+      // also put this in the master env vars
+      EnvVars.masterEnvVars.put("ENV_VAR", "value");
+    }
+
+    public void assertAllJobMetricsAndEvents(){
+      // Assert all *.job.* metrics contain the custom_tag
+      for (DatadogMetric metric : this.client.metrics){
+        if (metric.getName().contains(".job.")){
+          Assert.assertTrue(metric.getTags().contains("custom_tag:value"));
+        }
+      }
+
+      // Assert all job related events contain the custom tag
+      for (DatadogEventStub event : this.client.events){
+        Assert.assertTrue(event.getTags().containsKey("custom_tag"));
+        Assert.assertTrue(event.getTags().get("custom_tag").contains("value"));
+      }
+    }
 
     @Test
     public void testGlobalJobTagsFreestyle() throws Exception {
+      Jenkins jenkins = mock(Jenkins.class);
+      when(jenkins.getFullName()).thenReturn("");
+      ProjectStub job = new ProjectStub(jenkins, "freestyle_job");
 
-        Jenkins jenkins = mock(Jenkins.class);
-        when(jenkins.getFullName()).thenReturn("");
-        ProjectStub job = new ProjectStub(jenkins,"freestyle_job");
+      Run run = mock(Run.class);
+      when(run.getResult()).thenReturn(null);
+      when(run.getEnvironment(any(TaskListener.class))).thenReturn(this.envVars);
+      when(run.getParent()).thenReturn(job);
 
-        EnvVars envVars = new EnvVars();
-        envVars.put("ENV_VAR", "value");
-        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
-        cfg.setGlobalJobTags("(.*?)_job, custom_tag:$ENV_VAR");
+      this.datadogBuildListener.onInitialize(run);
+      assertAllJobMetricsAndEvents();
 
+      this.datadogBuildListener.onStarted(run, mock(TaskListener.class));
+      assertAllJobMetricsAndEvents();
 
-        Run run = new BuildStub(job, Result.SUCCESS, envVars, null, 10L, 2, null, 0L, null);
-        TaskListener listener = mock(TaskListener.class);
+      this.datadogBuildListener.onCompleted(run, mock(TaskListener.class));
+      assertAllJobMetricsAndEvents();
 
-        BuildData bd = new BuildData(run, listener);
-        DatadogEvent event = new BuildFinishedEventImpl(bd);
-
-        System.out.println(String.format("tags: %s", event.getTags()));
-        System.out.println(event.getTags());
-        Assert.assertTrue(event.getTags().get("custom_tag").contains("value"));
+      this.datadogBuildListener.onFinalized(run);
+      assertAllJobMetricsAndEvents();
     }
 
-    // @Test
-    // public void testGlobalJobTagsPipeline() throws Exception {
+    @Test
+    public void testGlobalJobTagsPipelineAgent() throws Exception {
+      jenkinsRule.createOnlineSlave(new LabelAtom("test"));
+      WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipeline_job");
+      String definition = IOUtils.toString(
+          this.getClass().getResourceAsStream("testPipeline.txt"),
+          "UTF-8"
+      );
+      job.setDefinition(new CpsFlowDefinition(definition, true));
 
-    //     Jenkins jenkins = mock(Jenkins.class);
-    //     when(jenkins.getFullName()).thenReturn("");
-    //     ProjectStub job = new ProjectStub(jenkins,"JobName");
+      WorkflowRun run = job.scheduleBuild2(0).get();
 
-    //     EnvVars envVars = new EnvVars();
-    //     envVars.put("ENV_VAR", "value");
-    //     DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
-    //     cfg.setGlobalJobTags("JobName, custom_tag:$ENV_VAR");
+      this.datadogBuildListener.onInitialize(run);
+      assertAllJobMetricsAndEvents();
 
-    //     Run run = new BuildStub(job, Result.SUCCESS, envVars, null, 10L, 2, null, 0L, null);
-    //     TaskListener listener = mock(TaskListener.class);
+      this.datadogBuildListener.onStarted(run, mock(TaskListener.class));
+      assertAllJobMetricsAndEvents();
 
-    //     BuildData bd = new BuildData(run, listener);
-    //     DatadogEvent event = new BuildFinishedEventImpl(bd);
+      this.datadogBuildListener.onCompleted(run, mock(TaskListener.class));
+      assertAllJobMetricsAndEvents();
 
-    //     System.out.println(String.format("tags: %s", event.getTags()));
-    //     Assert.assertTrue(event.getTags().get("custom_tag").contains("value"));
-
-    // }
-
+      this.datadogBuildListener.onFinalized(run);
+      assertAllJobMetricsAndEvents();
+    }
 }

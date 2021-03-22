@@ -26,7 +26,9 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.clients;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 
 public class DatadogEventStub {
@@ -37,6 +39,7 @@ public class DatadogEventStub {
     private DatadogEvent.Priority priority;
     private DatadogEvent.AlertType alertType;
     private Long date;
+    private Map<String, Set<String>> tags;
 
     DatadogEventStub(DatadogEvent event) {
         this.title = event.getTitle();
@@ -46,6 +49,11 @@ public class DatadogEventStub {
         this.priority = event.getPriority();
         this.alertType = event.getAlertType();
         this.date = event.getDate();
+        this.tags = event.getTags();
+    }
+
+    public Map<String, Set<String>> getTags(){
+        return this.tags;
     }
 
     /**
@@ -78,7 +86,7 @@ public class DatadogEventStub {
 
     @Override
     public int hashCode() {
-        return Objects.hash(title, text, host, jenkinsUrl, priority, alertType, date);
+        return Objects.hash(title, text, host, jenkinsUrl, priority, alertType, date, tags);
     }
 
     @Override
@@ -88,6 +96,7 @@ public class DatadogEventStub {
                 ", priority=" + priority +
                 ", alertType=" + alertType +
                 ", date=" + date +
+                ", tags=" + tags +
                 '}';
     }
 }
