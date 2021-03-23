@@ -50,8 +50,12 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 
-
-public class DatadogBuildTagTest {
+/**
+ * Test suite for global tags configuration of Jenkins plugin
+ *  - Tests for global tags
+ *  - Tests for global job tags
+ */
+public class DatadogGlobalTagsTest {
 
     @ClassRule
     public static JenkinsRule jenkinsRule = new JenkinsRule();
@@ -68,13 +72,9 @@ public class DatadogBuildTagTest {
 
 
       DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
-      cfg.setGlobalJobTags("(.*?)_job, custom_tag:$ENV_VAR");
+      cfg.setGlobalJobTags("(.*?)_job, global_job_tag:$ENV_VAR");
+      cfg.setGlobalTags("global_tag:$ENV_VAR");
 
-      this.envVars = new EnvVars();
-      envVars.put("HOSTNAME", "test-hostname");
-      envVars.put("JENKINS_URL", "unknown");
-      envVars.put("ENV_VAR", "value");
-      // also put this in the master env vars
       EnvVars.masterEnvVars.put("ENV_VAR", "value");
     }
 
@@ -82,14 +82,17 @@ public class DatadogBuildTagTest {
       // Assert all *.job.* metrics contain the custom_tag
       for (DatadogMetric metric : this.client.metrics){
         if (metric.getName().contains(".job.")){
-          Assert.assertTrue(metric.getTags().contains("custom_tag:value"));
+          Assert.assertTrue(metric.getTags().contains("global_tag:value"));
+          Assert.assertTrue(metric.getTags().contains("global_job_tag:value"));
         }
       }
 
       // Assert all job related events contain the custom tag
       for (DatadogEventStub event : this.client.events){
-        Assert.assertTrue(event.getTags().containsKey("custom_tag"));
-        Assert.assertTrue(event.getTags().get("custom_tag").contains("value"));
+        Assert.assertTrue(event.getTags().containsKey("global_tag"));
+        Assert.assertTrue(event.getTags().get("global_tag").contains("value"));
+        Assert.assertTrue(event.getTags().containsKey("global_job_tag"));
+        Assert.assertTrue(event.getTags().get("global_job_tag").contains("value"));
       }
     }
 
@@ -101,7 +104,6 @@ public class DatadogBuildTagTest {
 
       Run run = mock(Run.class);
       when(run.getResult()).thenReturn(null);
-      when(run.getEnvironment(any(TaskListener.class))).thenReturn(this.envVars);
       when(run.getParent()).thenReturn(job);
 
       this.datadogBuildListener.onInitialize(run);
@@ -118,7 +120,7 @@ public class DatadogBuildTagTest {
     }
 
     @Test
-    public void testGlobalJobTagsPipelineAgent() throws Exception {
+    public void testGlobalJobTagsPipeline() throws Exception {
       jenkinsRule.createOnlineSlave(new LabelAtom("test"));
       WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipeline_job");
       String definition = IOUtils.toString(

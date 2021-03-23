@@ -139,7 +139,7 @@ public class DatadogUtilities {
         }
         result = TagsUtil.merge(result, computeTagListFromVarList(envVars, tagProperties));
 
-        result = TagsUtil.merge(result, getTagsFromGlobalJobTags(jobName, globalJobTags, envVars));
+        result = TagsUtil.merge(result, getTagsFromGlobalJobTags(jobName, globalJobTags));
 
         // pipeline defined tags
         DatadogPipelineAction action = run.getAction(DatadogPipelineAction.class);
@@ -194,7 +194,7 @@ public class DatadogUtilities {
      * @param globalJobTags - globalJobTags string
      * @return - A Map of values containing the key and values of each Datadog tag to apply to the metric/event
      */
-    private static Map<String, Set<String>> getTagsFromGlobalJobTags(String jobName, final String globalJobTags, EnvVars envVars) {
+    private static Map<String, Set<String>> getTagsFromGlobalJobTags(String jobName, final String globalJobTags) {
         Map<String, Set<String>> tags = new HashMap<>();
         List<String> globalJobTagsLines = linesToList(globalJobTags);
         logger.fine(String.format("The list of Global Job Tags are: %s", globalJobTagsLines));
@@ -217,21 +217,18 @@ public class DatadogUtilities {
                         // eg: (.*?)-job, owner:$1 or (.*?)-job
                         // Also fills environment variables defined in the tag value.
                         // eg: (.*?)-job, custom_tag:$ENV_VAR
-                        if (Character.toString(tagValue.charAt(0)).equals("$")) {
+                        if (tagValue.startsWith("$")) {
                             try {
                                 tagValue = jobNameMatcher.group(Character.getNumericValue(tagValue.charAt(1)));
                             } catch (IndexOutOfBoundsException e) {
 
                                 String tagNameEnvVar = tagValue.substring(1);
-                                if (envVars.containsKey(tagNameEnvVar)){
-                                    tagValue = envVars.get(tagNameEnvVar);
-                                }
-                                else if (EnvVars.masterEnvVars.containsKey(tagNameEnvVar)){
+                                if (EnvVars.masterEnvVars.containsKey(tagNameEnvVar)){
                                     tagValue = EnvVars.masterEnvVars.get(tagNameEnvVar);
                                 }
                                 else {
                                     logger.fine(String.format(
-                                        "Specified a capture group that doesn't exist, not applying tag: %s Exception: %s",
+                                        "Specified a capture group or environment variable that doesn't exist, not applying tag: %s Exception: %s",
                                         Arrays.toString(tagItem), e));
                                 }
                             }
@@ -283,6 +280,15 @@ public class DatadogUtilities {
                     String tagName = tagItem[0];
                     String tagValue = tagItem[1];
                     Set<String> tagValues = tags.containsKey(tagName) ? tags.get(tagName) : new HashSet<String>();
+                    // Apply environment variables if specified. ie (custom_tag:$ENV_VAR)
+                    if (tagValue.startsWith("$") && EnvVars.masterEnvVars.containsKey(tagValue.substring(1))){
+                        tagValue = EnvVars.masterEnvVars.get(tagValue.substring(1));
+                    }
+                    else {
+                        logger.fine(String.format(
+                            "Specified an environment variable that doesn't exist, not applying tag: %s",
+                            Arrays.toString(tagItem)));
+                    }
                     tagValues.add(tagValue.toLowerCase());
                     tags.put(tagName, tagValues);
                 } else if(tagItem.length == 1) {
