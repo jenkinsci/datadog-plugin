@@ -44,7 +44,7 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
           - 8080:8080
         volumes:
           - $JENKINS_PLUGIN/target/:/var/jenkins_home/plugins
-    ## Uncomment environment variables based on your needs. Everything can be configured in jenkins /configure page as well. 
+    ## Uncomment environment variables based on your needs. Everything can be configured in jenkins /configure page as well.
     #   environment:
     #      - DATADOG_JENKINS_PLUGIN_REPORT_WITH=DSD
     #      - DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS=false
@@ -52,7 +52,7 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
     #      - DATADOG_JENKINS_PLUGIN_TARGET_HOST=dogstatsd
     #      - DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT=10518
     #      - DATADOG_JENKINS_PLUGIN_TARGET_API_KEY=$JENKINS_PLUGIN_DATADOG_API_KEY
-      
+
     ## Uncomment the section below to use the standalone DogStatsD server to send metrics to Datadog
     #  dogstatsd:
     #    image: datadog/dogstatsd:latest
@@ -60,15 +60,15 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
     #      - DD_API_KEY=$JENKINS_PLUGIN_DATADOG_API_KEY
     #    ports:
     #      - 8125:8125
-    
-    ## Uncomment the section below to use the whole Datadog Agent to send metrics (and logs) to Datadog. 
+
+    ## Uncomment the section below to use the whole Datadog Agent to send metrics (and logs) to Datadog.
     ## Note that it contains a DogStatsD server as well.
     #  datadog:
     #    image: datadog/agent:latest
     #    environment:
     #      - DD_API_KEY=$JENKINS_PLUGIN_DATADOG_API_KEY
     #      - DD_LOGS_ENABLED=true
-    #      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true 
+    #      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
     #     ports:
     #       - 8125:8125
     #       - 10518:10518
@@ -76,8 +76,8 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
     #      - /var/run/docker.sock:/var/run/docker.sock:ro
     #      - /proc/:/host/proc/:ro
     #      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
-    #      - $JENKINS_PLUGIN/conf.yaml:/etc/datadog-agent/conf.d/jenkins.d/conf.yaml   
-               
+    #      - $JENKINS_PLUGIN/conf.yaml:/etc/datadog-agent/conf.d/jenkins.d/conf.yaml
+
     ```
 1. If you wish to submit log using the Datadog Agent, you will have to configure the Datadog Agent properly by creating a `conf.yaml` file with the following content.
 
@@ -109,11 +109,11 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
     jenkins_1    | *************************************************************
     jenkins_1    | *************************************************************
     jenkins_1    | *************************************************************
-    ``` 
+    ```
 
 1. Access your Jenkins instance http://localhost:8080
 1. Enter the administrator password in the Getting Started form.
-1. On the next page, click on the "Select plugins to be installed" unless you want to install all suggested plugins. 
+1. On the next page, click on the "Select plugins to be installed" unless you want to install all suggested plugins.
 1. Select desired plugins depending on your needs. You can always add plugins later.
 1. Create a user so that you don't have to use the admin credential again (optional).
 1. Continue until the end of the setup process and log back in.
@@ -121,19 +121,19 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
   - Click on the "Test Key" to make sure your key is valid.
   - You can set your machine `hostname`.
   - You can set Global Tag. For example `.*, owner:$1, release_env:$2, optional:Tag3`.
-  
+
 #### Manual Testing without an Agent
 
 Alternatively, you can manually test the plugin by running the command `mvn hpi:run`, which will spin up a local development environment without the agent. This allows you to test using the HTTP client without needing docker. See the [jenkins documentation](https://jenkinsci.github.io/maven-hpi-plugin/run-mojo.html) for more details and options.
 
 ### Create your first job
 
-1. On jenkins Home page, click on "Create a new Job" 
+1. On jenkins Home page, click on "Create a new Job"
 1. Give it a name and select "freestyle project".
 1. Then add a build step (execute Shell):
     ```
     #!/bin/sh
-    
+
     echo "Executing my job script"
     sleep 5s
     ```
@@ -143,6 +143,33 @@ Alternatively, you can manually test the plugin by running the command `mvn hpi:
 1. Give a name to your logger - For example `datadog`
 1. Add entries for all `org.datadog.jenkins.plugins.datadog.*` packages with log Level `ALL`.
 1. If you now run a job and go back to http://localhost:8080/log/datadog/, you should see your logs
+
+### Add a Jenkins Agent
+
+It may be useful to set up a Jenkins agent in order to test correctness when running builds on other agents.
+
+1. Go to `Configure Jenkins > Manage Nodes > New Node`. Enter a node name and select `Permanent Agent`.
+2. Select `Launch Method via Java Web Start` for `Launch Method` and save the node.
+3. Go to `http://localhost:8080/jenkins/computer/{node_name}` and press the `launch button`. Open the `.jnlp` file and copy the key.
+4. Start the agent with:
+   ```
+   docker run -d --init jenkins/inbound-agent -url http://host.docker.internal:8080/jenkins <KEY> <NODE_NAME>
+   ```
+
+#### Jobs failing with Jenkins Agent
+
+Due to backwards compatability of the plugin, the Jenkins version defined in `pom.xml` might have dependency issues that can cause jobs running on an agent to fail. To fix, find the minimum version required by dependencies the issues and modify the version in [`pom.xml`](https://github.com/jenkinsci/datadog-plugin/blob/master/pom.xml#L23):
+
+```
+...
+<properties>
+    <java.level>8</java.level>
+    <jenkins.version>{VERSION}</jenkins.version>
+    <hpi.compatibleSinceVersion>1.0.0</hpi.compatibleSinceVersion>
+    <dd-trace-java.version>0.71.0</dd-trace-java.version>
+  </properties>
+...
+```
 
 ## Continuous Integration
 
