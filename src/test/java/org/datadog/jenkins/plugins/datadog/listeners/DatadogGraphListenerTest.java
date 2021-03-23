@@ -140,10 +140,10 @@ public class DatadogGraphListenerTest {
                 "job:pipelineIntegration",
                 "result:SUCCESS"
         };
-        String[] depths = new String[]{"2", "2", "2", "1", "1", "0", "0"};
-        String[] stageNames = new String[]{"Windows-1", "Windows-2", "Windows-3", "Test On Windows", "Test On Linux", "Parallel tests",
-                "Pre-setup"};
-        String[] parentNames = new String[]{"Test On Windows", "Test On Windows", "Test On Windows", "Parallel tests", "Parallel tests", "root", "root"};
+        String[] depths = new String[]{ "2", "2", "2", "1", "1", "0", "0" };
+        String[] stageNames = new String[]{ "Windows-1", "Windows-2", "Windows-3", "Test On Windows", "Test On Linux", "Parallel tests",
+                "Pre-setup" };
+        String[] parentNames = new String[]{ "Test On Windows", "Test On Windows", "Test On Windows", "Parallel tests", "Parallel tests", "root", "root" };
 
         for (int i = 0; i < depths.length; i++) {
             String[] expectedTags = Arrays.copyOf(baseTags, baseTags.length + 3);

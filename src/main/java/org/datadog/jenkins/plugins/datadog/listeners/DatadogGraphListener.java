@@ -117,28 +117,30 @@ public class DatadogGraphListener implements GraphListener {
     }
 
     private long getPauseDuration(@Nonnull FlowNode startNode) {
-        long pauseDuration = 0;
-        FlowExecution execution = startNode.getExecution();
+        try {
+            long pauseDuration = 0;
+            FlowGraphWalker walker = new FlowGraphWalker(startNode.getExecution());
 
-        if (execution == null) {
-            return 0;
-        }
-        Iterator<FlowNode> it = new FlowGraphWalker(execution).iterator();
+            Iterator<FlowNode> it = walker.iterator();
 
-        // Iterate on the execution nodes to include pause duration of sub-stages
-        while (it.hasNext()) {
-            FlowNode node = it.next();
-            FlowNodeExt temp = FlowNodeExt.create(node);
-            for (BlockStartNode parent : node.iterateEnclosingBlocks()) {
-                if (parent.getId() == startNode.getId()) {
-                    pauseDuration += temp.getPauseDurationMillis();
-                    break;
+            // Iterate on the execution nodes to include pause duration of sub-stages
+            while (it.hasNext()) {
+                FlowNode node = it.next();
+                for (BlockStartNode parent : node.iterateEnclosingBlocks()) {
+                    if (parent.getId().equals(startNode.getId())) {
+                        FlowNodeExt nodeExt = FlowNodeExt.create(node);
+                        pauseDuration += nodeExt.getPauseDurationMillis();
+                        break;
+                    }
                 }
             }
-        }
 
-        // In milliseconds
-        return pauseDuration;
+            // In milliseconds
+            return pauseDuration;
+        } catch (NullPointerException e) {
+            logger.warning("Unable to get the stage pause duration");
+        }
+        return 0;
     }
 
     private boolean isMonitored(FlowNode flowNode) {
