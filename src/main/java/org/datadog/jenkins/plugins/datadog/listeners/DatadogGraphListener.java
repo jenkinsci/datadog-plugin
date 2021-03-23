@@ -25,6 +25,7 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.listeners;
 
+import com.cloudbees.workflow.rest.external.FlowNodeExt;
 import hudson.Extension;
 import hudson.model.Queue;
 import hudson.model.Run;
@@ -40,12 +41,14 @@ import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.flow.GraphListener;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
+import org.jenkinsci.plugins.workflow.graph.FlowGraphWalker;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -103,11 +106,39 @@ public class DatadogGraphListener implements GraphListener {
             TagsUtil.addTagToTags(tags, "stage_depth", String.valueOf(stageDepth));
             // Add custom result tag
             TagsUtil.addTagToTags(tags, "result", result);
+            long pauseDuration = getPauseDuration(startNode);
+
             client.gauge("jenkins.job.stage_duration", getTime(startNode, endNode), hostname, tags);
+            client.gauge("jenkins.job.stage_pause_duration", pauseDuration, hostname, tags);
             client.incrementCounter("jenkins.job.stage_completed", hostname, tags);
         } catch (IOException | InterruptedException e) {
             DatadogUtilities.severe(logger, e, "Unable to submit the stage duration metric for " + getStageName(startNode));
         }
+    }
+
+    private long getPauseDuration(@Nonnull FlowNode startNode) {
+        long pauseDuration = 0;
+        FlowExecution execution = startNode.getExecution();
+
+        if (execution == null) {
+            return 0;
+        }
+        Iterator<FlowNode> it = new FlowGraphWalker(execution).iterator();
+
+        // Iterate on the execution nodes to include pause duration of sub-stages
+        while (it.hasNext()) {
+            FlowNode node = it.next();
+            FlowNodeExt temp = FlowNodeExt.create(node);
+            for (BlockStartNode parent : node.iterateEnclosingBlocks()) {
+                if (parent.getId() == startNode.getId()) {
+                    pauseDuration += temp.getPauseDurationMillis();
+                    break;
+                }
+            }
+        }
+
+        // In milliseconds
+        return pauseDuration;
     }
 
     private boolean isMonitored(FlowNode flowNode) {

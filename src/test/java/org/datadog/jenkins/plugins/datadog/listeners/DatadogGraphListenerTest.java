@@ -113,6 +113,7 @@ public class DatadogGraphListenerTest {
         String[] expectedTags = new String[] { "jenkins_url:" + DatadogUtilities.getJenkinsUrl(), "user_id:anonymous",
                 "stage_name:low", "job:pipeline", "parent_stage_name:medium", "stage_depth:2", "result:SUCCESS" };
         clientStub.assertMetric("jenkins.job.stage_duration", endTime - startTime, hostname, expectedTags);
+        clientStub.assertMetric("jenkins.job.stage_pause_duration", 0, hostname, expectedTags);
         clientStub.assertMetric("jenkins.job.stage_completed", 1, hostname, expectedTags);
     }
 
@@ -139,10 +140,10 @@ public class DatadogGraphListenerTest {
                 "job:pipelineIntegration",
                 "result:SUCCESS"
         };
-        String[] depths = new String[]{ "2", "2", "2", "1", "1", "0", "0" };
-        String[] stageNames = new String[]{ "Windows-1", "Windows-2", "Windows-3", "Test On Windows", "Test On Linux", "Parallel tests",
-                "Pre-setup" };
-        String[] parentNames = new String[]{ "Test On Windows", "Test On Windows", "Test On Windows", "Parallel tests", "Parallel tests", "root", "root" };
+        String[] depths = new String[]{"2", "2", "2", "1", "1", "0", "0"};
+        String[] stageNames = new String[]{"Windows-1", "Windows-2", "Windows-3", "Test On Windows", "Test On Linux", "Parallel tests",
+                "Pre-setup"};
+        String[] parentNames = new String[]{"Test On Windows", "Test On Windows", "Test On Windows", "Parallel tests", "Parallel tests", "root", "root"};
 
         for (int i = 0; i < depths.length; i++) {
             String[] expectedTags = Arrays.copyOf(baseTags, baseTags.length + 3);
@@ -150,6 +151,16 @@ public class DatadogGraphListenerTest {
             expectedTags[expectedTags.length - 2] = "stage_name:" + stageNames[i];
             expectedTags[expectedTags.length - 1] = "parent_stage_name:" + parentNames[i];
             clientStub.assertMetric("jenkins.job.stage_duration", hostname, expectedTags);
+
+            if (stageNames[i] == "Test On Linux" || stageNames[i] == "Parallel tests") {
+                // Timeout is set to 11s, but since there are other instructions,
+                // we test it's at least 10s.
+                double pauseValue = clientStub.assertMetricGetValue("jenkins.job.stage_pause_duration", hostname, expectedTags);
+                assertTrue(pauseValue > 10000);
+                assertTrue(pauseValue <= 11000);
+            } else {
+                clientStub.assertMetric("jenkins.job.stage_pause_duration", 0.0, hostname, expectedTags);
+            }
         }
 
         //Traces
@@ -161,7 +172,7 @@ public class DatadogGraphListenerTest {
         assertEquals(1, buildTrace.size());
 
         final List<DDSpan> pipelineTrace = tracerWriter.get(1);
-        assertEquals(29, pipelineTrace.size());
+        assertEquals(34, pipelineTrace.size());
     }
 
     @Test
@@ -471,6 +482,7 @@ public class DatadogGraphListenerTest {
                 "parent_stage_name:root"               
         };
         clientStub.assertMetric("jenkins.job.stage_duration", hostname, tags);
+        clientStub.assertMetric("jenkins.job.stage_pause_duration", 0, hostname, tags);
 
         //Traces
         final ListWriter tracerWriter = clientStub.tracerWriter();
@@ -618,6 +630,7 @@ public class DatadogGraphListenerTest {
                 "parent_stage_name:root"
         };
         clientStub.assertMetric("jenkins.job.stage_duration", hostname, tags);
+        clientStub.assertMetric("jenkins.job.stage_pause_duration", 0, hostname, tags);
 
         final ListWriter tracerWriter = clientStub.tracerWriter();
         tracerWriter.waitForTraces(0);

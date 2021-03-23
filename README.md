@@ -264,6 +264,7 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 | `jenkins.job.pause_duration`            | Pause duration of build job (in seconds).                     | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
 | `jenkins.job.started`                  | Rate of started jobs.                                          | `branch`, `jenkins_url`, `job`, `node`, `user_id`                          |
 | `jenkins.job.stage_duration`           | Duration of individual stages.                                 | `jenkins_url`, `job`, `user_id`, `stage_name`, `stage_depth`, `stage_parent`, `result` |
+| `jenkins.job.stage_pause_duration`    | Pause duration of individual stages (in milliseconds).                          | `jenkins_url`, `job`, `user_id`, `stage_name`, `stage_depth`, `stage_parent`, `result` |
 | `jenkins.job.stage_completed`          | Rate of completed stages.                                      | `jenkins_url`, `job`, `user_id`, `stage_name`, `stage_depth`, `stage_parent`, `result` |
 | `jenkins.job.waiting`                  | Time spent waiting for job to run (in milliseconds).           | `branch`, `jenkins_url`, `job`, `node`, `user_id`                          |
 | `jenkins.node.count`                   | Total number of node.                                          | `jenkins_url`                                                              |
