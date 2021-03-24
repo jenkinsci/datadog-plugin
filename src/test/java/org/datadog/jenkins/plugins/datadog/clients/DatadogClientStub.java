@@ -207,6 +207,23 @@ public class DatadogClientStub implements DatadogClient {
     }
     
     /*
+     * Returns the value of the asserted metric if it exists.
+     */
+    public double assertMetricGetValue(String name, String hostname, String[] tags) {
+        DatadogMetric m = new DatadogMetric(name, 0, hostname, Arrays.asList(tags));
+        Optional<DatadogMetric> match = this.metrics.stream().filter(t -> t.same(m)).findFirst();
+        double value = 0;
+        if (match.isPresent()) {
+            value = match.get().getValue();
+            this.metrics.remove(match.get());
+            return value;
+        }
+        Assert.fail("metric { " + m.toString() + " does not exist (ignoring value). " +
+                "metrics: {" + this.metrics.toString() + " }");
+        return value;
+    }
+
+    /*
      * Asserts that the metric of a given value is submitted a given number of times.
      */
     public boolean assertMetricValues(String name, double value, String hostname, int count) {

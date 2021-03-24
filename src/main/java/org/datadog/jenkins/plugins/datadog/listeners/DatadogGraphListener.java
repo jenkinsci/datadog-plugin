@@ -25,6 +25,7 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.listeners;
 
+import com.cloudbees.workflow.rest.external.FlowNodeExt;
 import hudson.Extension;
 import hudson.model.Queue;
 import hudson.model.Run;
@@ -40,12 +41,14 @@ import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.flow.GraphListener;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
+import org.jenkinsci.plugins.workflow.graph.FlowGraphWalker;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -103,11 +106,46 @@ public class DatadogGraphListener implements GraphListener {
             TagsUtil.addTagToTags(tags, "stage_depth", String.valueOf(stageDepth));
             // Add custom result tag
             TagsUtil.addTagToTags(tags, "result", result);
+            long pauseDuration = getPauseDurationMillis(startNode);
+
             client.gauge("jenkins.job.stage_duration", getTime(startNode, endNode), hostname, tags);
+            client.gauge("jenkins.job.stage_pause_duration", pauseDuration, hostname, tags);
             client.incrementCounter("jenkins.job.stage_completed", hostname, tags);
         } catch (IOException | InterruptedException e) {
             DatadogUtilities.severe(logger, e, "Unable to submit the stage duration metric for " + getStageName(startNode));
         }
+    }
+
+    private long getPauseDurationMillis(@Nonnull FlowNode startNode) {
+        try {
+            long pauseDuration = 0;
+            FlowGraphWalker walker = new FlowGraphWalker(startNode.getExecution());
+
+            Iterator<FlowNode> it = walker.iterator();
+
+            // Iterates on the execution nodes to sum pause duration of sub-stages.
+            // Walks through all the execution graph of startNode, and considers the sub-nodes that are not active
+            // anymore. A sub-node is a node for which startNode is a parent (is part of its enclosing blocks).
+            while (it.hasNext()) {
+                FlowNode node = it.next();
+                if (!node.isActive()) {
+                    // Lists node parents genealogy, and sees if startNode is one of them.
+                    for (BlockStartNode parent : node.iterateEnclosingBlocks()) {
+                        if (parent.getId().equals(startNode.getId())) {
+                            FlowNodeExt nodeExt = FlowNodeExt.create(node);
+                            pauseDuration += nodeExt.getPauseDurationMillis();
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // In milliseconds
+            return pauseDuration;
+        } catch (NullPointerException e) {
+            logger.warning("Unable to get the stage pause duration");
+        }
+        return 0;
     }
 
     private boolean isMonitored(FlowNode flowNode) {
