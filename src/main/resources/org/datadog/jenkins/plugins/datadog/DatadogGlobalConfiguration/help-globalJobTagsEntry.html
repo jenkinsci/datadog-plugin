@@ -1,9 +1,15 @@
 <div>
-    Enter a list of jobs and tags that should be applied for that job
+    Enter a list of jobs and tags that should be applied for that job.
     The list of jobs is separated by newlines and can include comma separated tags. E.g.:
     <pre>
         susans-job, optional:tag1
         (.*?)-job, owner:$1
         (.*?)_job_(*?)_release, owner:$1, release_env:$2, optional:Tag3
+    </pre>
+
+    Tags support the use of environment variables. The environment variables must be defined in the
+    master jenkins instance. Eg:
+    <pre>
+        susans-job, optional:$ENV_VAR
     </pre>
 </div>
