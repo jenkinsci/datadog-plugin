@@ -106,7 +106,7 @@ public class DatadogGraphListener implements GraphListener {
             TagsUtil.addTagToTags(tags, "stage_depth", String.valueOf(stageDepth));
             // Add custom result tag
             TagsUtil.addTagToTags(tags, "result", result);
-            long pauseDuration = getPauseDuration(startNode);
+            long pauseDuration = getPauseDurationMillis(startNode);
 
             client.gauge("jenkins.job.stage_duration", getTime(startNode, endNode), hostname, tags);
             client.gauge("jenkins.job.stage_pause_duration", pauseDuration, hostname, tags);
@@ -116,21 +116,26 @@ public class DatadogGraphListener implements GraphListener {
         }
     }
 
-    private long getPauseDuration(@Nonnull FlowNode startNode) {
+    private long getPauseDurationMillis(@Nonnull FlowNode startNode) {
         try {
             long pauseDuration = 0;
             FlowGraphWalker walker = new FlowGraphWalker(startNode.getExecution());
 
             Iterator<FlowNode> it = walker.iterator();
 
-            // Iterate on the execution nodes to include pause duration of sub-stages
+            // Iterates on the execution nodes to sum pause duration of sub-stages.
+            // Walks through all the execution graph of startNode, and considers the sub-nodes that are not active
+            // anymore. A sub-node is a node for which startNode is a parent (is part of its enclosing blocks).
             while (it.hasNext()) {
                 FlowNode node = it.next();
-                for (BlockStartNode parent : node.iterateEnclosingBlocks()) {
-                    if (parent.getId().equals(startNode.getId())) {
-                        FlowNodeExt nodeExt = FlowNodeExt.create(node);
-                        pauseDuration += nodeExt.getPauseDurationMillis();
-                        break;
+                if (!node.isActive()) {
+                    // Lists node parents genealogy, and sees if startNode is one of them.
+                    for (BlockStartNode parent : node.iterateEnclosingBlocks()) {
+                        if (parent.getId().equals(startNode.getId())) {
+                            FlowNodeExt nodeExt = FlowNodeExt.create(node);
+                            pauseDuration += nodeExt.getPauseDurationMillis();
+                            break;
+                        }
                     }
                 }
             }

@@ -44,7 +44,7 @@ pipeline {
                         script {
                             try {
                                 timeout(time:11, unit:'SECONDS') {
-                                    env.TAG_ON_DOCKER_HUB = input message: 'User input required',
+                                    input message: 'User input required',
                                         parameters: [choice(name: 'Choice', choices: 'no\nyes', description: 'Choose "yes"')]
                                 }
                             } catch(err) {
