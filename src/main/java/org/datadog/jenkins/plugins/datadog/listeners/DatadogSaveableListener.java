@@ -81,7 +81,7 @@ public class DatadogSaveableListener  extends SaveableListener {
 
             logger.fine("End DatadogSaveableListener#onChange");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to process saveable change event");
         }
     }
 }

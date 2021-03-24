@@ -105,7 +105,7 @@ public class DatadogComputerPublisher extends PeriodicWork {
             client.gauge("jenkins.node.online", nodeOnline, hostname, globalTags);
 
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to compute and send node metrics");
         }
         
     }

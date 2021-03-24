@@ -216,7 +216,7 @@ public class DatadogGraphListener implements GraphListener {
         try {
             executable = exec.getOwner().getExecutable();
         } catch (IOException x) {
-            DatadogUtilities.severe(logger, x, "");
+            DatadogUtilities.severe(logger, x, "Failed to get Jenkins executable");
             return null;
         }
         if (executable instanceof Run) {

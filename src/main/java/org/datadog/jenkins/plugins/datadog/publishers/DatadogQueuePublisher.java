@@ -138,7 +138,7 @@ public class DatadogQueuePublisher extends PeriodicWork {
             client.gauge("jenkins.queue.blocked", blocked, hostname, tags);
 
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to compute and send queue metrics");
         }
     }
 }

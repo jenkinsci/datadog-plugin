@@ -91,7 +91,7 @@ public class DatadogJenkinsPublisher extends PeriodicWork {
             client.gauge("jenkins.plugin.inactivate", pluginData.getInactive(), hostname, tags);
             client.gauge("jenkins.plugin.withUpdate", pluginData.getUpdatable(), hostname, tags);
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to compute and send Jenkins metrics");
         }
     }
 

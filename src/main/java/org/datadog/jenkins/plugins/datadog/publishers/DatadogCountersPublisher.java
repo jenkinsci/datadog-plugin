@@ -63,7 +63,7 @@ public class DatadogCountersPublisher extends AsyncPeriodicWork {
 
             client.flushCounters();
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to publish counters");
         }
     }
 

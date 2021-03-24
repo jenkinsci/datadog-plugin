@@ -165,7 +165,7 @@ public class DatadogJobProperty<T extends Job<?, ?>> extends JobProperty<T> {
                 }
             }
         } catch (IOException | InterruptedException | NullPointerException e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to read tag file");
         }
         return s;
     }

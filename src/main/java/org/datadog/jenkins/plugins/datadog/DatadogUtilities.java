@@ -460,7 +460,7 @@ public class DatadogUtilities {
 
                 hostname = out.toString();
             } catch (Exception e) {
-                severe(logger, e, null);
+                severe(logger, e, "Failed to obtain UNIX hostname");
             }
 
             // Check hostname

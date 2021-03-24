@@ -389,7 +389,7 @@ public class DogStatsDClient implements DatadogClient {
             this.statsd.recordEvent(ev, TagsUtil.convertTagsToArray(event.getTags()));
             return true;
         } catch(Exception e){
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to send event payload to DogStatsD");
             reinitialize(true);
             return false;
         }
@@ -406,7 +406,7 @@ public class DogStatsDClient implements DatadogClient {
             this.statsd.incrementCounter(name, TagsUtil.convertTagsToArray(tags));
             return true;
         } catch(Exception e){
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to increment counter with DogStatsD");
             reinitialize(true);
             return false;
         }
@@ -428,7 +428,7 @@ public class DogStatsDClient implements DatadogClient {
             this.statsd.gauge(name, value, TagsUtil.convertTagsToArray(tags));
             return true;
         } catch(Exception e){
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to send gauge metric payload to DogStatsD");
             reinitialize(true);
             return false;
         }
@@ -451,7 +451,7 @@ public class DogStatsDClient implements DatadogClient {
             this.statsd.serviceCheck(sc);
             return true;
         } catch(Exception e){
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to send service check to DogStatsD");
             reinitialize(true);
             return false;
         }
@@ -496,7 +496,7 @@ public class DogStatsDClient implements DatadogClient {
             }
             previousPayload = payload;
         }catch(Exception e){
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to send log payload to DogStatsD");
             reinitialize(true);
             previousPayload = payload;
             return false;
@@ -516,7 +516,7 @@ public class DogStatsDClient implements DatadogClient {
             this.traceBuildLogic.startBuildTrace(buildData, run);
             return true;
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to start build trace");
             reinitializeTracer(true);
             return false;
         }
@@ -534,7 +534,7 @@ public class DogStatsDClient implements DatadogClient {
             this.traceBuildLogic.finishBuildTrace(buildData, run);
             return true;
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to finish build trace");
             reinitializeTracer(true);
             return false;
         }
@@ -552,7 +552,7 @@ public class DogStatsDClient implements DatadogClient {
             this.tracePipelineLogic.execute(run, flowNode);
             return true;
         } catch (Exception e){
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to send pipeline trace");
             reinitializeTracer(true);
             return false;
         }

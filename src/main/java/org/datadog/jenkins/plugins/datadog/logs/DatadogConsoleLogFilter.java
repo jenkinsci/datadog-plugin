@@ -69,7 +69,7 @@ public class DatadogConsoleLogFilter extends ConsoleLogFilter implements Seriali
                 return outputStream;
             }
         } catch (Exception e){
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to wrap logger, logs will not be collected");
         }
         return outputStream;
     }

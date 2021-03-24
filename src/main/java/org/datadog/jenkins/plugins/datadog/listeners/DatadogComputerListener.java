@@ -87,7 +87,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             logger.fine("End DatadogComputerListener#onOnline");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to process computer online event");
         }
     }
 
@@ -121,7 +121,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             logger.fine("End DatadogComputerListener#onOffline");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to process computer offline event");
         }
     }
 
@@ -155,7 +155,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             logger.fine("End DatadogComputerListener#onTemporarilyOnline");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to process computer temporarily online event");
         }
     }
 
@@ -189,7 +189,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             logger.fine("End DatadogComputerListener#onTemporarilyOffline");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to process computer temporarily offline event");
         }
     }
 
@@ -223,7 +223,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             logger.fine("End DatadogComputerListener#onLaunchFailure");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to process launch failure");
         }
     }
 

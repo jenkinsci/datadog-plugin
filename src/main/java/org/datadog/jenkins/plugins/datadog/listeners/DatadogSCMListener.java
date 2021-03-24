@@ -90,7 +90,7 @@ public class DatadogSCMListener extends SCMListener {
             try {
                 buildData = new BuildData(build, listener);
             } catch (IOException | InterruptedException e) {
-                DatadogUtilities.severe(logger, e, null);
+                DatadogUtilities.severe(logger, e, "Failed to parse checked out build data");
                 return;
             }
 
@@ -105,7 +105,7 @@ public class DatadogSCMListener extends SCMListener {
 
             logger.fine("End DatadogSCMListener#onCheckout");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to process build checkout event");
         }
     }
 
