@@ -158,7 +158,7 @@ It may be useful to set up a Jenkins agent in order to test correctness when run
 
 #### Jobs failing with Jenkins Agent
 
-Due to backwards compatability of the plugin, the Jenkins version defined in `pom.xml` might have dependency issues that can cause jobs running on an agent to fail. To fix, find the minimum version required by dependencies the issues and modify the version in [`pom.xml`](https://github.com/jenkinsci/datadog-plugin/blob/master/pom.xml#L23):
+Due to backwards compatability of the plugin, the Jenkins version defined in `pom.xml` might have dependency issues that can cause jobs running on an agent to fail. To fix, find the minimum version required by dependencies and modify the version in [`pom.xml`](https://github.com/jenkinsci/datadog-plugin/blob/master/pom.xml#L23):
 
 ```
 ...
