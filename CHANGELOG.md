@@ -1,12 +1,22 @@
 Changes
 =======
+## 2.9.0 / 2021-03-24
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.8.3...datadog-2.9.0
+
+### Changes
+* [Added] Support environment variables in global tags and global job tags. See [#190](https://github.com/jenkinsci/datadog-plugin/pull/190).
+* [Added] Always include purposefully-written messages for severe error cases. See [#187](https://github.com/jenkinsci/datadog-plugin/pull/187).
+* [Added] Add stage_pause_duration metric. See [#191](https://github.com/jenkinsci/datadog-plugin/pull/191).
+* [Fixed] Make tasklistener decorator serializable. See [#188](https://github.com/jenkinsci/datadog-plugin/pull/188).
+
 ## 2.8.3 / 2021-02-22
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.8.2...datadog-2.8.3
 
 ### Changes
 * [Fixed] Avoid calculating `_dd.hostname` for Jenkins workers. See [#184](https://github.com/jenkinsci/datadog-plugin/pull/184)
-* [Enhancement] Improve log message on incompatibilities when `dd-java-agent` is used as `javaagent`. See [#185](https://github.com/jenkinsci/datadog-plugin/pull/185) 
+* [Enhancement] Improve log message on incompatibilities when `dd-java-agent` is used as `javaagent`. See [#185](https://github.com/jenkinsci/datadog-plugin/pull/185)
 
 ## 2.8.2 / 2021-02-16
 ### Details
