@@ -214,14 +214,23 @@ public class DatadogUtilities {
                         String tagName = tagItem[0];
                         String tagValue = tagItem[1];
                         // Fills regex group values from the regex job name to tag values
-                        // eg: (.*?)-job, owner:$1
-                        if (Character.toString(tagValue.charAt(0)).equals("$")) {
+                        // eg: (.*?)-job, owner:$1 or (.*?)-job
+                        // Also fills environment variables defined in the tag value.
+                        // eg: (.*?)-job, custom_tag:$ENV_VAR
+                        if (tagValue.startsWith("$")) {
                             try {
                                 tagValue = jobNameMatcher.group(Character.getNumericValue(tagValue.charAt(1)));
                             } catch (IndexOutOfBoundsException e) {
-                                logger.fine(String.format(
-                                        "Specified a capture group that doesn't exist, not applying tag: %s Exception: %s",
+
+                                String tagNameEnvVar = tagValue.substring(1);
+                                if (EnvVars.masterEnvVars.containsKey(tagNameEnvVar)){
+                                    tagValue = EnvVars.masterEnvVars.get(tagNameEnvVar);
+                                }
+                                else {
+                                    logger.fine(String.format(
+                                        "Specified a capture group or environment variable that doesn't exist, not applying tag: %s Exception: %s",
                                         Arrays.toString(tagItem), e));
+                                }
                             }
                         }
                         Set<String> tagValues = tags.containsKey(tagName) ? tags.get(tagName) : new HashSet<String>();
@@ -271,6 +280,15 @@ public class DatadogUtilities {
                     String tagName = tagItem[0];
                     String tagValue = tagItem[1];
                     Set<String> tagValues = tags.containsKey(tagName) ? tags.get(tagName) : new HashSet<String>();
+                    // Apply environment variables if specified. ie (custom_tag:$ENV_VAR)
+                    if (tagValue.startsWith("$") && EnvVars.masterEnvVars.containsKey(tagValue.substring(1))){
+                        tagValue = EnvVars.masterEnvVars.get(tagValue.substring(1));
+                    }
+                    else {
+                        logger.fine(String.format(
+                            "Specified an environment variable that doesn't exist, not applying tag: %s",
+                            Arrays.toString(tagItem)));
+                    }
                     tagValues.add(tagValue.toLowerCase());
                     tags.put(tagName, tagValues);
                 } else if(tagItem.length == 1) {
@@ -713,7 +731,7 @@ public class DatadogUtilities {
             logger.finer(message + ": " + sw.toString());
         }
     }
-    
+
     public static int toInt(boolean b) {
         return b ? 1 : 0;
     }
