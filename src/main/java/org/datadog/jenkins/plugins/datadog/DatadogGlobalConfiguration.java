@@ -25,15 +25,16 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog;
 
-import datadog.trace.api.IdGenerationStrategy;
+import static hudson.Util.fixEmptyAndTrim;
+
 import hudson.Extension;
 import hudson.model.AbstractProject;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
 import jenkins.model.GlobalConfiguration;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogHttpClient;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
@@ -45,11 +46,7 @@ import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Supplier;
 import java.util.logging.Logger;
-
-import static hudson.Util.fixEmptyAndTrim;
 
 @Extension
 public class DatadogGlobalConfiguration extends GlobalConfiguration {
@@ -96,9 +93,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static boolean DEFAULT_COLLECT_BUILD_LOGS_VALUE = false;
     private static boolean DEFAULT_COLLECT_BUILD_TRACES_VALUE = false;
 
-    // Default IdGenerationStrategy from the Java Tracer. Do not change.
-    private static final IdGenerationStrategy DEFAULT_TRACE_IDS_GENERATOR = IdGenerationStrategy.RANDOM;
-
     private String reportWith = DEFAULT_REPORT_WITH_VALUE;
     private String targetApiURL = DEFAULT_TARGET_API_URL_VALUE;
     private String targetLogIntakeURL = DEFAULT_TARGET_LOG_INTAKE_URL_VALUE;
@@ -118,7 +112,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private boolean emitSystemEvents = DEFAULT_EMIT_SYSTEM_EVENTS_VALUE;
     private boolean collectBuildLogs = DEFAULT_COLLECT_BUILD_LOGS_VALUE;
     private boolean collectBuildTraces = DEFAULT_COLLECT_BUILD_TRACES_VALUE;
-    private IdGenerationStrategy traceIdsGenerator = DEFAULT_TRACE_IDS_GENERATOR;
 
     @DataBoundConstructor
     public DatadogGlobalConfiguration() {
@@ -932,20 +925,5 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @DataBoundSetter
     public void setCollectBuildTraces(boolean collectBuildTraces) {
         this.collectBuildTraces = collectBuildTraces;
-    }
-
-    /**
-     * @return - A {@link IdGenerationStrategy} to be used for generating spanIDs
-     */
-    public IdGenerationStrategy getTraceIdsGenerator() {
-        return traceIdsGenerator;
-    }
-
-    /**
-     * Set the IdGenerationStrategy, used to generate spanIDs.
-     * @param traceIdsGenerator - The IdGenerationStrategy
-     */
-    public void setTraceIdsGenerator(IdGenerationStrategy traceIdsGenerator) {
-        this.traceIdsGenerator = traceIdsGenerator;
     }
 }

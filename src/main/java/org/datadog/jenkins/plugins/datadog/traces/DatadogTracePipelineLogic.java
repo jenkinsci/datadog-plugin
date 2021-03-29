@@ -51,31 +51,6 @@ public class DatadogTracePipelineLogic {
     private static final String HOSTNAME_NONE = "none";
     private static final Logger logger = Logger.getLogger(DatadogTracePipelineLogic.class.getName());
 
-    private static Field ddSpanField;
-    private static Field ddSpanIdField;
-
-    static {
-        // As there is no public API to set the spanID manually,
-        // we'll use reflection to do it.
-        // See substituteSpanId(...) and sendTrace(...) methods.
-        try {
-            ddSpanField = Class.forName("datadog.opentracing.OTSpan", true, DatadogTracePipelineLogic.class.getClassLoader()).getDeclaredField("delegate");
-            ddSpanField.setAccessible(true);
-        } catch (Exception e){
-            ddSpanField = null;
-            logger.fine("Unable to find the DDSpan.delegate field. Error: " + e.getMessage());
-        }
-
-        try {
-            ddSpanIdField = DDSpanContext.class.getDeclaredField("spanId");
-            ddSpanIdField.setAccessible(true);
-        } catch (Exception e) {
-            ddSpanIdField = null;
-            logger.fine("Unable to find the DDSpanContext.spanId field. Error: " + e.getMessage());
-        }
-
-    }
-
     private final Tracer tracer;
 
     public DatadogTracePipelineLogic(Tracer tracer) {
@@ -254,20 +229,6 @@ public class DatadogTracePipelineLogic {
             logger.severe("Unable to set metrics in the span, exception: " + e);
         }
 
-        final DDId generatedSpanId = current.getGeneratedSpanId();
-
-        // If the generated spanID exists, we need to set it
-        // in the new created span. This is needed to associate
-        // external spans (Datadog CLI Bash) to the Jenkins spans.
-
-        // This generated spanID is available in the Environment Variables
-        // of the every workflow Step (see TraceStepEnvironmentContributor class)
-        // and it will be potentially used by external tools to correlate
-        // external spans with the Jenkins spans.
-        if (generatedSpanId != null) {
-            substituteSpanId(span, generatedSpanId);
-        }
-
         for(final BuildPipelineNode child : current.getChildren()) {
             sendTrace(tracer, buildData, child, span.context());
         }
@@ -419,26 +380,6 @@ public class DatadogTracePipelineLogic {
      */
     private boolean isLastNode(FlowNode flowNode) {
         return flowNode instanceof FlowEndNode;
-    }
-
-    /**
-     * Substitute the current spanID by the generated spanID during the Step execution.
-     * This is needed to associate the Steps spans with external spans (e.g. Datadog CLI Bash wrapper)
-     * @param span
-     * @param generatedSpanId
-     */
-    private void substituteSpanId(final Span span, final DDId generatedSpanId) {
-        try {
-            if(ddSpanField == null || ddSpanIdField == null) {
-                return;
-            }
-
-            final DDSpan ddSpan = (DDSpan) ddSpanField.get(span);
-            final DDSpanContext spanContext = ddSpan.context();
-            ddSpanIdField.set(spanContext, generatedSpanId);
-        } catch (Exception e) {
-            logger.fine("Unable to substitute the spanId in the span: "+span+". Error: " + e.getMessage());
-        }
     }
 
     private GitCommitAction buildGitCommitAction(Run<?, ?> run, BuildPipelineNode pipelineNode, FlowNode node) {
