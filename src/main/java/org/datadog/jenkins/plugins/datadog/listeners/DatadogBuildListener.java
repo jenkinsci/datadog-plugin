@@ -25,16 +25,9 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.listeners;
 
-import static org.datadog.jenkins.plugins.datadog.traces.TraceStepEnvironmentContributor.SPAN_ID_ENVVAR_KEY;
-import static org.datadog.jenkins.plugins.datadog.traces.TraceStepEnvironmentContributor.TRACE_ID_ENVVAR_KEY;
-
 import com.cloudbees.workflow.rest.external.RunExt;
 import com.cloudbees.workflow.rest.external.StageNodeExt;
 import hudson.Extension;
-import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
-import hudson.model.Environment;
 import hudson.model.Queue;
 import hudson.model.Result;
 import hudson.model.Run;
@@ -62,7 +55,6 @@ import java.util.logging.Logger;
 /**
  * This class registers an {@link RunListener} to trigger events and calculate metrics:
  * - When a build initializes, the {@link #onInitialize(Run)} method will be invoked.
- * - When a build setup the environment, the {@link #setUpEnvironment(AbstractBuild, Launcher, BuildListener)} method will be invoked.
  * - When a build starts, the {@link #onStarted(Run, TaskListener)} method will be invoked.
  * - When a build completes, the {@link #onCompleted(Run, TaskListener)} method will be invoked.
  * - When a build finalizes, the {@link #onFinalized(Run)} method will be invoked.
@@ -106,45 +98,6 @@ public class DatadogBuildListener extends RunListener<Run> {
             logger.fine("End DatadogBuildListener#onInitialize");
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to process build initialization");
-        }
-    }
-
-    /**
-     * Called before the SCMCheckout is run in a Jenkins build.
-     * This method is called after onInitialize callback.
-     */
-    @Override
-    public Environment setUpEnvironment(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException, Run.RunnerAbortedException {
-        try {
-            logger.fine("Start DatadogBuildListener#setUpEnvironment");
-
-            final BuildSpanAction buildSpanAction = build.getAction(BuildSpanAction.class);
-            if(buildSpanAction == null) {
-                return new Environment() {
-                };
-            }
-
-            final Map<String, String> buildSpanPropatation = buildSpanAction.getBuildSpanPropatation();
-            // The key 'x-datadog-trace-id' and 'x-datadog-parent-id' keys are used by
-            // the Java Tracer to inject the SpanContext into the buildSpanPropagation map.
-            // As we don't have access to the tracer here, we use the key directly to obtain the traceID value.
-            final String traceId = buildSpanPropatation.get("x-datadog-trace-id");
-            final String spanId = buildSpanPropatation.get("x-datadog-parent-id");
-
-            Environment newEnv = new Environment() {
-                @Override
-                public void buildEnvVars(Map<String, String> env) {
-                    env.put(TRACE_ID_ENVVAR_KEY, traceId);
-                    env.put(SPAN_ID_ENVVAR_KEY, spanId);
-                }
-            };
-
-            logger.fine("End DatadogBuildListener#setUpEnvironment");
-            return newEnv;
-        } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "Failed to set up environment");
-            return new Environment() {
-            };
         }
     }
 

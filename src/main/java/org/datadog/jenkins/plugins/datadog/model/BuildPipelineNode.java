@@ -1,10 +1,8 @@
 package org.datadog.jenkins.plugins.datadog.model;
 
-import datadog.trace.api.DDId;
 import hudson.console.AnnotatedLargeText;
 import hudson.model.Run;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.traces.GeneratedSpanIdAction;
 import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
@@ -85,9 +83,6 @@ public class BuildPipelineNode {
     // Although the error flag was true, this can be null.
     private Throwable errorObj;
 
-    //OpenTracing
-    private DDId generatedSpanId;
-
     public BuildPipelineNode(final String id, final String name) {
         this(new BuildPipelineNodeKey(id, name));
     }
@@ -135,7 +130,6 @@ public class BuildPipelineNode {
                 this.workspace = stepData.getWorkspace();
                 this.nodeName = stepData.getNodeName();
                 this.nodeHostname = stepData.getNodeHostname();
-                this.generatedSpanId = getGeneratedSpanId(endNode);
             }
         }
 
@@ -156,17 +150,6 @@ public class BuildPipelineNode {
         }
     }
 
-
-
-    private DDId getGeneratedSpanId(final FlowNode node) {
-        GeneratedSpanIdAction action = node.getAction(GeneratedSpanIdAction.class);
-        if(action == null && node instanceof BlockEndNode) {
-            action = ((BlockEndNode) node).getStartNode().getAction(GeneratedSpanIdAction.class);
-        }
-
-        return (action!=null) ? action.getDDSpanId() : null;
-    }
-
     public BuildPipelineNode(final StepAtomNode stepNode) {
         this.key = new BuildPipelineNodeKey(stepNode.getId(), stepNode.getDisplayName());
         this.parents = new ArrayList<>();
@@ -183,7 +166,6 @@ public class BuildPipelineNode {
             this.workspace = stepData.getWorkspace();
             this.nodeName = stepData.getNodeName();
             this.nodeHostname = stepData.getNodeHostname();
-            this.generatedSpanId = getGeneratedSpanId(stepNode);
         }
 
         final FlowNodeQueueData queueData = getQueueData(stepNode);
@@ -301,10 +283,6 @@ public class BuildPipelineNode {
         return errorObj;
     }
 
-    public DDId getGeneratedSpanId() {
-        return generatedSpanId;
-    }
-
     public boolean isError() {
         return error;
     }
@@ -353,7 +331,6 @@ public class BuildPipelineNode {
         this.result = buildNode.result;
         this.error = buildNode.error;
         this.errorObj = buildNode.errorObj;
-        this.generatedSpanId = buildNode.generatedSpanId;
         this.parents.addAll(buildNode.parents);
     }
 
