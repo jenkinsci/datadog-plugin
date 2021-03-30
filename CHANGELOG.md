@@ -1,5 +1,12 @@
 Changes
 =======
+## 2.10.0 / 2021-03-30
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.9.0...datadog-2.10.0
+
+### Changes
+* [Removed] Remove the exposure of trace IDs as environment variables. See [#196](https://github.com/jenkinsci/datadog-plugin/pull/196)
+
 ## 2.9.0 / 2021-03-24
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.8.3...datadog-2.9.0
