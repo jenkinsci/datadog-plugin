@@ -94,7 +94,7 @@
         </f:entry>
 
         <f:entry description="Send system events like Node changes of states.">
-            <f:checkbox title="Send System events" field="emitSystemEvents" default="true" />
+            <f:checkbox title="Send System events" field="emitSystemEvents" default="false" />
         </f:entry>
 
         <f:entry description="Enable Log Collection.">
