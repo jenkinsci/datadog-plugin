@@ -76,6 +76,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static String GLOBAL_JOB_TAGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_GLOBAL_JOB_TAGS";
     private static String EMIT_SECURITY_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_SECURITY_EVENTS";
     private static String EMIT_SYSTEM_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS";
+    private static String SYSTEM_EVENT_EXCLUDE_FILES = "DATADOG_JENKINS_PLUGIN_SYSTEM_EVENT_EXCLUDE_FILES";
     private static String COLLECT_BUILD_LOGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS";
     private static String COLLECT_BUILD_TRACES_PROPERTY = "DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_TRACES";
 
@@ -110,6 +111,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private String globalJobTags = null;
     private boolean emitSecurityEvents = DEFAULT_EMIT_SECURITY_EVENTS_VALUE;
     private boolean emitSystemEvents = DEFAULT_EMIT_SYSTEM_EVENTS_VALUE;
+    private String systemEventExclude = null;
     private boolean collectBuildLogs = DEFAULT_COLLECT_BUILD_LOGS_VALUE;
     private boolean collectBuildTraces = DEFAULT_COLLECT_BUILD_TRACES_VALUE;
 
@@ -217,6 +219,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         String emitSystemEventsEnvVar = System.getenv(EMIT_SYSTEM_EVENTS_PROPERTY);
         if(StringUtils.isNotBlank(emitSystemEventsEnvVar)){
             this.emitSystemEvents = Boolean.valueOf(emitSystemEventsEnvVar);
+        }
+
+        String systemEventExcludeEnvVar = System.getenv(SYSTEM_EVENT_EXCLUDE_FILES);
+        if(StringUtils.isNotBlank(systemEventExcludeEnvVar)){
+            this.systemEventExclude = systemEventExcludeEnvVar;
         }
 
         String collectBuildLogsEnvVar = System.getenv(COLLECT_BUILD_LOGS_PROPERTY);

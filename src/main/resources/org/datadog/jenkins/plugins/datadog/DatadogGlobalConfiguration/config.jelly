@@ -93,9 +93,15 @@
             <f:checkbox title="Send Security audit events" field="emitSecurityEvents" default="true" />
         </f:entry>
 
-        <f:entry description="Send system events like Node changes of states.">
-            <f:checkbox title="Send System events" field="emitSystemEvents" default="true" />
-        </f:entry>
+        <f:block>
+          <table>
+            <f:optionalBlock name="system events" title="Send System events" field="emitSystemEvents" default="true" description="Send system events like Node changes of states or config file changes.">
+            <f:entry title="Excluded files" description="A comma-separated list of file names that should be ignored.">
+              <f:textbox name="exclude_event_file" value="${exclude_files}"/>
+            </f:entry>
+            </f:optionalBlock>
+          </table>
+        </f:block>
 
         <f:entry description="Enable Log Collection.">
             <f:checkbox title="Enable Log Collection" field="collectBuildLogs" default="false" />
