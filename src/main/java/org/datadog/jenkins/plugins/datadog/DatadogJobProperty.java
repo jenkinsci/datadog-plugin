@@ -152,19 +152,43 @@ public class DatadogJobProperty<T extends Job<?, ?>> extends JobProperty<T> {
      * @return - A String containing the contents of the scanned file. Returns null when
      * the file cannot be found.
      */
-    public String readTagFile(Run r) {
+    public String readTagFile(Run<?, ?> r) {
         String s = null;
+        FilePath workspace;
+
+        // Check if a tags file has been enabled before continuing
+        if (getTagFile() == null) {
+            logger.fine(String.format("No tag file defined for run '%s'", r));
+            return null;
+        }
+
+        //We need to make sure that the workspace has been created. When 'onStarted' is
+        //invoked, the workspace has not yet been established, so this check is necessary.
         try {
-            //We need to make sure that the workspace has been created. When 'onStarted' is
-            //invoked, the workspace has not yet been established, so this check is necessary.
-            FilePath workspace = r.getExecutor().getCurrentWorkspace();
-            if (workspace != null && getTagFile() != null) {
-                FilePath path = new FilePath(workspace, getTagFile());
-                if (path.exists()) {
-                    s = path.readToString();
-                }
+            Executor executor = r.getExecutor();
+            if(executor == null) {
+                logger.fine("Failed to read tag file: Executor is null");
+                return null;
             }
-        } catch (IOException | InterruptedException | NullPointerException e) {
+            workspace = executor.getCurrentWorkspace();
+            if (workspace == null) {
+                logger.fine("Failed to read tag file: Workspace is null");
+                return null;
+            }
+        } catch (Exception e) {
+            DatadogUtilities.severe(logger, e, "Failed to read tag file when gathering workspace");
+            return null;
+        }
+
+        FilePath path = new FilePath(workspace, getTagFile());
+        try {
+            if (path.exists()) {
+                s = path.readToString();
+                logger.info(String.format("readTagFile successfully read tag file, tag count: %d", s.split("\n").length));
+            } else {
+                DatadogUtilities.severe(logger, null, String.format("Failed to read tag file: for run '%s', tags path not found: %s", r, path));
+            }
+        } catch (IOException | InterruptedException e) {
             DatadogUtilities.severe(logger, e, "Failed to read tag file");
         }
         return s;

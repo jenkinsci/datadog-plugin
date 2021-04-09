@@ -58,7 +58,7 @@ public final class GitUtils {
 
             final Executor executor = run.getExecutor();
             if(executor == null) {
-                LOGGER.fine("Unable to build FilePath. Run is null");
+                LOGGER.fine("Unable to build FilePath. Run executor is null");
                 return null;
             }
 
