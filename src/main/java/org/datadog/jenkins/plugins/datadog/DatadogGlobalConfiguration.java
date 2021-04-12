@@ -222,7 +222,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.emitSystemEvents = Boolean.valueOf(emitSystemEventsEnvVar);
         }
 
-        String emitConfigChangeEventsEnvVar = System.getenv(EMIT_SYSTEM_EVENTS_PROPERTY);
+        String emitConfigChangeEventsEnvVar = System.getenv(EMIT_CONFIG_CHANGE_EVENTS_PROPERTY);
         if(StringUtils.isNotBlank(emitConfigChangeEventsEnvVar)){
             this.emitConfigChangeEvents = Boolean.valueOf(emitConfigChangeEventsEnvVar);
         }

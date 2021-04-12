@@ -57,6 +57,11 @@ public class DatadogSaveableListener  extends SaveableListener {
             if (!emitSystemEvents) {
                 return;
             }
+            final boolean emitConfigChangeEvents = DatadogUtilities.getDatadogGlobalDescriptor().isEmitConfigChangeEvents();
+            if (!emitConfigChangeEvents) {
+                return;
+            }
+
             logger.fine("Start DatadogSaveableListener#onChange");
 
             // Get Datadog Client Instance
