@@ -1,10 +1,11 @@
 Changes
 =======
-## 2.10.0 / 2021-03-30
+## 2.10.0 / 2021-04-12
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.9.0...datadog-2.10.0
 
 ### Changes
+* [Fixed] Expand error handling for reading tag files. See [#199](https://github.com/jenkinsci/datadog-plugin/pull/199).
 * [Removed] Remove the exposure of trace IDs as environment variables. See [#196](https://github.com/jenkinsci/datadog-plugin/pull/196)
 
 ## 2.9.0 / 2021-03-24
