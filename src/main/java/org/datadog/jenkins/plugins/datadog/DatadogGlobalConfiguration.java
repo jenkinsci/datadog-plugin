@@ -76,6 +76,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static String GLOBAL_JOB_TAGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_GLOBAL_JOB_TAGS";
     private static String EMIT_SECURITY_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_SECURITY_EVENTS";
     private static String EMIT_SYSTEM_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS";
+    private static String EMIT_CONFIG_CHANGE_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_CONFIG_CHANGE_EVENTS";
     private static String COLLECT_BUILD_LOGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS";
     private static String COLLECT_BUILD_TRACES_PROPERTY = "DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_TRACES";
 
@@ -90,6 +91,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static Integer DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE = null;
     private static boolean DEFAULT_EMIT_SECURITY_EVENTS_VALUE = true;
     private static boolean DEFAULT_EMIT_SYSTEM_EVENTS_VALUE = true;
+    private static boolean DEFAULT_EMIT_CONFIG_CHANGE_EVENTS_VALUE = false;
     private static boolean DEFAULT_COLLECT_BUILD_LOGS_VALUE = false;
     private static boolean DEFAULT_COLLECT_BUILD_TRACES_VALUE = false;
 
@@ -110,6 +112,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private String globalJobTags = null;
     private boolean emitSecurityEvents = DEFAULT_EMIT_SECURITY_EVENTS_VALUE;
     private boolean emitSystemEvents = DEFAULT_EMIT_SYSTEM_EVENTS_VALUE;
+    private boolean emitConfigChangeEvents = DEFAULT_EMIT_CONFIG_CHANGE_EVENTS_VALUE;
     private boolean collectBuildLogs = DEFAULT_COLLECT_BUILD_LOGS_VALUE;
     private boolean collectBuildTraces = DEFAULT_COLLECT_BUILD_TRACES_VALUE;
 
@@ -217,6 +220,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         String emitSystemEventsEnvVar = System.getenv(EMIT_SYSTEM_EVENTS_PROPERTY);
         if(StringUtils.isNotBlank(emitSystemEventsEnvVar)){
             this.emitSystemEvents = Boolean.valueOf(emitSystemEventsEnvVar);
+        }
+
+        String emitConfigChangeEventsEnvVar = System.getenv(EMIT_CONFIG_CHANGE_EVENTS_PROPERTY);
+        if(StringUtils.isNotBlank(emitConfigChangeEventsEnvVar)){
+            this.emitConfigChangeEvents = Boolean.valueOf(emitConfigChangeEventsEnvVar);
         }
 
         String collectBuildLogsEnvVar = System.getenv(COLLECT_BUILD_LOGS_PROPERTY);
@@ -484,6 +492,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.setGlobalJobTags(formData.getString("globalJobTags"));
             this.setEmitSecurityEvents(formData.getBoolean("emitSecurityEvents"));
             this.setEmitSystemEvents(formData.getBoolean("emitSystemEvents"));
+            this.setEmitConfigChangeEvents(formData.getBoolean("emitConfigChangeEvents"));
             this.setCollectBuildLogs(formData.getBoolean("collectBuildLogs"));
 
             try {
@@ -891,6 +900,23 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @DataBoundSetter
     public void setEmitSystemEvents(boolean emitSystemEvents) {
         this.emitSystemEvents = emitSystemEvents;
+    }
+
+    /**
+     * @return - A {@link Boolean} indicating if the user has configured Datadog to emit Config Change events.
+     */
+    public boolean isEmitConfigChangeEvents() {
+        return emitConfigChangeEvents;
+    }
+
+    /**
+     * Set the checkbox in the UI, used for Jenkins data binding
+     *
+     * @param emitConfigChangeEvents - The checkbox status (checked/unchecked)
+     */
+    @DataBoundSetter
+    public void setEmitConfigChangeEvents(boolean emitConfigChangeEvents) {
+        this.emitConfigChangeEvents = emitConfigChangeEvents;
     }
 
     /**
