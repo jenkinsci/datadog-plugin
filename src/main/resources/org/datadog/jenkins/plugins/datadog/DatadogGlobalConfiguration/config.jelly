@@ -98,7 +98,7 @@
             <f:checkbox title="Send System events" field="emitSystemEvents" default="true" />
           </f:entry>
 
-          <f:entry description="Send events on config change.">
+          <f:entry description="Send events on config change. These events include changes by the system which may be frequent and redundant.">
             <f:checkbox title="Send Config Change events" field="emitConfigChangeEvents" default="false"/>
           </f:entry>
         </f:entry>
