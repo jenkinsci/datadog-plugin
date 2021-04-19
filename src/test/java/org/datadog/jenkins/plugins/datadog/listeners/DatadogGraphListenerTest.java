@@ -163,14 +163,17 @@ public class DatadogGraphListenerTest {
 
         //Traces
         final ListWriter tracerWriter = clientStub.tracerWriter();
-        tracerWriter.waitForTraces(2);
-        assertEquals(2, tracerWriter.size());
+        tracerWriter.waitForTraces(3);
+        assertEquals(3, tracerWriter.size());
 
         final List<DDSpan> buildTrace = tracerWriter.get(0);
         assertEquals(1, buildTrace.size());
 
-        final List<DDSpan> pipelineTrace = tracerWriter.get(1);
-        assertEquals(34, pipelineTrace.size());
+        final List<DDSpan> stage01Trace = tracerWriter.get(1);
+        assertEquals(2, stage01Trace.size());
+
+        final List<DDSpan> stage02Trace = tracerWriter.get(2);
+        assertEquals(13, stage02Trace.size());
     }
 
     @Test
@@ -270,32 +273,20 @@ public class DatadogGraphListenerTest {
         assertEquals(1, buildTrace.size());
 
         final List<DDSpan> pipelineTrace = tracerWriter.get(1);
-        assertEquals(16, pipelineTrace.size());
+        assertEquals(5, pipelineTrace.size());
 
-        final DDSpan stage2 = pipelineTrace.get(6);
+        final DDSpan stage2 = pipelineTrace.get(1);
         final String stage2Name = (String) stage2.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME);
         assertTrue(stage2Name != null && !stage2Name.isEmpty());
 
-        final DDSpan allocateNodeStart2 = pipelineTrace.get(7);
-        assertEquals(stage2Name, allocateNodeStart2.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));
-
-        final DDSpan allocateNodeBodyStart2 = pipelineTrace.get(8);
-        assertEquals(stage2Name, allocateNodeBodyStart2.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));
-
-        final DDSpan stepStage2 = pipelineTrace.get(9);
+        final DDSpan stepStage2 = pipelineTrace.get(2);
         assertEquals(stage2Name, stepStage2.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));
 
-        final DDSpan stage1 = pipelineTrace.get(12);
+        final DDSpan stage1 = pipelineTrace.get(3);
         final String stage1Name = (String) stage1.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME);
         assertTrue(stage1Name != null && !stage1Name.isEmpty());
 
-        final DDSpan allocateNodeStart1 = pipelineTrace.get(13);
-        assertEquals(stage1Name, allocateNodeStart1.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));
-
-        final DDSpan allocateNodeBodyStart1 = pipelineTrace.get(14);
-        assertEquals(stage1Name, allocateNodeBodyStart1.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));
-
-        final DDSpan stepStage1 = pipelineTrace.get(15);
+        final DDSpan stepStage1 = pipelineTrace.get(4);
         assertEquals(stage1Name, stepStage1.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));
     }
 
@@ -330,56 +321,23 @@ public class DatadogGraphListenerTest {
         assertEquals(0L, buildSpan.getUnsafeMetrics().get(CITags.QUEUE_TIME));
 
         final List<DDSpan> pipelineTrace = tracerWriter.get(1);
-        assertEquals(16, pipelineTrace.size());
+        assertEquals(5, pipelineTrace.size());
 
-        final DDSpan startPipeline = pipelineTrace.get(0);
-        assertEquals(0L, startPipeline.getUnsafeMetrics().get(CITags.QUEUE_TIME));
-
-        final DDSpan stageStart = pipelineTrace.get(1);
-        assertEquals(0L, stageStart.getUnsafeMetrics().get(CITags.QUEUE_TIME));
-
-        final DDSpan runStages = pipelineTrace.get(2);
+        final DDSpan runStages = pipelineTrace.get(0);
         assertEquals(0L, runStages.getUnsafeMetrics().get(CITags.QUEUE_TIME));
 
-        final DDSpan executeInParallelStart = pipelineTrace.get(3);
-        assertEquals(0L, executeInParallelStart.getUnsafeMetrics().get(CITags.QUEUE_TIME));
-
-        final DDSpan branchStage2 = pipelineTrace.get(4);
-        assertEquals(0L, branchStage2.getUnsafeMetrics().get(CITags.QUEUE_TIME));
-
-        final DDSpan stage2Start = pipelineTrace.get(5);
-        assertEquals(0L, stage2Start.getUnsafeMetrics().get(CITags.QUEUE_TIME));
-
-        final DDSpan stage2 = pipelineTrace.get(6);
+        final DDSpan stage2 = pipelineTrace.get(1);
         long stage2QueueTime = (long) stage2.getUnsafeMetrics().get(CITags.QUEUE_TIME);
         assertTrue(stage2QueueTime > 0L);
 
-        final DDSpan allocateNodeStart2 = pipelineTrace.get(7);
-        assertEquals(stage2QueueTime, allocateNodeStart2.getUnsafeMetrics().get(CITags.QUEUE_TIME));
-
-        final DDSpan allocateNodeBodyStart2 = pipelineTrace.get(8);
-        assertEquals(0L, allocateNodeBodyStart2.getUnsafeMetrics().get(CITags.QUEUE_TIME));
-
-        final DDSpan stepStage2 = pipelineTrace.get(9);
+        final DDSpan stepStage2 = pipelineTrace.get(2);
         assertEquals(0L, stepStage2.getUnsafeMetrics().get(CITags.QUEUE_TIME));
 
-        final DDSpan branchStage1 = pipelineTrace.get(10);
-        assertEquals(0L, branchStage1.getUnsafeMetrics().get(CITags.QUEUE_TIME));
-
-        final DDSpan stage1Start = pipelineTrace.get(11);
-        assertEquals(0L, stage1Start.getUnsafeMetrics().get(CITags.QUEUE_TIME));
-
-        final DDSpan stage1 = pipelineTrace.get(12);
+        final DDSpan stage1 = pipelineTrace.get(3);
         long stage1QueueTime = (long) stage1.getUnsafeMetrics().get(CITags.QUEUE_TIME);
         assertTrue(stage1QueueTime > 0L);
 
-        final DDSpan allocateNodeStart1 = pipelineTrace.get(13);
-        assertEquals(stage1QueueTime, allocateNodeStart1.getUnsafeMetrics().get(CITags.QUEUE_TIME));
-
-        final DDSpan allocateNodeBodyStart1 = pipelineTrace.get(14);
-        assertEquals(0L, allocateNodeBodyStart1.getUnsafeMetrics().get(CITags.QUEUE_TIME));
-
-        final DDSpan stepStage1 = pipelineTrace.get(15);
+        final DDSpan stepStage1 = pipelineTrace.get(4);
         assertEquals(0L, stepStage1.getUnsafeMetrics().get(CITags.QUEUE_TIME));
     }
 
@@ -421,36 +379,16 @@ public class DatadogGraphListenerTest {
         assertEquals("none",buildSpan.getTag(CITags._DD_HOSTNAME));
 
         final List<DDSpan> pipelineTrace = tracerWriter.get(1);
-        assertEquals(6, pipelineTrace.size());
+        assertEquals(2, pipelineTrace.size());
         assertEquals("testPipeline", buildSpan.getTag(CITags.NODE_NAME));
         assertEquals("none",buildSpan.getTag(CITags._DD_HOSTNAME));
 
-        final DDSpan startPipeline = pipelineTrace.get(0);
-        assertEquals(queueTime, startPipeline.getUnsafeMetrics().get(CITags.QUEUE_TIME));
-        assertEquals("testPipeline", buildSpan.getTag(CITags.NODE_NAME));
-        assertEquals("none",buildSpan.getTag(CITags._DD_HOSTNAME));
-
-        final DDSpan allocateNode = pipelineTrace.get(1);
-        assertEquals(queueTime, allocateNode.getUnsafeMetrics().get(CITags.QUEUE_TIME));
-        assertEquals("testPipeline", buildSpan.getTag(CITags.NODE_NAME));
-        assertEquals("none",buildSpan.getTag(CITags._DD_HOSTNAME));
-
-        final DDSpan allocateNodeStart = pipelineTrace.get(2);
-        assertEquals(0L, allocateNodeStart.getUnsafeMetrics().get(CITags.QUEUE_TIME));
-        assertEquals("testPipeline", buildSpan.getTag(CITags.NODE_NAME));
-        assertEquals("none",buildSpan.getTag(CITags._DD_HOSTNAME));
-
-        final DDSpan stageStart = pipelineTrace.get(3);
-        assertEquals(0L, stageStart.getUnsafeMetrics().get(CITags.QUEUE_TIME));
-        assertEquals("testPipeline", buildSpan.getTag(CITags.NODE_NAME));
-        assertEquals("none",buildSpan.getTag(CITags._DD_HOSTNAME));
-
-        final DDSpan stage = pipelineTrace.get(4);
+        final DDSpan stage = pipelineTrace.get(0);
         assertEquals(0L, stage.getUnsafeMetrics().get(CITags.QUEUE_TIME));
         assertEquals("testPipeline", buildSpan.getTag(CITags.NODE_NAME));
         assertEquals("none",buildSpan.getTag(CITags._DD_HOSTNAME));
 
-        final DDSpan step = pipelineTrace.get(5);
+        final DDSpan step = pipelineTrace.get(1);
         assertEquals(0L, step.getUnsafeMetrics().get(CITags.QUEUE_TIME));
         assertEquals("testPipeline", buildSpan.getTag(CITags.NODE_NAME));
         assertEquals("none",buildSpan.getTag(CITags._DD_HOSTNAME));
@@ -511,51 +449,10 @@ public class DatadogGraphListenerTest {
         assertTrue(((String) buildSpan.getTag(CITags._DD_CI_STAGES)).contains("{\"name\":\"test\",\"duration\""));
 
         final List<DDSpan> pipelineTrace = tracerWriter.get(1);
-        assertEquals(4, pipelineTrace.size());
-
-        final String pipelinePrefix = BuildPipelineNode.NodeType.STEP.getTagName();
-        final DDSpan pipelineSpan = pipelineTrace.get(0);
-        assertEquals("jenkins.step.internal", pipelineSpan.getOperationName());
-        assertEquals(SAMPLE_SERVICE_NAME, pipelineSpan.getServiceName());
-        assertEquals("Start of Pipeline", pipelineSpan.getResourceName());
-        assertEquals("ci", pipelineSpan.getType());
-        assertEquals("Start of Pipeline", pipelineSpan.getTag(pipelinePrefix + CITags._NAME));
-        assertEquals("2", pipelineSpan.getTag(pipelinePrefix + CITags._NUMBER));
-        assertEquals("success", pipelineSpan.getTag(CITags.JENKINS_RESULT));
-        assertEquals("jenkins", pipelineSpan.getTag(CITags.CI_PROVIDER_NAME));
-        assertNotNull(pipelineSpan.getTag(pipelinePrefix + CITags._URL));
-        assertNotNull(pipelineSpan.getTag(CITags.NODE_NAME));
-        assertNull(pipelineSpan.getTag(CITags._DD_HOSTNAME));
-        assertEquals(true, pipelineSpan.getTag(CITags._DD_CI_INTERNAL));
-        assertNull(pipelineSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
-        assertNull(pipelineSpan.getTag(CITags._DD_CI_LEVEL));
-        assertEquals("jenkins-pipelineIntegrationSuccess-1", pipelineSpan.getTag(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._ID));
-        assertEquals("pipelineIntegrationSuccess", pipelineSpan.getTag(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._NAME));
-        assertNotNull(pipelineSpan.getUnsafeMetrics().get(CITags.QUEUE_TIME));
-
-        final String stepPrefix = BuildPipelineNode.NodeType.STEP.getTagName();
-        final DDSpan stepInternalSpan = pipelineTrace.get(1);
-        assertEquals("jenkins.step.internal", stepInternalSpan.getOperationName());
-        assertEquals(SAMPLE_SERVICE_NAME, stepInternalSpan.getServiceName());
-        assertEquals("Stage : Start", stepInternalSpan.getResourceName());
-        assertEquals("ci", stepInternalSpan.getType());
-        assertEquals("Stage : Start", stepInternalSpan.getTag(stepPrefix + CITags._NAME));
-        assertEquals("success", stepInternalSpan.getTag(CITags.JENKINS_RESULT));
-        assertEquals("jenkins", stepInternalSpan.getTag(CITags.CI_PROVIDER_NAME));
-        assertEquals("test", stepInternalSpan.getTag("jenkins.step.args.name"));
-        assertNotNull(stepInternalSpan.getTag(stepPrefix + CITags._URL));
-        assertNotNull(stepInternalSpan.getTag(CITags.NODE_NAME));
-        assertNull(stepInternalSpan.getTag(CITags._DD_HOSTNAME));
-        assertEquals(true, stepInternalSpan.getTag(CITags._DD_CI_INTERNAL));
-        assertEquals("3", stepInternalSpan.getTag(stepPrefix + CITags._NUMBER));
-        assertNull(stepInternalSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
-        assertNull(stepInternalSpan.getTag(CITags._DD_CI_LEVEL));
-        assertEquals("jenkins-pipelineIntegrationSuccess-1", stepInternalSpan.getTag(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._ID));
-        assertEquals("pipelineIntegrationSuccess", stepInternalSpan.getTag(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._NAME));
-        assertNotNull(stepInternalSpan.getUnsafeMetrics().get(CITags.QUEUE_TIME));
+        assertEquals(2, pipelineTrace.size());
 
         final String stagePrefix = BuildPipelineNode.NodeType.STAGE.getTagName();
-        final DDSpan stageSpan = pipelineTrace.get(2);
+        final DDSpan stageSpan = pipelineTrace.get(0);
         assertEquals("jenkins.stage", stageSpan.getOperationName());
         assertEquals(SAMPLE_SERVICE_NAME, stageSpan.getServiceName());
         assertEquals("test", stageSpan.getResourceName());
@@ -574,7 +471,8 @@ public class DatadogGraphListenerTest {
         assertEquals("pipelineIntegrationSuccess", stageSpan.getTag(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._NAME));
         assertNotNull(stageSpan.getUnsafeMetrics().get(CITags.QUEUE_TIME));
 
-        final DDSpan stepAtomSpan = pipelineTrace.get(3);
+        final String stepPrefix = BuildPipelineNode.NodeType.STEP.getTagName();
+        final DDSpan stepAtomSpan = pipelineTrace.get(1);
         assertEquals("jenkins.step", stepAtomSpan.getOperationName());
         assertEquals(SAMPLE_SERVICE_NAME, stepAtomSpan.getServiceName());
         assertEquals("Print Message", stepAtomSpan.getResourceName());
