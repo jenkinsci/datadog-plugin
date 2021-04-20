@@ -182,61 +182,63 @@ public class DatadogTracePipelineLogic {
 
     private void sendTrace(final Tracer tracer, final BuildData buildData, final BuildPipelineNode current, final SpanContext parentSpanContext) {
         if(!isTraceable(current)){
+            // If the current node is not traceable, we continue with its children
             for(final BuildPipelineNode child : current.getChildren()) {
                 sendTrace(tracer, buildData, child, parentSpanContext);
             }
-        } else {
-            final Tracer.SpanBuilder spanBuilder = tracer.buildSpan(buildOperationName(current)).withStartTimestamp(current.getStartTimeMicros());
+            return;
+        }
 
-            if(parentSpanContext != null) {
-                spanBuilder.asChildOf(parentSpanContext);
+        // At this point, the current node is traceable.
+        final Tracer.SpanBuilder spanBuilder = tracer.buildSpan(buildOperationName(current)).withStartTimestamp(current.getStartTimeMicros());
+        if(parentSpanContext != null) {
+            spanBuilder.asChildOf(parentSpanContext);
+        }
+
+        spanBuilder
+                .withTag(DDTags.SERVICE_NAME, DatadogUtilities.getDatadogGlobalDescriptor().getTraceServiceName())
+                .withTag(DDTags.RESOURCE_NAME, current.getName())
+                .withTag(DDTags.SPAN_TYPE, "ci")
+                .withTag(DDTags.LANGUAGE_TAG_KEY, "");
+
+        final Map<String, Object> traceTags = buildTraceTags(current, buildData);
+
+        // Set tags
+        for(Map.Entry<String, Object> traceTag : traceTags.entrySet()) {
+            if(traceTag.getValue() instanceof Number) {
+                spanBuilder.withTag(traceTag.getKey(), (Number) traceTag.getValue());
+            } else if(traceTag.getValue() instanceof Boolean) {
+                spanBuilder.withTag(traceTag.getKey(), (Boolean) traceTag.getValue());
+            } else {
+                spanBuilder.withTag(traceTag.getKey(), String.valueOf(traceTag.getValue()));
             }
+        }
 
-            spanBuilder
-                    .withTag(DDTags.SERVICE_NAME, DatadogUtilities.getDatadogGlobalDescriptor().getTraceServiceName())
-                    .withTag(DDTags.RESOURCE_NAME, current.getName())
-                    .withTag(DDTags.SPAN_TYPE, "ci")
-                    .withTag(DDTags.LANGUAGE_TAG_KEY, "");
+        final Span span = spanBuilder.start();
 
-            final Map<String, Object> traceTags = buildTraceTags(current, buildData);
-
-            // Set tags
-            for(Map.Entry<String, Object> traceTag : traceTags.entrySet()) {
-                if(traceTag.getValue() instanceof Number) {
-                    spanBuilder.withTag(traceTag.getKey(), (Number) traceTag.getValue());
-                } else if(traceTag.getValue() instanceof Boolean) {
-                    spanBuilder.withTag(traceTag.getKey(), (Boolean) traceTag.getValue());
-                } else {
-                    spanBuilder.withTag(traceTag.getKey(), String.valueOf(traceTag.getValue()));
-                }
-            }
-
-            final Span span = spanBuilder.start();
-
-            try {
-                // Set metrics
-                if(span instanceof MutableSpan) {
-                    final MutableSpan mutableSpan = (MutableSpan) span;
-                    final Map<String, Long> traceMetrics = buildTraceMetrics(current);
-                    for(Map.Entry<String, Long> traceMetric : traceMetrics.entrySet()) {
-                        if(traceMetric.getValue() != null) {
-                            mutableSpan.setMetric(traceMetric.getKey(), traceMetric.getValue());
-                        }
+        try {
+            // Set metrics
+            if(span instanceof MutableSpan) {
+                final MutableSpan mutableSpan = (MutableSpan) span;
+                final Map<String, Long> traceMetrics = buildTraceMetrics(current);
+                for(Map.Entry<String, Long> traceMetric : traceMetrics.entrySet()) {
+                    if(traceMetric.getValue() != null) {
+                        mutableSpan.setMetric(traceMetric.getKey(), traceMetric.getValue());
                     }
                 }
-            } catch (Exception e) {
-                logger.severe("Unable to set metrics in the span, exception: " + e);
             }
-
-            for(final BuildPipelineNode child : current.getChildren()) {
-                sendTrace(tracer, buildData, child, span.context());
-            }
-
-            //Logs
-            //NOTE: Implement sendNodeLogs
-
-            span.finish(current.getEndTimeMicros());
+        } catch (Exception e) {
+            logger.severe("Unable to set metrics in the span, exception: " + e);
         }
+
+        for(final BuildPipelineNode child : current.getChildren()) {
+            sendTrace(tracer, buildData, child, span.context());
+        }
+
+        //Logs
+        //NOTE: Implement sendNodeLogs
+
+        span.finish(current.getEndTimeMicros());
     }
 
     private Map<String, Long> buildTraceMetrics(BuildPipelineNode current) {
