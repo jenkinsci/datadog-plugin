@@ -180,15 +180,17 @@ public class DatadogTracePipelineLogic {
         }
     }
 
-
     private void sendTrace(final Tracer tracer, final BuildData buildData, final BuildPipelineNode current, final SpanContext parentSpanContext) {
         if(!isTraceable(current)){
-            logger.severe("Node " + current.getName() + " is not traceable.");
+            // If the current node is not traceable, we continue with its children
+            for(final BuildPipelineNode child : current.getChildren()) {
+                sendTrace(tracer, buildData, child, parentSpanContext);
+            }
             return;
         }
 
+        // At this point, the current node is traceable.
         final Tracer.SpanBuilder spanBuilder = tracer.buildSpan(buildOperationName(current)).withStartTimestamp(current.getStartTimeMicros());
-
         if(parentSpanContext != null) {
             spanBuilder.asChildOf(parentSpanContext);
         }
@@ -367,6 +369,11 @@ public class DatadogTracePipelineLogic {
 
         if(node.getEndTimeMicros() == -1L) {
             logger.severe("Unable to send trace of node: " + node.getName() + ". End Time is not set");
+            return false;
+        }
+
+        if(node.isInternal()){
+            logger.fine("Node: " + node.getName() + " is Jenkins internal. We skip it.");
             return false;
         }
 
