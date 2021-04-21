@@ -64,10 +64,10 @@ public class DatadogQueueListener extends QueueListener {
 
             final FlowNodeQueueData flowNodeData = queueAction.get(flowNode.getId());
             if(flowNodeData != null) {
-                flowNodeData.setEnterBuildable(System.currentTimeMillis());
+                flowNodeData.setEnterBuildableNanos(System.nanoTime());
             } else {
                 final FlowNodeQueueData data = new FlowNodeQueueData(flowNode.getId());
-                data.setEnterBuildable(System.currentTimeMillis());
+                data.setEnterBuildableNanos(System.nanoTime());
                 queueAction.put(flowNode.getId(), data);
             }
 
@@ -113,7 +113,7 @@ public class DatadogQueueListener extends QueueListener {
 
             final FlowNodeQueueData flowNodeData = queueAction.get(flowNode.getId());
             if(flowNodeData != null) {
-                flowNodeData.setLeaveBuildable(System.currentTimeMillis());
+                flowNodeData.setLeaveBuildableNanos(System.nanoTime());
             }
         } catch (Exception e){
             logger.severe("Error onLeaveBuildable: item:" + item + ", exception: " + e);

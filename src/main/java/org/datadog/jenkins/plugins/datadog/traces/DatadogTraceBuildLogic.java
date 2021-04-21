@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -52,6 +53,7 @@ public class DatadogTraceBuildLogic {
         }
 
         final long startTimeMicros = buildData.getStartTime(0L) * 1000;
+        System.out.println("jenkins.build: start micros:" + startTimeMicros);
 
         final Span buildSpan = tracer.buildSpan("jenkins.build")
                 .withStartTimestamp(startTimeMicros)
@@ -116,13 +118,15 @@ public class DatadogTraceBuildLogic {
         buildSpan.setTag(prefix + CITags._NUMBER, buildData.getBuildNumber(""));
         buildSpan.setTag(prefix + CITags._URL, buildData.getBuildUrl(""));
         if (buildSpan instanceof MutableSpan) {
-            ((MutableSpan) buildSpan).setMetric(CITags.QUEUE_TIME, getSecondsInQueue(buildData, pipelineData));
+            ((MutableSpan) buildSpan).setMetric(CITags.QUEUE_TIME, TimeUnit.MILLISECONDS.toSeconds(getMillisInQueue(buildData, pipelineData)));
         }
 
         final String workspace = buildData.getWorkspace("").isEmpty() ? pipelineData.getWorkspace("") : buildData.getWorkspace("");
         buildSpan.setTag(CITags.WORKSPACE_PATH, workspace);
 
         final String nodeName = buildData.getNodeName("").isEmpty() ? pipelineData.getNodeName("") : buildData.getNodeName("");
+        System.out.println("--- buildData nodeName: " + buildData.getNodeName("") + ", pipelineData: " + pipelineData.getNodeName(""));
+
         buildSpan.setTag(CITags.NODE_NAME, nodeName);
         // If the NodeName == master, we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
         // If the NodeName != master, we set _dd.hostname to 'none' explicitly, cause we cannot calculate the worker hostname.
@@ -207,16 +211,19 @@ public class DatadogTraceBuildLogic {
             buildSpan.setTag(CITags.ERROR, true);
         }
 
-        buildSpan.finish(endTimeMicros);
+        System.out.println("jenkins.build: end micros:" + endTimeMicros + ", build millisInQueue: "+buildData.getMillisInQueue(-1L)+", pipeline millisInQueue: "+pipelineData.getMillisInQueue(-1L)+", pipeline propagatedMillisInQueue: " + pipelineData.getPropagatedMillisInQueue(-1L));
+
+        final long propagatedMillisInQueue = Math.max(pipelineData.getPropagatedMillisInQueue(-1L), 0);
+        buildSpan.finish(endTimeMicros - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue));
     }
 
-    private long getSecondsInQueue(BuildData buildData, BuildData pipelineData) {
-        if(buildData.getSecondsInQueue(-1L) != -1L) {
-            return Math.max(buildData.getSecondsInQueue(-1L), 0);
+    private long getMillisInQueue(BuildData buildData, BuildData pipelineData) {
+        if(buildData.getMillisInQueue(-1L) != -1L) {
+            return Math.max(buildData.getMillisInQueue(-1L), 0);
         } else {
-            final long secsInQueue = pipelineData.getSecondsInQueue(-1L);
-            final long propagatedSecsInQueue = pipelineData.getPropagatedSecondsInQueue(-1L);
-            return Math.max(Math.max(secsInQueue, propagatedSecsInQueue), 0);
+            final long millisInQueue = pipelineData.getMillisInQueue(-1L);
+            final long propagatedMillisInQueue = pipelineData.getPropagatedMillisInQueue(-1L);
+            return Math.max(Math.max(millisInQueue, propagatedMillisInQueue), 0);
         }
     }
 
