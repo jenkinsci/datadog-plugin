@@ -53,7 +53,6 @@ public class DatadogTraceBuildLogic {
         }
 
         final long startTimeMicros = buildData.getStartTime(0L) * 1000;
-        System.out.println("jenkins.build: start micros:" + startTimeMicros);
 
         final Span buildSpan = tracer.buildSpan("jenkins.build")
                 .withStartTimestamp(startTimeMicros)
@@ -125,7 +124,6 @@ public class DatadogTraceBuildLogic {
         buildSpan.setTag(CITags.WORKSPACE_PATH, workspace);
 
         final String nodeName = buildData.getNodeName("").isEmpty() ? pipelineData.getNodeName("") : buildData.getNodeName("");
-        System.out.println("--- buildData nodeName: " + buildData.getNodeName("") + ", pipelineData: " + pipelineData.getNodeName(""));
 
         buildSpan.setTag(CITags.NODE_NAME, nodeName);
         // If the NodeName == master, we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
@@ -210,8 +208,6 @@ public class DatadogTraceBuildLogic {
         if(Result.FAILURE.toString().equals(jenkinsResult)) {
             buildSpan.setTag(CITags.ERROR, true);
         }
-
-        System.out.println("jenkins.build: end micros:" + endTimeMicros + ", build millisInQueue: "+buildData.getMillisInQueue(-1L)+", pipeline millisInQueue: "+pipelineData.getMillisInQueue(-1L)+", pipeline propagatedMillisInQueue: " + pipelineData.getPropagatedMillisInQueue(-1L));
 
         final long propagatedMillisInQueue = Math.max(pipelineData.getPropagatedMillisInQueue(-1L), 0);
         buildSpan.finish(endTimeMicros - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue));

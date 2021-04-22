@@ -178,8 +178,6 @@ public class DatadogTracePipelineLogic {
     }
 
     private void sendTrace(final Tracer tracer, final BuildData buildData, final BuildPipelineNode current, final SpanContext parentSpanContext) {
-        System.out.println("-- Node: " + current.getName() + ", Machine: " + current.getNodeName());
-
         if(!isTraceable(current)){
             // If the current node is not traceable, we continue with its children
             for(final BuildPipelineNode child : current.getChildren()) {
