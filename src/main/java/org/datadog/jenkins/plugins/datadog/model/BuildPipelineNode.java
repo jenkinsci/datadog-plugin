@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -260,7 +261,7 @@ public class BuildPipelineNode {
 
     public void setEndTime(long endTime) {
         this.endTime = endTime;
-        this.endTimeMicros = this.endTime * 1000;
+        this.endTimeMicros = TimeUnit.MILLISECONDS.toMicros(this.endTime);
     }
 
     public void setNanosInQueue(long nanosInQueue) {
