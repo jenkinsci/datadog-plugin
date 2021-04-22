@@ -186,12 +186,18 @@ public class DatadogTracePipelineLogic {
             return;
         }
 
+        // If the root span has propagated queue time, we need to adjust all startTime and endTime from Jenkins pipelines spans
+        // because this time will be subtracted in the root span. See DatadogTraceBuildLogic#finishBuildTrace method.
         final long propagatedMillisInQueue = Math.max(buildData.getPropagatedMillisInQueue(-1L), 0);
         final long fixedStartTimeMicros = current.getStartTimeMicros() - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue);
         final long fixedEndTimeMicros = current.getEndTimeMicros() - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue);
 
         // At this point, the current node is traceable.
-        final Tracer.SpanBuilder spanBuilder = tracer.buildSpan(buildOperationName(current))
+        final Tracer.SpanBuilder spanBuilder = tracer
+                .buildSpan(buildOperationName(current))
+                // Queue time for the indexed spans is reported on its child spans.
+                // We need to remove the queue time from the span. In this case, we're adding it to the
+                // fixed startTime to avoid having the queue time in the span duration.
                 .withStartTimestamp(fixedStartTimeMicros + TimeUnit.NANOSECONDS.toMicros(getNanosInQueue(current)));
         if(parentSpanContext != null) {
             spanBuilder.asChildOf(parentSpanContext);
