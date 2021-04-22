@@ -5,6 +5,7 @@ import hudson.model.Run;
 import org.datadog.jenkins.plugins.datadog.model.StepData;
 import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
 import org.jenkinsci.plugins.workflow.flow.StepListener;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 
@@ -26,7 +27,15 @@ public class DatadogStepListener implements StepListener {
                 return;
             }
 
-            stepDataAction.put(step.getDescriptor(), new StepData(context));
+            final FlowNode flowNode = context.get(FlowNode.class);
+            if(flowNode == null) {
+                logger.severe("Unable to store Step data in Run '"+run.getFullDisplayName()+"'. FlowNode is null");
+                return;
+            }
+
+            final StepData stepData = new StepData(context);
+            stepDataAction.put(flowNode, stepData);
+
         } catch (Exception ex) {
             logger.severe("Unable to extract Run information of the StepContext. " + ex);
         }

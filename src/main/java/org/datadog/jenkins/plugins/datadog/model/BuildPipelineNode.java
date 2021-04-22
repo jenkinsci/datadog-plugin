@@ -124,7 +124,7 @@ public class BuildPipelineNode {
         this.args = ArgumentsAction.getFilteredArguments(startNode);
 
         if(endNode instanceof StepNode){
-            final StepData stepData = getStepData(endNode);
+            final StepData stepData = getStepData(startNode);
             if(stepData != null) {
                 this.envVars = stepData.getEnvVars();
                 this.workspace = stepData.getWorkspace();
@@ -391,20 +391,20 @@ public class BuildPipelineNode {
     }
 
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
-    private StepData getStepData(final FlowNode node) {
-        final Run<?, ?> run = getRun(node);
+    private StepData getStepData(final FlowNode flowNode) {
+        final Run<?, ?> run = getRun(flowNode);
         if(run == null) {
-            logger.fine("Unable to get StepData from node '"+node.getDisplayName()+"'. Run is null");
+            logger.fine("Unable to get StepData from flowNode '"+flowNode.getDisplayName()+"'. Run is null");
             return null;
         }
 
         final StepDataAction stepDataAction = run.getAction(StepDataAction.class);
         if(stepDataAction == null) {
-            logger.fine("Unable to get StepData from node '"+node.getDisplayName()+"'. StepDataAction is null");
+            logger.fine("Unable to get StepData from flowNode '"+flowNode.getDisplayName()+"'. StepDataAction is null");
             return null;
         }
 
-        return stepDataAction.get(((StepNode) node).getDescriptor());
+        return stepDataAction.get(flowNode);
     }
 
     private FlowNodeQueueData getQueueData(FlowNode node) {
