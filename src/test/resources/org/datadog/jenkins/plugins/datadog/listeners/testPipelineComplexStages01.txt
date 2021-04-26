@@ -1,5 +1,7 @@
 pipeline {
-    agent none
+    agent {
+        label 'worker03'
+    }
     stages {
            stage('Prepare') {
               parallel {

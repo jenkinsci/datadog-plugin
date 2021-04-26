@@ -22,6 +22,7 @@ import org.datadog.jenkins.plugins.datadog.model.BuildPipeline;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
+import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
@@ -97,7 +98,7 @@ public class DatadogTracePipelineLogic {
         final SpanContext spanContext = tracer.extract(Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatation()));
         final BuildPipelineNode root = pipeline.buildTree();
         try {
-            sendTrace(tracer, buildData, root, spanContext);
+            sendTrace(tracer, run, buildData, root, spanContext);
         } catch (Exception e){
             logger.severe("Unable to send traces. Exception:" + e);
         }
@@ -109,10 +110,6 @@ public class DatadogTracePipelineLogic {
         }
 
         buildData.setPropagatedMillisInQueue(TimeUnit.NANOSECONDS.toMillis(getNanosInQueue(pipelineNode)));
-
-        if(isLastAllocateNode(node)){
-            buildData.setPropagatedNodeName(pipelineNode.getNodeName());
-        }
 
         final String gitBranch = pipelineNode.getEnvVars().get("GIT_BRANCH");
         if(gitBranch != null && buildData.getBranch("").isEmpty()) {
@@ -183,13 +180,13 @@ public class DatadogTracePipelineLogic {
         }
     }
 
-    private void sendTrace(final Tracer tracer, final BuildData buildData, final BuildPipelineNode current, final SpanContext parentSpanContext) {
+    private void sendTrace(final Tracer tracer, final Run run, final BuildData buildData, final BuildPipelineNode current, final SpanContext parentSpanContext) {
         //System.out.println("--- sendTrace: " + current.getName());
 
         if(!isTraceable(current)){
             // If the current node is not traceable, we continue with its children
             for(final BuildPipelineNode child : current.getChildren()) {
-                sendTrace(tracer, buildData, child, parentSpanContext);
+                sendTrace(tracer, run, buildData, child, parentSpanContext);
             }
             return;
         }
@@ -217,7 +214,7 @@ public class DatadogTracePipelineLogic {
                 .withTag(DDTags.SPAN_TYPE, "ci")
                 .withTag(DDTags.LANGUAGE_TAG_KEY, "");
 
-        final Map<String, Object> traceTags = buildTraceTags(current, buildData);
+        final Map<String, Object> traceTags = buildTraceTags(run, current, buildData);
 
         // Set tags
         for(Map.Entry<String, Object> traceTag : traceTags.entrySet()) {
@@ -248,7 +245,7 @@ public class DatadogTracePipelineLogic {
         }
 
         for(final BuildPipelineNode child : current.getChildren()) {
-            sendTrace(tracer, buildData, child, span.context());
+            sendTrace(tracer, run, buildData, child, span.context());
         }
 
         //Logs
@@ -269,7 +266,7 @@ public class DatadogTracePipelineLogic {
         return metrics;
     }
 
-    private Map<String, Object> buildTraceTags(final BuildPipelineNode current, final BuildData buildData) {
+    private Map<String, Object> buildTraceTags(final Run run, final BuildPipelineNode current, final BuildData buildData) {
         final String prefix = current.getType().getTagName();
         final String buildLevel = current.getType().getBuildLevel();
         final Map<String, String> envVars = current.getEnvVars();
@@ -330,10 +327,7 @@ public class DatadogTracePipelineLogic {
         tags.put(CITags.USER_NAME, user);
 
         // Node info
-        // If there is no node explicitly set for the step, we consider that is the node from the build.
-
-        //final String nodeName = current.getNodeName() != null ? current.getNodeName() : buildData.getNodeName("");
-        final String nodeName = getNodeName(current, buildData);
+        final String nodeName = getNodeName(run, current, buildData);
         tags.put(CITags.NODE_NAME, nodeName);
         // If the NodeName == "master", we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
         // If the NodeName != "master", we set _dd.hostname to 'none' explicitly, cause we cannot calculate the worker hostname.
@@ -375,11 +369,18 @@ public class DatadogTracePipelineLogic {
         return tags;
     }
 
-    private String getNodeName(BuildPipelineNode current, BuildData buildData) {
+    private String getNodeName(Run<?, ?> run, BuildPipelineNode current, BuildData buildData) {
+        final PipelineNodeInfoAction pipelineNodeInfoAction = run.getAction(PipelineNodeInfoAction.class);
+
         if(current.getPropagatedNodeName() != null) {
             return current.getPropagatedNodeName();
+        } else if(current.getNodeName() != null) {
+            return current.getNodeName();
+        } else if (pipelineNodeInfoAction != null) {
+            return pipelineNodeInfoAction.getNodeName();
         }
-        return current.getNodeName() != null ? current.getNodeName() : buildData.getNodeName("");
+
+        return buildData.getNodeName("");
     }
 
     private String buildOperationName(BuildPipelineNode current) {

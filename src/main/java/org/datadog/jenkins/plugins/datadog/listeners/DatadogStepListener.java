@@ -2,27 +2,24 @@ package org.datadog.jenkins.plugins.datadog.listeners;
 
 import hudson.Extension;
 import hudson.model.Run;
+import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StepData;
 import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
-import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.flow.StepListener;
-import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
-import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 
 import javax.annotation.Nonnull;
-import java.util.List;
+import java.util.Iterator;
 import java.util.logging.Logger;
 
 @Extension
 public class DatadogStepListener implements StepListener {
 
     private static final Logger logger = Logger.getLogger(DatadogStepListener.class.getName());
-    private static final DepthFirstScanner scanner = new DepthFirstScanner();
 
     @Override
     public void notifyOfNewStep(@Nonnull Step step, @Nonnull StepContext context) {
@@ -47,26 +44,41 @@ public class DatadogStepListener implements StepListener {
             final StepData stepData = new StepData(context);
             stepDataAction.put(flowNode, stepData);
 
-            System.out.println("--- Step ["+stepData.getNodeName()+"]: " + step.getDescriptor().getDisplayName() + "("+ ArgumentsAction.getFilteredArguments(flowNode)+"), FlowNode: " + flowNode.getId());
-
-            final List<FlowNode> heads = flowNode.getExecution().getCurrentHeads();
-            scanner.setup(heads);
-            while(scanner.hasNext()){
-                final FlowNode fNode = scanner.next();
-                System.out.println("------ Head ["+stepData.getNodeName()+"]: Name:" + fNode.getDisplayName() + ", ID: " + fNode.getId() + ", Class: " + fNode.getClass());
-
-
-                /*
-                stepDataAction.put(fNode, stepData);
-
-                if("Allocate node : Start".equalsIgnoreCase(fNode.getDisplayName()) ||
-                "Start of Pipeline".equalsIgnoreCase(fNode.getDisplayName())){
-                    break;
-                }*/
+            // Check if the pipeline node info has been stored in previous steps.
+            // If so, there is no need to search for this information again.
+            final PipelineNodeInfoAction pipelineNodeInfoAction = run.getAction(PipelineNodeInfoAction.class);
+            if(pipelineNodeInfoAction != null) {
+                return;
             }
-            System.out.println("---- END ----");
+
+            // Starting from the current flow node (which represents the step),
+            // we try to find the first 'Allocate node : Start' node through its parents.
+            final FlowNode firstAllocateNodeStart = findFirstAllocateNodeStart(flowNode);
+            if(firstAllocateNodeStart == null){
+                return;
+            }
+
+            // If the parent block from the first 'Allocate node : Start' node is the 'Start of Pipeline' node
+            // the worker node where this Step was executed will be the worker node for the pipeline.
+            final Iterator<BlockStartNode> blockStartNodes = firstAllocateNodeStart.iterateEnclosingBlocks().iterator();
+            if(blockStartNodes.hasNext()) {
+                final FlowNode candidate = blockStartNodes.next();
+                if("Start of Pipeline".equals(candidate.getDisplayName())) {
+                    run.addAction(new PipelineNodeInfoAction(stepData.getNodeName() != null ? stepData.getNodeName() : "master"));
+                }
+            }
+
         } catch (Exception ex) {
             logger.severe("Unable to extract Run information of the StepContext. " + ex);
         }
+    }
+
+    private FlowNode findFirstAllocateNodeStart(FlowNode current) {
+        for(FlowNode block : current.iterateEnclosingBlocks()) {
+            if("Allocate node : Start".equalsIgnoreCase(block.getDisplayName())){
+                return block;
+            }
+        }
+        return null;
     }
 }
