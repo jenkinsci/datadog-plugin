@@ -27,6 +27,7 @@ import org.jvnet.hudson.test.JenkinsRule;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class DatadogBuildListenerIT {
 
@@ -75,6 +76,8 @@ public class DatadogBuildListenerIT {
         long queueTime = (long) buildSpan.getUnsafeMetrics().get(CITags.QUEUE_TIME);
         assertTrue(queueTime > 0L);
         assertEquals("none", buildSpan.getTag(CITags._DD_HOSTNAME));
+        assertTrue(queueTime > TimeUnit.NANOSECONDS.toSeconds(buildSpan.getDurationNano()));
+        assertTrue(buildSpan.getDurationNano() > 1L);
     }
 
     @Test

@@ -122,7 +122,7 @@ public class BuildPipeline {
             if((node.isInitial() || BuildPipelineNode.NodeType.STAGE.equals(node.getType())) && node.getChildren().size() == 1){
                 BuildPipelineNode child = node.getChildren().get(0);
                 if(child.getName().contains("Allocate node")) {
-                    node.setPropagatedSecondsInQueue(child.getSecondsInQueue());
+                    node.setPropagatedNanosInQueue(child.getNanosInQueue());
                 }
             }
 

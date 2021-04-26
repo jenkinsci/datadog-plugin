@@ -145,12 +145,12 @@ public class DatadogBuildListener extends RunListener<Run> {
             Map<String, Set<String>> tags = buildData.getTags();
             String hostname = buildData.getHostname("unknown");
             try {
-                long waiting = (DatadogUtilities.currentTimeMillis() - item.getInQueueSince()) / 1000;
-                client.gauge("jenkins.job.waiting", waiting, hostname, tags);
+                long waitingMs = (DatadogUtilities.currentTimeMillis() - item.getInQueueSince());
+                client.gauge("jenkins.job.waiting", TimeUnit.MILLISECONDS.toSeconds(waitingMs), hostname, tags);
 
                 final BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
                 if(buildSpanAction != null && buildSpanAction.getBuildData() != null) {
-                    buildSpanAction.getBuildData().setSecondsInQueue(waiting);
+                    buildSpanAction.getBuildData().setMillisInQueue(waitingMs);
                 }
             } catch (NullPointerException e) {
                 logger.warning("Unable to compute 'waiting' metric. " +

@@ -44,6 +44,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class DatadogGraphListenerTest {
 
@@ -306,7 +307,7 @@ public class DatadogGraphListenerTest {
                 throw new RuntimeException(e);
             }
         }).start();
-        Thread.sleep(5000);
+        Thread.sleep(10000);
         jenkinsRule.createOnlineSlave(Label.get("testStage"));
 
 
@@ -329,6 +330,8 @@ public class DatadogGraphListenerTest {
         final DDSpan stage2 = pipelineTrace.get(1);
         long stage2QueueTime = (long) stage2.getUnsafeMetrics().get(CITags.QUEUE_TIME);
         assertTrue(stage2QueueTime > 0L);
+        assertTrue(stage2QueueTime > TimeUnit.NANOSECONDS.toSeconds(stage2.getDurationNano()));
+        assertTrue(stage2.getDurationNano() > 1L);
 
         final DDSpan stepStage2 = pipelineTrace.get(2);
         assertEquals(0L, stepStage2.getUnsafeMetrics().get(CITags.QUEUE_TIME));
@@ -336,6 +339,8 @@ public class DatadogGraphListenerTest {
         final DDSpan stage1 = pipelineTrace.get(3);
         long stage1QueueTime = (long) stage1.getUnsafeMetrics().get(CITags.QUEUE_TIME);
         assertTrue(stage1QueueTime > 0L);
+        assertTrue(stage1QueueTime > TimeUnit.NANOSECONDS.toSeconds(stage1.getDurationNano()));
+        assertTrue(stage1.getDurationNano() > 1L);
 
         final DDSpan stepStage1 = pipelineTrace.get(4);
         assertEquals(0L, stepStage1.getUnsafeMetrics().get(CITags.QUEUE_TIME));
@@ -363,7 +368,7 @@ public class DatadogGraphListenerTest {
                 throw new RuntimeException(e);
             }
         }).start();
-        Thread.sleep(5000);
+        Thread.sleep(15000);
         jenkinsRule.createOnlineSlave(Label.get("testPipeline"));
 
         final ListWriter tracerWriter = clientStub.tracerWriter();
@@ -375,6 +380,9 @@ public class DatadogGraphListenerTest {
         final DDSpan buildSpan = buildTrace.get(0);
         long queueTime = (long) buildSpan.getUnsafeMetrics().get(CITags.QUEUE_TIME);
         assertTrue(queueTime > 0L);
+        assertTrue(queueTime > TimeUnit.NANOSECONDS.toSeconds(buildSpan.getDurationNano()));
+        assertTrue(buildSpan.getDurationNano() > 1L);
+
         assertEquals("testPipeline", buildSpan.getTag(CITags.NODE_NAME));
         assertEquals("none",buildSpan.getTag(CITags._DD_HOSTNAME));
 

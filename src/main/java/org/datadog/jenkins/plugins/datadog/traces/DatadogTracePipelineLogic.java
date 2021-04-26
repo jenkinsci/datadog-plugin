@@ -5,11 +5,8 @@ import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.NodeTy
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 
-import datadog.trace.api.DDId;
 import datadog.trace.api.DDTags;
 import datadog.trace.api.interceptor.MutableSpan;
-import datadog.trace.core.DDSpan;
-import datadog.trace.core.DDSpanContext;
 import hudson.EnvVars;
 import hudson.model.Result;
 import hudson.model.Run;
@@ -36,10 +33,10 @@ import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -109,7 +106,7 @@ public class DatadogTracePipelineLogic {
             return;
         }
 
-        buildData.setPropagatedSecondsInQueue(Math.max(pipelineNode.getSecondsInQueue(), pipelineNode.getPropagatedSecondsInQueue()));
+        buildData.setPropagatedMillisInQueue(TimeUnit.NANOSECONDS.toMillis(getNanosInQueue(pipelineNode)));
 
         final String gitBranch = pipelineNode.getEnvVars().get("GIT_BRANCH");
         if(gitBranch != null && buildData.getBranch("").isEmpty()) {
@@ -189,8 +186,19 @@ public class DatadogTracePipelineLogic {
             return;
         }
 
+        // If the root span has propagated queue time, we need to adjust all startTime and endTime from Jenkins pipelines spans
+        // because this time will be subtracted in the root span. See DatadogTraceBuildLogic#finishBuildTrace method.
+        final long propagatedMillisInQueue = Math.max(buildData.getPropagatedMillisInQueue(-1L), 0);
+        final long fixedStartTimeMicros = current.getStartTimeMicros() - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue);
+        final long fixedEndTimeMicros = current.getEndTimeMicros() - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue);
+
         // At this point, the current node is traceable.
-        final Tracer.SpanBuilder spanBuilder = tracer.buildSpan(buildOperationName(current)).withStartTimestamp(current.getStartTimeMicros());
+        final Tracer.SpanBuilder spanBuilder = tracer
+                .buildSpan(buildOperationName(current))
+                // Queue time for the indexed spans is reported on its child spans.
+                // We need to remove the queue time from the span. In this case, we're adding it to the
+                // fixed startTime to avoid having the queue time in the span duration.
+                .withStartTimestamp(fixedStartTimeMicros + TimeUnit.NANOSECONDS.toMicros(getNanosInQueue(current)));
         if(parentSpanContext != null) {
             spanBuilder.asChildOf(parentSpanContext);
         }
@@ -238,18 +246,18 @@ public class DatadogTracePipelineLogic {
         //Logs
         //NOTE: Implement sendNodeLogs
 
-        span.finish(current.getEndTimeMicros());
+        span.finish(fixedEndTimeMicros);
+    }
+
+    private Long getNanosInQueue(BuildPipelineNode current) {
+        // If the concrete queue time for this node is not set
+        // we look for the queue time propagated by its children.
+        return Math.max(Math.max(current.getNanosInQueue(), current.getPropagatedNanosInQueue()), 0);
     }
 
     private Map<String, Long> buildTraceMetrics(BuildPipelineNode current) {
         final Map<String, Long> metrics = new HashMap<>();
-        // If the concrete queue time for this node is not set
-        // we look for the queue time propagated by its children.
-        if(current.getSecondsInQueue() == -1L) {
-            metrics.put(CITags.QUEUE_TIME, Math.max(current.getPropagatedSecondsInQueue(), 0));
-        } else {
-            metrics.put(CITags.QUEUE_TIME, Math.max(current.getSecondsInQueue(), 0));
-        }
+        metrics.put(CITags.QUEUE_TIME, TimeUnit.NANOSECONDS.toSeconds(getNanosInQueue(current)));
         return metrics;
     }
 

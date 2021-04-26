@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -73,8 +74,8 @@ public class BuildPipelineNode {
     private long startTimeMicros;
     private long endTime;
     private long endTimeMicros;
-    private long secondsInQueue = -1L;
-    private long propagatedSecondsInQueue = -1L;
+    private long nanosInQueue = -1L;
+    private long propagatedNanosInQueue = -1L;
     private String result;
 
     // Flag that indicates if the node must be marked as error.
@@ -135,7 +136,7 @@ public class BuildPipelineNode {
 
         final FlowNodeQueueData queueData = getQueueData(startNode);
         if(queueData != null) {
-            this.secondsInQueue = queueData.getSecondsInQueue();
+            this.nanosInQueue = queueData.getNanosInQueue();
         }
 
         this.logText = getLogText(endNode);
@@ -170,7 +171,7 @@ public class BuildPipelineNode {
 
         final FlowNodeQueueData queueData = getQueueData(stepNode);
         if(queueData != null) {
-            this.secondsInQueue = queueData.getSecondsInQueue();
+            this.nanosInQueue = queueData.getNanosInQueue();
         }
 
         this.logText = getLogText(stepNode);
@@ -254,25 +255,25 @@ public class BuildPipelineNode {
         return endTimeMicros;
     }
 
-    public long getSecondsInQueue() {
-        return secondsInQueue;
+    public long getNanosInQueue() {
+        return nanosInQueue;
     }
 
     public void setEndTime(long endTime) {
         this.endTime = endTime;
-        this.endTimeMicros = this.endTime * 1000;
+        this.endTimeMicros = TimeUnit.MILLISECONDS.toMicros(this.endTime);
     }
 
-    public void setSecondsInQueue(long secondsInQueue) {
-        this.secondsInQueue = secondsInQueue;
+    public void setNanosInQueue(long nanosInQueue) {
+        this.nanosInQueue = nanosInQueue;
     }
 
-    public long getPropagatedSecondsInQueue() {
-        return propagatedSecondsInQueue;
+    public long getPropagatedNanosInQueue() {
+        return propagatedNanosInQueue;
     }
 
-    public void setPropagatedSecondsInQueue(long propagatedSecondsInQueue) {
-        this.propagatedSecondsInQueue = propagatedSecondsInQueue;
+    public void setPropagatedNanosInQueue(long propagatedNanosInQueue) {
+        this.propagatedNanosInQueue = propagatedNanosInQueue;
     }
 
     public String getResult() {
@@ -327,7 +328,7 @@ public class BuildPipelineNode {
         this.startTimeMicros = buildNode.startTimeMicros;
         this.endTime = buildNode.endTime;
         this.endTimeMicros = buildNode.endTimeMicros;
-        this.secondsInQueue = buildNode.secondsInQueue;
+        this.nanosInQueue = buildNode.nanosInQueue;
         this.result = buildNode.result;
         this.error = buildNode.error;
         this.errorObj = buildNode.errorObj;

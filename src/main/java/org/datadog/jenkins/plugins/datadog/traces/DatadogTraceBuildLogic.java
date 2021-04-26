@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -99,7 +100,7 @@ public class DatadogTraceBuildLogic {
         // BuildSpanAction has been updated by the information available
         // inside the Pipeline steps. (Only applicable if the build is
         // based on Jenkins Pipelines).
-        final BuildData pipelineData = buildSpanAction.getBuildData();
+        final BuildData updatedBuildData = buildSpanAction.getBuildData();
 
         final String prefix = BuildPipelineNode.NodeType.PIPELINE.getTagName();
         final String buildLevel = BuildPipelineNode.NodeType.PIPELINE.getBuildLevel();
@@ -116,13 +117,14 @@ public class DatadogTraceBuildLogic {
         buildSpan.setTag(prefix + CITags._NUMBER, buildData.getBuildNumber(""));
         buildSpan.setTag(prefix + CITags._URL, buildData.getBuildUrl(""));
         if (buildSpan instanceof MutableSpan) {
-            ((MutableSpan) buildSpan).setMetric(CITags.QUEUE_TIME, getSecondsInQueue(buildData, pipelineData));
+            ((MutableSpan) buildSpan).setMetric(CITags.QUEUE_TIME, TimeUnit.MILLISECONDS.toSeconds(getMillisInQueue(updatedBuildData)));
         }
 
-        final String workspace = buildData.getWorkspace("").isEmpty() ? pipelineData.getWorkspace("") : buildData.getWorkspace("");
+        final String workspace = buildData.getWorkspace("").isEmpty() ? updatedBuildData.getWorkspace("") : buildData.getWorkspace("");
         buildSpan.setTag(CITags.WORKSPACE_PATH, workspace);
 
-        final String nodeName = buildData.getNodeName("").isEmpty() ? pipelineData.getNodeName("") : buildData.getNodeName("");
+        final String nodeName = buildData.getNodeName("").isEmpty() ? updatedBuildData.getNodeName("") : buildData.getNodeName("");
+
         buildSpan.setTag(CITags.NODE_NAME, nodeName);
         // If the NodeName == master, we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
         // If the NodeName != master, we set _dd.hostname to 'none' explicitly, cause we cannot calculate the worker hostname.
@@ -131,38 +133,38 @@ public class DatadogTraceBuildLogic {
         }
 
         // Git Info
-        final String gitUrl = buildData.getGitUrl("").isEmpty() ? pipelineData.getGitUrl("") : buildData.getGitUrl("");
+        final String gitUrl = buildData.getGitUrl("").isEmpty() ? updatedBuildData.getGitUrl("") : buildData.getGitUrl("");
         buildSpan.setTag(CITags.GIT_REPOSITORY_URL, gitUrl);
 
-        final String gitCommit = buildData.getGitCommit("").isEmpty() ? pipelineData.getGitCommit("") : buildData.getGitCommit("");
+        final String gitCommit = buildData.getGitCommit("").isEmpty() ? updatedBuildData.getGitCommit("") : buildData.getGitCommit("");
         buildSpan.setTag(CITags.GIT_COMMIT__SHA, gitCommit); //Maintain retrocompatibility
         buildSpan.setTag(CITags.GIT_COMMIT_SHA, gitCommit);
 
-        final String gitMessage = buildData.getGitMessage("").isEmpty() ? pipelineData.getGitMessage("") : buildData.getGitMessage("");
+        final String gitMessage = buildData.getGitMessage("").isEmpty() ? updatedBuildData.getGitMessage("") : buildData.getGitMessage("");
         buildSpan.setTag(CITags.GIT_COMMIT_MESSAGE, gitMessage);
 
-        final String gitAuthor = buildData.getGitAuthorName("").isEmpty() ? pipelineData.getGitAuthorName("") : buildData.getGitAuthorName("");
+        final String gitAuthor = buildData.getGitAuthorName("").isEmpty() ? updatedBuildData.getGitAuthorName("") : buildData.getGitAuthorName("");
         buildSpan.setTag(CITags.GIT_COMMIT_AUTHOR_NAME, gitAuthor);
 
-        final String gitAuthorEmail = buildData.getGitAuthorEmail("").isEmpty() ? pipelineData.getGitAuthorEmail("") : buildData.getGitAuthorEmail("");
+        final String gitAuthorEmail = buildData.getGitAuthorEmail("").isEmpty() ? updatedBuildData.getGitAuthorEmail("") : buildData.getGitAuthorEmail("");
         buildSpan.setTag(CITags.GIT_COMMIT_AUTHOR_EMAIL, gitAuthorEmail);
 
-        final String gitAuthorDate = buildData.getGitAuthorDate("").isEmpty() ? pipelineData.getGitAuthorDate("") : buildData.getGitAuthorDate("");
+        final String gitAuthorDate = buildData.getGitAuthorDate("").isEmpty() ? updatedBuildData.getGitAuthorDate("") : buildData.getGitAuthorDate("");
         buildSpan.setTag(CITags.GIT_COMMIT_AUTHOR_DATE, gitAuthorDate);
 
-        final String gitCommitter = buildData.getGitCommitterName("").isEmpty() ? pipelineData.getGitCommitterName("") : buildData.getGitCommitterName("");
+        final String gitCommitter = buildData.getGitCommitterName("").isEmpty() ? updatedBuildData.getGitCommitterName("") : buildData.getGitCommitterName("");
         buildSpan.setTag(CITags.GIT_COMMIT_COMMITTER_NAME, gitCommitter);
 
-        final String gitCommitterEmail = buildData.getGitCommitterEmail("").isEmpty() ? pipelineData.getGitCommitterEmail("") : buildData.getGitCommitterEmail("");
+        final String gitCommitterEmail = buildData.getGitCommitterEmail("").isEmpty() ? updatedBuildData.getGitCommitterEmail("") : buildData.getGitCommitterEmail("");
         buildSpan.setTag(CITags.GIT_COMMIT_COMMITTER_EMAIL, gitCommitterEmail);
 
-        final String gitCommitterDate = buildData.getGitCommitterDate("").isEmpty() ? pipelineData.getGitCommitterDate("") : buildData.getGitCommitterDate("");
+        final String gitCommitterDate = buildData.getGitCommitterDate("").isEmpty() ? updatedBuildData.getGitCommitterDate("") : buildData.getGitCommitterDate("");
         buildSpan.setTag(CITags.GIT_COMMIT_COMMITTER_DATE, gitCommitterDate);
 
-        final String gitDefaultBranch = buildData.getGitDefaultBranch("").isEmpty() ? pipelineData.getGitDefaultBranch("") : buildData.getGitDefaultBranch("");
+        final String gitDefaultBranch = buildData.getGitDefaultBranch("").isEmpty() ? updatedBuildData.getGitDefaultBranch("") : buildData.getGitDefaultBranch("");
         buildSpan.setTag(CITags.GIT_DEFAULT_BRANCH, gitDefaultBranch);
 
-        final String rawGitBranch = buildData.getBranch("").isEmpty() ? pipelineData.getBranch("") : buildData.getBranch("");
+        final String rawGitBranch = buildData.getBranch("").isEmpty() ? updatedBuildData.getBranch("") : buildData.getBranch("");
         final String gitBranch = normalizeBranch(rawGitBranch);
         if(gitBranch != null) {
             buildSpan.setTag(CITags.GIT_BRANCH, gitBranch);
@@ -207,17 +209,29 @@ public class DatadogTraceBuildLogic {
             buildSpan.setTag(CITags.ERROR, true);
         }
 
-        buildSpan.finish(endTimeMicros);
+        // If the build is a Jenkins Pipeline, the queue time is included in the root span duration.
+        // We need to adjust the endTime of the root span subtracting the queue time reported by its child span.
+        // The propagated queue time is set DatadogTracePipelineLogic#updateBuildData method.
+        // The queue time reported by DatadogBuildListener#onStarted method is not included in the root span duration.
+        final long propagatedMillisInQueue = Math.max(updatedBuildData.getPropagatedMillisInQueue(-1L), 0);
+
+        // Although the queue time happens before the span startTime, we cannot remove it from the startTime
+        // because there is no API to do it at the end of the trace. Additionally, we cannot create the root span
+        // at the end of the build, because we would lose the logs correlation.
+        // When the root span starts, we don't have the propagated queue time yet. We need to wait till the
+        // end of the pipeline execution and do it in the endTime, adjusting all child spans if needed.
+        buildSpan.finish(endTimeMicros - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue));
     }
 
-    private long getSecondsInQueue(BuildData buildData, BuildData pipelineData) {
-        if(buildData.getSecondsInQueue(-1L) != -1L) {
-            return Math.max(buildData.getSecondsInQueue(-1L), 0);
-        } else {
-            final long secsInQueue = pipelineData.getSecondsInQueue(-1L);
-            final long propagatedSecsInQueue = pipelineData.getPropagatedSecondsInQueue(-1L);
-            return Math.max(Math.max(secsInQueue, propagatedSecsInQueue), 0);
-        }
+    private long getMillisInQueue(BuildData buildData) {
+        // Reported by the Jenkins Queue API.
+        // It's not included in the root span duration.
+        final long millisInQueue = buildData.getMillisInQueue(-1L);
+
+        // Reported by a child span.
+        // It's included in the root span duration.
+        final long propagatedMillisInQueue = buildData.getPropagatedMillisInQueue(-1L);
+        return Math.max(Math.max(millisInQueue, propagatedMillisInQueue), 0);
     }
 
     protected BuildSpanManager getBuildSpanManager() {
