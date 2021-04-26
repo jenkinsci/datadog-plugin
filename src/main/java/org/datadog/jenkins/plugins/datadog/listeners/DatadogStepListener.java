@@ -44,12 +44,21 @@ public class DatadogStepListener implements StepListener {
             final StepData stepData = new StepData(context);
             stepDataAction.put(flowNode, stepData);
 
+
+            // We use the PipelineNodeInfoAction to propagate
+            // the correct node name to the root span (ci.pipeline).
+
             // Check if the pipeline node info has been stored in previous steps.
             // If so, there is no need to search this information again.
             final PipelineNodeInfoAction pipelineNodeInfoAction = run.getAction(PipelineNodeInfoAction.class);
             if(pipelineNodeInfoAction != null) {
                 return;
             }
+
+            // If the first 'Allocate node : Start' flow node
+            // is a direct child of the `Start of Pipeline` flow node, the reported node name
+            // for this Step belongs also to the `Start of Pipeline` flow node,
+            // meaning, it's the node name for the root span (ci.pipeline).
 
             // Starting from the current flow node (which represents the step),
             // we try to find the first 'Allocate node : Start' node through its parents.
