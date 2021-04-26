@@ -45,7 +45,7 @@ public class DatadogStepListener implements StepListener {
             stepDataAction.put(flowNode, stepData);
 
             // Check if the pipeline node info has been stored in previous steps.
-            // If so, there is no need to search for this information again.
+            // If so, there is no need to search this information again.
             final PipelineNodeInfoAction pipelineNodeInfoAction = run.getAction(PipelineNodeInfoAction.class);
             if(pipelineNodeInfoAction != null) {
                 return;

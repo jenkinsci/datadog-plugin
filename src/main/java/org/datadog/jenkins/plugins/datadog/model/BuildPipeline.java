@@ -128,7 +128,7 @@ public class BuildPipeline {
 
 
             // Propagate worker node name from the executable child node
-            // (where the worker node info is available), to its stage.
+            // (where the worker node info is available) to its stage.
             if(BuildPipelineNode.NodeType.STAGE.equals(node.getType())) {
                 final BuildPipelineNode executableChildNode = searchExecutableChildNode(node);
                 if(executableChildNode != null) {
@@ -139,8 +139,8 @@ public class BuildPipeline {
             // Notice we cannot propagate the worker node info
             // to the root span at this point, because this method is executed
             // after the root span is sent. To propagate worker node info
-            // to the root span, we use PipelineNodeInfoAction populated in the
-            // DatadogStepListener class.
+            // to the root span, we use the PipelineNodeInfoAction that is populated
+            // in the DatadogStepListener class.
 
             completeInformation(node.getChildren(), node);
         }
