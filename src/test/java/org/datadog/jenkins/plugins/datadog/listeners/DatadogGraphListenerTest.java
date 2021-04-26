@@ -390,6 +390,7 @@ public class DatadogGraphListenerTest {
         assertTrue(queueTime > TimeUnit.NANOSECONDS.toSeconds(buildSpan.getDurationNano()));
         assertTrue(buildSpan.getDurationNano() > 1L);
 
+
         assertEquals(worker.getNodeName(), buildSpan.getTag(CITags.NODE_NAME));
         assertEquals("none",buildSpan.getTag(CITags._DD_HOSTNAME));
 
