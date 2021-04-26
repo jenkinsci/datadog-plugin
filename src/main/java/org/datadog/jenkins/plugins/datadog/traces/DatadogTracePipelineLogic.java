@@ -472,16 +472,4 @@ public class DatadogTracePipelineLogic {
 
         stageBreakdownAction.put(stageData.getName(), stageData);
     }
-
-
-    private boolean isLastAllocateNode(FlowNode flowNode) {
-        boolean isLastAllocatedNode = false;
-        if (flowNode instanceof BlockEndNode) {
-            final BlockStartNode startNode = ((BlockEndNode)flowNode).getStartNode();
-            isLastAllocatedNode = "Allocate node : Start".equalsIgnoreCase(startNode.getDisplayName()) &&
-                    startNode.getParents().size() > 0 &&
-                    (startNode.getParents().get(0) instanceof FlowStartNode);
-        }
-        return isLastAllocatedNode;
-    }
 }
