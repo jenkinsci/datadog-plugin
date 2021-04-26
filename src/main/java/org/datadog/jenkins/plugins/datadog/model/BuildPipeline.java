@@ -126,8 +126,35 @@ public class BuildPipeline {
                 }
             }
 
+            if(BuildPipelineNode.NodeType.STAGE.equals(node.getType())) {
+                final BuildPipelineNode executableChildNode = searchExecutableChildNode(node);
+                if(executableChildNode != null) {
+                    System.out.println("Stage: "+node.getName()+", executableChildNode: " + executableChildNode.getName() + ", Machine: " + executableChildNode.getNodeName());
+                    node.setPropagatedNodeName(executableChildNode.getNodeName());
+                }
+            }
+
             completeInformation(node.getChildren(), node);
         }
+    }
+
+    private BuildPipelineNode searchExecutableChildNode(BuildPipelineNode node) {
+        if(!node.isInternal() && BuildPipelineNode.NodeType.STEP.equals(node.getType())){
+            return node;
+        }else if ("Stage : Start".equalsIgnoreCase(node.getName())) {
+            // If we find a "Stage : Start" as child, we need to stop searching
+            // because we're changing the Stage, so the executable child node
+            // will not belong to the required stage.
+            return null;
+        } else {
+            for(BuildPipelineNode child : node.getChildren()){
+                final BuildPipelineNode found = searchExecutableChildNode(child);
+                if(found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
 
     private void buildTree(List<BuildPipelineNodeKey> pathStages, BuildPipelineNode parent, BuildPipelineNode stage) {

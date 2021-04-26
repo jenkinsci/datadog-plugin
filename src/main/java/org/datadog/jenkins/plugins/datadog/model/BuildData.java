@@ -62,6 +62,7 @@ public class BuildData implements Serializable {
     private String buildUrl;
     private String charsetName;
     private String nodeName;
+    private String propagatedNodeName;
     private String jobName;
     private String buildTag;
     private String jenkinsUrl;
@@ -363,6 +364,14 @@ public class BuildData implements Serializable {
 
     public void setNodeName(String nodeName) {
         this.nodeName = nodeName;
+    }
+
+    public String getPropagatedNodeName(String value) {
+        return defaultIfNull(propagatedNodeName, value);
+    }
+
+    public void setPropagatedNodeName(String propagatedNodeName) {
+        this.propagatedNodeName = propagatedNodeName;
     }
 
     public String getBranch(String value) {

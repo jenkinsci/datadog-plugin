@@ -123,8 +123,8 @@ public class DatadogTraceBuildLogic {
         final String workspace = buildData.getWorkspace("").isEmpty() ? updatedBuildData.getWorkspace("") : buildData.getWorkspace("");
         buildSpan.setTag(CITags.WORKSPACE_PATH, workspace);
 
-        final String nodeName = buildData.getNodeName("").isEmpty() ? updatedBuildData.getNodeName("") : buildData.getNodeName("");
-
+        //final String nodeName = buildData.getNodeName("").isEmpty() ? updatedBuildData.getNodeName("") : buildData.getNodeName("");
+        final String nodeName = getNodeName(buildData, updatedBuildData);
         buildSpan.setTag(CITags.NODE_NAME, nodeName);
         // If the NodeName == master, we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
         // If the NodeName != master, we set _dd.hostname to 'none' explicitly, cause we cannot calculate the worker hostname.
@@ -221,6 +221,14 @@ public class DatadogTraceBuildLogic {
         // When the root span starts, we don't have the propagated queue time yet. We need to wait till the
         // end of the pipeline execution and do it in the endTime, adjusting all child spans if needed.
         buildSpan.finish(endTimeMicros - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue));
+    }
+
+    private String getNodeName(BuildData buildData, BuildData updatedBuildData) {
+        if(!updatedBuildData.getPropagatedNodeName("").isEmpty()){
+            return updatedBuildData.getPropagatedNodeName("");
+        }
+
+        return buildData.getNodeName("").isEmpty() ? updatedBuildData.getNodeName("") : buildData.getNodeName("");
     }
 
     private long getMillisInQueue(BuildData buildData) {

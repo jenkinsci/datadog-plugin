@@ -68,6 +68,7 @@ public class BuildPipelineNode {
     private Map<String, String> envVars = new HashMap<>();
     private String workspace;
     private String nodeName;
+    private String propagatedNodeName;
     private String nodeHostname;
     private AnnotatedLargeText logText;
     private long startTime;
@@ -229,6 +230,14 @@ public class BuildPipelineNode {
 
     public String getNodeName() {
         return nodeName;
+    }
+
+    public String getPropagatedNodeName() {
+        return propagatedNodeName;
+    }
+
+    public void setPropagatedNodeName(String propagatedNodeName) {
+        this.propagatedNodeName = propagatedNodeName;
     }
 
     public String getNodeHostname() {

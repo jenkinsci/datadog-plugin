@@ -4,18 +4,25 @@ import hudson.Extension;
 import hudson.model.Run;
 import org.datadog.jenkins.plugins.datadog.model.StepData;
 import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.flow.StepListener;
+import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
+import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 
 import javax.annotation.Nonnull;
+import java.util.List;
 import java.util.logging.Logger;
 
 @Extension
 public class DatadogStepListener implements StepListener {
 
     private static final Logger logger = Logger.getLogger(DatadogStepListener.class.getName());
+    private static final DepthFirstScanner scanner = new DepthFirstScanner();
 
     @Override
     public void notifyOfNewStep(@Nonnull Step step, @Nonnull StepContext context) {
@@ -33,9 +40,31 @@ public class DatadogStepListener implements StepListener {
                 return;
             }
 
+            if(!(flowNode instanceof StepAtomNode)){
+                return;
+            }
+
             final StepData stepData = new StepData(context);
             stepDataAction.put(flowNode, stepData);
 
+            System.out.println("--- Step ["+stepData.getNodeName()+"]: " + step.getDescriptor().getDisplayName() + "("+ ArgumentsAction.getFilteredArguments(flowNode)+"), FlowNode: " + flowNode.getId());
+
+            final List<FlowNode> heads = flowNode.getExecution().getCurrentHeads();
+            scanner.setup(heads);
+            while(scanner.hasNext()){
+                final FlowNode fNode = scanner.next();
+                System.out.println("------ Head ["+stepData.getNodeName()+"]: Name:" + fNode.getDisplayName() + ", ID: " + fNode.getId() + ", Class: " + fNode.getClass());
+
+
+                /*
+                stepDataAction.put(fNode, stepData);
+
+                if("Allocate node : Start".equalsIgnoreCase(fNode.getDisplayName()) ||
+                "Start of Pipeline".equalsIgnoreCase(fNode.getDisplayName())){
+                    break;
+                }*/
+            }
+            System.out.println("---- END ----");
         } catch (Exception ex) {
             logger.severe("Unable to extract Run information of the StepContext. " + ex);
         }
