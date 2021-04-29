@@ -705,15 +705,20 @@ public class DatadogUtilities {
         return flowNode instanceof FlowEndNode;
     }
 
-    public static String getNormalizedResultForTraces(@Nonnull Result result) {
-        if(result.equals(Result.SUCCESS)){
-            return "success";
-        } else if(result.equals(Result.FAILURE)) {
-            return "error";
-        } else if(result.equals(Result.ABORTED)){
-            return "canceled";
-        } else {
-            return "unstable";
+    /**
+     * Returns a normalize result for traces.
+     * @param result (success, failure, error, aborted, not_build, canceled, skipped, unknown)
+     * @return
+     */
+    public static String getNormalizedResultForTraces(@Nonnull String result) {
+        switch (result.toLowerCase()){
+            case "failure":
+                return "error";
+            case "aborted":
+            case "not_built":
+                return "canceled";
+            default:
+                return result.toLowerCase();
         }
     }
 
