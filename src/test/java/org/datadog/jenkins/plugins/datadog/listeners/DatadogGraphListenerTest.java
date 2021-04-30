@@ -509,6 +509,32 @@ public class DatadogGraphListenerTest {
         assertNotNull(stepAtomSpan.getUnsafeMetrics().get(CITags.QUEUE_TIME));
     }
 
+    @Test
+    public void testIntegrationPipelineSkippedLogic() throws Exception {
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration-SkippedLogic");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineSkippedLogic.txt"),
+                "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        job.scheduleBuild2(0).get();
+
+        //Traces
+        final ListWriter tracerWriter = clientStub.tracerWriter();
+        tracerWriter.waitForTraces(2);
+        assertEquals(2, tracerWriter.size());
+
+        final List<DDSpan> buildTrace = tracerWriter.get(0);
+        assertEquals(1, buildTrace.size());
+
+        final List<DDSpan> pipelineTrace = tracerWriter.get(1);
+        assertEquals(1, pipelineTrace.size());
+
+        final DDSpan stage = pipelineTrace.get(0);
+        assertEquals("Stage", stage.getResourceName());
+        assertEquals("skipped", stage.getTag(CITags.STATUS));
+    }
+
 
     @Test
     public void testIntegrationTracesDisabled() throws Exception{

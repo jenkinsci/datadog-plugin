@@ -273,7 +273,7 @@ public class DatadogTracePipelineLogic {
         tags.put(CITags.CI_PROVIDER_NAME, CI_PROVIDER);
         tags.put(prefix + CITags._NAME, current.getName());
         tags.put(prefix + CITags._NUMBER, current.getId());
-        final String status = getNormalizedResultForTraces(Result.fromString(current.getResult()));
+        final String status = getNormalizedResultForTraces(current.getResult());
         tags.put(prefix + CITags._RESULT, status);
         tags.put(CITags.STATUS, status);
 

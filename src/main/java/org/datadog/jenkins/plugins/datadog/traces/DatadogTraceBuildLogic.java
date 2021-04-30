@@ -201,7 +201,7 @@ public class DatadogTraceBuildLogic {
         buildSpan.setTag(CITags.JENKINS_EXECUTOR_NUMBER, buildData.getExecutorNumber(""));
 
         final String jenkinsResult = buildData.getResult("");
-        final String pipelineResult = getNormalizedResultForTraces(Result.fromString(jenkinsResult));
+        final String pipelineResult = getNormalizedResultForTraces(jenkinsResult);
         buildSpan.setTag(prefix + CITags._RESULT, pipelineResult);
         buildSpan.setTag(CITags.STATUS, pipelineResult);
         buildSpan.setTag(CITags.JENKINS_RESULT, jenkinsResult.toLowerCase());
