@@ -1,0 +1,78 @@
+pipeline {
+    agent {
+        label 'worker03'
+    }
+    stages {
+           stage('Prepare') {
+              parallel {
+                  stage('Prepare01') {
+                    agent {
+                      label 'worker01'
+                    }
+
+                    steps {
+                       echo 'Prepare01'
+                    }
+                  }
+
+                  stage('Prepare02') {
+                    agent {
+                      label 'worker02'
+                    }
+
+                    steps {
+                       echo 'Prepare02'
+                    }
+                  }
+              }
+           }
+
+           stage('Install') {
+              steps {
+                echo 'Install'
+              }
+           }
+
+           stage('Bump version') {
+              steps {
+                 echo 'Bump version'
+              }
+           }
+
+           stage('Build') {
+              steps {
+                 echo 'Build'
+              }
+           }
+
+           stage('Validate') {
+              parallel {
+                  stage('Validate02') {
+                        agent {
+                          label 'worker02'
+                        }
+
+                      steps {
+                          echo 'Validate Test'
+                      }
+                  }
+
+                  stage('Validate01') {
+                      agent {
+                        label 'worker01'
+                      }
+
+                      steps {
+                           echo 'Validate Lint'
+                      }
+                  }
+              }
+           }
+
+           stage('CI') {
+              steps {
+                echo 'CI'
+              }
+           }
+        }
+}

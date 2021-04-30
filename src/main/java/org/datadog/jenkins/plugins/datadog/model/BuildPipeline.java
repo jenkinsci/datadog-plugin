@@ -126,8 +126,43 @@ public class BuildPipeline {
                 }
             }
 
+
+            // Propagate worker node name from the executable child node
+            // (where the worker node info is available) to its stage.
+            if(BuildPipelineNode.NodeType.STAGE.equals(node.getType())) {
+                final BuildPipelineNode executableChildNode = searchExecutableChildNode(node);
+                if(executableChildNode != null) {
+                    node.setPropagatedNodeName(executableChildNode.getNodeName());
+                }
+            }
+
+            // Notice we cannot propagate the worker node info
+            // to the root span at this point, because this method is executed
+            // after the root span is sent. To propagate worker node info
+            // to the root span, we use the PipelineNodeInfoAction that is populated
+            // in the DatadogStepListener class.
+
             completeInformation(node.getChildren(), node);
         }
+    }
+
+    private BuildPipelineNode searchExecutableChildNode(BuildPipelineNode node) {
+        if(!node.isInternal() && BuildPipelineNode.NodeType.STEP.equals(node.getType())){
+            return node;
+        }else if ("Stage : Start".equalsIgnoreCase(node.getName())) {
+            // If we find a "Stage : Start" as child, we need to stop searching
+            // because we're changing the Stage, so the executable child node
+            // will not belong to the required stage.
+            return null;
+        } else {
+            for(BuildPipelineNode child : node.getChildren()){
+                final BuildPipelineNode found = searchExecutableChildNode(child);
+                if(found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
 
     private void buildTree(List<BuildPipelineNodeKey> pathStages, BuildPipelineNode parent, BuildPipelineNode stage) {
