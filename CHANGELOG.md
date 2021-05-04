@@ -1,5 +1,17 @@
 Changes
 =======
+## 2.11.0 / 2021-05-04
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.10.0...datadog-2.11.0
+
+### Changes
+* [Added] Add configuration option to disable config change events. See [#201](https://github.com/jenkinsci/datadog-plugin/pull/201).
+* [Enhancement] Avoid sending jenkins.step.internal spans. See [#202](https://github.com/jenkinsci/datadog-plugin/pull/202).
+* [Fixed] Fix StepData override in DatadogStepListener for Jenkins Pipelines traces. See [#203](https://github.com/jenkinsci/datadog-plugin/pull/203).
+* [Fixed] Remove queue time from spans duration on Jenkins traces. See [#204](https://github.com/jenkinsci/datadog-plugin/pull/204).
+* [Fixed] Fix node name propagation on Jenkins pipelines traces. See [#205](https://github.com/jenkinsci/datadog-plugin/pull/205)
+* [Fixed] Fix ci.status tag value for skipped Stages on Jenkins Pipelines traces. See [#206](https://github.com/jenkinsci/datadog-plugin/pull/206).
+
 ## 2.10.0 / 2021-04-12
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.9.0...datadog-2.10.0
