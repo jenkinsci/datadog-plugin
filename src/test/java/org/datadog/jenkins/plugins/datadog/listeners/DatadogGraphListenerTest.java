@@ -61,6 +61,9 @@ public class DatadogGraphListenerTest {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setCollectBuildTraces(true);
         cfg.setTraceServiceName(SAMPLE_SERVICE_NAME);
+        cfg.setGlobalJobTags(null);
+        cfg.setGlobalTags(null);
+        EnvVars.masterEnvVars.remove("ENV_VAR");
 
         listener = new DatadogGraphListener();
         clientStub = new DatadogClientStub();
@@ -711,6 +714,50 @@ public class DatadogGraphListenerTest {
 
         final DDSpan ciStep = pipelineTrace06.get(1);
         assertEquals(worker03.getNodeName(), ciStep.getTag(CITags.NODE_NAME));
+    }
+
+    @Test
+    public void testGlobalTagsPropagationsTraces() throws Exception {
+        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+        cfg.setGlobalJobTags("(.*?)_job, global_job_tag:$ENV_VAR");
+        cfg.setGlobalTags("global_tag:$ENV_VAR");
+        EnvVars.masterEnvVars.put("ENV_VAR", "value");
+
+        jenkinsRule.createOnlineSlave(new LabelAtom("testGlobalTags"));
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration-GlobalTagsPropagation_job");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineGlobalTags.txt"),
+                "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        job.scheduleBuild2(0).get();
+
+        //Traces
+        final ListWriter tracerWriter = clientStub.tracerWriter();
+        tracerWriter.waitForTraces(2);
+        assertEquals(2, tracerWriter.size());
+
+        final List<DDSpan> buildTrace = tracerWriter.get(0);
+        assertEquals(1, buildTrace.size());
+        final DDSpan buildSpan = buildTrace.get(0);
+        assertEquals("value", buildSpan.getTag("global_tag"));
+        assertEquals("value", buildSpan.getTag("global_job_tag"));
+        assertEquals("pipeline_tag_v2", buildSpan.getTag("pipeline_tag"));
+        assertEquals("pipeline_tag", buildSpan.getTag("pipeline_tag_v2"));
+
+        final List<DDSpan> pipelineTrace = tracerWriter.get(1);
+        assertEquals(2, pipelineTrace.size());
+        final DDSpan stageSpan = pipelineTrace.get(0);
+        assertEquals("value", stageSpan.getTag("global_tag"));
+        assertEquals("value", stageSpan.getTag("global_job_tag"));
+        assertEquals("pipeline_tag_v2", stageSpan.getTag("pipeline_tag"));
+        assertEquals("pipeline_tag", stageSpan.getTag("pipeline_tag_v2"));
+
+        final DDSpan stepSpan = pipelineTrace.get(1);
+        assertEquals("value", stepSpan.getTag("global_tag"));
+        assertEquals("value", stepSpan.getTag("global_job_tag"));
+        assertEquals("pipeline_tag_v2", stepSpan.getTag("pipeline_tag"));
+        assertEquals("pipeline_tag", stepSpan.getTag("pipeline_tag_v2"));
     }
 
     private void assertNodeNameParallelBlock(DDSpan stageSpan, DumbSlave worker01, DumbSlave worker02) {

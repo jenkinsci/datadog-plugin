@@ -1,0 +1,16 @@
+def DD_TEST = "pipeline_tag_v2"
+pipeline {
+    agent {
+        label "testGlobalTags"
+    }
+    options {
+      datadog(collectLogs: false, tags: ["pipeline_tag:${DD_TEST}", "${DD_TEST}:pipeline_tag"])
+    }
+    stages {
+        stage('Stage'){
+            steps {
+                echo 'Done'
+            }
+        }
+    }
+}

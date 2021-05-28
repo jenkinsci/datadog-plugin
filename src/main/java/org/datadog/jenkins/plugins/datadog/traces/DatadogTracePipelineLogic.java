@@ -8,7 +8,6 @@ import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeT
 import datadog.trace.api.DDTags;
 import datadog.trace.api.interceptor.MutableSpan;
 import hudson.EnvVars;
-import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import io.opentracing.Span;
@@ -20,18 +19,18 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipeline;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
+import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
-import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
-import org.jenkinsci.plugins.workflow.graph.FlowStartNode;
 import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 
 import java.io.PrintWriter;
@@ -77,6 +76,7 @@ public class DatadogTracePipelineLogic {
             final BuildPipelineNode pipelineNode = buildPipelineNode(flowNode);
             updateStageBreakdown(run, pipelineNode);
             updateBuildData(buildData, run, pipelineNode, flowNode);
+            updateCIGlobalTags(run);
             return;
         }
 
@@ -97,6 +97,7 @@ public class DatadogTracePipelineLogic {
 
         final SpanContext spanContext = tracer.extract(Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatation()));
         final BuildPipelineNode root = pipeline.buildTree();
+
         try {
             sendTrace(tracer, run, buildData, root, spanContext);
         } catch (Exception e){
@@ -364,6 +365,15 @@ public class DatadogTracePipelineLogic {
             tags.put(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME, current.getStageName());
         }
 
+        // CI Tags propagation
+        final CIGlobalTagsAction ciGlobalTagsAction = run.getAction(CIGlobalTagsAction.class);
+        if(ciGlobalTagsAction != null) {
+            final Map<String, String> globalTags = ciGlobalTagsAction.getTags();
+            for(Map.Entry<String, String> globalTagEntry : globalTags.entrySet()) {
+                tags.put(globalTagEntry.getKey(), globalTagEntry.getValue());
+            }
+        }
+
         return tags;
     }
 
@@ -471,5 +481,15 @@ public class DatadogTracePipelineLogic {
                 .build();
 
         stageBreakdownAction.put(stageData.getName(), stageData);
+    }
+
+    private void updateCIGlobalTags(Run run) {
+        final CIGlobalTagsAction ciGlobalTagsAction = run.getAction(CIGlobalTagsAction.class);
+        if(ciGlobalTagsAction == null) {
+            return;
+        }
+
+        final Map<String, String> tags = TagsUtil.convertTagsToMapSingleValues(DatadogUtilities.getTagsFromPipelineAction(run));
+        ciGlobalTagsAction.putAll(tags);
     }
 }

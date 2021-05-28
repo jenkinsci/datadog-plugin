@@ -141,7 +141,20 @@ public class DatadogUtilities {
 
         result = TagsUtil.merge(result, getTagsFromGlobalJobTags(jobName, globalJobTags));
 
+        result = TagsUtil.merge(result, getTagsFromPipelineAction(run));
+
+        return result;
+    }
+
+    /**
+     * Pipeline extraTags if any are configured in the Job from DatadogPipelineAction.
+     *
+     * @param run      - Current build
+     * @return A {@link HashMap} containing the key,value pairs of tags if any.
+     */
+    public static Map<String, Set<String>> getTagsFromPipelineAction(Run run) {
         // pipeline defined tags
+        final Map<String, Set<String>> result = new HashMap<>();
         DatadogPipelineAction action = run.getAction(DatadogPipelineAction.class);
         if(action != null) {
             List<String> pipelineTags = action.getTags();
@@ -163,6 +176,7 @@ public class DatadogUtilities {
                 }
             }
         }
+
         return result;
     }
 

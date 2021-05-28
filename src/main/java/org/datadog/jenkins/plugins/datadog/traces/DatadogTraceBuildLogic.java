@@ -14,10 +14,12 @@ import io.opentracing.propagation.Format;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
+import org.datadog.jenkins.plugins.datadog.steps.DatadogPipelineAction;
 import org.datadog.jenkins.plugins.datadog.util.json.JsonUtils;
 
 import java.util.ArrayList;
@@ -79,6 +81,9 @@ public class DatadogTraceBuildLogic {
 
         final PipelineQueueInfoAction pipelineQueueInfoAction = new PipelineQueueInfoAction();
         run.addAction(pipelineQueueInfoAction);
+
+        final CIGlobalTagsAction ciGlobalTags = new CIGlobalTagsAction(buildData.getTagsForTraces());
+        run.addAction(ciGlobalTags);
     }
 
     public void finishBuildTrace(final BuildData buildData, final Run<?,?> run) {
@@ -207,6 +212,15 @@ public class DatadogTraceBuildLogic {
         buildSpan.setTag(CITags.JENKINS_RESULT, jenkinsResult.toLowerCase());
         if(Result.FAILURE.toString().equals(jenkinsResult)) {
             buildSpan.setTag(CITags.ERROR, true);
+        }
+
+        // CI Tags propagation
+        final CIGlobalTagsAction ciGlobalTagsAction = run.getAction(CIGlobalTagsAction.class);
+        if(ciGlobalTagsAction != null) {
+            final Map<String, String> tags = ciGlobalTagsAction.getTags();
+            for(Map.Entry<String, String> tagEntry : tags.entrySet()) {
+                buildSpan.setTag(tagEntry.getKey(), tagEntry.getValue());
+            }
         }
 
         // If the build is a Jenkins Pipeline, the queue time is included in the root span duration.

@@ -26,10 +26,14 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.util;
 
 import net.sf.json.JSONArray;
+import org.datadog.jenkins.plugins.datadog.model.BuildData;
 
 import java.util.*;
+import java.util.logging.Logger;
 
 public class TagsUtil {
+
+    private static transient final Logger LOGGER = Logger.getLogger(TagsUtil.class.getName());
 
     public static Map<String, Set<String>> merge(Map<String, Set<String>> dest, Map<String, Set<String>> orig) {
         if (dest == null) {
@@ -98,5 +102,22 @@ public class TagsUtil {
         }
         tags.get(name).add(value);
         return tags;
+    }
+
+    public static Map<String, String> convertTagsToMapSingleValues(Map<String, Set<String>> tags) {
+        if(tags == null) {
+            return Collections.emptyMap();
+        }
+
+        final Map<String, String> result = new HashMap<>();
+        for (Map.Entry<String, Set<String>> entry : tags.entrySet()) {
+            if(entry.getValue() != null && entry.getValue().size() == 1) {
+                result.put(entry.getKey(), entry.getValue().iterator().next());
+            } else {
+                LOGGER.warning("Unsupported multi-value tag in this context: Tag '"+ entry.getKey() + "' will be ignored.");
+            }
+        }
+
+        return result;
     }
 }

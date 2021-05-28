@@ -42,6 +42,9 @@ public class DatadogBuildListenerIT {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setCollectBuildTraces(true);
         cfg.setTraceServiceName(SAMPLE_SERVICE_NAME);
+        cfg.setGlobalJobTags(null);
+        cfg.setGlobalTags(null);
+        EnvVars.masterEnvVars.remove("ENV_VAR");
 
         clientStub = new DatadogClientStub();
         ClientFactory.setTestClient(clientStub);
@@ -172,6 +175,28 @@ public class DatadogBuildListenerIT {
         final ListWriter tracerWriter = clientStub.tracerWriter();
         tracerWriter.waitForTraces(0);
         assertEquals(0, tracerWriter.size());
+    }
+
+    @Test
+    public void testCITagsOnTraces() throws Exception {
+        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+        cfg.setGlobalJobTags("(.*?)_job, global_job_tag:$ENV_VAR");
+        cfg.setGlobalTags("global_tag:$ENV_VAR");
+        EnvVars.masterEnvVars.put("ENV_VAR", "value");
+
+        final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessTags_job");
+        project.scheduleBuild2(0).get();
+
+        final ListWriter tracerWriter = clientStub.tracerWriter();
+        tracerWriter.waitForTraces(1);
+        assertEquals(1, tracerWriter.size());
+
+        final List<DDSpan> buildTrace = tracerWriter.get(0);
+        assertEquals(1, buildTrace.size());
+
+        final DDSpan buildSpan = buildTrace.get(0);
+        assertEquals("value", buildSpan.getTag("global_job_tag"));
+        assertEquals("value", buildSpan.getTag("global_tag"));
     }
 
 
