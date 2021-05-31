@@ -1,5 +1,12 @@
 Changes
 =======
+## 2.12.0 / 2021-05-31
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.11.0...datadog-2.12.0
+
+### Changes
+* [Added] Add tags configured by the user to Jenkins traces. See [#210](https://github.com/jenkinsci/datadog-plugin/pull/210)
+
 ## 2.11.0 / 2021-05-04
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.10.0...datadog-2.11.0
