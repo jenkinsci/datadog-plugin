@@ -29,6 +29,7 @@ import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.junit.Assert;
 import org.junit.Test;
 
+import javax.xml.crypto.Data;
 import java.util.*;
 
 public class TagsUtilTest {
@@ -99,6 +100,30 @@ public class TagsUtilTest {
         Assert.assertTrue(TagsUtil.merge(n2v1Tag, n2v1v2Tag).toString() + " - "+ assertionTags.toString(),
                 TagsUtil.merge(n2v1Tag, n2v1v2Tag).toString().equals(assertionTags.toString()));
 
+    }
+
+    @Test
+    public void testTagsToMapSingleValues() {
+        Map<String, String> emptyTags = TagsUtil.convertTagsToMapSingleValues(null);
+        Assert.assertTrue(emptyTags.isEmpty());
+
+        Map<String, Set<String>> singleValueTags = new HashMap<>();
+        DatadogClientStub.addTagToMap(singleValueTags, "tagKey1", "tagValue1");
+        DatadogClientStub.addTagToMap(singleValueTags, "tagKey2", "tagValue2");
+        Map<String, String> resultSingleValues = TagsUtil.convertTagsToMapSingleValues(singleValueTags);
+        Assert.assertEquals(2, resultSingleValues.size());
+        Assert.assertEquals("tagValue1", resultSingleValues.get("tagKey1"));
+        Assert.assertEquals("tagValue2", resultSingleValues.get("tagKey2"));
+
+
+        Map<String, Set<String>> multipleValueTags = new HashMap<>();
+        DatadogClientStub.addTagToMap(multipleValueTags, "tagKey1", "tagValue1");
+        DatadogClientStub.addTagToMap(multipleValueTags, "tagKey2", "tagValue2_1");
+        DatadogClientStub.addTagToMap(multipleValueTags, "tagKey2", "tagValue2_2");
+        Map<String, String> resultMultipleValues = TagsUtil.convertTagsToMapSingleValues(multipleValueTags);
+        Assert.assertEquals(1, resultMultipleValues.size());
+        Assert.assertEquals("tagValue1", resultMultipleValues.get("tagKey1"));
+        Assert.assertNull(resultMultipleValues.get("tagKey2"));
     }
 
 }

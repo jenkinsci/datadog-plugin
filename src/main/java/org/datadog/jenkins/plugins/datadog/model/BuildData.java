@@ -289,6 +289,17 @@ public class BuildData implements Serializable {
         return allTags;
     }
 
+    public Map<String, String> getTagsForTraces() {
+        Map<String, Set<String>> allTags = new HashMap<>();
+        try {
+            allTags = DatadogUtilities.getTagsFromGlobalTags();
+        } catch(NullPointerException e){
+            //noop
+        }
+        allTags = TagsUtil.merge(allTags, tags);
+        return TagsUtil.convertTagsToMapSingleValues(allTags);
+    }
+
     public void setTags(Map<String, Set<String>> tags) {
         this.tags = tags;
     }
