@@ -138,7 +138,7 @@ public class BuildPipeline {
 
             // Propagate error to all parent stages
             if(node.isError() && !parent.isError()) {
-                propagateError(node);
+                propagateErrorToAllParents(node);
             }
 
             // Notice we cannot propagate the worker node info
@@ -151,9 +151,9 @@ public class BuildPipeline {
         }
     }
 
-    private void propagateError(BuildPipelineNode node) {
+    private void propagateErrorToAllParents(BuildPipelineNode node) {
         for(BuildPipelineNode parent : node.getParents()) {
-            propagateError(parent);
+            propagateErrorToAllParents(parent);
         }
         node.setError(true);
         node.setPropagatedResult("error");
