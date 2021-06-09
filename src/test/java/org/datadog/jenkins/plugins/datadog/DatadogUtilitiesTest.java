@@ -138,4 +138,20 @@ public class DatadogUtilitiesTest {
 
     }
 
+    @Test
+    public void testToJsonSet() {
+        Assert.assertEquals("", DatadogUtilities.toJson(null));
+        Assert.assertEquals("", DatadogUtilities.toJson(new HashSet<>()));
+
+        final Set<String> oneItem = new HashSet<>();
+        oneItem.add("item1");
+        Assert.assertEquals("[\"item1\"]", DatadogUtilities.toJson(oneItem));
+
+        final Set<String> multipleItems = new LinkedHashSet<>();
+        multipleItems.add("item1");
+        multipleItems.add("item2");
+        multipleItems.add("item3");
+        Assert.assertEquals("[\"item1\",\"item2\",\"item3\"]", DatadogUtilities.toJson(multipleItems));
+    }
+
 }

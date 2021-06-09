@@ -1,6 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getNormalizedResultForTraces;
+import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.toJson;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 
@@ -20,12 +21,16 @@ import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
 import org.datadog.jenkins.plugins.datadog.steps.DatadogPipelineAction;
+import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.json.JsonUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -131,6 +136,11 @@ public class DatadogTraceBuildLogic {
 
         final String nodeName = getNodeName(run, buildData, updatedBuildData);
         buildSpan.setTag(CITags.NODE_NAME, nodeName);
+
+        final String nodeLabelsJson = toJson(getNodeLabels(run, nodeName));
+        if(!nodeLabelsJson.isEmpty()){
+            buildSpan.setTag(CITags.NODE_LABELS, nodeLabelsJson);
+        }
         // If the NodeName == master, we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
         // If the NodeName != master, we set _dd.hostname to 'none' explicitly, cause we cannot calculate the worker hostname.
         if(!"master".equalsIgnoreCase(nodeName)) {
@@ -244,6 +254,38 @@ public class DatadogTraceBuildLogic {
         }
 
         return buildData.getNodeName("").isEmpty() ? updatedBuildData.getNodeName("") : buildData.getNodeName("");
+    }
+
+    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
+    private Set<String> getNodeLabels(Run<?,?> run, final String nodeName) {
+        try {
+            if(run == null){
+                return Collections.emptySet();
+            }
+
+            final PipelineNodeInfoAction pipelineNodeInfoAction = run.getAction(PipelineNodeInfoAction.class);
+            if(pipelineNodeInfoAction != null) {
+                return pipelineNodeInfoAction.getNodeLabels();
+            }
+
+            if(run.getExecutor() != null && run.getExecutor().getOwner() != null) {
+                Set<String> nodeLabels = DatadogUtilities.getNodeLabels(run.getExecutor().getOwner());
+                if(nodeLabels != null && !nodeLabels.isEmpty()) {
+                    return nodeLabels;
+                }
+            }
+
+            if("master".equalsIgnoreCase(nodeName)){
+                final Set<String> masterLabels = new HashSet<>();
+                masterLabels.add("master");
+                return masterLabels;
+            }
+
+            return Collections.emptySet();
+        } catch (Exception ex) {
+            logger.fine("Unable to find node labels: " + ex.getMessage());
+            return Collections.emptySet();
+        }
     }
 
     private long getMillisInQueue(BuildData buildData) {

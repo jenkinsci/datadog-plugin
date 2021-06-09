@@ -3,12 +3,15 @@ package org.datadog.jenkins.plugins.datadog.model;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.Computer;
+import hudson.model.labels.LabelAtom;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -22,12 +25,14 @@ public class StepData implements Serializable {
     private final String nodeName;
     private final String nodeHostname;
     private final String workspace;
+    private final Set<String> nodeLabels;
 
     public StepData(final StepContext stepContext){
         this.envVars = getEnvVars(stepContext);
         this.nodeName = getNodeName(stepContext);
         this.nodeHostname = getNodeHostname(stepContext);
         this.workspace = getNodeWorkspace(stepContext);
+        this.nodeLabels = getNodeLabels(stepContext);
     }
 
     public Map<String, String> getEnvVars() {
@@ -44,6 +49,10 @@ public class StepData implements Serializable {
 
     public String getWorkspace() {
         return workspace;
+    }
+
+    public Set<String> getNodeLabels() {
+        return nodeLabels;
     }
 
 
@@ -100,6 +109,22 @@ public class StepData implements Serializable {
         } catch (Exception e){
             logger.fine("Unable to extract the node name from StepContext.");
             return null;
+        }
+    }
+
+
+    /**
+     * Returns the nodeLabels of the remote node which is executing a determined {@code Step}
+     * @param stepContext
+     * @return node labels of the remote node.
+     */
+    private Set<String> getNodeLabels(StepContext stepContext) {
+        try {
+            Computer computer = stepContext.get(Computer.class);
+            return DatadogUtilities.getNodeLabels(computer);
+        } catch (Exception e) {
+            logger.fine("Unable to extract the node labels from StepContext.");
+            return Collections.emptySet();
         }
     }
 
