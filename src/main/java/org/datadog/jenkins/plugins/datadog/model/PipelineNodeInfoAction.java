@@ -3,7 +3,6 @@ package org.datadog.jenkins.plugins.datadog.model;
 import hudson.model.InvisibleAction;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Set;
 
 public class PipelineNodeInfoAction extends InvisibleAction implements Serializable {

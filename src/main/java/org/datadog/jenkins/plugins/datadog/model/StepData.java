@@ -3,13 +3,11 @@ package org.datadog.jenkins.plugins.datadog.model;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.Computer;
-import hudson.model.labels.LabelAtom;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 
 import java.io.Serializable;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
