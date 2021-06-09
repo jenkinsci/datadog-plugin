@@ -274,7 +274,7 @@ public class DatadogTracePipelineLogic {
         tags.put(CITags.CI_PROVIDER_NAME, CI_PROVIDER);
         tags.put(prefix + CITags._NAME, current.getName());
         tags.put(prefix + CITags._NUMBER, current.getId());
-        final String status = getNormalizedResultForTraces(current.getResult());
+        final String status = getNormalizedResultForTraces(getResult(current));
         tags.put(prefix + CITags._RESULT, status);
         tags.put(CITags.STATUS, status);
 
@@ -375,6 +375,10 @@ public class DatadogTracePipelineLogic {
         }
 
         return tags;
+    }
+
+    private String getResult(BuildPipelineNode current) {
+        return (current.getPropagatedResult() != null) ? current.getPropagatedResult() : current.getResult();
     }
 
     private String getNodeName(Run<?, ?> run, BuildPipelineNode current, BuildData buildData) {
