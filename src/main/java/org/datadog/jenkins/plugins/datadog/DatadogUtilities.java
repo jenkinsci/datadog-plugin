@@ -790,11 +790,18 @@ public class DatadogUtilities {
         return sdf.format(date);
     }
 
+    /**
+     * Returns a JSON array string based on the set.
+     * @param set
+     * @return json array string
+     */
     public static String toJson(final Set<String> set) {
         if(set == null || set.isEmpty()) {
             return "";
         }
 
+        // We want to avoid using Json libraries cause
+        // may cause incompatibilities on different Jenkins versions.
         final StringBuilder sb = new StringBuilder();
         sb.append("[");
         int index = 1;

@@ -107,7 +107,6 @@ public class DatadogTracePipelineLogic {
             sendTrace(tracer, run, buildData, root, spanContext);
         } catch (Exception e){
             logger.severe("Unable to send traces. Exception:" + e);
-            e.printStackTrace();
         }
     }
 
@@ -407,6 +406,8 @@ public class DatadogTracePipelineLogic {
             }
         }
 
+        // If there is no labels and the node name is master,
+        // we force the label "master".
         if("master".equalsIgnoreCase(nodeName)){
             final Set<String> masterLabels = new HashSet<>();
             masterLabels.add("master");
