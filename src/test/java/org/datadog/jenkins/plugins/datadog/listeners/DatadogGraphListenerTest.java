@@ -254,6 +254,55 @@ public class DatadogGraphListenerTest {
     }
 
     @Test
+    public void testIntegrationGitInfoOverrideCommit() throws Exception {
+        Jenkins jenkins = jenkinsRule.jenkins;
+        final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
+        EnvVars env = prop.getEnvVars();
+        env.put("GIT_BRANCH", "master");
+        env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
+        env.put("GIT_URL", "https://github.com/johndoe/foobar.git");
+
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationOverrideCommit");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelinesOverrideGitCommit.txt"),
+                "UTF-8"
+        );
+
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        final FilePath ws = jenkins.getWorkspaceFor(job);
+        env.put("NODE_NAME", "master");
+        env.put("WORKSPACE", ws.getRemote());
+        InputStream gitZip = getClass().getClassLoader().getResourceAsStream("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
+        if(gitZip != null) {
+            ws.unzipFrom(gitZip);
+        }
+        jenkins.getGlobalNodeProperties().add(prop);
+        job.scheduleBuild2(0).get();
+
+        final ListWriter tracerWriter = clientStub.tracerWriter();
+        tracerWriter.waitForTraces(3);
+        assertEquals(3, tracerWriter.size());
+        final List<DDSpan> buildTrace = tracerWriter.get(0);
+        assertEquals(1, buildTrace.size());
+        final DDSpan buildSpan = buildTrace.get(0);
+        assertEquals("401d997a6eede777602669ccaec059755c98161f", buildSpan.getTag(CITags.GIT_COMMIT_SHA));
+
+        final List<DDSpan> stage1Chain = tracerWriter.get(1);
+        assertEquals(2, stage1Chain.size());
+        final DDSpan stage1 = stage1Chain.get(0);
+        assertEquals("401d997a6eede777602669ccaec059755c98161f", stage1.getTag(CITags.GIT_COMMIT_SHA));
+        final DDSpan step1 = stage1Chain.get(1);
+        assertEquals("401d997a6eede777602669ccaec059755c98161f", step1.getTag(CITags.GIT_COMMIT_SHA));
+
+        final List<DDSpan> stage2Chain = tracerWriter.get(2);
+        assertEquals(2, stage2Chain.size());
+        final DDSpan stage2 = stage2Chain.get(0);
+        assertEquals("401d997a6eede777602669ccaec059755c98161f", stage2.getTag(CITags.GIT_COMMIT_SHA));
+        final DDSpan step2 = stage2Chain.get(1);
+        assertEquals("401d997a6eede777602669ccaec059755c98161f", step2.getTag(CITags.GIT_COMMIT_SHA));
+    }
+
+    @Test
     public void testStageNamePropagation() throws Exception{
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationStages");
         String definition = IOUtils.toString(

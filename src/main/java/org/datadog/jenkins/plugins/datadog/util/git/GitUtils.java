@@ -17,10 +17,12 @@ import org.jenkinsci.plugins.gitclient.GitClient;
 import org.jenkinsci.plugins.workflow.FilePathUtils;
 
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 public final class GitUtils {
 
     private static transient final Logger LOGGER = Logger.getLogger(GitUtils.class.getName());
+    private static transient final Pattern SHA1_PATTERN = Pattern.compile("\\b[a-f0-9]{40}\\b");
 
     private GitUtils(){}
 
@@ -258,5 +260,17 @@ public final class GitUtils {
             LOGGER.fine("Unable to create GitClient. Error: " + e);
             return null;
         }
+    }
+
+    public static boolean isValidCommit(String gitCommit) {
+        if(gitCommit == null || gitCommit.isEmpty()) {
+            return false;
+        }
+
+        if(gitCommit.length() != 40) {
+            return false;
+        }
+
+        return SHA1_PATTERN.matcher(gitCommit).matches();
     }
 }
