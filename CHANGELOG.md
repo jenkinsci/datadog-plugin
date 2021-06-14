@@ -1,5 +1,15 @@
 Changes
 =======
+## 2.13.0 / 2021-06-14
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.12.0...datadog-2.13.0
+
+### Changes
+* [Added] Add node labels to Jenkins Pipelines traces. See [#212](https://github.com/jenkinsci/datadog-plugin/pull/212)
+* [Enhancement] Propagate error tags to all node parents for Jenkins Pipelines traces. See [#213](https://github.com/jenkinsci/datadog-plugin/pull/213)
+* [Enhancement] Add best-effort strategy to find the valid Git commit in Jenkins Pipelines traces. See [#214](https://github.com/jenkinsci/datadog-plugin/pull/214)
+* [Fixed] Catch NullPointerException in onDeleted method. See [#215](https://github.com/jenkinsci/datadog-plugin/pull/215)
+
 ## 2.12.0 / 2021-05-31
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.11.0...datadog-2.12.0
