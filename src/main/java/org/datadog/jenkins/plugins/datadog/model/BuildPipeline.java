@@ -136,6 +136,11 @@ public class BuildPipeline {
                 }
             }
 
+            // Propagate error to all parent stages
+            if(node.isError() && !parent.isError()) {
+                propagateErrorToAllParents(node);
+            }
+
             // Notice we cannot propagate the worker node info
             // to the root span at this point, because this method is executed
             // after the root span is sent. To propagate worker node info
@@ -144,6 +149,14 @@ public class BuildPipeline {
 
             completeInformation(node.getChildren(), node);
         }
+    }
+
+    private void propagateErrorToAllParents(BuildPipelineNode node) {
+        for(BuildPipelineNode parent : node.getParents()) {
+            propagateErrorToAllParents(parent);
+        }
+        node.setError(true);
+        node.setPropagatedResult("error");
     }
 
     private BuildPipelineNode searchExecutableChildNode(BuildPipelineNode node) {

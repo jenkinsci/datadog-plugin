@@ -1,0 +1,10 @@
+pipeline {
+    agent none
+    stages {
+        stage('test'){
+            steps {
+               sh "this-does-not-exist"
+            }
+        }
+    }
+}
