@@ -4,6 +4,7 @@ import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getNormalized
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.toJson;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
 
 import datadog.trace.api.DDTags;
 import datadog.trace.api.interceptor.MutableSpan;
@@ -150,6 +151,9 @@ public class DatadogTraceBuildLogic {
         buildSpan.setTag(CITags.GIT_REPOSITORY_URL, gitUrl);
 
         final String gitCommit = buildData.getGitCommit("").isEmpty() ? updatedBuildData.getGitCommit("") : buildData.getGitCommit("");
+        if(!isValidCommit(gitCommit)) {
+            logger.warning("Couldn't find a valid commit for pipelineID '"+buildData.getBuildTag("")+"'. GIT_COMMIT environment variable was not found or has invalid SHA1 string: " + gitCommit);
+        }
         buildSpan.setTag(CITags.GIT_COMMIT__SHA, gitCommit); //Maintain retrocompatibility
         buildSpan.setTag(CITags.GIT_COMMIT_SHA, gitCommit);
 

@@ -5,6 +5,7 @@ import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.toJson;
 import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.NodeType.PIPELINE;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
 
 import datadog.trace.api.DDTags;
 import datadog.trace.api.interceptor.MutableSpan;
@@ -128,7 +129,8 @@ public class DatadogTracePipelineLogic {
         }
 
         final String gitCommit = pipelineNode.getEnvVars().get("GIT_COMMIT");
-        if(gitCommit != null && buildData.getGitCommit("").isEmpty()) {
+        final String buildDataGitCommit = buildData.getGitCommit("");
+        if(gitCommit != null && (buildDataGitCommit.isEmpty() || !isValidCommit(buildDataGitCommit))){
             buildData.setGitCommit(gitCommit);
         }
 
@@ -315,7 +317,12 @@ public class DatadogTracePipelineLogic {
             }
         }
 
-        final String gitCommit = envVars.get("GIT_COMMIT") !=  null ? envVars.get("GIT_COMMIT") : buildData.getGitCommit("");
+        // If we could detect a valid commit, the buildData object will contain that commit.
+        // If we could not detect a valid commit, that means that the GIT_COMMIT environment variable
+        // was overridden by the user at top level, so we set the content what we have (despite it's not valid).
+        // We will show a logger.warning at the end of the pipeline.
+        final String envGitCommit = envVars.get("GIT_COMMIT");
+        final String gitCommit = (isValidCommit(envGitCommit)) ? envGitCommit : buildData.getGitCommit("");
         if(gitCommit != null && !gitCommit.isEmpty()) {
             tags.put(CITags.GIT_COMMIT__SHA, gitCommit); //Maintain retrocompatibility
             tags.put(CITags.GIT_COMMIT_SHA, gitCommit);
@@ -473,6 +480,10 @@ public class DatadogTracePipelineLogic {
             final TaskListener listener = node.getExecution().getOwner().getListener();
             final EnvVars envVars = new EnvVars(pipelineNode.getEnvVars());
             final String gitCommit = pipelineNode.getEnvVars().get("GIT_COMMIT");
+            if(!isValidCommit(gitCommit)) {
+                return null;
+            }
+
             final String nodeName = pipelineNode.getNodeName();
             final String workspace = pipelineNode.getWorkspace();
             return GitUtils.buildGitCommitAction(run, listener, envVars, gitCommit, nodeName, workspace);
