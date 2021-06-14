@@ -87,7 +87,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static Integer DEFAULT_TARGET_PORT_VALUE = 8125;
     private static Integer DEFAULT_TRACES_PORT_VALUE = 8126;
     private static String DEFAULT_TRACES_SERVICE_NAME = "jenkins";
-    private static Integer DEFAULT_TARGET_TRACE_COLLECTION_PORT_VALUE = null;
     private static Integer DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE = null;
     private static boolean DEFAULT_EMIT_SECURITY_EVENTS_VALUE = true;
     private static boolean DEFAULT_EMIT_SYSTEM_EVENTS_VALUE = true;
@@ -102,7 +101,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private String targetHost = DEFAULT_TARGET_HOST_VALUE;
     private Integer targetPort = DEFAULT_TARGET_PORT_VALUE;
     private Integer targetLogCollectionPort = DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE;
-    private Integer targetTraceCollectionPort = DEFAULT_TARGET_TRACE_COLLECTION_PORT_VALUE;
+    private Integer targetTraceCollectionPort = DEFAULT_TRACES_PORT_VALUE;
     private String traceServiceName = DEFAULT_TRACES_SERVICE_NAME;
     private String hostname = null;
     private String blacklist = null;
@@ -446,36 +445,17 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                 this.setTargetLogCollectionPort(null);
             }
 
-            try {
-                final String traceCollectionPortStr = formData.getString("targetTraceCollectionPort");
-                if(validatePort(traceCollectionPortStr)){
-                    this.setTargetTraceCollectionPort(formData.getInt("targetTraceCollectionPort"));
-                }else{
-                    this.setTargetTraceCollectionPort(null);
-                }
-            } catch (Exception e) {
-                // As there is no public UI to configure this property,
-                // the value is set to the default port to trace collection.
-                // formData.getString throws an exception
-                // if the key to search does not exist.
-                // NOTE: Change this when APM Traces was released as public feature.
+            final String traceCollectionPortStr = formData.getString("targetTraceCollectionPort");
+            if(validatePort(traceCollectionPortStr)){
+                this.setTargetTraceCollectionPort(formData.getInt("targetTraceCollectionPort"));
+            }else{
                 this.setTargetTraceCollectionPort(DEFAULT_TRACES_PORT_VALUE);
             }
 
-            try {
-                final String traceServiceName = formData.getString("traceServiceName");
-                if(StringUtils.isNotBlank(traceServiceName)){
-                    this.setTraceServiceName(traceServiceName);
-                } else {
-                    this.setTraceServiceName(DEFAULT_TRACES_SERVICE_NAME);
-                }
-            } catch (Exception e){
-                // As there is no public UI to configure this property,
-                // the value is set to the false to
-                // disable this feature by default
-                // formData.getBoolean throws an exception
-                // if the key to search does not exist
-                // NOTE: Change this when APM Traces was released as public feature.
+            final String traceServiceName = formData.getString("traceServiceName");
+            if(StringUtils.isNotBlank(traceServiceName)){
+                this.setTraceServiceName(traceServiceName);
+            } else {
                 this.setTraceServiceName(DEFAULT_TRACES_SERVICE_NAME);
             }
 
@@ -494,18 +474,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.setEmitSystemEvents(formData.getBoolean("emitSystemEvents"));
             this.setEmitConfigChangeEvents(formData.getBoolean("emitConfigChangeEvents"));
             this.setCollectBuildLogs(formData.getBoolean("collectBuildLogs"));
-
-            try {
-                this.setCollectBuildTraces(formData.getBoolean("collectBuildTraces"));
-            } catch (Exception e) {
-                // As there is no public UI to configure this property,
-                // the value is set to the false to
-                // disable this feature by default
-                // formData.getBoolean throws an exception
-                // if the key to search does not exist
-                // NOTE: Change this when APM Traces was released as public feature.
-                this.setCollectBuildTraces(false);
-            }
+            this.setCollectBuildTraces(formData.getBoolean("collectBuildTraces"));
 
             //When form is saved....
             DatadogClient client = ClientFactory.getClient(DatadogClient.ClientType.valueOf(this.getReportWith()),
