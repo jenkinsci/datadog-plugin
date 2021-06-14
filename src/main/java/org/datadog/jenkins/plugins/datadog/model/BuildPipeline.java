@@ -133,6 +133,7 @@ public class BuildPipeline {
                 final BuildPipelineNode executableChildNode = searchExecutableChildNode(node);
                 if(executableChildNode != null) {
                     node.setPropagatedNodeName(executableChildNode.getNodeName());
+                    node.setPropagatedNodeLabels(executableChildNode.getNodeLabels());
                 }
             }
 

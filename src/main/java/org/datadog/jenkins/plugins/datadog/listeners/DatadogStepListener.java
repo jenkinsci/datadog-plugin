@@ -73,7 +73,7 @@ public class DatadogStepListener implements StepListener {
             if(blockStartNodes.hasNext()) {
                 final FlowNode candidate = blockStartNodes.next();
                 if("Start of Pipeline".equals(candidate.getDisplayName())) {
-                    run.addAction(new PipelineNodeInfoAction(stepData.getNodeName() != null ? stepData.getNodeName() : "master"));
+                    run.addAction(new PipelineNodeInfoAction(stepData.getNodeName() != null ? stepData.getNodeName() : "master", stepData.getNodeLabels()));
                 }
             }
 

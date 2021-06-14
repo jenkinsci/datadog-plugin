@@ -1,6 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getNormalizedResultForTraces;
+import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.toJson;
 import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.NodeType.PIPELINE;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
@@ -25,6 +26,7 @@ import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
+import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
@@ -35,9 +37,12 @@ import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -328,6 +333,12 @@ public class DatadogTracePipelineLogic {
         // Node info
         final String nodeName = getNodeName(run, current, buildData);
         tags.put(CITags.NODE_NAME, nodeName);
+
+        final String nodeLabels = toJson(getNodeLabels(run, current, nodeName));
+        if(!nodeLabels.isEmpty()){
+            tags.put(CITags.NODE_LABELS, nodeLabels);
+        }
+
         // If the NodeName == "master", we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
         // If the NodeName != "master", we set _dd.hostname to 'none' explicitly, cause we cannot calculate the worker hostname.
         if(!"master".equalsIgnoreCase(nodeName)){
@@ -375,6 +386,36 @@ public class DatadogTracePipelineLogic {
         }
 
         return tags;
+    }
+
+
+    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
+    private Set<String> getNodeLabels(Run run, BuildPipelineNode current, String nodeName) {
+        final PipelineNodeInfoAction pipelineNodeInfoAction = run.getAction(PipelineNodeInfoAction.class);
+        if (current.getPropagatedNodeLabels() != null && !current.getPropagatedNodeLabels().isEmpty()) {
+            return current.getPropagatedNodeLabels();
+        } else if (current.getNodeLabels() != null && !current.getNodeLabels().isEmpty()) {
+            return current.getNodeLabels();
+        } else if (pipelineNodeInfoAction != null && !pipelineNodeInfoAction.getNodeLabels().isEmpty()) {
+            return pipelineNodeInfoAction.getNodeLabels();
+        }
+
+        if (run.getExecutor() != null && run.getExecutor().getOwner() != null) {
+            Set<String> nodeLabels = DatadogUtilities.getNodeLabels(run.getExecutor().getOwner());
+            if (nodeLabels != null && !nodeLabels.isEmpty()) {
+                return nodeLabels;
+            }
+        }
+
+        // If there is no labels and the node name is master,
+        // we force the label "master".
+        if ("master".equalsIgnoreCase(nodeName)) {
+            final Set<String> masterLabels = new HashSet<>();
+            masterLabels.add("master");
+            return masterLabels;
+        }
+
+        return Collections.emptySet();
     }
 
     private String getResult(BuildPipelineNode current) {

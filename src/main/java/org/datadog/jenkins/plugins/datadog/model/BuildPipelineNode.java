@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -68,7 +69,9 @@ public class BuildPipelineNode {
     private Map<String, String> envVars = new HashMap<>();
     private String workspace;
     private String nodeName;
+    private Set<String> nodeLabels;
     private String propagatedNodeName;
+    private Set<String> propagatedNodeLabels;
     private String nodeHostname;
     private AnnotatedLargeText logText;
     private long startTime;
@@ -133,6 +136,7 @@ public class BuildPipelineNode {
                 this.workspace = stepData.getWorkspace();
                 this.nodeName = stepData.getNodeName();
                 this.nodeHostname = stepData.getNodeHostname();
+                this.nodeLabels = stepData.getNodeLabels();
             }
         }
 
@@ -169,6 +173,7 @@ public class BuildPipelineNode {
             this.workspace = stepData.getWorkspace();
             this.nodeName = stepData.getNodeName();
             this.nodeHostname = stepData.getNodeHostname();
+            this.nodeLabels = stepData.getNodeLabels();
         }
 
         final FlowNodeQueueData queueData = getQueueData(stepNode);
@@ -233,12 +238,24 @@ public class BuildPipelineNode {
         return nodeName;
     }
 
+    public Set<String> getNodeLabels() {
+        return nodeLabels;
+    }
+
     public String getPropagatedNodeName() {
         return propagatedNodeName;
     }
 
     public void setPropagatedNodeName(String propagatedNodeName) {
         this.propagatedNodeName = propagatedNodeName;
+    }
+
+    public Set<String> getPropagatedNodeLabels() {
+        return propagatedNodeLabels;
+    }
+
+    public void setPropagatedNodeLabels(final Set<String> propagatedNodeLabels) {
+        this.propagatedNodeLabels = propagatedNodeLabels;
     }
 
     public String getNodeHostname() {
@@ -345,6 +362,7 @@ public class BuildPipelineNode {
         this.workspace = buildNode.workspace;
         this.nodeName = buildNode.nodeName;
         this.nodeHostname = buildNode.nodeHostname;
+        this.nodeLabels = buildNode.nodeLabels;
         this.logText = buildNode.logText;
         this.startTime = buildNode.startTime;
         this.startTimeMicros = buildNode.startTimeMicros;
