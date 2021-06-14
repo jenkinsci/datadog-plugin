@@ -316,7 +316,8 @@ public class DatadogTracePipelineLogic {
         // If we could not detect a valid commit, that means that the GIT_COMMIT environment variable
         // was overridden by the user at top level, so we set the content what we have (despite it's not valid).
         // We will show a logger.warning at the end of the pipeline.
-        final String gitCommit = (isValidCommit(envVars.get("GIT_COMMIT"))) ? envVars.get("GIT_COMMIT") : buildData.getGitCommit("");
+        final String envGitCommit = envVars.get("GIT_COMMIT");
+        final String gitCommit = (isValidCommit(envGitCommit)) ? envGitCommit : buildData.getGitCommit("");
         if(gitCommit != null && !gitCommit.isEmpty()) {
             tags.put(CITags.GIT_COMMIT__SHA, gitCommit); //Maintain retrocompatibility
             tags.put(CITags.GIT_COMMIT_SHA, gitCommit);

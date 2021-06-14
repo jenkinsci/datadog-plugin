@@ -266,11 +266,6 @@ public final class GitUtils {
         if(gitCommit == null || gitCommit.isEmpty()) {
             return false;
         }
-
-        if(gitCommit.length() != 40) {
-            return false;
-        }
-
         return SHA1_PATTERN.matcher(gitCommit).matches();
     }
 }
