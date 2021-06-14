@@ -81,6 +81,7 @@ public class BuildPipelineNode {
     private long nanosInQueue = -1L;
     private long propagatedNanosInQueue = -1L;
     private String result;
+    private String propagatedResult;
 
     // Flag that indicates if the node must be marked as error.
     private boolean error;
@@ -306,12 +307,24 @@ public class BuildPipelineNode {
         return result;
     }
 
+    public String getPropagatedResult() {
+        return this.propagatedResult;
+    }
+
+    public void setPropagatedResult(final String propagatedResult) {
+        this.propagatedResult = propagatedResult;
+    }
+
     public Throwable getErrorObj() {
         return errorObj;
     }
 
     public boolean isError() {
         return error;
+    }
+
+    public void setError(boolean error) {
+        this.error = error;
     }
 
     public List<BuildPipelineNode> getParents(){ return parents; }

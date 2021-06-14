@@ -787,6 +787,39 @@ public class DatadogGraphListenerTest {
         assertEquals("pipeline_tag", stepSpan.getTag("pipeline_tag_v2"));
     }
 
+    @Test
+    public void testErrorPropagationOnStages() throws Exception {
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration-errorPropagationStages");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineErrorOnStages.txt"),
+                "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        job.scheduleBuild2(0).get();
+
+        //Traces
+        final ListWriter tracerWriter = clientStub.tracerWriter();
+        tracerWriter.waitForTraces(2);
+        assertEquals(2, tracerWriter.size());
+
+        final List<DDSpan> buildTrace = tracerWriter.get(0);
+        assertEquals(1, buildTrace.size());
+        final DDSpan buildSpan = buildTrace.get(0);
+        assertEquals("error", buildSpan.getTag(CITags.STATUS));
+
+        final List<DDSpan> pipelineTrace = tracerWriter.get(1);
+        assertEquals(3, pipelineTrace.size());
+
+        final DDSpan stageSpan = pipelineTrace.get(0);
+        assertEquals("error", stageSpan.getTag(CITags.STATUS));
+
+        final DDSpan stepSpan = pipelineTrace.get(1);
+        assertEquals("error", stepSpan.getTag(CITags.STATUS));
+
+        final DDSpan step2Span = pipelineTrace.get(2);
+        assertEquals("error", step2Span.getTag(CITags.STATUS));
+    }
+
     private void assertNodeNameParallelBlock(DDSpan stageSpan, DumbSlave worker01, DumbSlave worker02) {
         switch ((String)stageSpan.getResourceName()){
             case "Prepare01":

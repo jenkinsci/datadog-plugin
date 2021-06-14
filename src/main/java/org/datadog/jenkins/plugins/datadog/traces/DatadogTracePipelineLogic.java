@@ -279,7 +279,7 @@ public class DatadogTracePipelineLogic {
         tags.put(CITags.CI_PROVIDER_NAME, CI_PROVIDER);
         tags.put(prefix + CITags._NAME, current.getName());
         tags.put(prefix + CITags._NUMBER, current.getId());
-        final String status = getNormalizedResultForTraces(current.getResult());
+        final String status = getNormalizedResultForTraces(getResult(current));
         tags.put(prefix + CITags._RESULT, status);
         tags.put(CITags.STATUS, status);
 
@@ -388,33 +388,38 @@ public class DatadogTracePipelineLogic {
         return tags;
     }
 
+
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
     private Set<String> getNodeLabels(Run run, BuildPipelineNode current, String nodeName) {
         final PipelineNodeInfoAction pipelineNodeInfoAction = run.getAction(PipelineNodeInfoAction.class);
-        if(current.getPropagatedNodeLabels() != null && !current.getPropagatedNodeLabels().isEmpty()) {
+        if (current.getPropagatedNodeLabels() != null && !current.getPropagatedNodeLabels().isEmpty()) {
             return current.getPropagatedNodeLabels();
-        } else if(current.getNodeLabels() != null && !current.getNodeLabels().isEmpty()) {
+        } else if (current.getNodeLabels() != null && !current.getNodeLabels().isEmpty()) {
             return current.getNodeLabels();
-        } else if(pipelineNodeInfoAction != null && !pipelineNodeInfoAction.getNodeLabels().isEmpty()) {
+        } else if (pipelineNodeInfoAction != null && !pipelineNodeInfoAction.getNodeLabels().isEmpty()) {
             return pipelineNodeInfoAction.getNodeLabels();
         }
 
-        if(run.getExecutor() != null && run.getExecutor().getOwner() != null) {
+        if (run.getExecutor() != null && run.getExecutor().getOwner() != null) {
             Set<String> nodeLabels = DatadogUtilities.getNodeLabels(run.getExecutor().getOwner());
-            if(nodeLabels != null && !nodeLabels.isEmpty()) {
+            if (nodeLabels != null && !nodeLabels.isEmpty()) {
                 return nodeLabels;
             }
         }
 
         // If there is no labels and the node name is master,
         // we force the label "master".
-        if("master".equalsIgnoreCase(nodeName)){
+        if ("master".equalsIgnoreCase(nodeName)) {
             final Set<String> masterLabels = new HashSet<>();
             masterLabels.add("master");
             return masterLabels;
         }
 
         return Collections.emptySet();
+    }
+
+    private String getResult(BuildPipelineNode current) {
+        return (current.getPropagatedResult() != null) ? current.getPropagatedResult() : current.getResult();
     }
 
     private String getNodeName(Run<?, ?> run, BuildPipelineNode current, BuildData buildData) {
