@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -68,7 +69,9 @@ public class BuildPipelineNode {
     private Map<String, String> envVars = new HashMap<>();
     private String workspace;
     private String nodeName;
+    private Set<String> nodeLabels;
     private String propagatedNodeName;
+    private Set<String> propagatedNodeLabels;
     private String nodeHostname;
     private AnnotatedLargeText logText;
     private long startTime;
@@ -78,6 +81,7 @@ public class BuildPipelineNode {
     private long nanosInQueue = -1L;
     private long propagatedNanosInQueue = -1L;
     private String result;
+    private String propagatedResult;
 
     // Flag that indicates if the node must be marked as error.
     private boolean error;
@@ -132,6 +136,7 @@ public class BuildPipelineNode {
                 this.workspace = stepData.getWorkspace();
                 this.nodeName = stepData.getNodeName();
                 this.nodeHostname = stepData.getNodeHostname();
+                this.nodeLabels = stepData.getNodeLabels();
             }
         }
 
@@ -168,6 +173,7 @@ public class BuildPipelineNode {
             this.workspace = stepData.getWorkspace();
             this.nodeName = stepData.getNodeName();
             this.nodeHostname = stepData.getNodeHostname();
+            this.nodeLabels = stepData.getNodeLabels();
         }
 
         final FlowNodeQueueData queueData = getQueueData(stepNode);
@@ -232,12 +238,24 @@ public class BuildPipelineNode {
         return nodeName;
     }
 
+    public Set<String> getNodeLabels() {
+        return nodeLabels;
+    }
+
     public String getPropagatedNodeName() {
         return propagatedNodeName;
     }
 
     public void setPropagatedNodeName(String propagatedNodeName) {
         this.propagatedNodeName = propagatedNodeName;
+    }
+
+    public Set<String> getPropagatedNodeLabels() {
+        return propagatedNodeLabels;
+    }
+
+    public void setPropagatedNodeLabels(final Set<String> propagatedNodeLabels) {
+        this.propagatedNodeLabels = propagatedNodeLabels;
     }
 
     public String getNodeHostname() {
@@ -289,12 +307,24 @@ public class BuildPipelineNode {
         return result;
     }
 
+    public String getPropagatedResult() {
+        return this.propagatedResult;
+    }
+
+    public void setPropagatedResult(final String propagatedResult) {
+        this.propagatedResult = propagatedResult;
+    }
+
     public Throwable getErrorObj() {
         return errorObj;
     }
 
     public boolean isError() {
         return error;
+    }
+
+    public void setError(boolean error) {
+        this.error = error;
     }
 
     public List<BuildPipelineNode> getParents(){ return parents; }
@@ -332,6 +362,7 @@ public class BuildPipelineNode {
         this.workspace = buildNode.workspace;
         this.nodeName = buildNode.nodeName;
         this.nodeHostname = buildNode.nodeHostname;
+        this.nodeLabels = buildNode.nodeLabels;
         this.logText = buildNode.logText;
         this.startTime = buildNode.startTime;
         this.startTimeMicros = buildNode.startTimeMicros;

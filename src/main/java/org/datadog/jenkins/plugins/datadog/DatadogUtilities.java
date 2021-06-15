@@ -611,6 +611,25 @@ public class DatadogUtilities {
         }
     }
 
+
+    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
+    public static Set<String> getNodeLabels(Computer computer) {
+        Set<LabelAtom> labels;
+        try {
+            labels = computer.getNode().getAssignedLabels();
+        } catch (Exception e){
+            logger.fine("Could not retrieve labels: " + e.getMessage());
+            return Collections.emptySet();
+        }
+
+        final Set<String> labelsStr = new HashSet<>();
+        for(final LabelAtom label : labels) {
+            labelsStr.add(label.getName());
+        }
+
+        return labelsStr;
+    }
+
     public static String getUserId() {
         User user = User.current();
         if (user == null) {
@@ -769,6 +788,33 @@ public class DatadogUtilities {
         SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT_ISO8601);
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         return sdf.format(date);
+    }
+
+    /**
+     * Returns a JSON array string based on the set.
+     * @param set
+     * @return json array string
+     */
+    public static String toJson(final Set<String> set) {
+        if(set == null || set.isEmpty()) {
+            return "";
+        }
+
+        // We want to avoid using Json libraries cause
+        // may cause incompatibilities on different Jenkins versions.
+        final StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        int index = 1;
+        for(String val : set) {
+            sb.append("\"").append(val).append("\"");
+            if(index < set.size()) {
+                sb.append(",");
+            }
+            index += 1;
+        }
+        sb.append("]");
+
+        return sb.toString();
     }
 
 }

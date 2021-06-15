@@ -254,6 +254,55 @@ public class DatadogGraphListenerTest {
     }
 
     @Test
+    public void testIntegrationGitInfoOverrideCommit() throws Exception {
+        Jenkins jenkins = jenkinsRule.jenkins;
+        final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
+        EnvVars env = prop.getEnvVars();
+        env.put("GIT_BRANCH", "master");
+        env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
+        env.put("GIT_URL", "https://github.com/johndoe/foobar.git");
+
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationOverrideCommit");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelinesOverrideGitCommit.txt"),
+                "UTF-8"
+        );
+
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        final FilePath ws = jenkins.getWorkspaceFor(job);
+        env.put("NODE_NAME", "master");
+        env.put("WORKSPACE", ws.getRemote());
+        InputStream gitZip = getClass().getClassLoader().getResourceAsStream("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
+        if(gitZip != null) {
+            ws.unzipFrom(gitZip);
+        }
+        jenkins.getGlobalNodeProperties().add(prop);
+        job.scheduleBuild2(0).get();
+
+        final ListWriter tracerWriter = clientStub.tracerWriter();
+        tracerWriter.waitForTraces(3);
+        assertEquals(3, tracerWriter.size());
+        final List<DDSpan> buildTrace = tracerWriter.get(0);
+        assertEquals(1, buildTrace.size());
+        final DDSpan buildSpan = buildTrace.get(0);
+        assertEquals("401d997a6eede777602669ccaec059755c98161f", buildSpan.getTag(CITags.GIT_COMMIT_SHA));
+
+        final List<DDSpan> stage1Chain = tracerWriter.get(1);
+        assertEquals(2, stage1Chain.size());
+        final DDSpan stage1 = stage1Chain.get(0);
+        assertEquals("401d997a6eede777602669ccaec059755c98161f", stage1.getTag(CITags.GIT_COMMIT_SHA));
+        final DDSpan step1 = stage1Chain.get(1);
+        assertEquals("401d997a6eede777602669ccaec059755c98161f", step1.getTag(CITags.GIT_COMMIT_SHA));
+
+        final List<DDSpan> stage2Chain = tracerWriter.get(2);
+        assertEquals(2, stage2Chain.size());
+        final DDSpan stage2 = stage2Chain.get(0);
+        assertEquals("401d997a6eede777602669ccaec059755c98161f", stage2.getTag(CITags.GIT_COMMIT_SHA));
+        final DDSpan step2 = stage2Chain.get(1);
+        assertEquals("401d997a6eede777602669ccaec059755c98161f", step2.getTag(CITags.GIT_COMMIT_SHA));
+    }
+
+    @Test
     public void testStageNamePropagation() throws Exception{
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationStages");
         String definition = IOUtils.toString(
@@ -325,6 +374,7 @@ public class DatadogGraphListenerTest {
         final DDSpan buildSpan = buildTrace.get(0);
         assertEquals(0L, buildSpan.getUnsafeMetrics().get(CITags.QUEUE_TIME));
         assertEquals("master", buildSpan.getTag(CITags.NODE_NAME));
+        assertEquals("[\"master\"]", buildSpan.getTag(CITags.NODE_LABELS));
 
         final List<DDSpan> pipelineTrace = tracerWriter.get(1);
         assertEquals(5, pipelineTrace.size());
@@ -332,6 +382,7 @@ public class DatadogGraphListenerTest {
         final DDSpan runStages = pipelineTrace.get(0);
         assertEquals(0L, runStages.getUnsafeMetrics().get(CITags.QUEUE_TIME));
         assertEquals("master", runStages.getTag(CITags.NODE_NAME));
+        assertEquals("[\"master\"]", runStages.getTag(CITags.NODE_LABELS));
 
         final DDSpan stage2 = pipelineTrace.get(1);
         long stage2QueueTime = (long) stage2.getUnsafeMetrics().get(CITags.QUEUE_TIME);
@@ -339,10 +390,12 @@ public class DatadogGraphListenerTest {
         assertTrue(stage2QueueTime > TimeUnit.NANOSECONDS.toSeconds(stage2.getDurationNano()));
         assertTrue(stage2.getDurationNano() > 1L);
         assertEquals(worker.getNodeName(), stage2.getTag(CITags.NODE_NAME));
+        assertTrue(((String)stage2.getTag(CITags.NODE_LABELS)).contains("testStage"));
 
         final DDSpan stepStage2 = pipelineTrace.get(2);
         assertEquals(0L, stepStage2.getUnsafeMetrics().get(CITags.QUEUE_TIME));
         assertEquals(worker.getNodeName(), stepStage2.getTag(CITags.NODE_NAME));
+        assertTrue(((String)stepStage2.getTag(CITags.NODE_LABELS)).contains("testStage"));
 
         final DDSpan stage1 = pipelineTrace.get(3);
         long stage1QueueTime = (long) stage1.getUnsafeMetrics().get(CITags.QUEUE_TIME);
@@ -350,10 +403,12 @@ public class DatadogGraphListenerTest {
         assertTrue(stage1QueueTime > TimeUnit.NANOSECONDS.toSeconds(stage1.getDurationNano()));
         assertTrue(stage1.getDurationNano() > 1L);
         assertEquals(worker.getNodeName(), stage1.getTag(CITags.NODE_NAME));
+        assertTrue(((String) stage1.getTag(CITags.NODE_LABELS)).contains("testStage"));
 
         final DDSpan stepStage1 = pipelineTrace.get(4);
         assertEquals(0L, stepStage1.getUnsafeMetrics().get(CITags.QUEUE_TIME));
         assertEquals(worker.getNodeName(), stepStage1.getTag(CITags.NODE_NAME));
+        assertTrue(((String) stepStage1.getTag(CITags.NODE_LABELS)).contains("testStage"));
     }
 
 
@@ -395,6 +450,7 @@ public class DatadogGraphListenerTest {
 
 
         assertEquals(worker.getNodeName(), buildSpan.getTag(CITags.NODE_NAME));
+        assertTrue(((String) buildSpan.getTag(CITags.NODE_LABELS)).contains("testPipeline"));
         assertEquals("none",buildSpan.getTag(CITags._DD_HOSTNAME));
 
         final List<DDSpan> pipelineTrace = tracerWriter.get(1);
@@ -403,11 +459,13 @@ public class DatadogGraphListenerTest {
         final DDSpan stage = pipelineTrace.get(0);
         assertEquals(0L, stage.getUnsafeMetrics().get(CITags.QUEUE_TIME));
         assertEquals(worker.getNodeName(), stage.getTag(CITags.NODE_NAME));
+        assertTrue(((String) stage.getTag(CITags.NODE_LABELS)).contains("testPipeline"));
         assertEquals("none",stage.getTag(CITags._DD_HOSTNAME));
 
         final DDSpan step = pipelineTrace.get(1);
         assertEquals(0L, step.getUnsafeMetrics().get(CITags.QUEUE_TIME));
         assertEquals(worker.getNodeName(), step.getTag(CITags.NODE_NAME));
+        assertTrue(((String) step.getTag(CITags.NODE_LABELS)).contains("testPipeline"));
         assertEquals("none",step.getTag(CITags._DD_HOSTNAME));
     }
 
@@ -456,6 +514,7 @@ public class DatadogGraphListenerTest {
         assertEquals("success", buildSpan.getTag(CITags.STATUS));
         assertNotNull(buildSpan.getTag(buildPrefix + CITags._URL));
         assertNotNull(buildSpan.getTag(CITags.NODE_NAME));
+        assertNotNull(buildSpan.getTag(CITags.NODE_LABELS));
         assertNull(buildSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals("success", buildSpan.getTag(CITags.JENKINS_RESULT));
         assertEquals("jenkins-pipelineIntegrationSuccess-1", buildSpan.getTag(CITags.JENKINS_TAG));
@@ -479,6 +538,7 @@ public class DatadogGraphListenerTest {
         assertEquals("jenkins", stageSpan.getTag(CITags.CI_PROVIDER_NAME));
         assertNotNull(stageSpan.getTag(stagePrefix + CITags._URL));
         assertNotNull(stageSpan.getTag(CITags.NODE_NAME));
+        assertNotNull(stageSpan.getTag(CITags.NODE_LABELS));
         assertNull(stageSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals(false, stageSpan.getTag(CITags._DD_CI_INTERNAL));
         assertEquals("4", stageSpan.getTag(stagePrefix + CITags._NUMBER));
@@ -501,6 +561,7 @@ public class DatadogGraphListenerTest {
         assertNotNull(stepAtomSpan.getTag(stepPrefix + CITags._URL));
         assertNotNull(stepAtomSpan.getTag(stepPrefix + CITags._URL));
         assertNotNull(stepAtomSpan.getTag(CITags.NODE_NAME));
+        assertNotNull(stepAtomSpan.getTag(CITags.NODE_LABELS));
         assertNull(stepAtomSpan.getTag(CITags._DD_HOSTNAME));
         assertEquals(false, stepAtomSpan.getTag(CITags._DD_CI_INTERNAL));
         assertEquals("5", stepAtomSpan.getTag(stepPrefix + CITags._NUMBER));
@@ -635,6 +696,7 @@ public class DatadogGraphListenerTest {
 
         final DDSpan buildSpan = buildTrace.get(0);
         assertEquals(worker03.getNodeName(), buildSpan.getTag(CITags.NODE_NAME));
+        assertTrue(((String) buildSpan.getTag(CITags.NODE_LABELS)).contains(worker03.getNodeName()));
 
         final List<DDSpan> pipelineTrace01 = tracerWriter.get(1);
         assertEquals(5, pipelineTrace01.size());
@@ -642,18 +704,21 @@ public class DatadogGraphListenerTest {
         final DDSpan prepareBlock = pipelineTrace01.get(0);
         assertEquals("Prepare", prepareBlock.getResourceName());
         assertEquals(worker03.getNodeName(), prepareBlock.getTag(CITags.NODE_NAME));
+        assertTrue(((String) prepareBlock.getTag(CITags.NODE_LABELS)).contains(worker03.getNodeName()));
 
         final DDSpan prepareStage01 = pipelineTrace01.get(1);
         assertNodeNameParallelBlock(prepareStage01, worker01, worker02);
 
         final DDSpan prepareStep01 = pipelineTrace01.get(2);
         assertEquals(prepareStage01.getTag(CITags.NODE_NAME), prepareStep01.getTag(CITags.NODE_NAME));
+        assertEquals(prepareStage01.getTag(CITags.NODE_LABELS), prepareStep01.getTag(CITags.NODE_LABELS));
 
         final DDSpan prepareStage02 = pipelineTrace01.get(3);
         assertNodeNameParallelBlock(prepareStage02, worker01, worker02);
 
         final DDSpan prepareStep02 = pipelineTrace01.get(4);
         assertEquals(prepareStage02.getTag(CITags.NODE_NAME), prepareStep02.getTag(CITags.NODE_NAME));
+        assertEquals(prepareStage02.getTag(CITags.NODE_LABELS), prepareStep02.getTag(CITags.NODE_LABELS));
 
         final List<DDSpan> pipelineTrace02 = tracerWriter.get(2);
         assertEquals(2, pipelineTrace02.size());
@@ -661,9 +726,11 @@ public class DatadogGraphListenerTest {
         final DDSpan installStage = pipelineTrace02.get(0);
         assertEquals("Install", installStage.getResourceName());
         assertEquals(worker03.getNodeName(), installStage.getTag(CITags.NODE_NAME));
+        assertTrue(((String) installStage.getTag(CITags.NODE_LABELS)).contains(worker03.getNodeName()));
 
         final DDSpan installStep = pipelineTrace02.get(1);
         assertEquals(worker03.getNodeName(), installStep.getTag(CITags.NODE_NAME));
+        assertTrue(((String) installStep.getTag(CITags.NODE_LABELS)).contains(worker03.getNodeName()));
 
         final List<DDSpan> pipelineTrace03 = tracerWriter.get(3);
         assertEquals(2, pipelineTrace03.size());
@@ -671,9 +738,11 @@ public class DatadogGraphListenerTest {
         final DDSpan bumpVersionStage = pipelineTrace03.get(0);
         assertEquals("Bump version", bumpVersionStage.getResourceName());
         assertEquals(worker03.getNodeName(), bumpVersionStage.getTag(CITags.NODE_NAME));
+        assertTrue(((String) bumpVersionStage.getTag(CITags.NODE_LABELS)).contains(worker03.getNodeName()));
 
         final DDSpan bumpVersionStep = pipelineTrace03.get(1);
         assertEquals(worker03.getNodeName(), bumpVersionStep.getTag(CITags.NODE_NAME));
+        assertTrue(((String) bumpVersionStep.getTag(CITags.NODE_LABELS)).contains(worker03.getNodeName()));
 
         final List<DDSpan> pipelineTrace04 = tracerWriter.get(4);
         assertEquals(2, pipelineTrace04.size());
@@ -681,9 +750,11 @@ public class DatadogGraphListenerTest {
         final DDSpan buildStage = pipelineTrace04.get(0);
         assertEquals("Build", buildStage.getResourceName());
         assertEquals(worker03.getNodeName(), buildStage.getTag(CITags.NODE_NAME));
+        assertTrue(((String) buildStage.getTag(CITags.NODE_LABELS)).contains(worker03.getNodeName()));
 
         final DDSpan buildStep = pipelineTrace04.get(1);
         assertEquals(worker03.getNodeName(), buildStep.getTag(CITags.NODE_NAME));
+        assertTrue(((String) buildStep.getTag(CITags.NODE_LABELS)).contains(worker03.getNodeName()));
 
         final List<DDSpan> pipelineTrace05 = tracerWriter.get(5);
         assertEquals(5, pipelineTrace05.size());
@@ -691,18 +762,21 @@ public class DatadogGraphListenerTest {
         final DDSpan validateBlock = pipelineTrace05.get(0);
         assertEquals("Validate", validateBlock.getResourceName());
         assertEquals(worker03.getNodeName(), validateBlock.getTag(CITags.NODE_NAME));
+        assertTrue(((String) validateBlock.getTag(CITags.NODE_LABELS)).contains(worker03.getNodeName()));
 
         final DDSpan validateStage01 = pipelineTrace05.get(1);
         assertNodeNameParallelBlock(validateStage01, worker01, worker02);
 
         final DDSpan validateStep01 = pipelineTrace05.get(2);
         assertEquals(validateStage01.getTag(CITags.NODE_NAME), validateStep01.getTag(CITags.NODE_NAME));
+        assertEquals(validateStage01.getTag(CITags.NODE_LABELS), validateStep01.getTag(CITags.NODE_LABELS));
 
         final DDSpan validateStage02 = pipelineTrace05.get(3);
         assertNodeNameParallelBlock(validateStage02, worker01, worker02);
 
         final DDSpan validateStep02 = pipelineTrace05.get(4);
         assertEquals(validateStage02.getTag(CITags.NODE_NAME), validateStep02.getTag(CITags.NODE_NAME));
+        assertEquals(validateStage02.getTag(CITags.NODE_LABELS), validateStep02.getTag(CITags.NODE_LABELS));
 
 
         final List<DDSpan> pipelineTrace06 = tracerWriter.get(6);
@@ -711,9 +785,11 @@ public class DatadogGraphListenerTest {
         final DDSpan ciStage = pipelineTrace06.get(0);
         assertEquals("CI", ciStage.getResourceName());
         assertEquals(worker03.getNodeName(), ciStage.getTag(CITags.NODE_NAME));
+        assertTrue(((String) ciStage.getTag(CITags.NODE_LABELS)).contains(worker03.getNodeName()));
 
         final DDSpan ciStep = pipelineTrace06.get(1);
         assertEquals(worker03.getNodeName(), ciStep.getTag(CITags.NODE_NAME));
+        assertTrue(((String) ciStep.getTag(CITags.NODE_LABELS)).contains(worker03.getNodeName()));
     }
 
     @Test
@@ -760,15 +836,50 @@ public class DatadogGraphListenerTest {
         assertEquals("pipeline_tag", stepSpan.getTag("pipeline_tag_v2"));
     }
 
+    @Test
+    public void testErrorPropagationOnStages() throws Exception {
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration-errorPropagationStages");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineErrorOnStages.txt"),
+                "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        job.scheduleBuild2(0).get();
+
+        //Traces
+        final ListWriter tracerWriter = clientStub.tracerWriter();
+        tracerWriter.waitForTraces(2);
+        assertEquals(2, tracerWriter.size());
+
+        final List<DDSpan> buildTrace = tracerWriter.get(0);
+        assertEquals(1, buildTrace.size());
+        final DDSpan buildSpan = buildTrace.get(0);
+        assertEquals("error", buildSpan.getTag(CITags.STATUS));
+
+        final List<DDSpan> pipelineTrace = tracerWriter.get(1);
+        assertEquals(3, pipelineTrace.size());
+
+        final DDSpan stageSpan = pipelineTrace.get(0);
+        assertEquals("error", stageSpan.getTag(CITags.STATUS));
+
+        final DDSpan stepSpan = pipelineTrace.get(1);
+        assertEquals("error", stepSpan.getTag(CITags.STATUS));
+
+        final DDSpan step2Span = pipelineTrace.get(2);
+        assertEquals("error", step2Span.getTag(CITags.STATUS));
+    }
+
     private void assertNodeNameParallelBlock(DDSpan stageSpan, DumbSlave worker01, DumbSlave worker02) {
         switch ((String)stageSpan.getResourceName()){
             case "Prepare01":
             case "Validate01":
                 assertEquals(worker01.getNodeName(), stageSpan.getTag(CITags.NODE_NAME));
+                assertTrue(((String) stageSpan.getTag(CITags.NODE_LABELS)).contains(worker01.getNodeName()));
                 break;
             case "Prepare02":
             case "Validate02":
                 assertEquals(worker02.getNodeName(), stageSpan.getTag(CITags.NODE_NAME));
+                assertTrue(((String) stageSpan.getTag(CITags.NODE_LABELS)).contains(worker02.getNodeName()));
                 break;
         }
     }

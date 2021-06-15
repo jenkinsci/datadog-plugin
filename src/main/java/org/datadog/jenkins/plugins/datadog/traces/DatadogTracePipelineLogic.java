@@ -1,9 +1,11 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getNormalizedResultForTraces;
+import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.toJson;
 import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.NodeType.PIPELINE;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
 
 import datadog.trace.api.DDTags;
 import datadog.trace.api.interceptor.MutableSpan;
@@ -25,6 +27,7 @@ import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
+import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
@@ -35,9 +38,12 @@ import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -123,7 +129,8 @@ public class DatadogTracePipelineLogic {
         }
 
         final String gitCommit = pipelineNode.getEnvVars().get("GIT_COMMIT");
-        if(gitCommit != null && buildData.getGitCommit("").isEmpty()) {
+        final String buildDataGitCommit = buildData.getGitCommit("");
+        if(gitCommit != null && (buildDataGitCommit.isEmpty() || !isValidCommit(buildDataGitCommit))){
             buildData.setGitCommit(gitCommit);
         }
 
@@ -274,7 +281,7 @@ public class DatadogTracePipelineLogic {
         tags.put(CITags.CI_PROVIDER_NAME, CI_PROVIDER);
         tags.put(prefix + CITags._NAME, current.getName());
         tags.put(prefix + CITags._NUMBER, current.getId());
-        final String status = getNormalizedResultForTraces(current.getResult());
+        final String status = getNormalizedResultForTraces(getResult(current));
         tags.put(prefix + CITags._RESULT, status);
         tags.put(CITags.STATUS, status);
 
@@ -310,7 +317,12 @@ public class DatadogTracePipelineLogic {
             }
         }
 
-        final String gitCommit = envVars.get("GIT_COMMIT") !=  null ? envVars.get("GIT_COMMIT") : buildData.getGitCommit("");
+        // If we could detect a valid commit, the buildData object will contain that commit.
+        // If we could not detect a valid commit, that means that the GIT_COMMIT environment variable
+        // was overridden by the user at top level, so we set the content what we have (despite it's not valid).
+        // We will show a logger.warning at the end of the pipeline.
+        final String envGitCommit = envVars.get("GIT_COMMIT");
+        final String gitCommit = (isValidCommit(envGitCommit)) ? envGitCommit : buildData.getGitCommit("");
         if(gitCommit != null && !gitCommit.isEmpty()) {
             tags.put(CITags.GIT_COMMIT__SHA, gitCommit); //Maintain retrocompatibility
             tags.put(CITags.GIT_COMMIT_SHA, gitCommit);
@@ -328,6 +340,12 @@ public class DatadogTracePipelineLogic {
         // Node info
         final String nodeName = getNodeName(run, current, buildData);
         tags.put(CITags.NODE_NAME, nodeName);
+
+        final String nodeLabels = toJson(getNodeLabels(run, current, nodeName));
+        if(!nodeLabels.isEmpty()){
+            tags.put(CITags.NODE_LABELS, nodeLabels);
+        }
+
         // If the NodeName == "master", we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
         // If the NodeName != "master", we set _dd.hostname to 'none' explicitly, cause we cannot calculate the worker hostname.
         if(!"master".equalsIgnoreCase(nodeName)){
@@ -375,6 +393,40 @@ public class DatadogTracePipelineLogic {
         }
 
         return tags;
+    }
+
+
+    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
+    private Set<String> getNodeLabels(Run run, BuildPipelineNode current, String nodeName) {
+        final PipelineNodeInfoAction pipelineNodeInfoAction = run.getAction(PipelineNodeInfoAction.class);
+        if (current.getPropagatedNodeLabels() != null && !current.getPropagatedNodeLabels().isEmpty()) {
+            return current.getPropagatedNodeLabels();
+        } else if (current.getNodeLabels() != null && !current.getNodeLabels().isEmpty()) {
+            return current.getNodeLabels();
+        } else if (pipelineNodeInfoAction != null && !pipelineNodeInfoAction.getNodeLabels().isEmpty()) {
+            return pipelineNodeInfoAction.getNodeLabels();
+        }
+
+        if (run.getExecutor() != null && run.getExecutor().getOwner() != null) {
+            Set<String> nodeLabels = DatadogUtilities.getNodeLabels(run.getExecutor().getOwner());
+            if (nodeLabels != null && !nodeLabels.isEmpty()) {
+                return nodeLabels;
+            }
+        }
+
+        // If there is no labels and the node name is master,
+        // we force the label "master".
+        if ("master".equalsIgnoreCase(nodeName)) {
+            final Set<String> masterLabels = new HashSet<>();
+            masterLabels.add("master");
+            return masterLabels;
+        }
+
+        return Collections.emptySet();
+    }
+
+    private String getResult(BuildPipelineNode current) {
+        return (current.getPropagatedResult() != null) ? current.getPropagatedResult() : current.getResult();
     }
 
     private String getNodeName(Run<?, ?> run, BuildPipelineNode current, BuildData buildData) {
@@ -428,6 +480,10 @@ public class DatadogTracePipelineLogic {
             final TaskListener listener = node.getExecution().getOwner().getListener();
             final EnvVars envVars = new EnvVars(pipelineNode.getEnvVars());
             final String gitCommit = pipelineNode.getEnvVars().get("GIT_COMMIT");
+            if(!isValidCommit(gitCommit)) {
+                return null;
+            }
+
             final String nodeName = pipelineNode.getNodeName();
             final String workspace = pipelineNode.getWorkspace();
             return GitUtils.buildGitCommitAction(run, listener, envVars, gitCommit, nodeName, workspace);

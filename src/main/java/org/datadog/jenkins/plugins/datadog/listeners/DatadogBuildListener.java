@@ -333,7 +333,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             BuildData buildData;
             try {
                 buildData = new BuildData(run, null);
-            } catch (IOException | InterruptedException e) {
+            } catch (IOException | InterruptedException | NullPointerException e) {
                 DatadogUtilities.severe(logger, e, "Failed to parse deleted build data");
                 return;
             }
