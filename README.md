@@ -321,7 +321,7 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 
 Build status `jenkins.job.status` with the default tags: : `jenkins_url`, `job`, `node`, `user_id`
 
-## Issue Tracking
+## Issue tracking
 
 GitHub's built-in issue tracking system is used to track all issues relating to this plugin: [jenkinsci/datadog-plugin/issues][7].
 However, given how Jenkins plugins are hosted, there may be issues that are posted to JIRA as well. You can check [this jenkins issue][8] for those issue postings.
