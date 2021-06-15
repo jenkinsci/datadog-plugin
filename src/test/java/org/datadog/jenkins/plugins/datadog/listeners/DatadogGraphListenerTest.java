@@ -1,5 +1,6 @@
 package org.datadog.jenkins.plugins.datadog.listeners;
 
+import static org.datadog.jenkins.plugins.datadog.traces.CITags.Values.ORIGIN_CIAPP_PIPELINE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -503,6 +504,7 @@ public class DatadogGraphListenerTest {
         final DDSpan buildSpan = buildTrace.get(0);
         assertEquals("jenkins.build", buildSpan.getOperationName());
         assertEquals(SAMPLE_SERVICE_NAME, buildSpan.getServiceName());
+        assertEquals(ORIGIN_CIAPP_PIPELINE, buildSpan.getTag(CITags._DD_ORIGIN));
         assertEquals("pipelineIntegrationSuccess", buildSpan.getResourceName());
         assertEquals("ci", buildSpan.getType());
         assertEquals("anonymous", buildSpan.getTag(CITags.USER_NAME));
@@ -531,6 +533,7 @@ public class DatadogGraphListenerTest {
         final DDSpan stageSpan = pipelineTrace.get(0);
         assertEquals("jenkins.stage", stageSpan.getOperationName());
         assertEquals(SAMPLE_SERVICE_NAME, stageSpan.getServiceName());
+        assertEquals(ORIGIN_CIAPP_PIPELINE, stageSpan.getTag(CITags._DD_ORIGIN));
         assertEquals("test", stageSpan.getResourceName());
         assertEquals("ci", stageSpan.getType());
         assertEquals("test", stageSpan.getTag(stagePrefix + CITags._NAME));
@@ -552,6 +555,7 @@ public class DatadogGraphListenerTest {
         final DDSpan stepAtomSpan = pipelineTrace.get(1);
         assertEquals("jenkins.step", stepAtomSpan.getOperationName());
         assertEquals(SAMPLE_SERVICE_NAME, stepAtomSpan.getServiceName());
+        assertEquals(ORIGIN_CIAPP_PIPELINE, stepAtomSpan.getTag(CITags._DD_ORIGIN));
         assertEquals("Print Message", stepAtomSpan.getResourceName());
         assertEquals("ci", stepAtomSpan.getType());
         assertEquals("Print Message", stepAtomSpan.getTag(stepPrefix + CITags._NAME));

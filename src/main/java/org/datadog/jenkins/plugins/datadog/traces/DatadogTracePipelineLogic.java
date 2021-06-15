@@ -3,6 +3,7 @@ package org.datadog.jenkins.plugins.datadog.traces;
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getNormalizedResultForTraces;
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.toJson;
 import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.NodeType.PIPELINE;
+import static org.datadog.jenkins.plugins.datadog.traces.CITags.Values.ORIGIN_CIAPP_PIPELINE;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
@@ -279,6 +280,7 @@ public class DatadogTracePipelineLogic {
 
         final Map<String, Object> tags = new HashMap<>();
         tags.put(CITags.CI_PROVIDER_NAME, CI_PROVIDER);
+        tags.put(CITags._DD_ORIGIN, ORIGIN_CIAPP_PIPELINE);
         tags.put(prefix + CITags._NAME, current.getName());
         tags.put(prefix + CITags._NUMBER, current.getId());
         final String status = getNormalizedResultForTraces(getResult(current));

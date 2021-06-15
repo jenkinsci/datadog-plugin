@@ -2,6 +2,7 @@ package org.datadog.jenkins.plugins.datadog.traces;
 
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getNormalizedResultForTraces;
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.toJson;
+import static org.datadog.jenkins.plugins.datadog.traces.CITags.Values.ORIGIN_CIAPP_PIPELINE;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
@@ -122,6 +123,7 @@ public class DatadogTraceBuildLogic {
         buildSpan.setTag(CITags._DD_CI_INTERNAL, false);
         buildSpan.setTag(CITags._DD_CI_BUILD_LEVEL, buildLevel);
         buildSpan.setTag(CITags._DD_CI_LEVEL, buildLevel);
+        buildSpan.setTag(CITags._DD_ORIGIN, ORIGIN_CIAPP_PIPELINE);
         buildSpan.setTag(CITags.USER_NAME, buildData.getUserId());
         buildSpan.setTag(prefix + CITags._ID, buildData.getBuildTag(""));
         buildSpan.setTag(prefix + CITags._NUMBER, buildData.getBuildNumber(""));
