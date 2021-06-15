@@ -1,5 +1,6 @@
 package org.datadog.jenkins.plugins.datadog.listeners;
 
+import static org.datadog.jenkins.plugins.datadog.traces.CITags.Values.ORIGIN_CIAPP_PIPELINE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -112,6 +113,7 @@ public class DatadogBuildListenerIT {
         assertGitVariables(buildSpan, "master");
         assertEquals(BuildPipelineNode.NodeType.PIPELINE.getBuildLevel(), buildSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
         assertEquals(BuildPipelineNode.NodeType.PIPELINE.getBuildLevel(), buildSpan.getTag(CITags._DD_CI_LEVEL));
+        assertEquals(ORIGIN_CIAPP_PIPELINE, buildSpan.getTag(CITags._DD_ORIGIN));
         assertEquals("jenkins.build", buildSpan.getOperationName());
         assertEquals(SAMPLE_SERVICE_NAME, buildSpan.getServiceName());
         assertEquals("buildIntegrationSuccess", buildSpan.getResourceName());

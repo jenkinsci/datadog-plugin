@@ -13,6 +13,7 @@ public class CITags {
     @Deprecated
     public static final String _DD_CI_BUILD_LEVEL = "_dd.ci.build_level"; //Maintain retrocompatibility
     public static final String _DD_CI_STAGES = "_dd.ci.stages";
+    public static final String _DD_ORIGIN = "_dd.origin";
 
     public static final String _ID = ".id";
     public static final String _NAME = ".name";
@@ -46,4 +47,8 @@ public class CITags {
     public static final String JENKINS_RESULT = "jenkins.result";
 
     public static final String ERROR = "error";
+
+    public static class Values {
+        public static final String ORIGIN_CIAPP_PIPELINE = "ciapp-pipeline";
+    }
 }
