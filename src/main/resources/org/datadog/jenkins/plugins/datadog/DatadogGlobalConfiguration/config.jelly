@@ -29,18 +29,17 @@
           <f:textbox field="targetLogCollectionPort" default="${targetLogCollectionPort}" checkMethod="post" />
         </f:entry>
 
-        <f:entry title="Traces Collection Port (BETA)" field="targetTraceCollectionPortEntry">
-          <f:textbox field="targetTraceCollectionPort" default="${targetTraceCollectionPort}" checkMethod="post" />
-        </f:entry>
+        <f:section title="CI Visibility (BETA)">
+            <f:entry title="CI Instance Name" field="traceServiceNameEntry" description="The CI Instance name to categorize the collected traces.">
+                <f:textbox field="traceServiceName" default="${traceServiceName}" checkMethod="post" />
+            </f:entry>
 
-        <f:entry title="Traces Service Name (BETA)" field="traceServiceNameEntry">
-            <f:textbox field="traceServiceName" default="${traceServiceName}" checkMethod="post" />
-        </f:entry>
+            <f:entry title="Traces Collection Port" field="targetTraceCollectionPortEntry" description="The Datadog Agent port to send the traces.">
+                <f:textbox field="targetTraceCollectionPort" default="${targetTraceCollectionPort}" checkMethod="post" />
+            </f:entry>
 
-
-        <f:entry title="Traces (BETA)" description="Enable Trace Collection. Traces are only available if Datadog Agent is used to report to Datadog.">
-            <f:checkbox title="Enable Trace Collection (BETA)" field="collectBuildTraces" default="false" />
-        </f:entry>
+            <f:checkbox title="Enable CI Visibility" field="collectBuildTraces" default="false" />
+        </f:section>
 
     </f:radioBlock>
 
@@ -55,7 +54,9 @@
           <f:textbox field="targetLogIntakeURL" default="${targetLogIntakeURL}" checkMethod="post" />
         </f:entry>
 
-        <f:entry title="Datadog Traces (BETA)" description="Datadog Traces is only available using Datadog Agent."/>
+        <f:section title="CI Visibility (BETA)">
+            <f:entry title="Enable CI Visibility" description="CI Visibility is only available using Datadog Agent."/>
+        </f:section>
 
         <f:entry title="Datadog API Key" field="targetApiKeyEntry">
           <f:password field="targetApiKey" default="${targetApiKey}" checkMethod="post" />

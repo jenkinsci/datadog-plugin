@@ -382,9 +382,9 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @RequirePOST
     public FormValidation doCheckTraceServiceName(@QueryParameter("traceServiceName") final String traceServiceName) {
         if(StringUtils.isBlank(traceServiceName) && collectBuildTraces){
-            return FormValidation.error("Invalid Trace Service Name");
+            return FormValidation.error("Invalid CI Instance Name Name");
         }
-        return FormValidation.ok("Valid Trace Service Name");
+        return FormValidation.ok("Valid CI Instance Name");
     }
 
     /**
