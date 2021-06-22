@@ -32,6 +32,8 @@ import hudson.model.AbstractProject;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
 import jenkins.model.GlobalConfiguration;
+import net.sf.json.JSON;
+import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
@@ -78,7 +80,9 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static String EMIT_SYSTEM_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS";
     private static String EMIT_CONFIG_CHANGE_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_CONFIG_CHANGE_EVENTS";
     private static String COLLECT_BUILD_LOGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS";
-    private static String COLLECT_BUILD_TRACES_PROPERTY = "DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_TRACES";
+
+    private static String ENABLE_CI_VISIBILITY_PROPERTY = "DATADOG_JENKINS_PLUGIN_ENABLE_CI_VISIBILITY";
+    private static String CI_VISIBILITY_CI_INSTANCE_NAME_PROPERTY = "DATADOG_JENKINS_PLUGIN_CI_VISIBILITY_CI_INSTANCE_NAME";
 
     private static String DEFAULT_REPORT_WITH_VALUE = DatadogClient.ClientType.HTTP.name();
     private static String DEFAULT_TARGET_API_URL_VALUE = "https://api.datadoghq.com/api/";
@@ -231,9 +235,19 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.collectBuildLogs = Boolean.valueOf(collectBuildLogsEnvVar);
         }
 
-        String collectBuildTracesEnvVar = System.getenv(COLLECT_BUILD_TRACES_PROPERTY);
-        if(StringUtils.isNotBlank(collectBuildTracesEnvVar)){
-            this.collectBuildTraces = Boolean.valueOf(collectBuildTraces);
+        String enableCiVisibilityVar = System.getenv(ENABLE_CI_VISIBILITY_PROPERTY);
+        if(StringUtils.isNotBlank(enableCiVisibilityVar)){
+            final boolean enableCiVisibility = Boolean.valueOf(enableCiVisibilityVar);
+            if(!enableCiVisibility || DatadogClient.ClientType.DSD.name().equals(this.reportWith)) {
+                this.collectBuildTraces = enableCiVisibility;
+            } else {
+                logger.warning("CI Visibility can only be enabled using Datadog Agent mode.");
+            }
+        }
+
+        String ciVisibilityCiInstanceNameVar = System.getenv(CI_VISIBILITY_CI_INSTANCE_NAME_PROPERTY);
+        if(StringUtils.isNotBlank(ciVisibilityCiInstanceNameVar)) {
+            this.traceServiceName = ciVisibilityCiInstanceNameVar;
         }
     }
 
@@ -427,7 +441,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                 return false;
             }
 
-            this.setReportWith(formData.getString("reportWith"));
+            final String reportWith = formData.getString("reportWith");
+            this.setReportWith(reportWith);
             this.setTargetApiURL(formData.getString("targetApiURL"));
             this.setTargetLogIntakeURL(formData.getString("targetLogIntakeURL"));
             this.setTargetApiKey(formData.getString("targetApiKey"));
@@ -452,12 +467,21 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                 this.setTargetTraceCollectionPort(DEFAULT_TRACES_PORT_VALUE);
             }
 
-            final String traceServiceName = formData.getString("traceServiceName");
-            if(StringUtils.isNotBlank(traceServiceName)){
-                this.setTraceServiceName(traceServiceName);
-            } else {
-                this.setTraceServiceName(DEFAULT_TRACES_SERVICE_NAME);
+            final JSONObject ciVisibilityData = formData.getJSONObject("ciVisibilityData");
+            if(ciVisibilityData != null && !ciVisibilityData.isNullObject()) {
+                if(!"DSD".equalsIgnoreCase(reportWith)) {
+                    throw new FormException("CI Visibility can only be enabled using Datadog Agent mode.", "collectBuildTraces");
+                }
+
+                final String traceServiceName = ciVisibilityData.getString("traceServiceName");
+                if(StringUtils.isNotBlank(traceServiceName)){
+                    this.setTraceServiceName(traceServiceName);
+                } else {
+                    this.setTraceServiceName(DEFAULT_TRACES_SERVICE_NAME);
+                }
             }
+            this.setCollectBuildTraces(ciVisibilityData != null && !ciVisibilityData.isNullObject());
+
 
             if(StringUtils.isNotBlank(this.getHostname()) && !DatadogUtilities.isValidHostname(this.getHostname())){
                 throw new FormException("Your hostname is invalid, likely because it violates the format set in RFC 1123", "hostname");
@@ -474,7 +498,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.setEmitSystemEvents(formData.getBoolean("emitSystemEvents"));
             this.setEmitConfigChangeEvents(formData.getBoolean("emitConfigChangeEvents"));
             this.setCollectBuildLogs(formData.getBoolean("collectBuildLogs"));
-            this.setCollectBuildTraces(formData.getBoolean("collectBuildTraces"));
 
             //When form is saved....
             DatadogClient client = ClientFactory.getClient(DatadogClient.ClientType.valueOf(this.getReportWith()),
@@ -495,6 +518,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                 throw (FormException)e;
             }
 
+            e.printStackTrace(System.err);
             DatadogUtilities.severe(logger, e, "Failed to save configuration");
             return false;
         }

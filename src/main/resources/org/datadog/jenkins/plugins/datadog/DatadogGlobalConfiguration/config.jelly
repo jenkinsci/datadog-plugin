@@ -12,7 +12,7 @@
     tags they use. Views are always organized according to its owner class,
     so it should be straightforward to find them.
   -->
-  <f:section title="Datadog">
+  <f:section title="Datadog Plugin">
 
     <f:radioBlock title="Use the Datadog Agent to report to Datadog (recommended)" name="reportWith" value="DSD"
         checked="${instance.reportWithEquals('DSD')}" inline="true">
@@ -53,21 +53,21 @@
 
     </f:radioBlock>
 
-    <f:section title="Datadog Logs">
-        <f:entry>
-            <f:checkbox title="Enable Log Collection" field="collectBuildLogs" default="false" />
-        </f:entry>
-    </f:section>
+    <f:entry title="Logs">
+        <f:checkbox title="Enable Log Collection" field="collectBuildLogs" default="false" />
+    </f:entry>
 
-    <f:section title="Datadog CI Visibility">
-        <f:entry>
-            <f:checkbox title="Enable CI Visibility (BETA)" field="collectBuildTraces" default="false" />
-        </f:entry>
-
-        <f:entry title="CI Instance Name" field="traceServiceNameEntry">
-           <f:textbox field="traceServiceName" default="${traceServiceName}" checkMethod="post" />
-        </f:entry>
-    </f:section>
+    <f:entry title="CI Visibility">
+        <f:block>
+            <table>
+              <f:optionalBlock name="ciVisibilityData" field="collectBuildTraces" title="Enable CI Visibility (BETA)" default="false">
+                <f:entry title="CI Instance Name" field="traceServiceNameEntry">
+                  <f:textbox field="traceServiceName" default="${traceServiceName}" checkMethod="post" />
+                </f:entry>
+              </f:optionalBlock>
+            </table>
+          </f:block>
+    </f:entry>
 
     <tr>
         <td colspan="4">
