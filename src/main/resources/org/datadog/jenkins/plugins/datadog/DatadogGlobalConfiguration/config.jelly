@@ -12,12 +12,12 @@
     tags they use. Views are always organized according to its owner class,
     so it should be straightforward to find them.
   -->
-  <f:section title="Datadog Plugin">
+  <f:section title="Datadog">
 
     <f:radioBlock title="Use the Datadog Agent to report to Datadog (recommended)" name="reportWith" value="DSD"
         checked="${instance.reportWithEquals('DSD')}" inline="true">
 
-        <f:entry title="DogStatsD Host" field="targetHostEntry">
+        <f:entry title="Agent Host" field="targetHostEntry">
           <f:textbox field="targetHost" default="${targetHost}" checkMethod="post" />
         </f:entry>
 
@@ -25,21 +25,13 @@
           <f:textbox field="targetPort" default="${targetPort}" checkMethod="post" />
         </f:entry>
 
-        <f:entry title="Log Collection Port" field="targetLogCollectionPortEntry">
+        <f:entry title="Log Collection Port" field="targetLogCollectionPortEntry" description="(Optional)">
           <f:textbox field="targetLogCollectionPort" default="${targetLogCollectionPort}" checkMethod="post" />
         </f:entry>
 
-        <f:section title="CI Visibility (BETA)">
-            <f:entry title="CI Instance Name" field="traceServiceNameEntry" description="The CI Instance name to categorize the collected traces.">
-                <f:textbox field="traceServiceName" default="${traceServiceName}" checkMethod="post" />
-            </f:entry>
-
-            <f:entry title="Traces Collection Port" field="targetTraceCollectionPortEntry" description="The Datadog Agent port to send the traces.">
-                <f:textbox field="targetTraceCollectionPort" default="${targetTraceCollectionPort}" checkMethod="post" />
-            </f:entry>
-
-            <f:checkbox title="Enable CI Visibility" field="collectBuildTraces" default="false" />
-        </f:section>
+        <f:entry title="Traces Collection Port" field="targetTraceCollectionPortEntry" description="(Optional)">
+            <f:textbox field="targetTraceCollectionPort" default="${targetTraceCollectionPort}" checkMethod="post" />
+        </f:entry>
 
     </f:radioBlock>
 
@@ -54,16 +46,28 @@
           <f:textbox field="targetLogIntakeURL" default="${targetLogIntakeURL}" checkMethod="post" />
         </f:entry>
 
-        <f:section title="CI Visibility (BETA)">
-            <f:entry title="Enable CI Visibility" description="CI Visibility is only available using Datadog Agent."/>
-        </f:section>
-
         <f:entry title="Datadog API Key" field="targetApiKeyEntry">
           <f:password field="targetApiKey" default="${targetApiKey}" checkMethod="post" />
         </f:entry>
         <f:validateButton title="${%Test Key}" progress="${%Testing...}" method="testConnection" with="targetApiKey,targetApiURL" checkMethod="post" />
 
     </f:radioBlock>
+
+    <f:section title="Datadog Logs">
+        <f:entry>
+            <f:checkbox title="Enable Log Collection" field="collectBuildLogs" default="false" />
+        </f:entry>
+    </f:section>
+
+    <f:section title="Datadog CI Visibility">
+        <f:entry>
+            <f:checkbox title="Enable CI Visibility (BETA)" field="collectBuildTraces" default="false" />
+        </f:entry>
+
+        <f:entry title="CI Instance Name" field="traceServiceNameEntry">
+           <f:textbox field="traceServiceName" default="${traceServiceName}" checkMethod="post" />
+        </f:entry>
+    </f:section>
 
     <tr>
         <td colspan="4">
@@ -109,10 +113,6 @@
           <f:entry description="Send events on configuration changes to jobs or changes to jenkins. These events include changes by the system which may be frequent and redundant.">
             <f:checkbox title="Send Config Change events" field="emitConfigChangeEvents" default="false"/>
           </f:entry>
-        </f:entry>
-
-        <f:entry title="Logs" description="Enable Log Collection.">
-            <f:checkbox title="Enable Log Collection" field="collectBuildLogs" default="false" />
         </f:entry>
 
     </f:advanced>

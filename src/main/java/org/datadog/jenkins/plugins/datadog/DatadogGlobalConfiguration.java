@@ -290,7 +290,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             return FormValidation.error("The field must be configured in the form <http|https>://<url>/");
         }
 
-        return FormValidation.ok("Valid URL");
+        return FormValidation.ok();
     }
 
     /**
@@ -304,7 +304,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             return FormValidation.error("The field must be configured in the form <http|https>://<url>/");
         }
 
-        return FormValidation.ok("Valid URL");
+        return FormValidation.ok();
     }
 
     private boolean validateTargetHost(String targetHost) {
@@ -330,7 +330,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             return FormValidation.error("Invalid Host");
         }
 
-        return FormValidation.ok("Valid Host");
+        return FormValidation.ok();
     }
 
     public static boolean validatePort(String targetPort) {
@@ -348,7 +348,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             return FormValidation.error("Invalid Port");
         }
 
-        return FormValidation.ok("Valid Port");
+        return FormValidation.ok();
     }
 
     /**
@@ -362,7 +362,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             return FormValidation.error("Invalid Log Collection Port");
         }
 
-        return FormValidation.ok("Valid Log Collection Port");
+        return FormValidation.ok();
     }
 
     /**
@@ -376,7 +376,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             return FormValidation.error("Invalid Trace Collection Port");
         }
 
-        return FormValidation.ok("Valid Trace Collection Port");
+        return FormValidation.ok();
     }
 
     @RequirePOST
@@ -384,7 +384,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         if(StringUtils.isBlank(traceServiceName) && collectBuildTraces){
             return FormValidation.error("Invalid CI Instance Name Name");
         }
-        return FormValidation.ok("Valid CI Instance Name");
+        return FormValidation.ok();
     }
 
     /**
