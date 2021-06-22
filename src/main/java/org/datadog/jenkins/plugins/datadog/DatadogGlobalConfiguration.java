@@ -467,21 +467,28 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                 this.setTargetTraceCollectionPort(DEFAULT_TRACES_PORT_VALUE);
             }
 
-            final JSONObject ciVisibilityData = formData.getJSONObject("ciVisibilityData");
-            if(ciVisibilityData != null && !ciVisibilityData.isNullObject()) {
-                if(!"DSD".equalsIgnoreCase(reportWith)) {
-                    throw new FormException("CI Visibility can only be enabled using Datadog Agent mode.", "collectBuildTraces");
-                }
+            try {
+                final JSONObject ciVisibilityData = formData.getJSONObject("ciVisibilityData");
+                if(ciVisibilityData != null && !ciVisibilityData.isNullObject()) {
+                    if(!"DSD".equalsIgnoreCase(reportWith)) {
+                        throw new FormException("CI Visibility can only be enabled using Datadog Agent mode.", "collectBuildTraces");
+                    }
 
-                final String traceServiceName = ciVisibilityData.getString("traceServiceName");
-                if(StringUtils.isNotBlank(traceServiceName)){
-                    this.setTraceServiceName(traceServiceName);
-                } else {
-                    this.setTraceServiceName(DEFAULT_TRACES_SERVICE_NAME);
+                    final String traceServiceName = ciVisibilityData.getString("traceServiceName");
+                    if(StringUtils.isNotBlank(traceServiceName)){
+                        this.setTraceServiceName(traceServiceName);
+                    } else {
+                        this.setTraceServiceName(DEFAULT_TRACES_SERVICE_NAME);
+                    }
                 }
+                this.setCollectBuildTraces(ciVisibilityData != null && !ciVisibilityData.isNullObject());
+            } catch (Exception ex) {
+                // We disable CI Visibility if there is an error parsing the CI Visibility configuration
+                // because we don't want to prevent the user process the rest of the configuration.
+                this.setCollectBuildTraces(false);
+                this.setTraceServiceName(DEFAULT_TRACES_SERVICE_NAME);
+                DatadogUtilities.severe(logger, ex, "Failed to configure CI Visibility: " + ex.getMessage());
             }
-            this.setCollectBuildTraces(ciVisibilityData != null && !ciVisibilityData.isNullObject());
-
 
             if(StringUtils.isNotBlank(this.getHostname()) && !DatadogUtilities.isValidHostname(this.getHostname())){
                 throw new FormException("Your hostname is invalid, likely because it violates the format set in RFC 1123", "hostname");
