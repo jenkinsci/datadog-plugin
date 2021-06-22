@@ -40,8 +40,8 @@ public class DatadogBuildListenerIT {
     @Before
     public void beforeEach() throws IOException {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
-        cfg.setCollectBuildTraces(true);
-        cfg.setTraceServiceName(SAMPLE_SERVICE_NAME);
+        cfg.setEnableCiVisibility(true);
+        cfg.setCiInstanceName(SAMPLE_SERVICE_NAME);
         cfg.setGlobalJobTags(null);
         cfg.setGlobalTags(null);
         EnvVars.masterEnvVars.remove("ENV_VAR");
@@ -168,7 +168,7 @@ public class DatadogBuildListenerIT {
     @Test
     public void testTracesDisabled() throws Exception {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
-        cfg.setCollectBuildTraces(false);
+        cfg.setEnableCiVisibility(false);
 
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccess-notraces");
         project.scheduleBuild2(0).get();

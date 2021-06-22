@@ -48,8 +48,8 @@ public class DatadogTraceBuildLogic {
     }
 
     public void startBuildTrace(final BuildData buildData, Run run) {
-        if (!DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildTraces()) {
-            logger.fine("Trace Collection disabled");
+        if (!DatadogUtilities.getDatadogGlobalDescriptor().isEnabledCiVisibility()) {
+            logger.fine("CI Visibility is disabled");
             return;
         }
 
@@ -91,7 +91,7 @@ public class DatadogTraceBuildLogic {
     }
 
     public void finishBuildTrace(final BuildData buildData, final Run<?,?> run) {
-        if (!DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildTraces()) {
+        if (!DatadogUtilities.getDatadogGlobalDescriptor().isEnabledCiVisibility()) {
             return;
         }
 
@@ -115,7 +115,7 @@ public class DatadogTraceBuildLogic {
         final String prefix = BuildPipelineNode.NodeType.PIPELINE.getTagName();
         final String buildLevel = BuildPipelineNode.NodeType.PIPELINE.getBuildLevel();
         final long endTimeMicros = buildData.getEndTime(0L) * 1000;
-        buildSpan.setTag(DDTags.SERVICE_NAME, DatadogUtilities.getDatadogGlobalDescriptor().getTraceServiceName());
+        buildSpan.setTag(DDTags.SERVICE_NAME, DatadogUtilities.getDatadogGlobalDescriptor().getCiInstanceName());
         buildSpan.setTag(DDTags.SPAN_TYPE, "ci");
         buildSpan.setTag(CITags.CI_PROVIDER_NAME, "jenkins");
         buildSpan.setTag(DDTags.LANGUAGE_TAG_KEY, "");

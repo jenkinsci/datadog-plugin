@@ -69,7 +69,7 @@ public class ClientFactory {
         Integer targetPort = null;
         Integer targetLogCollectionPort = null;
         Integer targetTraceCollectionPort = null;
-        String traceServiceName = null;
+        String ciInstanceName = null;
         if(descriptor != null){
             reportWith = descriptor.getReportWith();
             targetApiURL = descriptor.getTargetApiURL();
@@ -79,9 +79,9 @@ public class ClientFactory {
             targetPort = descriptor.getTargetPort();
             targetLogCollectionPort = descriptor.getTargetLogCollectionPort();
             targetTraceCollectionPort = descriptor.getTargetTraceCollectionPort();
-            traceServiceName = descriptor.getTraceServiceName();
+            ciInstanceName = descriptor.getCiInstanceName();
         }
         return ClientFactory.getClient(DatadogClient.ClientType.valueOf(reportWith), targetApiURL, targetLogIntakeURL,
-                targetApiKey, targetHost, targetPort, targetLogCollectionPort, targetTraceCollectionPort, traceServiceName);
+                targetApiKey, targetHost, targetPort, targetLogCollectionPort, targetTraceCollectionPort, ciInstanceName);
     }
 }

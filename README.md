@@ -28,8 +28,8 @@ This plugin can be installed from the [Update Center][3] (found at `Manage Jenki
 
 There are two ways to configure your plugin to submit data to Datadog:
 
-* **RECOMMENDED**: Using a DogStatsD server / Datadog Agent that acts as a forwarder between Jenkins and Datadog.
-  - Build Logs collection only works with a full Datadog Agent installed.
+* **RECOMMENDED**: Using a Datadog Agent that acts as a forwarder between Jenkins and Datadog.
+  - Build Logs collection and CI Visibility only work with a full Datadog Agent installed.
   - For metrics submitted from an external host, the Datadog Agent requires the following configuration for DogStatsD: `dogstatsd_non_local_traffic: true`. This can be configured using the `datadog.yaml` [configuration file][17].
 * Sending data directly to Datadog through HTTP.
   - The HTTP client implementation used is blocking with a timeout duration of 1 minute. If there is a connection problem with Datadog, it may slow your Jenkins instance down.
@@ -40,7 +40,7 @@ The configuration can be done from the [plugin user interface](#plugin-user-inte
 
 To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure System` page on your Jenkins installation. Once there, scroll down to find the `Datadog Plugin` section:
 
-##### HTTP forwarding {#http-forwarding-plugin}
+##### HTTP forwarding
 
 1. Select the radio button next to **Use Datadog API URL and Key to report to Datadog** (selected by default).
 2. Paste your [Datadog API key][4] in the `API Key` textbox on the Jenkins configuration screen.
@@ -49,19 +49,20 @@ To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure S
 5. (optional) Enter your [Datadog Log Intake URL][15] and select "Enable Log Collection" in the Advanced tab.
 6. Save your configuration.
 
-##### DogStatsD forwarding {#dogstatsd-forwarding-plugin}
+##### Datadog Agent forwarding
 
 1. Select the radio button next to **Use the Datadog Agent to report to Datadog**.
 2. Specify your DogStatsD server `hostname` and `port`.
 3. (optional) Enter the hostname of the Jenkins server in the Advanced tab to include it with the events.
-4. (optional) Enter your Log Collection Port and configure [log collection](#log-collection-for-agents) and select "Enable Log Collection" in the Advanced tab.
+4. (optional) Enter your Log Collection Port and configure [log collection](#log-collection-for-agents) and select "Enable Log Collection".
+5. (optional) Enter your Trace Collection Port and enable "Enable CI Visibility", configuring your CI Instance name.    
 5. Save your configuration.
 
 #### Groovy script
 
 Configure your Datadog plugin to forward data through HTTP or DogStatsD using the Groovy scripts below. Configuring the plugin this way might be useful if you're running your Jenkins Master in a Docker container using the [official Jenkins Docker image][5] or any derivative that supports `plugins.txt` and Groovy init scripts.
 
-##### HTTP forwarding {#http-forwarding-groovy-script}
+##### HTTP forwarding using Groovy
 
 ```groovy
 import jenkins.model.*
@@ -85,7 +86,7 @@ d.setLogIntakeUrl('https://http-intake.logs.datadoghq.com/v1/input/')
 d.save()
 ```
 
-##### DogStatsD forwarding {#dogstatsd-forwarding-groovy-script}
+##### Datadog Agent forwarding using Groovy
 
 ```groovy
 import jenkins.model.*
@@ -99,7 +100,13 @@ d.setTargetHost('localhost')
 d.setTargetPort(8125)
 
 // If you want to collect logs
-d.setTargetLogCollectionPort(8125)
+d.setTargetLogCollectionPort(10518)
+d.setCollectBuildLogs(true)
+
+// If you want to enable CI Visibility
+d.setTargetTraceCollectionPort(8126)
+d.setEnableCiVisibility(true)
+d.setCiInstanceName("jenkins")
 
 // Customization, see dedicated section below
 d.setExcluded('job1,job2')
@@ -112,19 +119,25 @@ d.save()
 
 Configure your Datadog plugin using environment variables with the `DATADOG_JENKINS_PLUGIN_REPORT_WITH` variable, which specifies the report mechanism to use.
 
-##### HTTP forwarding {#http-forwarding-env}
+##### HTTP forwarding using environment variables
 
 1. Set the `DATADOG_JENKINS_PLUGIN_REPORT_WITH` variable to `HTTP`.
 2. Set the `DATADOG_JENKINS_PLUGIN_TARGET_API_URL` variable, which specifies the Datadog API endpoint (defaults to `https://api.datadoghq.com/api/`).
 3. Set the `DATADOG_JENKINS_PLUGIN_TARGET_API_KEY` variable, which specifies your [Datadog API key][4].
 4. (optional) Set the `DATADOG_JENKINS_PLUGIN_TARGET_LOG_INTAKE_URL` variable, which specifies the Datadog Log Intake URL (defaults to `https://http-intake.logs.datadoghq.com/v1/input/`).
 
-##### DogStatsD forwarding {#dogstatsd-forwarding-env}
+##### Datadog Agent forwarding using environment variables
 
 1. Set the `DATADOG_JENKINS_PLUGIN_REPORT_WITH` variable to `DSD`.
 2. Set the `DATADOG_JENKINS_PLUGIN_TARGET_HOST` variable, which specifies the DogStatsD server host (defaults to `localhost`).
 3. Set the `DATADOG_JENKINS_PLUGIN_TARGET_PORT` variable, which specifies the DogStatsD server port (defaults to `8125`).
-4. (optional) Set the `DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT` variable, which specifies the Datadog Agent log collection port.
+4. (optional) Log Collection:
+   - Set the `DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT` variable, which specifies the Datadog Agent log collection port.
+   - Set the `DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS` variable to `true` in order to enable log collection. 
+5. (optional) CI Visibility: 
+   - Set the `DATADOG_JENKINS_PLUGIN_TARGET_TRACE_COLLECTION_PORT` variable, which specifies the Datadog Agent trace collection port.
+   - Set the `DATADOG_JENKINS_PLUGIN_ENABLE_CI_VISIBILITY` variable to `true` in order to enable CI Visibility.
+   - Set the `DATADOG_JENKINS_PLUGIN_CI_VISIBILITY_CI_INSTANCE_NAME` variable, which specifies the name of the Jenkins instance for CI Visibility.
 
 #### Logging
 
@@ -171,14 +184,14 @@ To customize your global configuration, in Jenkins navigate to `Manage Jenkins -
 
 | Customization              | Description                                                                                                                                                                                                                                 | Environment variable                          |
 |----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|
-| Excluded jobs           | A comma-separated list of regex used to exclude job names from monitoring, for example: `susans-job,johns-.*,prod_folder/prod_release`.                                                                                                      | `DATADOG_JENKINS_PLUGIN_EXCLUDED`            |
-| Included jobs           | A comma-separated list of regex used to include job names for monitoring, for example: `susans-job,johns-.*,prod_folder/prod_release`.                                                                                                          | `DATADOG_JENKINS_PLUGIN_INCLUDED`            |
+| Hostname                   | A hostname to use in every event sent to Datadog.                                                                                                                                                                                           | `DATADOG_JENKINS_PLUGIN_HOSTNAME`             |
+| Excluded jobs              | A comma-separated list of regex used to exclude job names from monitoring, for example: `susans-job,johns-.*,prod_folder/prod_release`.                                                                                                      | `DATADOG_JENKINS_PLUGIN_EXCLUDED`            |
+| Included jobs              | A comma-separated list of regex used to include job names for monitoring, for example: `susans-job,johns-.*,prod_folder/prod_release`.                                                                                                          | `DATADOG_JENKINS_PLUGIN_INCLUDED`            |
 | Global tag file            | The path to a workspace file containing a comma separated list of tags (not compatible with pipeline jobs).                                                                                                                                   | `DATADOG_JENKINS_PLUGIN_GLOBAL_TAG_FILE`      |
 | Global tags                | A comma-separated list of tags to apply to all metrics, events, and service checks. Tags can include environment variables that are defined in the master jenkins instance.                                                                                                                                                          | `DATADOG_JENKINS_PLUGIN_GLOBAL_TAGS`          |
 | Global job tags            | A comma separated list of regex to match a job and a list of tags to apply to that job. Tags can include environment variables that are defined in the master jenkins instance. **Note**: Tags can reference match groups in the regex using the `$` symbol, for example: `(.*?)_job_(*?)_release, owner:$1, release_env:$2, optional:Tag3` | `DATADOG_JENKINS_PLUGIN_GLOBAL_JOB_TAGS`      |
 | Send security audit events | Submits the `Security Events Type` of events and metrics (enabled by default).                                                                                                                                                                | `DATADOG_JENKINS_PLUGIN_EMIT_SECURITY_EVENTS` |
-| Send system events         | Submits the `System Events Type` of events and metrics (enabled by default).                                                                                                                                                                  | `DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS`   |
-| Enable Log Collection      | Collect and Submit build logs (disabled by default).                                                                                                                                                                  | `DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS`   |
+| Send system events         | Submits the `System Events Type` of events and metrics (enabled by default).                                                                                                                                                                  | `DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS`   | | `DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS`   |
 
 ### Job customization
 

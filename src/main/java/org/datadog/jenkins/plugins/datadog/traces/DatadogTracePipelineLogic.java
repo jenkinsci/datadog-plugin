@@ -63,7 +63,7 @@ public class DatadogTracePipelineLogic {
     }
 
     public void execute(Run run, FlowNode flowNode) {
-        if (!DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildTraces()) {
+        if (!DatadogUtilities.getDatadogGlobalDescriptor().isEnabledCiVisibility()) {
             return;
         }
 
@@ -215,7 +215,7 @@ public class DatadogTracePipelineLogic {
         }
 
         spanBuilder
-                .withTag(DDTags.SERVICE_NAME, DatadogUtilities.getDatadogGlobalDescriptor().getTraceServiceName())
+                .withTag(DDTags.SERVICE_NAME, DatadogUtilities.getDatadogGlobalDescriptor().getCiInstanceName())
                 .withTag(DDTags.RESOURCE_NAME, current.getName())
                 .withTag(DDTags.SPAN_TYPE, "ci")
                 .withTag(DDTags.LANGUAGE_TAG_KEY, "");

@@ -59,8 +59,8 @@ public class DatadogGraphListenerTest {
     @Before
     public void beforeEach() throws IOException {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
-        cfg.setCollectBuildTraces(true);
-        cfg.setTraceServiceName(SAMPLE_SERVICE_NAME);
+        cfg.setEnableCiVisibility(true);
+        cfg.setCiInstanceName(SAMPLE_SERVICE_NAME);
         cfg.setGlobalJobTags(null);
         cfg.setGlobalTags(null);
         EnvVars.masterEnvVars.remove("ENV_VAR");
@@ -603,7 +603,7 @@ public class DatadogGraphListenerTest {
     @Test
     public void testIntegrationTracesDisabled() throws Exception{
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
-        cfg.setCollectBuildTraces(false);
+        cfg.setEnableCiVisibility(false);
 
         jenkinsRule.createOnlineSlave(new LabelAtom("windows"));
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationSuccess-notraces");

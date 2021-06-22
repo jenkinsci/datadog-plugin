@@ -147,7 +147,7 @@ public class DogStatsDClient implements DatadogClient {
             logger.warning("Datadog Log Collection Port is not set properly");
         }
 
-        if (DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildTraces()  && traceCollectionPort == null) {
+        if (DatadogUtilities.getDatadogGlobalDescriptor().isEnabledCiVisibility()  && traceCollectionPort == null) {
             logger.warning("Datadog Trace Collection Port is not set properly");
         }
         return;
@@ -253,7 +253,7 @@ public class DogStatsDClient implements DatadogClient {
             return true;
         }
 
-        if(!DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildTraces() || this.hostname == null || this.traceCollectionPort == null) {
+        if(!DatadogUtilities.getDatadogGlobalDescriptor().isEnabledCiVisibility() || this.hostname == null || this.traceCollectionPort == null) {
             return false;
         }
 

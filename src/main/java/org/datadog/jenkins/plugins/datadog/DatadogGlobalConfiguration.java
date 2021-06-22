@@ -32,8 +32,6 @@ import hudson.model.AbstractProject;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
 import jenkins.model.GlobalConfiguration;
-import net.sf.json.JSON;
-import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
@@ -90,7 +88,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static String DEFAULT_TARGET_HOST_VALUE = "localhost";
     private static Integer DEFAULT_TARGET_PORT_VALUE = 8125;
     private static Integer DEFAULT_TRACES_PORT_VALUE = 8126;
-    private static String DEFAULT_TRACES_SERVICE_NAME = "jenkins";
+    private static String DEFAULT_CI_INSTANCE_NAME = "jenkins";
     private static Integer DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE = null;
     private static boolean DEFAULT_EMIT_SECURITY_EVENTS_VALUE = true;
     private static boolean DEFAULT_EMIT_SYSTEM_EVENTS_VALUE = true;
@@ -106,7 +104,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private Integer targetPort = DEFAULT_TARGET_PORT_VALUE;
     private Integer targetLogCollectionPort = DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE;
     private Integer targetTraceCollectionPort = DEFAULT_TRACES_PORT_VALUE;
-    private String traceServiceName = DEFAULT_TRACES_SERVICE_NAME;
+    private String traceServiceName = DEFAULT_CI_INSTANCE_NAME;
     private String hostname = null;
     private String blacklist = null;
     private String whitelist = null;
@@ -474,19 +472,19 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                         throw new FormException("CI Visibility can only be enabled using Datadog Agent mode.", "collectBuildTraces");
                     }
 
-                    final String traceServiceName = ciVisibilityData.getString("traceServiceName");
-                    if(StringUtils.isNotBlank(traceServiceName)){
-                        this.setTraceServiceName(traceServiceName);
+                    final String ciInstanceName = ciVisibilityData.getString("traceServiceName");
+                    if(StringUtils.isNotBlank(ciInstanceName)){
+                        this.setCiInstanceName(ciInstanceName);
                     } else {
-                        this.setTraceServiceName(DEFAULT_TRACES_SERVICE_NAME);
+                        this.setCiInstanceName(DEFAULT_CI_INSTANCE_NAME);
                     }
                 }
-                this.setCollectBuildTraces(ciVisibilityData != null && !ciVisibilityData.isNullObject());
+                this.setEnableCiVisibility(ciVisibilityData != null && !ciVisibilityData.isNullObject());
             } catch (Exception ex) {
                 // We disable CI Visibility if there is an error parsing the CI Visibility configuration
                 // because we don't want to prevent the user process the rest of the configuration.
-                this.setCollectBuildTraces(false);
-                this.setTraceServiceName(DEFAULT_TRACES_SERVICE_NAME);
+                this.setEnableCiVisibility(false);
+                this.setCiInstanceName(DEFAULT_CI_INSTANCE_NAME);
                 DatadogUtilities.severe(logger, ex, "Failed to configure CI Visibility: " + ex.getMessage());
             }
 
@@ -509,7 +507,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             //When form is saved....
             DatadogClient client = ClientFactory.getClient(DatadogClient.ClientType.valueOf(this.getReportWith()),
                     this.getTargetApiURL(), this.getTargetLogIntakeURL(), this.getTargetApiKey(), this.getTargetHost(),
-                    this.getTargetPort(), this.getTargetLogCollectionPort(), this.getTargetTraceCollectionPort(), this.getTraceServiceName());
+                    this.getTargetPort(), this.getTargetLogCollectionPort(), this.getTargetTraceCollectionPort(), this.getCiInstanceName());
                 // ...reinitialize the DatadogClient
             if(client == null) {
                 return false;
@@ -692,7 +690,9 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * Getter function for the traceServiceName global configuration.
      *
      * @return a String containing the traceServiceName global configuration.
+     * @Deprecated use getCiInstanceName.
      */
+    @Deprecated
     public String getTraceServiceName() {
         return traceServiceName;
     }
@@ -701,10 +701,30 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * Setter function for the traceServiceName global configuration.
      *
      * @param traceServiceName = A string containing the Trace Service Name
+     * @deprecated Use setCiInstanceName.
      */
+    @Deprecated
     @DataBoundSetter
     public void setTraceServiceName(String traceServiceName) {
         this.traceServiceName = traceServiceName;
+    }
+
+    /**
+     * Getter function for the traceServiceName global configuration.
+     *
+     * @return a String containing the traceServiceName global configuration.
+     */
+    public String getCiInstanceName() {
+        return this.traceServiceName;
+    }
+
+    /**
+     * Setter function for the traceServiceName global configuration.
+     *
+     * @param ciInstanceName = A string containing the CI Instance Name
+     */
+    public void setCiInstanceName(String ciInstanceName) {
+        this.traceServiceName = ciInstanceName;
     }
 
     /**
@@ -938,7 +958,9 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
     /**
      * @return - A {@link Boolean} indicating if the user has configured Datadog to collect traces.
+     * @deprecated Use isEnabledCiVisibility
      */
+    @Deprecated
     public boolean isCollectBuildTraces() {
         return collectBuildTraces;
     }
@@ -947,9 +969,29 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * Set the checkbox in the UI, used for Jenkins data binding
      *
      * @param collectBuildTraces - The checkbox status (checked/unchecked)
+     * @deprecated Use setEnableCiVisibility
      */
     @DataBoundSetter
+    @Deprecated
     public void setCollectBuildTraces(boolean collectBuildTraces) {
         this.collectBuildTraces = collectBuildTraces;
+    }
+
+    /**
+     * @return - A {@link Boolean} indicating if the user has configured Datadog to enable CI Visibility.
+     */
+    public boolean isEnabledCiVisibility() {
+        return this.collectBuildTraces;
+    }
+
+    /**
+     * Set the checkbox in the UI, used for Jenkins data binding to enable CI Visibility
+     *
+     * @param enableCiVisibility - The checkbox status (checked/unchecked)
+     * @deprecated Use setEnableCiVisibility
+     */
+    @DataBoundSetter
+    public void setEnableCiVisibility(boolean enableCiVisibility) {
+        this.collectBuildTraces = enableCiVisibility;
     }
 }
