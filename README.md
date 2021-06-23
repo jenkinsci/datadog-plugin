@@ -165,6 +165,8 @@ datadog(collectLogs: true, tags: ["foo:bar", "bar:baz"]){
 }
 ```
 
+**Note**: Pipeline customizations are only registered after a job has started. Tags specified in pipeline customization will not be associated with `jenkins.job.started`.
+
 ### Global customization
 
 To customize your global configuration, in Jenkins navigate to `Manage Jenkins -> Configure System` then click the **Advanced** button. The following options are available:
