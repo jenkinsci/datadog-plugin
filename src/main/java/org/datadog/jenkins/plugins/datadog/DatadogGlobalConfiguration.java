@@ -523,7 +523,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                 throw (FormException)e;
             }
 
-            e.printStackTrace(System.err);
             DatadogUtilities.severe(logger, e, "Failed to save configuration");
             return false;
         }
