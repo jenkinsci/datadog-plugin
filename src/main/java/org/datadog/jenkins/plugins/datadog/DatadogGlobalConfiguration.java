@@ -236,10 +236,10 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         String enableCiVisibilityVar = System.getenv(ENABLE_CI_VISIBILITY_PROPERTY);
         if(StringUtils.isNotBlank(enableCiVisibilityVar)){
             final boolean enableCiVisibility = Boolean.valueOf(enableCiVisibilityVar);
-            if(!enableCiVisibility || DatadogClient.ClientType.DSD.name().equals(this.reportWith)) {
-                this.collectBuildTraces = enableCiVisibility;
-            } else {
+            if(enableCiVisibility && DatadogClient.ClientType.HTTP.name().equals(this.reportWith)) {
                 logger.warning("CI Visibility can only be enabled using Datadog Agent mode.");
+            } else {
+                this.collectBuildTraces = enableCiVisibility;
             }
         }
 
