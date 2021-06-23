@@ -366,7 +366,8 @@ public class DatadogBuildListener extends RunListener<Run> {
 
             logger.fine("End DatadogBuildListener#onDeleted");
         } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "Failed to process build deletion");
+            String text = "Failed to process build deletion: " + e;
+            logger.fine(text);
         }
     }
 
