@@ -467,19 +467,23 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
             try {
                 final JSONObject ciVisibilityData = formData.getJSONObject("ciVisibilityData");
-                if(ciVisibilityData != null && !ciVisibilityData.isNullObject()) {
-                    if(!"DSD".equalsIgnoreCase(reportWith)) {
+                if (ciVisibilityData != null && !ciVisibilityData.isNullObject()) {
+                    if (!"DSD".equalsIgnoreCase(reportWith)) {
                         throw new FormException("CI Visibility can only be enabled using Datadog Agent mode.", "collectBuildTraces");
                     }
 
                     final String ciInstanceName = ciVisibilityData.getString("traceServiceName");
-                    if(StringUtils.isNotBlank(ciInstanceName)){
+                    if (StringUtils.isNotBlank(ciInstanceName)) {
                         this.setCiInstanceName(ciInstanceName);
                     } else {
                         this.setCiInstanceName(DEFAULT_CI_INSTANCE_NAME);
                     }
                 }
                 this.setEnableCiVisibility(ciVisibilityData != null && !ciVisibilityData.isNullObject());
+
+            } catch (FormException ex) {
+                //If it is the validation exception, we throw it to the next level.
+                throw ex;
             } catch (Exception ex) {
                 // We disable CI Visibility if there is an error parsing the CI Visibility configuration
                 // because we don't want to prevent the user process the rest of the configuration.
