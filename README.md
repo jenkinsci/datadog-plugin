@@ -33,6 +33,7 @@ There are two ways to configure your plugin to submit data to Datadog:
   - For metrics submitted from an external host, the Datadog Agent requires the following configuration for DogStatsD: `dogstatsd_non_local_traffic: true`. This can be configured using the `datadog.yaml` [configuration file][17].
 * Sending data directly to Datadog through HTTP.
   - The HTTP client implementation used is blocking with a timeout duration of 1 minute. If there is a connection problem with Datadog, it may slow your Jenkins instance down.
+  - This method does not currently support trace collection to be used with the "CI Visibility" product.
 
 The configuration can be done from the [plugin user interface](#plugin-user-interface) with a [Groovy script](#groovy-script), or through [environment variables](#environment-variables).
 
