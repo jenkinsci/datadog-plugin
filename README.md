@@ -133,10 +133,10 @@ Configure your Datadog plugin using environment variables with the `DATADOG_JENK
 3. Set the `DATADOG_JENKINS_PLUGIN_TARGET_PORT` variable, which specifies the DogStatsD server port (defaults to `8125`).
 4. (optional) Log Collection:
    - Set the `DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT` variable, which specifies the Datadog Agent log collection port.
-   - Set the `DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS` variable to `true` in order to enable log collection. 
-5. (optional) CI Visibility: 
+   - Set the `DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS` variable to `true` in order to enable log collection (disabled by default). 
+5. (optional) CI Visibility (trace collection): 
    - Set the `DATADOG_JENKINS_PLUGIN_TARGET_TRACE_COLLECTION_PORT` variable, which specifies the Datadog Agent trace collection port (defaults to `8126`).
-   - Set the `DATADOG_JENKINS_PLUGIN_ENABLE_CI_VISIBILITY` variable to `true` in order to enable CI Visibility.
+   - Set the `DATADOG_JENKINS_PLUGIN_ENABLE_CI_VISIBILITY` variable to `true` in order to enable CI Visibility (disabled by default).
    - Set the `DATADOG_JENKINS_PLUGIN_CI_VISIBILITY_CI_INSTANCE_NAME` variable, which specifies the name of the Jenkins instance for CI Visibility (defaults to `jenkins`).
 
 #### Logging
