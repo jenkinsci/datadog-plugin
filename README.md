@@ -30,7 +30,7 @@ There are two ways to configure your plugin to submit data to Datadog:
 
 * **RECOMMENDED**: Using a Datadog Agent that acts as a forwarder between Jenkins and Datadog.
   - When using a DogStatsD server instead of a full Datadog Agent, only metrics and events are supported.
-  - For metrics submitted from an external host, the Datadog Agent requires the following configuration for DogStatsD: `dogstatsd_non_local_traffic: true`. This can be configured using the `datadog.yaml` [configuration file][17].
+  - For data submitted from an external host, the Datadog Agent requires the following configuration: `dogstatsd_non_local_traffic: true` and `apm_non_local_traffic: true`. This can be configured using the `datadog.yaml` [configuration file][17].
 * Sending data directly to Datadog through HTTP.
   - The HTTP client implementation used is blocking with a timeout duration of 1 minute. If there is a connection problem with Datadog, it may slow your Jenkins instance down.
   - This method does not currently support trace collection to be used with the "CI Visibility" product.
@@ -53,9 +53,9 @@ To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure S
 ##### Datadog Agent forwarding
 
 1. Select the radio button next to **Use the Datadog Agent to report to Datadog**.
-2. Specify your DogStatsD server `hostname` and `port`.
+2. Specify your Datadog Agent `hostname` and `port`.
 3. (optional) Enter the hostname of the Jenkins server in the Advanced tab to include it with the events.
-4. (optional) Enter your Log Collection Port and configure [log collection](#log-collection-for-agents) and select "Enable Log Collection".
+4. (optional) Enter your Log Collection Port, configure [log collection](#log-collection-for-agents) in the Datadog Agent, and select "Enable Log Collection".
 5. (optional) Enter your Trace Collection Port and select "Enable CI Visibility", optionally configuring your CI Instance name.
 5. Save your configuration.
 
@@ -133,6 +133,7 @@ Configure your Datadog plugin using environment variables with the `DATADOG_JENK
 2. Set the `DATADOG_JENKINS_PLUGIN_TARGET_HOST` variable, which specifies the DogStatsD server host (defaults to `localhost`).
 3. Set the `DATADOG_JENKINS_PLUGIN_TARGET_PORT` variable, which specifies the DogStatsD server port (defaults to `8125`).
 4. (optional) Log Collection:
+   -  Enable [log collection](#log-collection-for-agents) in the Datadog Agent.
    - Set the `DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT` variable, which specifies the Datadog Agent log collection port.
    - Set the `DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS` variable to `true` in order to enable log collection (disabled by default). 
 5. (optional) CI Visibility (trace collection): 
