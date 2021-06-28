@@ -271,7 +271,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
         final DogStatsDClient.ConnectivityResult dogStatsDConnectivity = DogStatsDClient.checkConnectivity(targetHost, Integer.parseInt(targetPort));
         if(dogStatsDConnectivity.isError()) {
-            return FormValidation.error("Connectivity to " + targetHost + ":" + targetPort + " FAILED: " + dogStatsDConnectivity.getErrorMessage());
+            return FormValidation.error("Connection to " + targetHost + ":" + targetPort + " FAILED: " + dogStatsDConnectivity.getErrorMessage());
         }
 
         if(targetLogCollectionPort != null && !targetLogCollectionPort.isEmpty()) {
@@ -281,7 +281,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
             final DogStatsDClient.ConnectivityResult logsConnectivity = DogStatsDClient.checkConnectivity(targetHost, Integer.parseInt(targetLogCollectionPort));
             if(logsConnectivity.isError()) {
-                return FormValidation.error("Connectivity to " + targetHost + ":" + targetLogCollectionPort + " FAILED: " + logsConnectivity.getErrorMessage());
+                return FormValidation.error("Connection to " + targetHost + ":" + targetLogCollectionPort + " FAILED: " + logsConnectivity.getErrorMessage());
             }
         }
 
@@ -292,7 +292,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
             final DogStatsDClient.ConnectivityResult traceConnectivity = DogStatsDClient.checkConnectivity(targetHost, Integer.parseInt(targetTraceCollectionPort));
             if(traceConnectivity.isError()) {
-                return FormValidation.error("Connectivity to " + targetHost + ":" + targetTraceCollectionPort + " FAILED: " + traceConnectivity.getErrorMessage());
+                return FormValidation.error("Connection to " + targetHost + ":" + targetTraceCollectionPort + " FAILED: " + traceConnectivity.getErrorMessage());
             }
         }
         return FormValidation.ok("Connectivity with the Datadog Agent SUCCESS!");
