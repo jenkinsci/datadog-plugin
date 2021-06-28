@@ -37,6 +37,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogHttpClient;
+import org.datadog.jenkins.plugins.datadog.clients.DogStatsDClient;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -87,7 +88,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static String DEFAULT_TARGET_LOG_INTAKE_URL_VALUE = "https://http-intake.logs.datadoghq.com/v1/input/";
     private static String DEFAULT_TARGET_HOST_VALUE = "localhost";
     private static Integer DEFAULT_TARGET_PORT_VALUE = 8125;
-    private static Integer DEFAULT_TRACES_PORT_VALUE = 8126;
+    private static Integer DEFAULT_TRACE_COLLECTION_PORT_VALUE = null;
     private static String DEFAULT_CI_INSTANCE_NAME = "jenkins";
     private static Integer DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE = null;
     private static boolean DEFAULT_EMIT_SECURITY_EVENTS_VALUE = true;
@@ -103,7 +104,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private String targetHost = DEFAULT_TARGET_HOST_VALUE;
     private Integer targetPort = DEFAULT_TARGET_PORT_VALUE;
     private Integer targetLogCollectionPort = DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE;
-    private Integer targetTraceCollectionPort = DEFAULT_TRACES_PORT_VALUE;
+    private Integer targetTraceCollectionPort = DEFAULT_TRACE_COLLECTION_PORT_VALUE;
     private String traceServiceName = DEFAULT_CI_INSTANCE_NAME;
     private String hostname = null;
     private String blacklist = null;
@@ -247,6 +248,54 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         if(StringUtils.isNotBlank(ciVisibilityCiInstanceNameVar)) {
             this.traceServiceName = ciVisibilityCiInstanceNameVar;
         }
+    }
+
+    /**
+     * Check the connectivity with the Datadog Agent based on the data set in the form.
+     * It is used in the config.jelly resource file. See method="checkAgentConnectivity"
+     *
+     * @param targetHost
+     * @param targetPort
+     * @param targetLogCollectionPort
+     * @param targetTraceCollectionPort
+     * @return a FormValidation object used to display a message to the user on the configuration
+     */
+    public FormValidation doCheckAgentConnectivity(@QueryParameter("targetHost") String targetHost, @QueryParameter("targetPort") String targetPort, @QueryParameter("targetLogCollectionPort") String targetLogCollectionPort, @QueryParameter("targetTraceCollectionPort") String targetTraceCollectionPort) {
+        if(targetHost == null || targetHost.isEmpty()) {
+            return FormValidation.error("The Agent host cannot be empty.");
+        }
+
+        if(!validatePort(targetPort)) {
+            return FormValidation.error("The DogStatsD port is not valid");
+        }
+
+        final DogStatsDClient.ConnectivityResult dogStatsDConnectivity = DogStatsDClient.checkConnectivity(targetHost, Integer.parseInt(targetPort));
+        if(dogStatsDConnectivity.isError()) {
+            return FormValidation.error("Connectivity to " + targetHost + ":" + targetPort + " FAILED: " + dogStatsDConnectivity.getErrorMessage());
+        }
+
+        if(targetLogCollectionPort != null && !targetLogCollectionPort.isEmpty()) {
+            if(!validatePort(targetLogCollectionPort)) {
+                return FormValidation.error("The Logs Collection port is not valid");
+            }
+
+            final DogStatsDClient.ConnectivityResult logsConnectivity = DogStatsDClient.checkConnectivity(targetHost, Integer.parseInt(targetLogCollectionPort));
+            if(logsConnectivity.isError()) {
+                return FormValidation.error("Connectivity to " + targetHost + ":" + targetLogCollectionPort + " FAILED: " + logsConnectivity.getErrorMessage());
+            }
+        }
+
+        if(targetTraceCollectionPort != null && !targetTraceCollectionPort.isEmpty()) {
+            if(!validatePort(targetTraceCollectionPort)) {
+                return FormValidation.error("The Trace Collection port is not valid");
+            }
+
+            final DogStatsDClient.ConnectivityResult traceConnectivity = DogStatsDClient.checkConnectivity(targetHost, Integer.parseInt(targetTraceCollectionPort));
+            if(traceConnectivity.isError()) {
+                return FormValidation.error("Connectivity to " + targetHost + ":" + targetTraceCollectionPort + " FAILED: " + traceConnectivity.getErrorMessage());
+            }
+        }
+        return FormValidation.ok("Connectivity with the Datadog Agent SUCCESS!");
     }
 
     /**
@@ -462,7 +511,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             if(validatePort(traceCollectionPortStr)){
                 this.setTargetTraceCollectionPort(formData.getInt("targetTraceCollectionPort"));
             }else{
-                this.setTargetTraceCollectionPort(DEFAULT_TRACES_PORT_VALUE);
+                this.setTargetTraceCollectionPort(null);
             }
 
             try {
@@ -470,6 +519,10 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                 if (ciVisibilityData != null && !ciVisibilityData.isNullObject()) {
                     if (!"DSD".equalsIgnoreCase(reportWith)) {
                         throw new FormException("CI Visibility can only be enabled using Datadog Agent mode.", "collectBuildTraces");
+                    }
+
+                    if(!validatePort(traceCollectionPortStr)) {
+                        throw new FormException("CI Visibility requires a valid Trace Collection port", "collectBuildTraces");
                     }
 
                     final String ciInstanceName = ciVisibilityData.getString("traceServiceName");
@@ -506,6 +559,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.setEmitSecurityEvents(formData.getBoolean("emitSecurityEvents"));
             this.setEmitSystemEvents(formData.getBoolean("emitSystemEvents"));
             this.setEmitConfigChangeEvents(formData.getBoolean("emitConfigChangeEvents"));
+
+            boolean collectBuildLogs = formData.getBoolean("collectBuildLogs");
+            if ("DSD".equalsIgnoreCase(reportWith) && collectBuildLogs && !validatePort(logCollectionPortStr)) {
+                throw new FormException("Logs Collection requires a valid Log Collection port", "collectBuildLogs");
+            }
             this.setCollectBuildLogs(formData.getBoolean("collectBuildLogs"));
 
             //When form is saved....
