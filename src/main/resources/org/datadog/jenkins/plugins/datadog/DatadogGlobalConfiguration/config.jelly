@@ -33,7 +33,7 @@
             <f:textbox field="targetTraceCollectionPort" default="${targetTraceCollectionPort}" checkMethod="post" />
         </f:entry>
 
-        <f:validateButton title="${%Check Connectivity with the Datadog Agent}" progress="${%Checking...}" method="checkAgentConnectivity" with="targetHost,targetPort,targetLogCollectionPort,targetTraceCollectionPort" />
+        <f:validateButton title="${%Check connectivity with the Datadog Agent}" progress="${%Checking...}" method="checkAgentConnectivity" with="targetHost,targetPort,targetLogCollectionPort,targetTraceCollectionPort" />
     </f:radioBlock>
 
     <f:radioBlock title="Use Datadog API URL and Key to report to Datadog (not recommended)" name="reportWith" value="HTTP"
