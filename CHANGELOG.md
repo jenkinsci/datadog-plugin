@@ -9,6 +9,7 @@ Enabling [CI Visibility](https://docs.datadoghq.com/continuous_integration/) in 
 ### Changes
 * [Added] Enable CI Visibility UI. See [#221](https://github.com/jenkinsci/datadog-plugin/pull/221)
 * [Added] Add `_dd.origin` tag to Jenkins traces. See [#218](https://github.com/jenkinsci/datadog-plugin/pull/218)
+* [Fixed] Reinitialize Datadog Client when tracer collection port is updated. See [#223](https://github.com/jenkinsci/datadog-plugin/pull/223)  
 * [Fixed] Reduce log level for `onDelete` listener method. See [#219](https://github.com/jenkinsci/datadog-plugin/pull/219)
 
 ## 2.13.0 / 2021-06-14
