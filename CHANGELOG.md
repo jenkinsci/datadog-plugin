@@ -1,5 +1,16 @@
 Changes
 =======
+## 3.0.0 / 2021-06-29
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.13.0...datadog-3.0.0
+
+Enabling [CI Visibility](https://docs.datadoghq.com/continuous_integration/) in the Jenkins plugin.
+
+### Changes
+* [Added] Enable CI Visibility UI. See [#221](https://github.com/jenkinsci/datadog-plugin/pull/221)
+* [Added] Add `_dd.origin` tag to Jenkins traces. See [#218](https://github.com/jenkinsci/datadog-plugin/pull/218)
+* [Fixed] Reduce log level for `onDelete` listener method. See [#219](https://github.com/jenkinsci/datadog-plugin/pull/219)
+
 ## 2.13.0 / 2021-06-14
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.12.0...datadog-2.13.0
