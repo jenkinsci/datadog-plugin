@@ -177,7 +177,9 @@ public class DogStatsDClient implements DatadogClient {
 
         if ((StringUtils.equals(getHostname(), newInstance.getHostname())
         && (((getPort() == null) && (newInstance.getPort() == null)) || (null != getPort() && port.equals(newInstance.getPort())))
-        && (((getLogCollectionPort() == null) && (newInstance.getLogCollectionPort() == null)) || (null != getLogCollectionPort() && logCollectionPort.equals(newInstance.getLogCollectionPort()))))){
+        && (((getLogCollectionPort() == null) && (newInstance.getLogCollectionPort() == null)) || (null != getLogCollectionPort() && logCollectionPort.equals(newInstance.getLogCollectionPort())))
+        && (((getTraceCollectionPort() == null) && (newInstance.getTraceCollectionPort() == null)) || (null != getTraceCollectionPort() && traceCollectionPort.equals(newInstance.getTraceCollectionPort())))
+        )){
            return true;
         }
 
@@ -189,6 +191,7 @@ public class DogStatsDClient implements DatadogClient {
         int result = hostname != null ? hostname.hashCode() : 0;
         result = 47 * result + (port != null ? port.hashCode() : 0);
         result = 47 * result + (logCollectionPort != null ? logCollectionPort.hashCode() : 0);
+        result = 47 * result + (traceCollectionPort != null ? traceCollectionPort.hashCode() : 0);
         return result;
     }
 
@@ -343,6 +346,10 @@ public class DogStatsDClient implements DatadogClient {
     @Override
     public void setLogCollectionPort(Integer logCollectionPort) {
         this.logCollectionPort = logCollectionPort;
+    }
+
+    public Integer getTraceCollectionPort() {
+        return traceCollectionPort;
     }
 
     @Override
