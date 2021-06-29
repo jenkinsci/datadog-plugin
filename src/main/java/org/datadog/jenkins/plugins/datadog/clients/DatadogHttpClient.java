@@ -151,7 +151,7 @@ public class DatadogHttpClient implements DatadogClient {
             }
         }
 
-        if (DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildTraces() ) {
+        if (DatadogUtilities.getDatadogGlobalDescriptor().isEnabledCiVisibility() ) {
             logger.warning("Traces Collection only can be used if Datadog Agent reports to Datadog.");
         }
 

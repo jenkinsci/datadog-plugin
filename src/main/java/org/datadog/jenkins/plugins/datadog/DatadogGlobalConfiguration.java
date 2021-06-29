@@ -37,6 +37,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogHttpClient;
+import org.datadog.jenkins.plugins.datadog.clients.DogStatsDClient;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -78,16 +79,17 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static String EMIT_SYSTEM_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS";
     private static String EMIT_CONFIG_CHANGE_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_CONFIG_CHANGE_EVENTS";
     private static String COLLECT_BUILD_LOGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS";
-    private static String COLLECT_BUILD_TRACES_PROPERTY = "DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_TRACES";
+
+    private static String ENABLE_CI_VISIBILITY_PROPERTY = "DATADOG_JENKINS_PLUGIN_ENABLE_CI_VISIBILITY";
+    private static String CI_VISIBILITY_CI_INSTANCE_NAME_PROPERTY = "DATADOG_JENKINS_PLUGIN_CI_VISIBILITY_CI_INSTANCE_NAME";
 
     private static String DEFAULT_REPORT_WITH_VALUE = DatadogClient.ClientType.HTTP.name();
     private static String DEFAULT_TARGET_API_URL_VALUE = "https://api.datadoghq.com/api/";
     private static String DEFAULT_TARGET_LOG_INTAKE_URL_VALUE = "https://http-intake.logs.datadoghq.com/v1/input/";
     private static String DEFAULT_TARGET_HOST_VALUE = "localhost";
     private static Integer DEFAULT_TARGET_PORT_VALUE = 8125;
-    private static Integer DEFAULT_TRACES_PORT_VALUE = 8126;
-    private static String DEFAULT_TRACES_SERVICE_NAME = "jenkins";
-    private static Integer DEFAULT_TARGET_TRACE_COLLECTION_PORT_VALUE = null;
+    private static Integer DEFAULT_TRACE_COLLECTION_PORT_VALUE = null;
+    private static String DEFAULT_CI_INSTANCE_NAME = "jenkins";
     private static Integer DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE = null;
     private static boolean DEFAULT_EMIT_SECURITY_EVENTS_VALUE = true;
     private static boolean DEFAULT_EMIT_SYSTEM_EVENTS_VALUE = true;
@@ -102,8 +104,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private String targetHost = DEFAULT_TARGET_HOST_VALUE;
     private Integer targetPort = DEFAULT_TARGET_PORT_VALUE;
     private Integer targetLogCollectionPort = DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE;
-    private Integer targetTraceCollectionPort = DEFAULT_TARGET_TRACE_COLLECTION_PORT_VALUE;
-    private String traceServiceName = DEFAULT_TRACES_SERVICE_NAME;
+    private Integer targetTraceCollectionPort = DEFAULT_TRACE_COLLECTION_PORT_VALUE;
+    private String traceServiceName = DEFAULT_CI_INSTANCE_NAME;
     private String hostname = null;
     private String blacklist = null;
     private String whitelist = null;
@@ -232,10 +234,68 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.collectBuildLogs = Boolean.valueOf(collectBuildLogsEnvVar);
         }
 
-        String collectBuildTracesEnvVar = System.getenv(COLLECT_BUILD_TRACES_PROPERTY);
-        if(StringUtils.isNotBlank(collectBuildTracesEnvVar)){
-            this.collectBuildTraces = Boolean.valueOf(collectBuildTraces);
+        String enableCiVisibilityVar = System.getenv(ENABLE_CI_VISIBILITY_PROPERTY);
+        if(StringUtils.isNotBlank(enableCiVisibilityVar)){
+            final boolean enableCiVisibility = Boolean.valueOf(enableCiVisibilityVar);
+            if(enableCiVisibility && DatadogClient.ClientType.HTTP.name().equals(this.reportWith)) {
+                logger.warning("CI Visibility can only be enabled using Datadog Agent mode.");
+            } else {
+                this.collectBuildTraces = enableCiVisibility;
+            }
         }
+
+        String ciVisibilityCiInstanceNameVar = System.getenv(CI_VISIBILITY_CI_INSTANCE_NAME_PROPERTY);
+        if(StringUtils.isNotBlank(ciVisibilityCiInstanceNameVar)) {
+            this.traceServiceName = ciVisibilityCiInstanceNameVar;
+        }
+    }
+
+    /**
+     * Check the connectivity with the Datadog Agent based on the data set in the form.
+     * It is used in the config.jelly resource file. See method="checkAgentConnectivity"
+     *
+     * @param targetHost
+     * @param targetPort
+     * @param targetLogCollectionPort
+     * @param targetTraceCollectionPort
+     * @return a FormValidation object used to display a message to the user on the configuration
+     */
+    public FormValidation doCheckAgentConnectivity(@QueryParameter("targetHost") String targetHost, @QueryParameter("targetPort") String targetPort, @QueryParameter("targetLogCollectionPort") String targetLogCollectionPort, @QueryParameter("targetTraceCollectionPort") String targetTraceCollectionPort) {
+        if(targetHost == null || targetHost.isEmpty()) {
+            return FormValidation.error("The Agent host cannot be empty.");
+        }
+
+        if(!validatePort(targetPort)) {
+            return FormValidation.error("The DogStatsD port is not valid");
+        }
+
+        final DogStatsDClient.ConnectivityResult dogStatsDConnectivity = DogStatsDClient.checkConnectivity(targetHost, Integer.parseInt(targetPort));
+        if(dogStatsDConnectivity.isError()) {
+            return FormValidation.error("Connection to " + targetHost + ":" + targetPort + " FAILED: " + dogStatsDConnectivity.getErrorMessage());
+        }
+
+        if(targetLogCollectionPort != null && !targetLogCollectionPort.isEmpty()) {
+            if(!validatePort(targetLogCollectionPort)) {
+                return FormValidation.error("The Logs Collection port is not valid");
+            }
+
+            final DogStatsDClient.ConnectivityResult logsConnectivity = DogStatsDClient.checkConnectivity(targetHost, Integer.parseInt(targetLogCollectionPort));
+            if(logsConnectivity.isError()) {
+                return FormValidation.error("Connection to " + targetHost + ":" + targetLogCollectionPort + " FAILED: " + logsConnectivity.getErrorMessage());
+            }
+        }
+
+        if(targetTraceCollectionPort != null && !targetTraceCollectionPort.isEmpty()) {
+            if(!validatePort(targetTraceCollectionPort)) {
+                return FormValidation.error("The Trace Collection port is not valid");
+            }
+
+            final DogStatsDClient.ConnectivityResult traceConnectivity = DogStatsDClient.checkConnectivity(targetHost, Integer.parseInt(targetTraceCollectionPort));
+            if(traceConnectivity.isError()) {
+                return FormValidation.error("Connection to " + targetHost + ":" + targetTraceCollectionPort + " FAILED: " + traceConnectivity.getErrorMessage());
+            }
+        }
+        return FormValidation.ok("Connectivity with the Datadog Agent SUCCESS!");
     }
 
     /**
@@ -291,7 +351,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             return FormValidation.error("The field must be configured in the form <http|https>://<url>/");
         }
 
-        return FormValidation.ok("Valid URL");
+        return FormValidation.ok();
     }
 
     /**
@@ -305,7 +365,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             return FormValidation.error("The field must be configured in the form <http|https>://<url>/");
         }
 
-        return FormValidation.ok("Valid URL");
+        return FormValidation.ok();
     }
 
     private boolean validateTargetHost(String targetHost) {
@@ -331,7 +391,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             return FormValidation.error("Invalid Host");
         }
 
-        return FormValidation.ok("Valid Host");
+        return FormValidation.ok();
     }
 
     public static boolean validatePort(String targetPort) {
@@ -349,7 +409,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             return FormValidation.error("Invalid Port");
         }
 
-        return FormValidation.ok("Valid Port");
+        return FormValidation.ok();
     }
 
     /**
@@ -363,7 +423,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             return FormValidation.error("Invalid Log Collection Port");
         }
 
-        return FormValidation.ok("Valid Log Collection Port");
+        return FormValidation.ok();
     }
 
     /**
@@ -377,15 +437,15 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             return FormValidation.error("Invalid Trace Collection Port");
         }
 
-        return FormValidation.ok("Valid Trace Collection Port");
+        return FormValidation.ok();
     }
 
     @RequirePOST
     public FormValidation doCheckTraceServiceName(@QueryParameter("traceServiceName") final String traceServiceName) {
         if(StringUtils.isBlank(traceServiceName) && collectBuildTraces){
-            return FormValidation.error("Invalid Trace Service Name");
+            return FormValidation.error("Invalid CI Instance Name");
         }
-        return FormValidation.ok("Valid Trace Service Name");
+        return FormValidation.ok();
     }
 
     /**
@@ -428,7 +488,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                 return false;
             }
 
-            this.setReportWith(formData.getString("reportWith"));
+            final String reportWith = formData.getString("reportWith");
+            this.setReportWith(reportWith);
             this.setTargetApiURL(formData.getString("targetApiURL"));
             this.setTargetLogIntakeURL(formData.getString("targetLogIntakeURL"));
             this.setTargetApiKey(formData.getString("targetApiKey"));
@@ -446,37 +507,42 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                 this.setTargetLogCollectionPort(null);
             }
 
-            try {
-                final String traceCollectionPortStr = formData.getString("targetTraceCollectionPort");
-                if(validatePort(traceCollectionPortStr)){
-                    this.setTargetTraceCollectionPort(formData.getInt("targetTraceCollectionPort"));
-                }else{
-                    this.setTargetTraceCollectionPort(null);
-                }
-            } catch (Exception e) {
-                // As there is no public UI to configure this property,
-                // the value is set to the default port to trace collection.
-                // formData.getString throws an exception
-                // if the key to search does not exist.
-                // NOTE: Change this when APM Traces was released as public feature.
-                this.setTargetTraceCollectionPort(DEFAULT_TRACES_PORT_VALUE);
+            final String traceCollectionPortStr = formData.getString("targetTraceCollectionPort");
+            if(validatePort(traceCollectionPortStr)){
+                this.setTargetTraceCollectionPort(formData.getInt("targetTraceCollectionPort"));
+            }else{
+                this.setTargetTraceCollectionPort(null);
             }
 
             try {
-                final String traceServiceName = formData.getString("traceServiceName");
-                if(StringUtils.isNotBlank(traceServiceName)){
-                    this.setTraceServiceName(traceServiceName);
-                } else {
-                    this.setTraceServiceName(DEFAULT_TRACES_SERVICE_NAME);
+                final JSONObject ciVisibilityData = formData.getJSONObject("ciVisibilityData");
+                if (ciVisibilityData != null && !ciVisibilityData.isNullObject()) {
+                    if (!"DSD".equalsIgnoreCase(reportWith)) {
+                        throw new FormException("CI Visibility can only be enabled using Datadog Agent mode.", "collectBuildTraces");
+                    }
+
+                    if(!validatePort(traceCollectionPortStr)) {
+                        throw new FormException("CI Visibility requires a valid Trace Collection port", "collectBuildTraces");
+                    }
+
+                    final String ciInstanceName = ciVisibilityData.getString("traceServiceName");
+                    if (StringUtils.isNotBlank(ciInstanceName)) {
+                        this.setCiInstanceName(ciInstanceName);
+                    } else {
+                        this.setCiInstanceName(DEFAULT_CI_INSTANCE_NAME);
+                    }
                 }
-            } catch (Exception e){
-                // As there is no public UI to configure this property,
-                // the value is set to the false to
-                // disable this feature by default
-                // formData.getBoolean throws an exception
-                // if the key to search does not exist
-                // NOTE: Change this when APM Traces was released as public feature.
-                this.setTraceServiceName(DEFAULT_TRACES_SERVICE_NAME);
+                this.setEnableCiVisibility(ciVisibilityData != null && !ciVisibilityData.isNullObject());
+
+            } catch (FormException ex) {
+                //If it is the validation exception, we throw it to the next level.
+                throw ex;
+            } catch (Exception ex) {
+                // We disable CI Visibility if there is an error parsing the CI Visibility configuration
+                // because we don't want to prevent the user process the rest of the configuration.
+                this.setEnableCiVisibility(false);
+                this.setCiInstanceName(DEFAULT_CI_INSTANCE_NAME);
+                DatadogUtilities.severe(logger, ex, "Failed to configure CI Visibility: " + ex.getMessage());
             }
 
             if(StringUtils.isNotBlank(this.getHostname()) && !DatadogUtilities.isValidHostname(this.getHostname())){
@@ -493,24 +559,17 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.setEmitSecurityEvents(formData.getBoolean("emitSecurityEvents"));
             this.setEmitSystemEvents(formData.getBoolean("emitSystemEvents"));
             this.setEmitConfigChangeEvents(formData.getBoolean("emitConfigChangeEvents"));
-            this.setCollectBuildLogs(formData.getBoolean("collectBuildLogs"));
 
-            try {
-                this.setCollectBuildTraces(formData.getBoolean("collectBuildTraces"));
-            } catch (Exception e) {
-                // As there is no public UI to configure this property,
-                // the value is set to the false to
-                // disable this feature by default
-                // formData.getBoolean throws an exception
-                // if the key to search does not exist
-                // NOTE: Change this when APM Traces was released as public feature.
-                this.setCollectBuildTraces(false);
+            boolean collectBuildLogs = formData.getBoolean("collectBuildLogs");
+            if ("DSD".equalsIgnoreCase(reportWith) && collectBuildLogs && !validatePort(logCollectionPortStr)) {
+                throw new FormException("Logs Collection requires a valid Log Collection port", "collectBuildLogs");
             }
+            this.setCollectBuildLogs(formData.getBoolean("collectBuildLogs"));
 
             //When form is saved....
             DatadogClient client = ClientFactory.getClient(DatadogClient.ClientType.valueOf(this.getReportWith()),
                     this.getTargetApiURL(), this.getTargetLogIntakeURL(), this.getTargetApiKey(), this.getTargetHost(),
-                    this.getTargetPort(), this.getTargetLogCollectionPort(), this.getTargetTraceCollectionPort(), this.getTraceServiceName());
+                    this.getTargetPort(), this.getTargetLogCollectionPort(), this.getTargetTraceCollectionPort(), this.getCiInstanceName());
                 // ...reinitialize the DatadogClient
             if(client == null) {
                 return false;
@@ -692,7 +751,9 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * Getter function for the traceServiceName global configuration.
      *
      * @return a String containing the traceServiceName global configuration.
+     * @Deprecated use getCiInstanceName.
      */
+    @Deprecated
     public String getTraceServiceName() {
         return traceServiceName;
     }
@@ -701,10 +762,30 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * Setter function for the traceServiceName global configuration.
      *
      * @param traceServiceName = A string containing the Trace Service Name
+     * @deprecated Use setCiInstanceName.
      */
+    @Deprecated
     @DataBoundSetter
     public void setTraceServiceName(String traceServiceName) {
         this.traceServiceName = traceServiceName;
+    }
+
+    /**
+     * Getter function for the traceServiceName global configuration.
+     *
+     * @return a String containing the traceServiceName global configuration.
+     */
+    public String getCiInstanceName() {
+        return this.traceServiceName;
+    }
+
+    /**
+     * Setter function for the traceServiceName global configuration.
+     *
+     * @param ciInstanceName = A string containing the CI Instance Name
+     */
+    public void setCiInstanceName(String ciInstanceName) {
+        this.traceServiceName = ciInstanceName;
     }
 
     /**
@@ -938,7 +1019,9 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
     /**
      * @return - A {@link Boolean} indicating if the user has configured Datadog to collect traces.
+     * @deprecated Use isEnabledCiVisibility
      */
+    @Deprecated
     public boolean isCollectBuildTraces() {
         return collectBuildTraces;
     }
@@ -947,9 +1030,29 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * Set the checkbox in the UI, used for Jenkins data binding
      *
      * @param collectBuildTraces - The checkbox status (checked/unchecked)
+     * @deprecated Use setEnableCiVisibility
      */
     @DataBoundSetter
+    @Deprecated
     public void setCollectBuildTraces(boolean collectBuildTraces) {
         this.collectBuildTraces = collectBuildTraces;
+    }
+
+    /**
+     * @return - A {@link Boolean} indicating if the user has configured Datadog to enable CI Visibility.
+     */
+    public boolean isEnabledCiVisibility() {
+        return this.collectBuildTraces;
+    }
+
+    /**
+     * Set the checkbox in the UI, used for Jenkins data binding to enable CI Visibility
+     *
+     * @param enableCiVisibility - The checkbox status (checked/unchecked)
+     * @deprecated Use setEnableCiVisibility
+     */
+    @DataBoundSetter
+    public void setEnableCiVisibility(boolean enableCiVisibility) {
+        this.collectBuildTraces = enableCiVisibility;
     }
 }

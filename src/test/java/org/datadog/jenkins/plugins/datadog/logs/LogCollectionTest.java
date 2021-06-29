@@ -43,7 +43,7 @@ public class LogCollectionTest {
     @Before
     public void setup() {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
-        cfg.setCollectBuildTraces(false);
+        cfg.setEnableCiVisibility(false);
     }
 
 
@@ -73,7 +73,7 @@ public class LogCollectionTest {
     @Test
     public void testFreeStyleProjectWithTraces() throws Exception {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
-        cfg.setCollectBuildTraces(true);
+        cfg.setEnableCiVisibility(true);
 
         FreeStyleProject p = j.createFreeStyleProject();
         MasterComputer master = null;
@@ -107,7 +107,7 @@ public class LogCollectionTest {
     @Test
     public void testPipelineWithTraces() throws Exception {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
-        cfg.setCollectBuildTraces(true);
+        cfg.setEnableCiVisibility(true);
 
         WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "pipeline-traces");
         p.setDefinition(new CpsFlowDefinition("echo 'foo'\n", true));
@@ -126,7 +126,7 @@ public class LogCollectionTest {
     @Test
     public void testPipelineOnWorkerNodeWithTraces() throws Exception {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
-        cfg.setCollectBuildTraces(true);
+        cfg.setEnableCiVisibility(true);
 
         WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "pipelineOnWorkerNode-traces");
         p.setDefinition(new CpsFlowDefinition("node('test') {echo 'foo'}\n", true));

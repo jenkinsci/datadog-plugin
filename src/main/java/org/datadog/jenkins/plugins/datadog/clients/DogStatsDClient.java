@@ -51,8 +51,10 @@ import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 import java.net.ConnectException;
+import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Handler;
 import java.util.logging.Logger;
@@ -136,6 +138,15 @@ public class DogStatsDClient implements DatadogClient {
         this.traceCollectionPort = traceCollectionPort;
     }
 
+    public static ConnectivityResult checkConnectivity(final String host, final int port) {
+        try(Socket ignored = new Socket(host, port)) {
+            return ConnectivityResult.SUCCESS;
+        } catch (Exception ex) {
+            DatadogUtilities.severe(logger, ex, "Failed to create socket to host: " + host + ", port: " +port + ". Error: " + ex);
+            return new ConnectivityResult(true, ex.toString());
+        }
+    }
+
     public void validateConfiguration() throws IllegalArgumentException {
         if (hostname == null || hostname.isEmpty()) {
             throw new IllegalArgumentException("Datadog Target URL is not set properly");
@@ -147,7 +158,7 @@ public class DogStatsDClient implements DatadogClient {
             logger.warning("Datadog Log Collection Port is not set properly");
         }
 
-        if (DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildTraces()  && traceCollectionPort == null) {
+        if (DatadogUtilities.getDatadogGlobalDescriptor().isEnabledCiVisibility()  && traceCollectionPort == null) {
             logger.warning("Datadog Trace Collection Port is not set properly");
         }
         return;
@@ -253,7 +264,7 @@ public class DogStatsDClient implements DatadogClient {
             return true;
         }
 
-        if(!DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildTraces() || this.hostname == null || this.traceCollectionPort == null) {
+        if(!DatadogUtilities.getDatadogGlobalDescriptor().isEnabledCiVisibility() || this.hostname == null || this.traceCollectionPort == null) {
             return false;
         }
 
@@ -555,6 +566,26 @@ public class DogStatsDClient implements DatadogClient {
             DatadogUtilities.severe(logger, e, "Failed to send pipeline trace");
             reinitializeTracer(true);
             return false;
+        }
+    }
+
+    public static class ConnectivityResult {
+        private final boolean error;
+        private final String errorMessage;
+
+        public static final ConnectivityResult SUCCESS = new ConnectivityResult(false, null);
+
+        public ConnectivityResult(final boolean error, final String errorMessage) {
+            this.error = error;
+            this.errorMessage = errorMessage;
+        }
+
+        public boolean isError() {
+            return error;
+        }
+
+        public String getErrorMessage() {
+            return errorMessage;
         }
     }
 
