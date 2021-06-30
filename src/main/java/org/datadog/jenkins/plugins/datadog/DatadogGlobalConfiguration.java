@@ -254,10 +254,10 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * Check the connectivity with the Datadog Agent based on the data set in the form.
      * It is used in the config.jelly resource file. See method="checkAgentConnectivity"
      *
-     * @param targetHost
-     * @param targetPort
-     * @param targetLogCollectionPort
-     * @param targetTraceCollectionPort
+     * @param targetHost The Agent host to check connectivity
+     * @param targetPort The DogStatsD port to check connectivity
+     * @param targetLogCollectionPort The Log Collection port to check connectivity
+     * @param targetTraceCollectionPort The Trace Collection port to check connectivity
      * @return a FormValidation object used to display a message to the user on the configuration
      */
     public FormValidation doCheckAgentConnectivity(@QueryParameter("targetHost") String targetHost, @QueryParameter("targetPort") String targetPort, @QueryParameter("targetLogCollectionPort") String targetLogCollectionPort, @QueryParameter("targetTraceCollectionPort") String targetTraceCollectionPort) {
@@ -302,6 +302,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * Tests the apiKey field from the configuration screen, to check its' validity.
      * It is used in the config.jelly resource file. See method="testConnection"
      *
+     * @param targetApiURL - The API Url to validate the apikey.
      * @param targetApiKey - A String containing the apiKey submitted from the form on the
      *                   configuration screen, which will be used to authenticate a request to the
      *                   Datadog API.
@@ -751,7 +752,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * Getter function for the traceServiceName global configuration.
      *
      * @return a String containing the traceServiceName global configuration.
-     * @Deprecated use getCiInstanceName.
+     * @deprecated use getCiInstanceName.
      */
     @Deprecated
     public String getTraceServiceName() {

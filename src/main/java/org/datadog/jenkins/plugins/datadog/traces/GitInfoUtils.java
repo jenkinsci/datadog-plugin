@@ -7,7 +7,7 @@ public class GitInfoUtils {
     /**
      * Returns a normalized git tag
      * E.g: refs/heads/tags/0.1.0 or origin/tags/0.1.0 returns 0.1.0
-     * @param tagName
+     * @param tagName the tag name to normalize
      * @return normalized git tag
      */
     public static String normalizeTag(String tagName) {
@@ -22,7 +22,7 @@ public class GitInfoUtils {
     /**
      * Returns a normalized git branch
      * E.g. refs/heads/master or origin/master returns master
-     * @param branchName
+     * @param branchName the branch name to normalize
      * @return normalized git tag
      */
     public static String normalizeBranch(String branchName) {
