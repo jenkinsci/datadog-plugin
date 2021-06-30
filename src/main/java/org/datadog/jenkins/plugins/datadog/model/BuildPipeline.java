@@ -64,6 +64,7 @@ public class BuildPipeline {
      *     -- stage1
      *          -- stage2
      *               -- stage3
+     * @return the build pipeline tree.
      **/
     public BuildPipelineNode buildTree() {
         for(Map.Entry<List<BuildPipelineNodeKey>, BuildPipelineNode> entry : stagesByPath.entrySet()){

@@ -140,15 +140,15 @@ public interface DatadogClient {
 
     /**
      * Start the trace of a certain Jenkins build.
-     * @param buildData
-     * @param run
+     * @param buildData build data to use in the pipeline trace
+     * @param run a particular execution of a Jenkins build
      * @return a boolean to signify the success or failure of the request.
      */
     boolean startBuildTrace(BuildData buildData, Run<?, ?> run);
 
     /**
      * Finish the trace of a certain Jenkins build.
-     * @param buildData
+     * @param buildData build data to use in the pipeline trace
      * @return a boolean to signify the success or failure of the request.
      */
     boolean finishBuildTrace(BuildData buildData, Run<?, ?> run);

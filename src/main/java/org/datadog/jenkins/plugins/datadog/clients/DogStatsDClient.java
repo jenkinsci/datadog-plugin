@@ -95,6 +95,7 @@ public class DogStatsDClient implements DatadogClient {
      * @param hostname - target hostname
      * @param port - target port
      * @param logCollectionPort - target log collection port
+     * @param traceCollectionPort - target trace collection port
      * @return an singleton instance of the DogStatsDClient.
      */
     @SuppressFBWarnings(value={"DC_DOUBLECHECK", "RC_REF_COMPARISON"})

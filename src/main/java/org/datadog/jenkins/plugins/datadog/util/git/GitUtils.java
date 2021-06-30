@@ -28,8 +28,8 @@ public final class GitUtils {
 
     /**
      * Return the FilePath based on the Node name and the Workspace.
-     * @param nodeName
-     * @param workspace
+     * @param nodeName the node name to check
+     * @param workspace the workspace to build the path
      * @return filePath for (nodeName, workspace)
      */
     public static FilePath buildFilePath(final String nodeName, final String workspace) {
@@ -48,7 +48,7 @@ public final class GitUtils {
 
     /**
      * Return the FilePath associated with the run instance
-     * @param run
+     * @param run a particular execution of a Jenkins build
      * @return filePath for the run.
      */
     public static FilePath buildFilePath(final Run<?, ?> run){
@@ -74,7 +74,7 @@ public final class GitUtils {
     /**
      * Return the RevCommit for a certain commit based on the information
      * stored in a certain workspace of a certain node.
-     * @param gitCommit
+     * @param gitCommit the Git commit SHA to search info.
      * @return revCommit
      */
     public static RevCommit searchRevCommit(final GitClient gitClient, final String gitCommit) {
@@ -93,8 +93,8 @@ public final class GitUtils {
 
     /**
      * Return the {@code RepositoryInfo} for a certain Git repository.
-     * @param gitClient
-     * @param envVars
+     * @param gitClient The Git client to use to obtain the repository information
+     * @param envVars the env vars available.
      * @return repositoryInfo
      */
     public static RepositoryInfo searchRepositoryInfo(final GitClient gitClient, EnvVars envVars) {
@@ -132,13 +132,13 @@ public final class GitUtils {
      * The GitCommit information is stored in an action because
      * it's fairly expensive to calculate. To avoid calculating
      * every time, it's store in the Run instance as an action.
-     * @param run
-     * @param listener
-     * @param envVars
-     * @param gitCommit
-     * @param nodeName
-     * @param workspace
-     * @return
+     * @param run a particular execution of a Jenkins build
+     * @param listener the task listener
+     * @param envVars the env vars available
+     * @param gitCommit the git commit SHA to use
+     * @param nodeName the node name to use to build the Git client
+     * @param workspace the workspace to use to build the Git client
+     * @return the GitCommitAction with the information about Git Commit.
      */
     public static GitCommitAction buildGitCommitAction(Run<?, ?> run, TaskListener listener, EnvVars envVars, final String gitCommit, final String nodeName, final String workspace) {
         GitCommitAction commitAction = run.getAction(GitCommitAction.class);
@@ -199,12 +199,12 @@ public final class GitUtils {
      * The GitRepository information is stored in an action because
      * it's fairly expensive to calculate. To avoid calculating
      * every time, it's store in the Run instance as an action.
-     * @param run
-     * @param listener
-     * @param envVars
-     * @param nodeName
-     * @param workspace
-     * @return
+     * @param run a particular execution of a Jenkins build
+     * @param listener the task listener
+     * @param envVars the env vars available
+     * @param nodeName the node name to use to build the Git client
+     * @param workspace the workspace to use to build the Git client
+     * @return the GitRepositoryAction with the information about Git repository.
      */
     public static GitRepositoryAction buildGitRepositoryAction(Run<?, ?> run, TaskListener listener, EnvVars envVars, final String nodeName, final String workspace) {
         GitRepositoryAction repoAction = run.getAction(GitRepositoryAction.class);
@@ -236,11 +236,11 @@ public final class GitUtils {
 
     /**
      * Creates a new instance of a {@code GitClient}.
-     * @param run
-     * @param listener
-     * @param envVars
-     * @param nodeName
-     * @param workspace
+     * @param run a particular execution of a Jenkins build
+     * @param listener the task listener
+     * @param envVars the env vars available
+     * @param nodeName the node name to use to build the Git client
+     * @param workspace the workspace to use to build the Git client
      * @return gitClient
      */
     public static GitClient newGitClient(final Run<?,?> run, final TaskListener listener, final EnvVars envVars, final String nodeName, final String workspace) {
@@ -262,6 +262,11 @@ public final class GitUtils {
         }
     }
 
+    /**
+     * Check if the git commit is a valid commit.
+     * @param gitCommit the git commit to evaluate
+     * @return true if the git commit is a valid SHA 40 (HEX)
+     */
     public static boolean isValidCommit(String gitCommit) {
         if(gitCommit == null || gitCommit.isEmpty()) {
             return false;

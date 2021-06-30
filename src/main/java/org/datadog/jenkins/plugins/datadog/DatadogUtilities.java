@@ -710,7 +710,7 @@ public class DatadogUtilities {
 
     /**
      * Returns true if a {@code FlowNode} is a Stage node.
-     * @param flowNode
+     * @param flowNode the flow node to evaluate
      * @return flag indicating if a flowNode is a Stage node.
      */
     public static boolean isStageNode(BlockStartNode flowNode) {
@@ -731,7 +731,7 @@ public class DatadogUtilities {
 
     /**
      * Returns true if a {@code FlowNode} is a Pipeline node.
-     * @param flowNode
+     * @param flowNode the flow node to evaluate
      * @return flag indicating if a flowNode is a Pipeline node.
      */
     public static boolean isPipelineNode(FlowNode flowNode) {
@@ -741,7 +741,7 @@ public class DatadogUtilities {
     /**
      * Returns a normalize result for traces.
      * @param result (success, failure, error, aborted, not_build, canceled, skipped, unknown)
-     * @return
+     * @return the normalized result for the traces based on the jenkins result
      */
     public static String getNormalizedResultForTraces(@Nonnull String result) {
         switch (result.toLowerCase()){
@@ -777,7 +777,7 @@ public class DatadogUtilities {
 
     /**
      * Returns a date as String in the ISO8601 format
-     * @param date
+     * @param date the date object to transform
      * @return date as String in the ISO8601 format
      */
     public static String toISO8601(Date date) {
@@ -792,7 +792,7 @@ public class DatadogUtilities {
 
     /**
      * Returns a JSON array string based on the set.
-     * @param set
+     * @param set the set to transform into a JSON
      * @return json array string
      */
     public static String toJson(final Set<String> set) {
