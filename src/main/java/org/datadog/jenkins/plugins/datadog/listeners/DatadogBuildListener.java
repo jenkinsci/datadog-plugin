@@ -41,7 +41,14 @@ import org.datadog.jenkins.plugins.datadog.events.BuildAbortedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildFinishedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildStartedEventImpl;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
+import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
+import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
+import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
+import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import javax.annotation.Nonnull;
@@ -302,17 +309,21 @@ public class DatadogBuildListener extends RunListener<Run> {
                 buildData = new BuildData(run, null);
             } catch (IOException | InterruptedException e) {
                 DatadogUtilities.severe(logger, e, "Failed to parse finalized build data");
+                cleanUpTraceActions(run);
                 return;
             }
 
             // APM Traces
             client.finishBuildTrace(buildData, run);
             logger.fine("End DatadogBuildListener#onFinalized");
+
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to process build finalization");
+        } finally {
+            // Explicitly removal of InvisibleActions used to collect Traces when the Run finishes.
+            cleanUpTraceActions(run);
         }
     }
-
 
     @Override
     public void onDeleted(Run run) {
@@ -427,5 +438,19 @@ public class DatadogBuildListener extends RunListener<Run> {
 
     public DatadogClient getDatadogClient() {
         return ClientFactory.getClient();
+    }
+
+    private static void cleanUpTraceActions(Run<?,?> run) {
+        if(run != null) {
+            run.removeActions(BuildSpanAction.class);
+            run.removeActions(StepDataAction.class);
+            run.removeActions(CIGlobalTagsAction.class);
+            run.removeActions(GitCommitAction.class);
+            run.removeActions(GitRepositoryAction.class);
+            run.removeActions(PipelineNodeInfoAction.class);
+            run.removeActions(PipelineQueueInfoAction.class);
+            run.removeActions(StageBreakdownAction.class);
+            run.removeActions(StepDataAction.class);
+        }
     }
 }
