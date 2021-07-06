@@ -886,21 +886,6 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals("error", step2Span.getTag(CITags.STATUS));
     }
 
-    @Test
-    public void testCleanUpTracerActions() throws Exception {
-        jenkinsRule.createOnlineSlave(new LabelAtom("windows"));
-        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationCleanUp");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineDefinition.txt"),
-                "UTF-8"
-        );
-        job.setDefinition(new CpsFlowDefinition(definition, true));
-        final Run<?, ?> run = job.scheduleBuild2(0).get();
-
-        final ListWriter tracerWriter = clientStub.tracerWriter();
-        tracerWriter.waitForTraces(1);
-    }
-
     private void assertNodeNameParallelBlock(DDSpan stageSpan, DumbSlave worker01, DumbSlave worker02) {
         switch ((String)stageSpan.getResourceName()){
             case "Prepare01":
