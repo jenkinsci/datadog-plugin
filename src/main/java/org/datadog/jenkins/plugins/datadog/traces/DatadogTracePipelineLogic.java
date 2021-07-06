@@ -1,5 +1,6 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
+import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.cleanUpTraceActions;
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getNormalizedResultForTraces;
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.toJson;
 import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.NodeType.PIPELINE;
@@ -73,6 +74,11 @@ public class DatadogTracePipelineLogic {
             return;
         }
 
+        final IsPipelineAction isPipelineAction = run.getAction(IsPipelineAction.class);
+        if(isPipelineAction == null) {
+            run.addAction(new IsPipelineAction());
+        }
+
         final BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
         if(buildSpanAction == null) {
             return;
@@ -109,6 +115,9 @@ public class DatadogTracePipelineLogic {
             sendTrace(tracer, run, buildData, root, spanContext);
         } catch (Exception e){
             logger.severe("Unable to send traces. Exception:" + e);
+        } finally {
+            // Explicit removal of InvisibleActions used to collect Traces when the Run finishes.
+            cleanUpTraceActions(run);
         }
     }
 

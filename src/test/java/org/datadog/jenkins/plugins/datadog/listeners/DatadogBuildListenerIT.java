@@ -9,8 +9,10 @@ import static org.junit.Assert.assertTrue;
 import datadog.trace.common.writer.ListWriter;
 import datadog.trace.core.DDSpan;
 import hudson.EnvVars;
+import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Label;
+import hudson.model.Run;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
@@ -18,7 +20,16 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
+import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
+import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
+import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
+import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
+import org.datadog.jenkins.plugins.datadog.traces.IsPipelineAction;
+import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -30,7 +41,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class DatadogBuildListenerIT {
+public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
     private static final String SAMPLE_SERVICE_NAME = "sampleServiceName";
 
@@ -99,7 +110,7 @@ public class DatadogBuildListenerIT {
         if(gitZip != null) {
             project.setScm(new ExtractResourceSCM(gitZip));
         }
-        project.scheduleBuild2(0).get();
+        FreeStyleBuild run = project.scheduleBuild2(0).get();
 
         final ListWriter tracerWriter = clientStub.tracerWriter();
         tracerWriter.waitForTraces(1);
@@ -135,6 +146,8 @@ public class DatadogBuildListenerIT {
         assertEquals("jenkins-buildIntegrationSuccess-1", buildSpan.getTag(CITags.JENKINS_TAG));
         assertNotNull(buildSpan.getTag(CITags._DD_CI_STAGES));
         assertEquals("[]", buildSpan.getTag(CITags._DD_CI_STAGES));
+
+        assertCleanupActions(run);
     }
 
     @Test
@@ -200,21 +213,5 @@ public class DatadogBuildListenerIT {
         final DDSpan buildSpan = buildTrace.get(0);
         assertEquals("value", buildSpan.getTag("global_job_tag"));
         assertEquals("value", buildSpan.getTag("global_tag"));
-    }
-
-
-    private void assertGitVariables(DDSpan span, String defaultBranch) {
-        assertEquals("Initial commit\n", span.getTag(CITags.GIT_COMMIT_MESSAGE));
-        assertEquals("John Doe", span.getTag(CITags.GIT_COMMIT_AUTHOR_NAME));
-        assertEquals("john@doe.com", span.getTag(CITags.GIT_COMMIT_AUTHOR_EMAIL));
-        assertEquals("2020-10-08T07:49:32.000Z", span.getTag(CITags.GIT_COMMIT_AUTHOR_DATE));
-        assertEquals("John Doe", span.getTag(CITags.GIT_COMMIT_COMMITTER_NAME));
-        assertEquals("john@doe.com", span.getTag(CITags.GIT_COMMIT_COMMITTER_EMAIL));
-        assertEquals("2020-10-08T07:49:32.000Z", span.getTag(CITags.GIT_COMMIT_COMMITTER_DATE));
-        assertEquals("401d997a6eede777602669ccaec059755c98161f", span.getTag(CITags.GIT_COMMIT__SHA));
-        assertEquals("401d997a6eede777602669ccaec059755c98161f", span.getTag(CITags.GIT_COMMIT_SHA));
-        assertEquals("master", span.getTag(CITags.GIT_BRANCH));
-        assertEquals("https://github.com/johndoe/foobar.git", span.getTag(CITags.GIT_REPOSITORY_URL));
-        assertEquals(defaultBranch, span.getTag(CITags.GIT_DEFAULT_BRANCH));
     }
 }

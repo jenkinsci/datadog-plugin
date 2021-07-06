@@ -25,6 +25,9 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.listeners;
 
+import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.cleanUpTraceActions;
+import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.isPipeline;
+
 import com.cloudbees.workflow.rest.external.RunExt;
 import com.cloudbees.workflow.rest.external.StageNodeExt;
 import hudson.Extension;
@@ -41,7 +44,15 @@ import org.datadog.jenkins.plugins.datadog.events.BuildAbortedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildFinishedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildStartedEventImpl;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
+import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
+import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
+import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
+import org.datadog.jenkins.plugins.datadog.traces.IsPipelineAction;
+import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import javax.annotation.Nonnull;
@@ -310,9 +321,18 @@ public class DatadogBuildListener extends RunListener<Run> {
             logger.fine("End DatadogBuildListener#onFinalized");
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to process build finalization");
+        } finally {
+            // If the run belongs to a Jenkins pipeline (based on FlowNodes),
+            // the `onFinalized` method is executed before processing the last node.
+            // This means we cannot clean up trace actions at this point if the run is a Jenkins pipeline.
+            // The trace actions will be removed after last FlowNode has been processed.
+            // (See DatadogTracePipelineLogic.execute(...) method)
+            if(!isPipeline(run)) {
+                // Explicit removal of InvisibleActions used to collect Traces when the Run finishes.
+                cleanUpTraceActions(run);
+            }
         }
     }
-
 
     @Override
     public void onDeleted(Run run) {
