@@ -1,5 +1,12 @@
 Changes
 =======
+## 3.0.1 / 2021-07-06
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.0.0...datadog-3.0.1
+
+### Changes
+* [Fixed] Explicit removal of all invisible actions when a pipeline finishes. See [#228](https://github.com/jenkinsci/datadog-plugin/pull/228)
+
 ## 3.0.0 / 2021-06-29
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-2.13.0...datadog-3.0.0
