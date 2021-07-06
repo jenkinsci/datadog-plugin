@@ -12,7 +12,9 @@ import datadog.trace.common.writer.ListWriter;
 import datadog.trace.core.DDSpan;
 import hudson.EnvVars;
 import hudson.FilePath;
+import hudson.model.FreeStyleBuild;
 import hudson.model.Label;
+import hudson.model.Run;
 import hudson.model.labels.LabelAtom;
 import hudson.slaves.DumbSlave;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
@@ -23,7 +25,16 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
+import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
+import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
+import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
+import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
+import org.datadog.jenkins.plugins.datadog.traces.IsPipelineAction;
+import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.actions.TimingAction;
@@ -48,7 +59,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class DatadogGraphListenerTest {
+public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
     private static final String SAMPLE_SERVICE_NAME = "sampleServiceName";
 
@@ -479,7 +490,7 @@ public class DatadogGraphListenerTest {
                 "UTF-8"
         );
         job.setDefinition(new CpsFlowDefinition(definition, true));
-        job.scheduleBuild2(0).get();
+        final WorkflowRun run = job.scheduleBuild2(0).get();
         String hostname = DatadogUtilities.getHostname(null);
         String[] tags = new String[]{
                 "jenkins_url:" + DatadogUtilities.getJenkinsUrl(),
@@ -575,6 +586,8 @@ public class DatadogGraphListenerTest {
         assertEquals("pipelineIntegrationSuccess", stepAtomSpan.getTag(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._NAME));
         assertEquals("test", stepAtomSpan.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));
         assertNotNull(stepAtomSpan.getUnsafeMetrics().get(CITags.QUEUE_TIME));
+
+        assertCleanupActions(run);
     }
 
     @Test
@@ -873,6 +886,21 @@ public class DatadogGraphListenerTest {
         assertEquals("error", step2Span.getTag(CITags.STATUS));
     }
 
+    @Test
+    public void testCleanUpTracerActions() throws Exception {
+        jenkinsRule.createOnlineSlave(new LabelAtom("windows"));
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationCleanUp");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineDefinition.txt"),
+                "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        final Run<?, ?> run = job.scheduleBuild2(0).get();
+
+        final ListWriter tracerWriter = clientStub.tracerWriter();
+        tracerWriter.waitForTraces(1);
+    }
+
     private void assertNodeNameParallelBlock(DDSpan stageSpan, DumbSlave worker01, DumbSlave worker02) {
         switch ((String)stageSpan.getResourceName()){
             case "Prepare01":
@@ -887,21 +915,4 @@ public class DatadogGraphListenerTest {
                 break;
         }
     }
-
-
-    private void assertGitVariables(DDSpan span, String defaultBranch) {
-        assertEquals("Initial commit\n", span.getTag(CITags.GIT_COMMIT_MESSAGE));
-        assertEquals("John Doe", span.getTag(CITags.GIT_COMMIT_AUTHOR_NAME));
-        assertEquals("john@doe.com", span.getTag(CITags.GIT_COMMIT_AUTHOR_EMAIL));
-        assertEquals("2020-10-08T07:49:32.000Z", span.getTag(CITags.GIT_COMMIT_AUTHOR_DATE));
-        assertEquals("John Doe", span.getTag(CITags.GIT_COMMIT_COMMITTER_NAME));
-        assertEquals("john@doe.com", span.getTag(CITags.GIT_COMMIT_COMMITTER_EMAIL));
-        assertEquals("2020-10-08T07:49:32.000Z", span.getTag(CITags.GIT_COMMIT_COMMITTER_DATE));
-        assertEquals("401d997a6eede777602669ccaec059755c98161f", span.getTag(CITags.GIT_COMMIT__SHA));
-        assertEquals("401d997a6eede777602669ccaec059755c98161f", span.getTag(CITags.GIT_COMMIT_SHA));
-        assertEquals("master", span.getTag(CITags.GIT_BRANCH));
-        assertEquals("https://github.com/johndoe/foobar.git", span.getTag(CITags.GIT_REPOSITORY_URL));
-        assertEquals(defaultBranch, span.getTag(CITags.GIT_DEFAULT_BRANCH));
-    }
-
 }

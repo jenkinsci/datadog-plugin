@@ -34,7 +34,16 @@ import hudson.model.*;
 import hudson.model.labels.LabelAtom;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.ObjectUtils.Null;
+import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
+import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
+import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
+import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.steps.DatadogPipelineAction;
+import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
+import org.datadog.jenkins.plugins.datadog.traces.IsPipelineAction;
+import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.pipeline.StageStatus;
@@ -815,6 +824,34 @@ public class DatadogUtilities {
         sb.append("]");
 
         return sb.toString();
+    }
+
+    /**
+     * Removes all actions related to traces for Jenkins pipelines.
+     * @param run the current run.
+     */
+    public static void cleanUpTraceActions(final Run<?, ?> run) {
+        if(run != null) {
+            run.removeActions(BuildSpanAction.class);
+            run.removeActions(StepDataAction.class);
+            run.removeActions(CIGlobalTagsAction.class);
+            run.removeActions(GitCommitAction.class);
+            run.removeActions(GitRepositoryAction.class);
+            run.removeActions(PipelineNodeInfoAction.class);
+            run.removeActions(PipelineQueueInfoAction.class);
+            run.removeActions(StageBreakdownAction.class);
+            run.removeActions(IsPipelineAction.class);
+        }
+    }
+
+    /**
+     * Check if a run is from a Jenkins pipeline.
+     * This action is added if the run is based on FlowNodes.
+     * @param run the current run.
+     * @return true if is a Jenkins pipeline.
+     */
+    public static boolean isPipeline(final Run<?, ?> run) {
+        return run != null && run.getAction(IsPipelineAction.class) != null;
     }
 
 }
