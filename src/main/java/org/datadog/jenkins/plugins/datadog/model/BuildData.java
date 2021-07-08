@@ -35,6 +35,7 @@ import hudson.triggers.TimerTrigger;
 import hudson.util.LogTaskListener;
 import io.opentracing.Span;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
@@ -199,7 +200,7 @@ public class BuildData implements Serializable {
         setWorkspace(envVars.get("WORKSPACE"));
         if (envVars.get("GIT_BRANCH") != null) {
             setBranch(envVars.get("GIT_BRANCH"));
-            setGitUrl(envVars.get("GIT_URL"));
+            setGitUrl(DatadogUtilities.getGitRepositoryUrl(envVars));
             setGitCommit(envVars.get("GIT_COMMIT"));
         } else if (envVars.get("CVS_BRANCH") != null) {
             setBranch(envVars.get("CVS_BRANCH"));

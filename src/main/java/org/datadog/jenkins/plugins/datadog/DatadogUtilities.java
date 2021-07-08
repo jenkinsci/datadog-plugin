@@ -34,6 +34,7 @@ import hudson.model.*;
 import hudson.model.labels.LabelAtom;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.ObjectUtils.Null;
+import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
@@ -852,6 +853,34 @@ public class DatadogUtilities {
      */
     public static boolean isPipeline(final Run<?, ?> run) {
         return run != null && run.getAction(IsPipelineAction.class) != null;
+    }
+
+    /**
+     * Returns the Git repository URL based on the EnvVars.
+     *
+     * Sometimes multiple repositories can be involved (e.g. forks).
+     * Jenkins can use the pattern GIT_URL_N with N {1,2,…}.
+     * By convention, GIT_URL_1 should be the same as GIT_URL
+     *
+     * @param envVars
+     * @return git repository URL
+     */
+    public static String getGitRepositoryUrl(final EnvVars envVars) {
+        return getGitRepositoryUrl(envVars.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+    }
+
+    /**
+     * Returns the Git repository URL based on the EnvVars.
+     *
+     * Sometimes multiple repositories can be involved (e.g. forks).
+     * Jenkins can use the pattern GIT_URL_N with N {1,2,…}.
+     * By convention, GIT_URL_1 should be the same as GIT_URL
+     *
+     * @param envVars
+     * @return git repository URL
+     */
+    public static String getGitRepositoryUrl(final Map<String, String> envVars) {
+        return StringUtils.isNotEmpty(envVars.get("GIT_URL")) ? envVars.get("GIT_URL") : envVars.get("GIT_URL_1");
     }
 
 }
