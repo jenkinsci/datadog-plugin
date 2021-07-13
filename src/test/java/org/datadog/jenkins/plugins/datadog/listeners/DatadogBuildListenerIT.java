@@ -181,6 +181,34 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
     }
 
     @Test
+    public void testGitAlternativeRepoUrl() throws Exception {
+        Jenkins jenkins = jenkinsRule.jenkins;
+        final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
+        EnvVars env = prop.getEnvVars();
+        env.put("GIT_BRANCH", "master");
+        env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
+        env.put("GIT_URL_1", "https://github.com/johndoe/foobar.git");
+        jenkins.getGlobalNodeProperties().add(prop);
+
+        final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessAltRepoUrl");
+        final URL gitZip = getClass().getClassLoader().getResource("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
+        if(gitZip != null) {
+            project.setScm(new ExtractResourceSCM(gitZip));
+        }
+        project.scheduleBuild2(0).get();
+
+        final ListWriter tracerWriter = clientStub.tracerWriter();
+        tracerWriter.waitForTraces(1);
+        assertEquals(1, tracerWriter.size());
+
+        final List<DDSpan> buildTrace = tracerWriter.get(0);
+        assertEquals(1, buildTrace.size());
+
+        final DDSpan buildSpan = buildTrace.get(0);
+        assertGitVariables(buildSpan, "master");
+    }
+
+    @Test
     public void testTracesDisabled() throws Exception {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEnableCiVisibility(false);

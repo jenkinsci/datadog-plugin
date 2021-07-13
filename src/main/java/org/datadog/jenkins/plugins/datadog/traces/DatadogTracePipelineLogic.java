@@ -1,6 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.cleanUpTraceActions;
+import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getGitRepositoryUrl;
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getNormalizedResultForTraces;
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.toJson;
 import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.NodeType.PIPELINE;
@@ -133,7 +134,7 @@ public class DatadogTracePipelineLogic {
             buildData.setBranch(gitBranch);
         }
 
-        final String gitUrl = pipelineNode.getEnvVars().get("GIT_URL");
+        final String gitUrl = getGitRepositoryUrl(pipelineNode.getEnvVars());
         if(gitUrl != null && buildData.getGitUrl("").isEmpty()) {
             buildData.setGitUrl(gitUrl);
         }
@@ -339,7 +340,8 @@ public class DatadogTracePipelineLogic {
             tags.put(CITags.GIT_COMMIT_SHA, gitCommit);
         }
 
-        final String gitRepoUrl = envVars.get("GIT_URL") != null ? envVars.get("GIT_URL") : buildData.getGitUrl("");
+        final String nodeGitRepositoryUrl = getGitRepositoryUrl(envVars);
+        final String gitRepoUrl = nodeGitRepositoryUrl != null ? nodeGitRepositoryUrl : buildData.getGitUrl("");
         if (gitRepoUrl != null && !gitRepoUrl.isEmpty()) {
             tags.put(CITags.GIT_REPOSITORY_URL, gitRepoUrl);
         }
