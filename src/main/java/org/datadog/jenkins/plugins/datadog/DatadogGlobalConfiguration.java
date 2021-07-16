@@ -250,52 +250,33 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         }
     }
 
-    /**
-     * Check the connectivity with the Datadog Agent based on the data set in the form.
-     * It is used in the config.jelly resource file. See method="checkAgentConnectivity"
-     *
-     * @param targetHost The Agent host to check connectivity
-     * @param targetPort The DogStatsD port to check connectivity
-     * @param targetLogCollectionPort The Log Collection port to check connectivity
-     * @param targetTraceCollectionPort The Trace Collection port to check connectivity
-     * @return a FormValidation object used to display a message to the user on the configuration
-     */
-    public FormValidation doCheckAgentConnectivity(@QueryParameter("targetHost") String targetHost, @QueryParameter("targetPort") String targetPort, @QueryParameter("targetLogCollectionPort") String targetLogCollectionPort, @QueryParameter("targetTraceCollectionPort") String targetTraceCollectionPort) {
-        if(targetHost == null || targetHost.isEmpty()) {
+    public FormValidation doCheckAgentConnectivityLogs(@QueryParameter("targetHost") String targetHost, @QueryParameter("targetLogCollectionPort") String targetLogCollectionPort) {
+        return checkAgentConnectivity(targetHost, targetLogCollectionPort);
+    }
+
+    public FormValidation doCheckAgentConnectivityTraces(@QueryParameter("targetHost") String targetHost, @QueryParameter("targetTraceCollectionPort") String targetTraceCollectionPort) {
+        return checkAgentConnectivity(targetHost, targetTraceCollectionPort);
+    }
+
+    private FormValidation checkAgentConnectivity(final String host, final String port) {
+        if(host == null || host.isEmpty()) {
             return FormValidation.error("The Agent host cannot be empty.");
         }
 
-        if(!validatePort(targetPort)) {
-            return FormValidation.error("The DogStatsD port is not valid");
-        }
-
-        final DogStatsDClient.ConnectivityResult dogStatsDConnectivity = DogStatsDClient.checkConnectivity(targetHost, Integer.parseInt(targetPort));
-        if(dogStatsDConnectivity.isError()) {
-            return FormValidation.error("Connection to " + targetHost + ":" + targetPort + " FAILED: " + dogStatsDConnectivity.getErrorMessage());
-        }
-
-        if(targetLogCollectionPort != null && !targetLogCollectionPort.isEmpty()) {
-            if(!validatePort(targetLogCollectionPort)) {
-                return FormValidation.error("The Logs Collection port is not valid");
+        if(port != null && !port.isEmpty()) {
+            if(!validatePort(port)) {
+                return FormValidation.error("The port is not valid");
             }
 
-            final DogStatsDClient.ConnectivityResult logsConnectivity = DogStatsDClient.checkConnectivity(targetHost, Integer.parseInt(targetLogCollectionPort));
-            if(logsConnectivity.isError()) {
-                return FormValidation.error("Connection to " + targetHost + ":" + targetLogCollectionPort + " FAILED: " + logsConnectivity.getErrorMessage());
+            final DogStatsDClient.ConnectivityResult connectivity = DogStatsDClient.checkConnectivity(host, Integer.parseInt(port));
+            if(connectivity.isError()) {
+                return FormValidation.error("Connection to " + host + ":" + port + " FAILED: " + connectivity.getErrorMessage());
             }
+        } else {
+            return FormValidation.error("The port cannot be empty.");
         }
 
-        if(targetTraceCollectionPort != null && !targetTraceCollectionPort.isEmpty()) {
-            if(!validatePort(targetTraceCollectionPort)) {
-                return FormValidation.error("The Trace Collection port is not valid");
-            }
-
-            final DogStatsDClient.ConnectivityResult traceConnectivity = DogStatsDClient.checkConnectivity(targetHost, Integer.parseInt(targetTraceCollectionPort));
-            if(traceConnectivity.isError()) {
-                return FormValidation.error("Connection to " + targetHost + ":" + targetTraceCollectionPort + " FAILED: " + traceConnectivity.getErrorMessage());
-            }
-        }
-        return FormValidation.ok("Connectivity with the Datadog Agent SUCCESS!");
+        return FormValidation.ok("Success!");
     }
 
     /**
