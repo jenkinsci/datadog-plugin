@@ -250,9 +250,26 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         }
     }
 
+    /**
+     * Test the connection to the Logs Collection port in the Datadog Agent.
+     *
+     * @param targetHost - The Datadog Agent host
+     * @param targetLogCollectionPort - The Logs Collection port used to report logs in the Datadog Agent
+     * @return a FormValidation object used to display a message to the user on the configuration
+     * screen.
+     */
     public FormValidation doCheckAgentConnectivityLogs(@QueryParameter("targetHost") String targetHost, @QueryParameter("targetLogCollectionPort") String targetLogCollectionPort) {
         return checkAgentConnectivity(targetHost, targetLogCollectionPort);
     }
+
+    /**
+     * Test the connection to the Traces Collection port in the Datadog Agent.
+     *
+     * @param targetHost - The Datadog Agent host
+     * @param targetTraceCollectionPort - The Traces Collection port used to report logs in the Datadog Agent
+     * @return a FormValidation object used to display a message to the user on the configuration
+     * screen.
+     */
 
     public FormValidation doCheckAgentConnectivityTraces(@QueryParameter("targetHost") String targetHost, @QueryParameter("targetTraceCollectionPort") String targetTraceCollectionPort) {
         return checkAgentConnectivity(targetHost, targetTraceCollectionPort);
