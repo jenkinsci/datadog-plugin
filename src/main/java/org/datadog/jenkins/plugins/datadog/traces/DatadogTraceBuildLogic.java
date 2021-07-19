@@ -181,7 +181,7 @@ public class DatadogTraceBuildLogic {
 
         //TODO Remove Java Tracer
         buildSpanOld.setTag(prefix + CITags._URL, buildData.getBuildUrl(""));
-        buildSpan.putMeta(prefix + CITags._NUMBER, buildData.getBuildNumber(""));
+        buildSpan.putMeta(prefix + CITags._URL, buildData.getBuildUrl(""));
 
         //TODO Remove Java Tracer
         if (buildSpanOld instanceof MutableSpan) {
