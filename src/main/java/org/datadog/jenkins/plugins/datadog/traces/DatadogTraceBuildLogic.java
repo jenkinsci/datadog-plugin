@@ -22,6 +22,7 @@ import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
+import org.datadog.jenkins.plugins.datadog.transport.DatadogAgentHttpClient;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.json.JsonUtils;
 
@@ -43,9 +44,11 @@ public class DatadogTraceBuildLogic {
     private static final Logger logger = Logger.getLogger(DatadogTraceBuildLogic.class.getName());
 
     private final Tracer tracer;
+    private final DatadogAgentHttpClient agentHttpClient;
 
-    public DatadogTraceBuildLogic(final Tracer tracer) {
+    public DatadogTraceBuildLogic(final Tracer tracer, final DatadogAgentHttpClient agentHttpClient) {
         this.tracer = tracer;
+        this.agentHttpClient = agentHttpClient;
     }
 
     public void startBuildTrace(final BuildData buildData, Run run) {
@@ -371,7 +374,10 @@ public class DatadogTraceBuildLogic {
         // end of the pipeline execution and do it in the endTime, adjusting all child spans if needed.
         //TODO Remove Java Tracer
         buildSpanOld.finish(endTimeMicros - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue));
+
         buildSpan.setEndNs(TimeUnit.MICROSECONDS.toNanos(endTimeMicros - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue)));
+        //TODO Implement sending
+        agentHttpClient.send(buildSpan);
     }
 
     private String getNodeName(Run<?, ?> run, BuildData buildData, BuildData updatedBuildData) {

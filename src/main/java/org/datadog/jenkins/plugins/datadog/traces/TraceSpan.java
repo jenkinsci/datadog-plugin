@@ -1,5 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
+import static org.datadog.jenkins.plugins.datadog.traces.TraceSpan.TraceSpanContext.PRIORITY_SAMPLING_KEY;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,6 +25,9 @@ public class TraceSpan {
         this.name = name;
         this.startNs = startNs;
         this.traceSpanContext = new TraceSpanContext();
+
+        // Avoid sampling
+        this.metrics.put(PRIORITY_SAMPLING_KEY, 1.0);
     }
 
     public TraceSpan(final String name, final long startNs, final TraceSpanContext parent) {
@@ -73,6 +78,8 @@ public class TraceSpan {
     }
 
     public static class TraceSpanContext {
+        public static final String PRIORITY_SAMPLING_KEY = "_sampling_priority_v1";
+
         private final long traceId;
         private final long parentId;
         private final long spanId;

@@ -37,6 +37,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTracePipelineLogic;
+import org.datadog.jenkins.plugins.datadog.transport.DatadogAgentHttpClient;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.junit.Assert;
 
@@ -54,8 +55,13 @@ public class DatadogClientStub implements DatadogClient {
     public List<DatadogMetric> serviceChecks;
     public List<DatadogEventStub> events;
     public List<JSONObject> logLines;
+
+    //TODO Remove Java Tracer
     public ListWriter tracerWriter;
+    //TODO Remove Java Tracer
     public Tracer tracer;
+
+    public DatadogAgentHttpClient agentHttpClient;
 
     public DatadogTraceBuildLogic traceBuildLogic;
     public DatadogTracePipelineLogic tracePipelineLogic;
@@ -66,6 +72,7 @@ public class DatadogClientStub implements DatadogClient {
         this.events = new ArrayList<>();
         this.logLines = new ArrayList<>();
 
+        //TODO Remove Java Tracer
         this.tracerWriter = new ListWriter() {
             @Override
             public boolean add(final List<DDSpan> trace) {
@@ -73,10 +80,14 @@ public class DatadogClientStub implements DatadogClient {
                 return result;
             }
         };
-
+        //TODO Remove Java Tracer
         this.tracer = DDTracer.builder().writer(tracerWriter).build();
-        this.traceBuildLogic = new DatadogTraceBuildLogic(tracer);
-        this.tracePipelineLogic = new DatadogTracePipelineLogic(tracer);
+
+        //TODO Implement Client for Tests
+        this.agentHttpClient = new DatadogAgentHttpClient();
+
+        this.traceBuildLogic = new DatadogTraceBuildLogic(tracer, this.agentHttpClient);
+        this.tracePipelineLogic = new DatadogTracePipelineLogic(tracer, this.agentHttpClient);
     }
 
     @Override

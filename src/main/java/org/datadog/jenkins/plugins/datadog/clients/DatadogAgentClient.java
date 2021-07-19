@@ -45,6 +45,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTracePipelineLogic;
+import org.datadog.jenkins.plugins.datadog.transport.DatadogAgentHttpClient;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
@@ -271,8 +272,12 @@ public class DatadogAgentClient implements DatadogClient {
         }
 
         try {
+
+            //TODO Remove Java Tracer
             logger.info("Re/Initialize Datadog-Plugin Tracer: hostname = " + this.hostname + ", traceCollectionPort = " + this.traceCollectionPort);
+            //TODO Remove Java Tracer
             final DDTracer.DDTracerBuilder tracerBuilder = DDTracer.builder();
+            //TODO Remove Java Tracer
             tracerBuilder
                     .sampler(new ForcePrioritySampler(PrioritySampling.SAMPLER_KEEP))
                     .writer(DDAgentWriter.builder()
@@ -281,9 +286,14 @@ public class DatadogAgentClient implements DatadogClient {
                     .monitoring(Monitoring.DISABLED)
                     .prioritization(Prioritization.ENSURE_TRACE).build());
 
+            //TODO Remove Java Tracer
             final Tracer ddTracer = tracerBuilder.build();
-            traceBuildLogic = new DatadogTraceBuildLogic(ddTracer);
-            tracePipelineLogic = new DatadogTracePipelineLogic(ddTracer);
+
+            //TODO Implement real client
+            final DatadogAgentHttpClient agentHttpClient = new DatadogAgentHttpClient();
+
+            traceBuildLogic = new DatadogTraceBuildLogic(ddTracer, agentHttpClient);
+            tracePipelineLogic = new DatadogTracePipelineLogic(ddTracer, agentHttpClient);
             return true;
         } catch (NoSuchMethodError err) {
             // If the user is using the dd-java-agent as -javaagent in the Jenkins startup command

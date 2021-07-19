@@ -30,6 +30,7 @@ import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
+import org.datadog.jenkins.plugins.datadog.transport.DatadogAgentHttpClient;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
@@ -61,9 +62,11 @@ public class DatadogTracePipelineLogic {
 
     //TODO Remove Java Tracer
     private final Tracer tracer;
+    private final DatadogAgentHttpClient agentHttpClient;
 
-    public DatadogTracePipelineLogic(Tracer tracer) {
+    public DatadogTracePipelineLogic(Tracer tracer, DatadogAgentHttpClient agentHttpClient) {
         this.tracer = tracer;
+        this.agentHttpClient = agentHttpClient;
     }
 
     public void execute(Run run, FlowNode flowNode) {
@@ -256,7 +259,9 @@ public class DatadogTracePipelineLogic {
         //NOTE: Implement sendNodeLogs
 
         span.setEndNs(fixedEndTimeNanos);
+
         //TODO Implement sending
+        agentHttpClient.send(span);
     }
 
     @Deprecated
