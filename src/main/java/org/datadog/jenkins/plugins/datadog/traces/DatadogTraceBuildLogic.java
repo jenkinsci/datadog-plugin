@@ -22,7 +22,7 @@ import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
-import org.datadog.jenkins.plugins.datadog.transport.DatadogAgentHttpClient;
+import org.datadog.jenkins.plugins.datadog.transport.AgentHttpClient;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.json.JsonUtils;
 
@@ -44,9 +44,9 @@ public class DatadogTraceBuildLogic {
     private static final Logger logger = Logger.getLogger(DatadogTraceBuildLogic.class.getName());
 
     private final Tracer tracer;
-    private final DatadogAgentHttpClient agentHttpClient;
+    private final AgentHttpClient agentHttpClient;
 
-    public DatadogTraceBuildLogic(final Tracer tracer, final DatadogAgentHttpClient agentHttpClient) {
+    public DatadogTraceBuildLogic(final Tracer tracer, final AgentHttpClient agentHttpClient) {
         this.tracer = tracer;
         this.agentHttpClient = agentHttpClient;
     }
@@ -375,7 +375,7 @@ public class DatadogTraceBuildLogic {
         //TODO Remove Java Tracer
         buildSpanOld.finish(endTimeMicros - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue));
 
-        buildSpan.setEndNs(TimeUnit.MICROSECONDS.toNanos(endTimeMicros - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue)));
+        buildSpan.setEndNano(TimeUnit.MICROSECONDS.toNanos(endTimeMicros - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue)));
         //TODO Implement sending
         agentHttpClient.send(buildSpan);
     }

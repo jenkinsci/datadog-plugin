@@ -290,7 +290,12 @@ public class DatadogAgentClient implements DatadogClient {
             final Tracer ddTracer = tracerBuilder.build();
 
             //TODO Implement real client
-            final DatadogAgentHttpClient agentHttpClient = new DatadogAgentHttpClient();
+            //final DatadogAgentHttpClient agentHttpClient = new DatadogAgentHttpClient();
+
+            final DatadogAgentHttpClient agentHttpClient = DatadogAgentHttpClient.builder()
+                    .agentHost(this.hostname)
+                    .traceAgentPort(traceCollectionPort)
+                    .build();
 
             traceBuildLogic = new DatadogTraceBuildLogic(ddTracer, agentHttpClient);
             tracePipelineLogic = new DatadogTracePipelineLogic(ddTracer, agentHttpClient);

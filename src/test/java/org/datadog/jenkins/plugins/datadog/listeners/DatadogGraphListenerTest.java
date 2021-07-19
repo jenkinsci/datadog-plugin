@@ -12,9 +12,7 @@ import datadog.trace.common.writer.ListWriter;
 import datadog.trace.core.DDSpan;
 import hudson.EnvVars;
 import hudson.FilePath;
-import hudson.model.FreeStyleBuild;
 import hudson.model.Label;
-import hudson.model.Run;
 import hudson.model.labels.LabelAtom;
 import hudson.slaves.DumbSlave;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
@@ -25,16 +23,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
-import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
-import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
-import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
-import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
-import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
-import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
-import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
-import org.datadog.jenkins.plugins.datadog.traces.IsPipelineAction;
-import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.actions.TimingAction;
@@ -225,7 +214,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final List<DDSpan> buildTrace = tracerWriter.get(0);
         assertEquals(1, buildTrace.size());
         final DDSpan buildSpan = buildTrace.get(0);
-        assertGitVariables(buildSpan, "master");
+        assertGitVariablesOld(buildSpan, "master");
     }
 
     @Test
@@ -262,7 +251,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final List<DDSpan> buildTrace = tracerWriter.get(0);
         assertEquals(1, buildTrace.size());
         final DDSpan buildSpan = buildTrace.get(0);
-        assertGitVariables(buildSpan, "hardcoded-master");
+        assertGitVariablesOld(buildSpan, "hardcoded-master");
     }
 
     @Test

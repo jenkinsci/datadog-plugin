@@ -4,25 +4,27 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.traces.TraceSpan;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Map;
 
-public class DatadogAgentHttpClient {
+public class DatadogAgentHttpClient implements AgentHttpClient {
 
     private final URL tracesURL;
 
-    public DatadogAgentHttpClient() {
+    private DatadogAgentHttpClient(final Builder builder) {
         try {
-            this.tracesURL = new URL("http://localhost:8126/v0.3/traces");
-            //this.tracesURL = new URL("http://localhost:9998/v0.3/traces"); // Fake Agent
+            final URL baseURL = new URL("http://" + builder.agentHost + ":" + builder.traceAgentPort);
+            this.tracesURL = new URL(baseURL, "/v0.3/traces");
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    public static DatadogAgentHttpClient.Builder builder() {
+        return new Builder();
     }
 
     public void send(TraceSpan span) {
@@ -90,8 +92,8 @@ public class DatadogAgentHttpClient {
         }
         jsonSpan.put("metrics", jsonMetrics);
 
-        jsonSpan.put("start", span.getStartNs());
-        jsonSpan.put("duration", span.getDurationNs());
+        jsonSpan.put("start", span.getStartNano());
+        jsonSpan.put("duration", span.getDurationNano());
 
         JSONArray jsonTrace = new JSONArray();
         jsonTrace.add(jsonSpan);
@@ -103,5 +105,24 @@ public class DatadogAgentHttpClient {
         return jsonTraces;
     }
 
+    public static class Builder {
 
+        private String agentHost;
+        private int traceAgentPort;
+
+        public Builder agentHost(final String agentHost) {
+            this.agentHost = agentHost;
+            return this;
+        }
+
+        public Builder traceAgentPort(final int traceAgentPort) {
+            this.traceAgentPort = traceAgentPort;
+            return this;
+        }
+
+        public DatadogAgentHttpClient build() {
+            return new DatadogAgentHttpClient(this);
+        }
+
+    }
 }

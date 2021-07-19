@@ -17,17 +17,17 @@ public class TraceSpan {
     private final Map<String, String> meta = new HashMap<>();
     private final Map<String, Double> metrics = new HashMap<>();
 
-    private final long startNs;
-    private long endNs;
-    private long durationNs;
+    private final long startNano;
+    private long endNano;
+    private long durationNano;
 
-    public TraceSpan(final String name, final long startNs) {
-        this(name, startNs, null);
+    public TraceSpan(final String name, final long startNano) {
+        this(name, startNano, null);
     }
 
-    public TraceSpan(final String name, final long startNs, final TraceSpanContext parent) {
+    public TraceSpan(final String name, final long startNano, final TraceSpanContext parent) {
         this.name = name;
-        this.startNs = startNs;
+        this.startNano = startNano;
         this.traceSpanContext = parent != null ? new TraceSpanContext(parent) : new TraceSpanContext();
 
         // Avoid sampling
@@ -70,9 +70,9 @@ public class TraceSpan {
         this.error = error;
     }
 
-    public void setEndNs(final long endNs) {
-        this.endNs = endNs;
-        this.durationNs = endNs - startNs;
+    public void setEndNano(final long endNano) {
+        this.endNano = endNano;
+        this.durationNano = endNano - startNano;
     }
 
     public String getName() {
@@ -99,12 +99,12 @@ public class TraceSpan {
         return this.metrics;
     }
 
-    public long getStartNs() {
-        return this.startNs;
+    public long getStartNano() {
+        return this.startNano;
     }
 
-    public long getDurationNs() {
-        return this.durationNs;
+    public long getDurationNano() {
+        return this.durationNano;
     }
 
     public static class TraceSpanContext {
