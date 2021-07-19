@@ -4,10 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class TraceSpan {
-    private final long traceId;
-    private final long parentId;
-    private final long spanId;
 
+    private final TraceSpanContext traceSpanContext;
     private final String name;
     private String service;
     private String resource;
@@ -24,22 +22,11 @@ public class TraceSpan {
     public TraceSpan(final String name, final long startNs) {
         this.name = name;
         this.startNs = startNs;
-
-        this.traceId = IdGenerator.generate();
-        this.spanId = IdGenerator.generate();
-        this.parentId = 0;
+        this.traceSpanContext = new TraceSpanContext();
     }
 
-    public long getTraceId() {
-        return traceId;
-    }
-
-    public long getParentId() {
-        return parentId;
-    }
-
-    public long getSpanId() {
-        return spanId;
+    public TraceSpanContext context() {
+        return traceSpanContext;
     }
 
     public void putMeta(String key, String value) {
@@ -69,5 +56,29 @@ public class TraceSpan {
     public void setEndNs(final long endNs) {
         this.endNs = endNs;
         this.duration = endNs - startNs;
+    }
+
+    public static class TraceSpanContext {
+        private final long traceId;
+        private final long parentId;
+        private final long spanId;
+
+        public TraceSpanContext() {
+            this.traceId = IdGenerator.generate();
+            this.spanId = IdGenerator.generate();
+            this.parentId = 0;
+        }
+
+        public long getTraceId() {
+            return traceId;
+        }
+
+        public long getParentId() {
+            return parentId;
+        }
+
+        public long getSpanId() {
+            return spanId;
+        }
     }
 }

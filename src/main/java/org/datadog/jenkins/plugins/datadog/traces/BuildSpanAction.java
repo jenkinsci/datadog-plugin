@@ -15,19 +15,17 @@ public class BuildSpanAction extends InvisibleAction implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private final BuildData buildData;
-    private final long traceId;
-    private final long spanId;
+    private final TraceSpan.TraceSpanContext buildSpanContext;
 
     //TODO Remove Java Tracer
     private Map<String, String> buildSpanPropatationOld;
 
 
-    public BuildSpanAction(final BuildData buildData, final long buildSpanTraceId, final long buildSpanSpanId){
+    public BuildSpanAction(final BuildData buildData, final TraceSpan.TraceSpanContext buildSpanContext){
         this.buildData = buildData;
         this.buildSpanPropatationOld = new HashMap<>();
 
-       this.traceId = buildSpanTraceId;
-       this.spanId = buildSpanSpanId;
+       this.buildSpanContext = buildSpanContext;
     }
 
     //TODO Remove Java Tracer
@@ -39,11 +37,7 @@ public class BuildSpanAction extends InvisibleAction implements Serializable {
         return buildData;
     }
 
-    public long getTraceId() {
-        return traceId;
-    }
-
-    public long getSpanId() {
-        return spanId;
+    public TraceSpan.TraceSpanContext getBuildSpanContext() {
+        return buildSpanContext;
     }
 }

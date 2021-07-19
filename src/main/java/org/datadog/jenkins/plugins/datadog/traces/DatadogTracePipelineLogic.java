@@ -59,6 +59,7 @@ public class DatadogTracePipelineLogic {
     private static final String HOSTNAME_NONE = "none";
     private static final Logger logger = Logger.getLogger(DatadogTracePipelineLogic.class.getName());
 
+    //TODO Remove Java Tracer
     private final Tracer tracer;
 
     public DatadogTracePipelineLogic(Tracer tracer) {
@@ -70,6 +71,7 @@ public class DatadogTracePipelineLogic {
             return;
         }
 
+        //TODO Remove Java Tracer
         if(this.tracer == null) {
             logger.severe("Unable to send pipeline traces. Tracer is null");
             return;

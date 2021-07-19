@@ -192,8 +192,8 @@ public class BuildData implements Serializable {
         //TODO Remove comments once transition was made.
         /*final TraceSpan buildSpan = BuildSpanManager.get().get(getBuildTag(""));
         if(buildSpan !=null) {
-            setTraceId(Long.toUnsignedString(buildSpan.getTraceId()));
-            setSpanId(Long.toUnsignedString(buildSpan.getSpanId()));
+            setTraceId(Long.toUnsignedString(buildSpan.context().getTraceId()));
+            setSpanId(Long.toUnsignedString(buildSpan.context().getSpanId()));
         }*/
     }
 

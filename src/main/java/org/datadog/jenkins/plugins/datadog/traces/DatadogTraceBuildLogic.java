@@ -81,7 +81,7 @@ public class DatadogTraceBuildLogic {
         // Jenkins Pipelines, there are many information that is missing when the
         // root span is created, such as Git info (this is calculated in an inner step
         // of the pipeline)
-        final BuildSpanAction buildSpanAction = new BuildSpanAction(buildData, buildSpan.getTraceId(), buildSpan.getSpanId());
+        final BuildSpanAction buildSpanAction = new BuildSpanAction(buildData, buildSpan.context());
 
         // TODO: Remove Java Tracer
         this.tracer.inject(buildSpanOld.context(), Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatationOld()));
