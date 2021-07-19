@@ -19,21 +19,19 @@ public class TraceSpan {
 
     private final long startNs;
     private long endNs;
-    private long duration;
+    private long durationNs;
 
     public TraceSpan(final String name, final long startNs) {
-        this.name = name;
-        this.startNs = startNs;
-        this.traceSpanContext = new TraceSpanContext();
-
-        // Avoid sampling
-        this.metrics.put(PRIORITY_SAMPLING_KEY, 1.0);
+        this(name, startNs, null);
     }
 
     public TraceSpan(final String name, final long startNs, final TraceSpanContext parent) {
         this.name = name;
         this.startNs = startNs;
-        this.traceSpanContext = new TraceSpanContext(parent);
+        this.traceSpanContext = parent != null ? new TraceSpanContext(parent) : new TraceSpanContext();
+
+        // Avoid sampling
+        this.metrics.put(PRIORITY_SAMPLING_KEY, 1.0);
     }
 
     public TraceSpanContext context() {
@@ -74,7 +72,39 @@ public class TraceSpan {
 
     public void setEndNs(final long endNs) {
         this.endNs = endNs;
-        this.duration = endNs - startNs;
+        this.durationNs = endNs - startNs;
+    }
+
+    public String getName() {
+        return this.name;
+    }
+
+    public String getResource() {
+        return this.resource;
+    }
+
+    public String getService() {
+        return this.service;
+    }
+
+    public String getType() {
+        return this.type;
+    }
+
+    public Map<String, String> getMeta() {
+        return this.meta;
+    }
+
+    public Map<String, Double> getMetrics() {
+        return this.metrics;
+    }
+
+    public long getStartNs() {
+        return this.startNs;
+    }
+
+    public long getDurationNs() {
+        return this.durationNs;
     }
 
     public static class TraceSpanContext {
