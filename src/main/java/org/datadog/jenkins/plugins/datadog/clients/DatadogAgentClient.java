@@ -31,7 +31,6 @@ import com.timgroup.statsd.ServiceCheck;
 import com.timgroup.statsd.StatsDClient;
 import datadog.opentracing.DDTracer;
 import datadog.trace.api.sampling.PrioritySampling;
-import datadog.trace.bootstrap.instrumentation.api.SamplerConstants;
 import datadog.trace.common.sampling.ForcePrioritySampler;
 import datadog.trace.common.writer.DDAgentWriter;
 import datadog.trace.common.writer.ddagent.Prioritization;
@@ -54,7 +53,6 @@ import java.net.ConnectException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Handler;
 import java.util.logging.Logger;
@@ -64,14 +62,14 @@ import java.util.logging.SocketHandler;
  * This class is used to collect all methods that has to do with transmitting
  * data to Datadog.
  */
-public class DogStatsDClient implements DatadogClient {
+public class DatadogAgentClient implements DatadogClient {
 
-    private static DogStatsDClient instance = null;
+    private static DatadogAgentClient instance = null;
     // Used to determine if the instance failed last validation last time, so
     // we do not keep retrying to create the instance and logging the same error
     private static boolean failedLastValidation = false;
 
-    private static final Logger logger = Logger.getLogger(DogStatsDClient.class.getName());
+    private static final Logger logger = Logger.getLogger(DatadogAgentClient.class.getName());
 
     @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL")
     public static boolean enableValidations = true;
@@ -103,23 +101,23 @@ public class DogStatsDClient implements DatadogClient {
         // If the configuration has not changed, return the current instance without validation
         // since we've already validated and/or errored about the data
 
-        DogStatsDClient newInstance = new DogStatsDClient(hostname, port, logCollectionPort, traceCollectionPort);
+        DatadogAgentClient newInstance = new DatadogAgentClient(hostname, port, logCollectionPort, traceCollectionPort);
         if (instance != null && instance.equals(newInstance)) {
-            if (DogStatsDClient.failedLastValidation) {
+            if (DatadogAgentClient.failedLastValidation) {
                 return null;
             }
             return instance;
         }
 
-        synchronized (DogStatsDClient.class) {
-            DogStatsDClient.instance = newInstance;
+        synchronized (DatadogAgentClient.class) {
+            DatadogAgentClient.instance = newInstance;
             if (enableValidations) {
                 try {
                     newInstance.validateConfiguration();
-                    DogStatsDClient.failedLastValidation = false;
+                    DatadogAgentClient.failedLastValidation = false;
                 } catch(IllegalArgumentException e){
                     logger.severe(e.getMessage());
-                    DogStatsDClient.failedLastValidation = true;
+                    DatadogAgentClient.failedLastValidation = true;
                     return null;
                 }
             }
@@ -132,7 +130,7 @@ public class DogStatsDClient implements DatadogClient {
         return instance;
     }
 
-    private DogStatsDClient(String hostname, Integer port, Integer logCollectionPort, Integer traceCollectionPort) {
+    private DatadogAgentClient(String hostname, Integer port, Integer logCollectionPort, Integer traceCollectionPort) {
         this.hostname = hostname;
         this.port = port;
         this.logCollectionPort = logCollectionPort;
@@ -170,11 +168,11 @@ public class DogStatsDClient implements DatadogClient {
         if (object == this) {
             return true;
         }
-        if (!(object instanceof DogStatsDClient)) {
+        if (!(object instanceof DatadogAgentClient)) {
             return false;
         }
 
-        DogStatsDClient newInstance = (DogStatsDClient) object;
+        DatadogAgentClient newInstance = (DatadogAgentClient) object;
 
         if ((StringUtils.equals(getHostname(), newInstance.getHostname())
         && (((getPort() == null) && (newInstance.getPort() == null)) || (null != getPort() && port.equals(newInstance.getPort())))

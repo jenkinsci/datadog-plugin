@@ -49,7 +49,7 @@ public class ClientFactory {
             case HTTP:
                 return DatadogHttpClient.getInstance(apiUrl, logIntakeUrl, apiKey);
             case DSD:
-                return DogStatsDClient.getInstance(host, port, logCollectionPort, traceCollectionPort);
+                return DatadogAgentClient.getInstance(host, port, logCollectionPort, traceCollectionPort);
             default:
                 return null;
         }

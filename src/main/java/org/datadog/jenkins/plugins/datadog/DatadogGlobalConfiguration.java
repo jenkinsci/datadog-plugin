@@ -37,7 +37,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogHttpClient;
-import org.datadog.jenkins.plugins.datadog.clients.DogStatsDClient;
+import org.datadog.jenkins.plugins.datadog.clients.DatadogAgentClient;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -269,7 +269,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             return FormValidation.error("The DogStatsD port is not valid");
         }
 
-        final DogStatsDClient.ConnectivityResult dogStatsDConnectivity = DogStatsDClient.checkConnectivity(targetHost, Integer.parseInt(targetPort));
+        final DatadogAgentClient.ConnectivityResult dogStatsDConnectivity = DatadogAgentClient.checkConnectivity(targetHost, Integer.parseInt(targetPort));
         if(dogStatsDConnectivity.isError()) {
             return FormValidation.error("Connection to " + targetHost + ":" + targetPort + " FAILED: " + dogStatsDConnectivity.getErrorMessage());
         }
@@ -279,7 +279,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                 return FormValidation.error("The Logs Collection port is not valid");
             }
 
-            final DogStatsDClient.ConnectivityResult logsConnectivity = DogStatsDClient.checkConnectivity(targetHost, Integer.parseInt(targetLogCollectionPort));
+            final DatadogAgentClient.ConnectivityResult logsConnectivity = DatadogAgentClient.checkConnectivity(targetHost, Integer.parseInt(targetLogCollectionPort));
             if(logsConnectivity.isError()) {
                 return FormValidation.error("Connection to " + targetHost + ":" + targetLogCollectionPort + " FAILED: " + logsConnectivity.getErrorMessage());
             }
@@ -290,7 +290,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                 return FormValidation.error("The Trace Collection port is not valid");
             }
 
-            final DogStatsDClient.ConnectivityResult traceConnectivity = DogStatsDClient.checkConnectivity(targetHost, Integer.parseInt(targetTraceCollectionPort));
+            final DatadogAgentClient.ConnectivityResult traceConnectivity = DatadogAgentClient.checkConnectivity(targetHost, Integer.parseInt(targetTraceCollectionPort));
             if(traceConnectivity.isError()) {
                 return FormValidation.error("Connection to " + targetHost + ":" + targetTraceCollectionPort + " FAILED: " + traceConnectivity.getErrorMessage());
             }
