@@ -15,18 +15,35 @@ public class BuildSpanAction extends InvisibleAction implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private final BuildData buildData;
-    private Map<String, String> buildSpanPropatation;
+    private final long traceId;
+    private final long spanId;
 
-    public BuildSpanAction(final BuildData buildData){
+    //TODO Remove Java Tracer
+    private Map<String, String> buildSpanPropatationOld;
+
+
+    public BuildSpanAction(final BuildData buildData, final long buildSpanTraceId, final long buildSpanSpanId){
         this.buildData = buildData;
-        this.buildSpanPropatation = new HashMap<>();
+        this.buildSpanPropatationOld = new HashMap<>();
+
+       this.traceId = buildSpanTraceId;
+       this.spanId = buildSpanSpanId;
     }
 
-    public Map<String, String> getBuildSpanPropatation() {
-        return buildSpanPropatation;
+    //TODO Remove Java Tracer
+    public Map<String, String> getBuildSpanPropatationOld() {
+        return buildSpanPropatationOld;
     }
 
     public BuildData getBuildData() {
         return buildData;
+    }
+
+    public long getTraceId() {
+        return traceId;
+    }
+
+    public long getSpanId() {
+        return spanId;
     }
 }

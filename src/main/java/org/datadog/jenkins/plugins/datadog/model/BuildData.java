@@ -38,6 +38,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
+import org.datadog.jenkins.plugins.datadog.traces.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
@@ -180,11 +181,20 @@ public class BuildData implements Serializable {
         setJenkinsUrl(jenkinsUrl);
 
         // Set Tracing IDs
-        final Span buildSpan = BuildSpanManager.get().get(getBuildTag(""));
-        if(buildSpan !=null) {
-            setTraceId(buildSpan.context().toTraceId());
-            setSpanId(buildSpan.context().toSpanId());
+
+        //TODO Remove Java Tracer
+        final Span buildSpanOld = BuildSpanManager.get().getOld(getBuildTag(""));
+        if(buildSpanOld !=null) {
+            setTraceId(buildSpanOld.context().toTraceId());
+            setSpanId(buildSpanOld.context().toSpanId());
         }
+
+        //TODO Remove comments once transition was made.
+        /*final TraceSpan buildSpan = BuildSpanManager.get().get(getBuildTag(""));
+        if(buildSpan !=null) {
+            setTraceId(Long.toUnsignedString(buildSpan.getTraceId()));
+            setSpanId(Long.toUnsignedString(buildSpan.getSpanId()));
+        }*/
     }
 
     private void populateEnvVariables(EnvVars envVars){

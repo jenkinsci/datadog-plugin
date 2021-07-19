@@ -109,7 +109,7 @@ public class DatadogTracePipelineLogic {
         // Every found flow node of the DAG is added to the BuildPipeline instance.
         scanner.forEach(pipeline::add);
 
-        final SpanContext spanContext = tracer.extract(Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatation()));
+        final SpanContext spanContext = tracer.extract(Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatationOld()));
         final BuildPipelineNode root = pipeline.buildTree();
 
         try {

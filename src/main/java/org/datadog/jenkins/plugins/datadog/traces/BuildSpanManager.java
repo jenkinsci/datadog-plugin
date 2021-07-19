@@ -12,21 +12,42 @@ import java.util.Map;
 public class BuildSpanManager {
 
     private static final BuildSpanManager INSTANCE = new BuildSpanManager();
+    //TODO Remove Java Tracer
     private final Map<String, Span> spanByBuildTag = new HashMap<>();
+
+    private final Map<String, TraceSpan> traceSpanByBuildTag = new HashMap<>();
 
     public static BuildSpanManager get() {
         return INSTANCE;
     }
 
-    public Span put(final String tag, final Span span) {
+    //TODO Remove Java Tracer
+    public Span putOld(final String tag, final Span span) {
         return spanByBuildTag.put(tag, span);
     }
 
-    public Span get(final String tag) {
+    //TODO Remove Java Tracer
+    public Span getOld(final String tag) {
         return spanByBuildTag.get(tag);
     }
 
-    public Span remove(final String tag){
+    //TODO Remove Java Tracer
+    public Span removeOld(final String tag){
         return spanByBuildTag.remove(tag);
     }
+
+
+    public TraceSpan put(final String tag, final TraceSpan span) {
+        return traceSpanByBuildTag.put(tag, span);
+    }
+
+    public TraceSpan get(final String tag) {
+        return traceSpanByBuildTag.get(tag);
+    }
+
+    public TraceSpan remove(final String tag){
+        return traceSpanByBuildTag.remove(tag);
+    }
+
+
 }
