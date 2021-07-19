@@ -111,11 +111,16 @@ public class DatadogTracePipelineLogic {
         // Every found flow node of the DAG is added to the BuildPipeline instance.
         scanner.forEach(pipeline::add);
 
+        //TODO Remove Java Tracer
         final SpanContext spanContext = tracer.extract(Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatationOld()));
+        final TraceSpan.TraceSpanContext traceSpanContext = buildSpanAction.getBuildSpanContext();
+
         final BuildPipelineNode root = pipeline.buildTree();
 
         try {
-            sendTrace(tracer, run, buildData, root, spanContext);
+            //TODO Remove Java Tracer
+            sendTraceOld(tracer, run, buildData, root, spanContext);
+            sendTrace(run, buildData, root, traceSpanContext);
         } catch (Exception e){
             logger.severe("Unable to send traces. Exception:" + e);
         } finally {
@@ -201,11 +206,66 @@ public class DatadogTracePipelineLogic {
         }
     }
 
-    private void sendTrace(final Tracer tracer, final Run run, final BuildData buildData, final BuildPipelineNode current, final SpanContext parentSpanContext) {
+    private void sendTrace(final Run run, final BuildData buildData, final BuildPipelineNode current, final TraceSpan.TraceSpanContext parentSpanContext) {
+        if(!isTraceable(current)) {
+            // If the current node is not traceable, we continue with its children
+            for(final BuildPipelineNode child : current.getChildren()) {
+                sendTrace(run, buildData, child, parentSpanContext);
+            }
+            return;
+        }
+
+        // If the root span has propagated queue time, we need to adjust all startTime and endTime from Jenkins pipelines spans
+        // because this time will be subtracted in the root span. See DatadogTraceBuildLogic#finishBuildTrace method.
+        final long propagatedMillisInQueue = Math.max(buildData.getPropagatedMillisInQueue(-1L), 0);
+        final long fixedStartTimeNanos = TimeUnit.MICROSECONDS.toNanos(current.getStartTimeMicros() - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue));
+        final long fixedEndTimeNanos = TimeUnit.MICROSECONDS.toNanos(current.getEndTimeMicros() - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue));
+
+        // At this point, the current node is traceable.
+        final TraceSpan span = new TraceSpan(buildOperationName(current), fixedStartTimeNanos + getNanosInQueue(current), parentSpanContext);
+        span.setService(DatadogUtilities.getDatadogGlobalDescriptor().getCiInstanceName());
+        span.setResource(current.getName());
+        span.setType("ci");
+        span.putMeta(CITags.LANGUAGE_TAG_KEY, "");
+
+        final Map<String, Object> traceTags = buildTraceTags(run, current, buildData);
+        // Set tags
+        for(Map.Entry<String, Object> traceTag : traceTags.entrySet()) {
+            if(traceTag.getValue() instanceof Number) {
+                span.putMeta(traceTag.getKey(), (Number) traceTag.getValue());
+            } else if(traceTag.getValue() instanceof Boolean) {
+                span.putMeta(traceTag.getKey(), (Boolean) traceTag.getValue());
+            } else {
+                span.putMeta(traceTag.getKey(), String.valueOf(traceTag.getValue()));
+            }
+        }
+
+        //Set metrics
+        final Map<String, Long> traceMetrics = buildTraceMetrics(current);
+        for(Map.Entry<String, Long> traceMetric : traceMetrics.entrySet()) {
+            if(traceMetric.getValue() != null) {
+                span.putMetric(traceMetric.getKey(), traceMetric.getValue());
+            }
+        }
+
+        for(final BuildPipelineNode child : current.getChildren()) {
+            sendTrace(run, buildData, child, span.context());
+        }
+
+        //Logs
+        //NOTE: Implement sendNodeLogs
+
+        span.setEndNs(fixedEndTimeNanos);
+        //TODO Implement sending
+    }
+
+    @Deprecated
+    //TODO Remove Java Tracer
+    private void sendTraceOld(final Tracer tracer, final Run run, final BuildData buildData, final BuildPipelineNode current, final SpanContext parentSpanContext) {
         if(!isTraceable(current)){
             // If the current node is not traceable, we continue with its children
             for(final BuildPipelineNode child : current.getChildren()) {
-                sendTrace(tracer, run, buildData, child, parentSpanContext);
+                sendTraceOld(tracer, run, buildData, child, parentSpanContext);
             }
             return;
         }
@@ -264,7 +324,7 @@ public class DatadogTracePipelineLogic {
         }
 
         for(final BuildPipelineNode child : current.getChildren()) {
-            sendTrace(tracer, run, buildData, child, span.context());
+            sendTraceOld(tracer, run, buildData, child, span.context());
         }
 
         //Logs

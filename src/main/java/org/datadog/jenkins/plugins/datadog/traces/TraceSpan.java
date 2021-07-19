@@ -25,12 +25,26 @@ public class TraceSpan {
         this.traceSpanContext = new TraceSpanContext();
     }
 
+    public TraceSpan(final String name, final long startNs, final TraceSpanContext parent) {
+        this.name = name;
+        this.startNs = startNs;
+        this.traceSpanContext = new TraceSpanContext(parent);
+    }
+
     public TraceSpanContext context() {
         return traceSpanContext;
     }
 
     public void putMeta(String key, String value) {
         this.meta.put(key, value);
+    }
+
+    public void putMeta(String key, Number value) {
+        this.meta.put(key, value.toString());
+    }
+
+    public void putMeta(String key, Boolean value) {
+        this.meta.put(key, value.toString());
     }
 
     public void putMetric(String key, double value) {
@@ -67,6 +81,12 @@ public class TraceSpan {
             this.traceId = IdGenerator.generate();
             this.spanId = IdGenerator.generate();
             this.parentId = 0;
+        }
+
+        public TraceSpanContext(final TraceSpanContext parent) {
+            this.traceId = parent.getTraceId();
+            this.parentId = parent.getSpanId();
+            this.spanId = IdGenerator.generate();
         }
 
         public long getTraceId() {
