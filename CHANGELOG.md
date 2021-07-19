@@ -1,5 +1,12 @@
 Changes
 =======
+## 3.0.2 / 2021-07-19
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.0.1...datadog-3.0.2
+
+### Changes
+* [Fixed] `Test connection` applies only for TCP ports on Datadog Agent transport mode. See [#232](https://github.com/jenkinsci/datadog-plugin/pull/232)
+
 ## 3.0.1 / 2021-07-06
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.0.0...datadog-3.0.1
