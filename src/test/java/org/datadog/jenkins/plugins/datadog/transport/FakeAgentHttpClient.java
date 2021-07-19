@@ -20,6 +20,7 @@ public class FakeAgentHttpClient extends CopyOnWriteArrayList<TraceSpan> impleme
 
     @Override
     public void send(TraceSpan span) {
+        System.out.println("--- send: " + span.getName());
         this.traceCount.incrementAndGet();
         synchronized (this.latches) {
             this.add(span);
@@ -46,7 +47,7 @@ public class FakeAgentHttpClient extends CopyOnWriteArrayList<TraceSpan> impleme
 
     public void waitForTraces(final int number) throws InterruptedException, TimeoutException {
         if (!waitForTracesMax(number, 20)) {
-            String msg = "Timeout waiting for " + number + " trace(s). ListWriter.size() == " + size();
+            String msg = "Timeout waiting for " + number + " trace(s). FakeAgentHttpClient.size() == " + size();
             log.warn(msg);
             throw new TimeoutException(msg);
         }

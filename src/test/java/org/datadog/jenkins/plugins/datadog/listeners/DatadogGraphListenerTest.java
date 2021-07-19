@@ -24,6 +24,8 @@ import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
+import org.datadog.jenkins.plugins.datadog.traces.TraceSpan;
+import org.datadog.jenkins.plugins.datadog.transport.FakeAgentHttpClient;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.actions.TimingAction;
@@ -167,19 +169,26 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
             }
         }
 
-        //Traces
+        //TODO Remove Java Tracer
         final ListWriter tracerWriter = clientStub.tracerWriter();
         tracerWriter.waitForTraces(3);
         assertEquals(3, tracerWriter.size());
 
+        //TODO Remove Java Tracer
         final List<DDSpan> buildTrace = tracerWriter.get(0);
         assertEquals(1, buildTrace.size());
 
+        //TODO Remove Java Tracer
         final List<DDSpan> stage01Trace = tracerWriter.get(1);
         assertEquals(2, stage01Trace.size());
 
+        //TODO Remove Java Tracer
         final List<DDSpan> stage02Trace = tracerWriter.get(2);
         assertEquals(13, stage02Trace.size());
+
+        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(19);
+        assertEquals(19, tracerWriter.size());
     }
 
     @Test
@@ -208,13 +217,20 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         jenkins.getGlobalNodeProperties().add(prop);
         job.scheduleBuild2(0).get();
 
+        //TODO Remove Java Tracer
         final ListWriter tracerWriter = clientStub.tracerWriter();
         tracerWriter.waitForTraces(2);
         assertEquals(2, tracerWriter.size());
         final List<DDSpan> buildTrace = tracerWriter.get(0);
         assertEquals(1, buildTrace.size());
-        final DDSpan buildSpan = buildTrace.get(0);
-        assertGitVariablesOld(buildSpan, "master");
+        final DDSpan buildSpanOld = buildTrace.get(0);
+        assertGitVariablesOld(buildSpanOld, "master");
+
+        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(3);
+        assertEquals(3, agentHttpClient.size());
+        final TraceSpan buildSpan = agentHttpClient.get(0);
+        assertGitVariables(buildSpan, "master");
     }
 
     @Test
@@ -245,13 +261,20 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         jenkins.getGlobalNodeProperties().add(prop);
         job.scheduleBuild2(0).get();
 
+        //TODO Remove Java Tracer
         final ListWriter tracerWriter = clientStub.tracerWriter();
         tracerWriter.waitForTraces(2);
         assertEquals(2, tracerWriter.size());
         final List<DDSpan> buildTrace = tracerWriter.get(0);
         assertEquals(1, buildTrace.size());
-        final DDSpan buildSpan = buildTrace.get(0);
-        assertGitVariablesOld(buildSpan, "hardcoded-master");
+        final DDSpan buildSpanOld = buildTrace.get(0);
+        assertGitVariablesOld(buildSpanOld, "hardcoded-master");
+
+        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(3);
+        assertEquals(3, agentHttpClient.size());
+        final TraceSpan buildSpan = agentHttpClient.get(0);
+        assertGitVariables(buildSpan, "hardcoded-master");
     }
 
     @Test
@@ -280,6 +303,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         jenkins.getGlobalNodeProperties().add(prop);
         job.scheduleBuild2(0).get();
 
+        //TODO Remove Java Tracer
         final ListWriter tracerWriter = clientStub.tracerWriter();
         tracerWriter.waitForTraces(3);
         assertEquals(3, tracerWriter.size());
@@ -301,6 +325,14 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals("401d997a6eede777602669ccaec059755c98161f", stage2.getTag(CITags.GIT_COMMIT_SHA));
         final DDSpan step2 = stage2Chain.get(1);
         assertEquals("401d997a6eede777602669ccaec059755c98161f", step2.getTag(CITags.GIT_COMMIT_SHA));
+
+
+        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(5);
+        assertEquals(5, agentHttpClient.size());
+        for(TraceSpan span : agentHttpClient) {
+            assertEquals("401d997a6eede777602669ccaec059755c98161f", span.getMeta().get(CITags.GIT_COMMIT_SHA));
+        }
     }
 
     @Test
@@ -329,6 +361,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         jenkins.getGlobalNodeProperties().add(prop);
         job.scheduleBuild2(0).get();
 
+        //TODO Remove Java Tracer
         final ListWriter tracerWriter = clientStub.tracerWriter();
         tracerWriter.waitForTraces(3);
         assertEquals(3, tracerWriter.size());
@@ -350,6 +383,13 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals("https://github.com/johndoe/foobar.git", stage2.getTag(CITags.GIT_REPOSITORY_URL));
         final DDSpan step2 = stage2Chain.get(1);
         assertEquals("https://github.com/johndoe/foobar.git", step2.getTag(CITags.GIT_REPOSITORY_URL));
+
+        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(5);
+        assertEquals(5, agentHttpClient.size());
+        for(TraceSpan span : agentHttpClient) {
+            assertEquals("https://github.com/johndoe/foobar.git", span.getMeta().get(CITags.GIT_REPOSITORY_URL));
+        }
     }
 
     @Test
@@ -369,6 +409,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         }).start();
         jenkinsRule.createOnlineSlave(Label.get("testStageName"));
 
+        //TODO Remove Java Tracer
         final ListWriter tracerWriter = clientStub.tracerWriter();
         tracerWriter.waitForTraces(2);
         assertEquals(2, tracerWriter.size());
@@ -392,6 +433,13 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
         final DDSpan stepStage1 = pipelineTrace.get(4);
         assertEquals(stage1Name, stepStage1.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));
+
+        //----
+        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(6);
+        assertEquals(6, agentHttpClient.size());
+
+
     }
 
     @Test
