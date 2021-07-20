@@ -92,9 +92,10 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
         final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(1);
-        assertEquals(1, agentHttpClient.size());
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(1, spans.size());
 
-        final TraceSpan buildSpan = agentHttpClient.get(0);
+        final TraceSpan buildSpan = spans.get(0);
         double queueTime = buildSpan.getMetrics().get(CITags.QUEUE_TIME);
         assertTrue(queueTime > 0L);
         assertTrue(queueTimeOld > TimeUnit.NANOSECONDS.toSeconds(buildSpan.getDurationNano()));
@@ -158,18 +159,19 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
         final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(1);
-        assertEquals(1, agentHttpClient.size());
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(1, spans.size());
 
-        final TraceSpan buildSpan = agentHttpClient.get(0);
+        final TraceSpan buildSpan = spans.get(0);
         assertGitVariables(buildSpan, "master");
         final Map<String, String> meta = buildSpan.getMeta();
         final Map<String, Double> metrics = buildSpan.getMetrics();
         assertEquals(BuildPipelineNode.NodeType.PIPELINE.getBuildLevel(), meta.get(CITags._DD_CI_BUILD_LEVEL));
         assertEquals(BuildPipelineNode.NodeType.PIPELINE.getBuildLevel(), meta.get(CITags._DD_CI_LEVEL));
         assertEquals(ORIGIN_CIAPP_PIPELINE, meta.get(CITags._DD_ORIGIN));
-        assertEquals("jenkins.build", buildSpan.getName());
-        assertEquals(SAMPLE_SERVICE_NAME, buildSpan.getService());
-        assertEquals("buildIntegrationSuccess", buildSpan.getResource());
+        assertEquals("jenkins.build", buildSpan.getOperationName());
+        assertEquals(SAMPLE_SERVICE_NAME, buildSpan.getServiceName());
+        assertEquals("buildIntegrationSuccess", buildSpan.getResourceName());
         assertEquals("ci", buildSpan.getType());
         assertEquals("jenkins", meta.get(CITags.CI_PROVIDER_NAME));
         assertEquals("anonymous", meta.get(CITags.USER_NAME));
@@ -226,9 +228,10 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
         final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(1);
-        assertEquals(1, agentHttpClient.size());
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(1, spans.size());
 
-        final TraceSpan buildSpan = agentHttpClient.get(0);
+        final TraceSpan buildSpan = spans.get(0);
         assertGitVariables(buildSpan, "hardcoded-master");
     }
 
@@ -264,9 +267,10 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
         final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(1);
-        assertEquals(1, agentHttpClient.size());
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(1, spans.size());
 
-        final TraceSpan buildSpan = agentHttpClient.get(0);
+        final TraceSpan buildSpan = spans.get(0);
         assertGitVariables(buildSpan, "master");
     }
 
@@ -285,7 +289,8 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
         final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(0);
-        assertEquals(0, agentHttpClient.size());
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(0, spans.size());
     }
 
     @Test
@@ -314,9 +319,10 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
         final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(1);
-        assertEquals(1, agentHttpClient.size());
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(1, spans.size());
 
-        final TraceSpan buildSpan = agentHttpClient.get(0);
+        final TraceSpan buildSpan = spans.get(0);
         final Map<String, String> meta = buildSpan.getMeta();
         assertEquals("value", meta.get("global_job_tag"));
         assertEquals("value", meta.get("global_tag"));

@@ -75,15 +75,15 @@ public class TraceSpan {
         this.durationNano = endNano - startNano;
     }
 
-    public String getName() {
+    public String getOperationName() {
         return this.name;
     }
 
-    public String getResource() {
+    public String getResourceName() {
         return this.resource;
     }
 
-    public String getService() {
+    public String getServiceName() {
         return this.service;
     }
 
