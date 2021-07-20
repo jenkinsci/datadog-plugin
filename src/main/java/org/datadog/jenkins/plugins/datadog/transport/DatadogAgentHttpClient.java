@@ -73,6 +73,11 @@ public class DatadogAgentHttpClient implements AgentHttpClient {
         if(span.context().getParentId() != 0){
             jsonSpan.put("parent_id", span.context().getParentId());
         }
+
+        if(span.isError()){
+            jsonSpan.put("error", 1);
+        }
+
         jsonSpan.put("name", span.getOperationName());
         jsonSpan.put("resource", span.getResourceName());
         jsonSpan.put("service", span.getServiceName());

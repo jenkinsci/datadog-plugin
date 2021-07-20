@@ -188,10 +188,11 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final List<DDSpan> stage02Trace = tracerWriter.get(2);
         assertEquals(13, stage02Trace.size());
 
+        //--
         final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
-        agentHttpClient.waitForTraces(19);
+        agentHttpClient.waitForTraces(16);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
-        assertEquals(19, spans.size());
+        assertEquals(16, spans.size());
     }
 
     @Test
@@ -229,6 +230,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final DDSpan buildSpanOld = buildTrace.get(0);
         assertGitVariablesOld(buildSpanOld, "master");
 
+        //--
         final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(3);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
@@ -274,6 +276,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final DDSpan buildSpanOld = buildTrace.get(0);
         assertGitVariablesOld(buildSpanOld, "hardcoded-master");
 
+        //--
         final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(3);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
@@ -317,6 +320,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final DDSpan buildSpan = buildTrace.get(0);
         assertEquals("401d997a6eede777602669ccaec059755c98161f", buildSpan.getTag(CITags.GIT_COMMIT_SHA));
 
+        //TODO Remove Java Tracer
         final List<DDSpan> stage1Chain = tracerWriter.get(1);
         assertEquals(2, stage1Chain.size());
         final DDSpan stage1 = stage1Chain.get(0);
@@ -324,6 +328,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final DDSpan step1 = stage1Chain.get(1);
         assertEquals("401d997a6eede777602669ccaec059755c98161f", step1.getTag(CITags.GIT_COMMIT_SHA));
 
+        //TODO Remove Java Tracer
         final List<DDSpan> stage2Chain = tracerWriter.get(2);
         assertEquals(2, stage2Chain.size());
         final DDSpan stage2 = stage2Chain.get(0);
@@ -331,7 +336,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final DDSpan step2 = stage2Chain.get(1);
         assertEquals("401d997a6eede777602669ccaec059755c98161f", step2.getTag(CITags.GIT_COMMIT_SHA));
 
-
+        //--
         final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(5);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
@@ -376,6 +381,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final DDSpan buildSpan = buildTrace.get(0);
         assertEquals("https://github.com/johndoe/foobar.git", buildSpan.getTag(CITags.GIT_REPOSITORY_URL));
 
+        //TODO Remove Java Tracer
         final List<DDSpan> stage1Chain = tracerWriter.get(1);
         assertEquals(2, stage1Chain.size());
         final DDSpan stage1 = stage1Chain.get(0);
@@ -383,6 +389,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final DDSpan step1 = stage1Chain.get(1);
         assertEquals("https://github.com/johndoe/foobar.git", step1.getTag(CITags.GIT_REPOSITORY_URL));
 
+        //TODO Remove Java Tracer
         final List<DDSpan> stage2Chain = tracerWriter.get(2);
         assertEquals(2, stage2Chain.size());
         final DDSpan stage2 = stage2Chain.get(0);
@@ -390,6 +397,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final DDSpan step2 = stage2Chain.get(1);
         assertEquals("https://github.com/johndoe/foobar.git", step2.getTag(CITags.GIT_REPOSITORY_URL));
 
+        //--
         final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(5);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
@@ -421,23 +429,29 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         tracerWriter.waitForTraces(2);
         assertEquals(2, tracerWriter.size());
 
+        //TODO Remove Java Tracer
         final List<DDSpan> buildTrace = tracerWriter.get(0);
         assertEquals(1, buildTrace.size());
 
+        //TODO Remove Java Tracer
         final List<DDSpan> pipelineTrace = tracerWriter.get(1);
         assertEquals(5, pipelineTrace.size());
 
+        //TODO Remove Java Tracer
         final DDSpan stage2Old = pipelineTrace.get(1);
         final String stage2OldName = (String) stage2Old.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME);
         assertTrue(stage2OldName != null && !stage2OldName.isEmpty());
 
+        //TODO Remove Java Tracer
         final DDSpan stepStage2Old = pipelineTrace.get(2);
         assertEquals(stage2OldName, stepStage2Old.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));
 
+        //TODO Remove Java Tracer
         final DDSpan stage1Old = pipelineTrace.get(3);
         final String stage1OldName = (String) stage1Old.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME);
         assertTrue(stage1OldName != null && !stage1OldName.isEmpty());
 
+        //TODO Remove Java Tracer
         final DDSpan stepStage1Old = pipelineTrace.get(4);
         assertEquals(stage1OldName, stepStage1Old.getTag(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));
 

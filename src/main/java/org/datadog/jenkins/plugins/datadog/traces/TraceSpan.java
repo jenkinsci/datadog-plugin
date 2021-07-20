@@ -1,11 +1,12 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
-import static org.datadog.jenkins.plugins.datadog.traces.TraceSpan.TraceSpanContext.PRIORITY_SAMPLING_KEY;
-
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
 public class TraceSpan {
+
+    public static final String PRIORITY_SAMPLING_KEY = "_sampling_priority_v1";
 
     private final TraceSpanContext traceSpanContext;
     private final String name;
@@ -18,7 +19,6 @@ public class TraceSpan {
     private final Map<String, Double> metrics = new HashMap<>();
 
     private final long startNano;
-    private long endNano;
     private long durationNano;
 
     public TraceSpan(final String name, final long startNano) {
@@ -71,7 +71,6 @@ public class TraceSpan {
     }
 
     public void setEndNano(final long endNano) {
-        this.endNano = endNano;
         this.durationNano = endNano - startNano;
     }
 
@@ -107,8 +106,13 @@ public class TraceSpan {
         return this.durationNano;
     }
 
-    public static class TraceSpanContext {
-        public static final String PRIORITY_SAMPLING_KEY = "_sampling_priority_v1";
+    public boolean isError() {
+        return error;
+    }
+
+    public static class TraceSpanContext implements Serializable {
+
+        private static final long serialVersionUID = 1L;
 
         private final long traceId;
         private final long parentId;
