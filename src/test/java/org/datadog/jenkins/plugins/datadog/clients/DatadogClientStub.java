@@ -25,12 +25,8 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.clients;
 
-import datadog.opentracing.DDTracer;
-import datadog.trace.common.writer.ListWriter;
-import datadog.trace.core.DDSpan;
 import hudson.model.Run;
 import hudson.util.Secret;
-import io.opentracing.Tracer;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
@@ -56,11 +52,6 @@ public class DatadogClientStub implements DatadogClient {
     public List<DatadogEventStub> events;
     public List<JSONObject> logLines;
 
-    //TODO Remove Java Tracer
-    public ListWriter tracerWriter;
-    //TODO Remove Java Tracer
-    public Tracer tracer;
-
     public FakeAgentHttpClient agentHttpClient;
 
     public DatadogTraceBuildLogic traceBuildLogic;
@@ -71,23 +62,9 @@ public class DatadogClientStub implements DatadogClient {
         this.serviceChecks = new ArrayList<>();
         this.events = new ArrayList<>();
         this.logLines = new ArrayList<>();
-
-        //TODO Remove Java Tracer
-        this.tracerWriter = new ListWriter() {
-            @Override
-            public boolean add(final List<DDSpan> trace) {
-                final boolean result = super.add(trace);
-                return result;
-            }
-        };
-        //TODO Remove Java Tracer
-        this.tracer = DDTracer.builder().writer(tracerWriter).build();
-
-        //TODO Implement Client for Tests
         this.agentHttpClient = new FakeAgentHttpClient();
-
-        this.traceBuildLogic = new DatadogTraceBuildLogic(tracer, this.agentHttpClient);
-        this.tracePipelineLogic = new DatadogTracePipelineLogic(tracer, this.agentHttpClient);
+        this.traceBuildLogic = new DatadogTraceBuildLogic(this.agentHttpClient);
+        this.tracePipelineLogic = new DatadogTracePipelineLogic(this.agentHttpClient);
     }
 
     @Override
@@ -200,10 +177,6 @@ public class DatadogClientStub implements DatadogClient {
     public boolean sendPipelineTrace(Run<?, ?> run, FlowNode flowNode) {
         this.tracePipelineLogic.execute(run, flowNode);
         return true;
-    }
-
-    public ListWriter tracerWriter() {
-        return this.tracerWriter;
     }
 
     public FakeAgentHttpClient agentHttpClient(){

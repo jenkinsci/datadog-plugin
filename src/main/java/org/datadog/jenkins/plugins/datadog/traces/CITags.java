@@ -3,6 +3,9 @@ package org.datadog.jenkins.plugins.datadog.traces;
 public class CITags {
 
     public static final String LANGUAGE_TAG_KEY = "language";
+    public static final String ERROR_MSG = "error.message";
+    public static final String ERROR_TYPE = "error.type";
+    public static final String ERROR_STACK = "error.stack";
 
     public static final String STATUS = "ci.status";
     public static final String WORKSPACE_PATH = "ci.workspace_path";

@@ -29,15 +29,8 @@ import com.timgroup.statsd.Event;
 import com.timgroup.statsd.NonBlockingStatsDClient;
 import com.timgroup.statsd.ServiceCheck;
 import com.timgroup.statsd.StatsDClient;
-import datadog.opentracing.DDTracer;
-import datadog.trace.api.sampling.PrioritySampling;
-import datadog.trace.common.sampling.ForcePrioritySampler;
-import datadog.trace.common.writer.DDAgentWriter;
-import datadog.trace.common.writer.ddagent.Prioritization;
-import datadog.trace.core.monitor.Monitoring;
 import hudson.model.Run;
 import hudson.util.Secret;
-import io.opentracing.Tracer;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
@@ -272,33 +265,14 @@ public class DatadogAgentClient implements DatadogClient {
         }
 
         try {
-
-            //TODO Remove Java Tracer
             logger.info("Re/Initialize Datadog-Plugin Tracer: hostname = " + this.hostname + ", traceCollectionPort = " + this.traceCollectionPort);
-            //TODO Remove Java Tracer
-            final DDTracer.DDTracerBuilder tracerBuilder = DDTracer.builder();
-            //TODO Remove Java Tracer
-            tracerBuilder
-                    .sampler(new ForcePrioritySampler(PrioritySampling.SAMPLER_KEEP))
-                    .writer(DDAgentWriter.builder()
-                    .agentHost(this.hostname)
-                    .traceAgentPort(traceCollectionPort)
-                    .monitoring(Monitoring.DISABLED)
-                    .prioritization(Prioritization.ENSURE_TRACE).build());
-
-            //TODO Remove Java Tracer
-            final Tracer ddTracer = tracerBuilder.build();
-
-            //TODO Implement real client
-            //final DatadogAgentHttpClient agentHttpClient = new DatadogAgentHttpClient();
-
             final DatadogAgentHttpClient agentHttpClient = DatadogAgentHttpClient.builder()
                     .agentHost(this.hostname)
                     .traceAgentPort(traceCollectionPort)
                     .build();
 
-            traceBuildLogic = new DatadogTraceBuildLogic(ddTracer, agentHttpClient);
-            tracePipelineLogic = new DatadogTracePipelineLogic(ddTracer, agentHttpClient);
+            traceBuildLogic = new DatadogTraceBuildLogic(agentHttpClient);
+            tracePipelineLogic = new DatadogTracePipelineLogic(agentHttpClient);
             return true;
         } catch (NoSuchMethodError err) {
             // If the user is using the dd-java-agent as -javaagent in the Jenkins startup command
@@ -331,6 +305,7 @@ public class DatadogAgentClient implements DatadogClient {
             }
             this.statsd = null;
         }
+
         this.isStopped = true;
         return true;
     }

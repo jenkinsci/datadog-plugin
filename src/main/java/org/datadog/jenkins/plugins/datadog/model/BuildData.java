@@ -33,9 +33,7 @@ import hudson.model.TaskListener;
 import hudson.triggers.SCMTrigger;
 import hudson.triggers.TimerTrigger;
 import hudson.util.LogTaskListener;
-import io.opentracing.Span;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
 import org.datadog.jenkins.plugins.datadog.traces.TraceSpan;
@@ -181,20 +179,11 @@ public class BuildData implements Serializable {
         setJenkinsUrl(jenkinsUrl);
 
         // Set Tracing IDs
-
-        //TODO Remove Java Tracer
-        final Span buildSpanOld = BuildSpanManager.get().getOld(getBuildTag(""));
-        if(buildSpanOld !=null) {
-            setTraceId(buildSpanOld.context().toTraceId());
-            setSpanId(buildSpanOld.context().toSpanId());
-        }
-
-        //TODO Remove comments once transition was made.
-        /*final TraceSpan buildSpan = BuildSpanManager.get().get(getBuildTag(""));
+        final TraceSpan buildSpan = BuildSpanManager.get().get(getBuildTag(""));
         if(buildSpan !=null) {
             setTraceId(Long.toUnsignedString(buildSpan.context().getTraceId()));
             setSpanId(Long.toUnsignedString(buildSpan.context().getSpanId()));
-        }*/
+        }
     }
 
     private void populateEnvVariables(EnvVars envVars){

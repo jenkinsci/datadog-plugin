@@ -10,15 +10,9 @@ import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeB
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
 
-import datadog.trace.api.DDTags;
-import datadog.trace.api.interceptor.MutableSpan;
 import hudson.EnvVars;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import io.opentracing.Span;
-import io.opentracing.SpanContext;
-import io.opentracing.Tracer;
-import io.opentracing.propagation.Format;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
@@ -60,12 +54,9 @@ public class DatadogTracePipelineLogic {
     private static final String HOSTNAME_NONE = "none";
     private static final Logger logger = Logger.getLogger(DatadogTracePipelineLogic.class.getName());
 
-    //TODO Remove Java Tracer
-    private final Tracer tracer;
     private final AgentHttpClient agentHttpClient;
 
-    public DatadogTracePipelineLogic(Tracer tracer, AgentHttpClient agentHttpClient) {
-        this.tracer = tracer;
+    public DatadogTracePipelineLogic(AgentHttpClient agentHttpClient) {
         this.agentHttpClient = agentHttpClient;
     }
 
@@ -74,8 +65,7 @@ public class DatadogTracePipelineLogic {
             return;
         }
 
-        //TODO Remove Java Tracer
-        if(this.tracer == null) {
+        if(this.agentHttpClient == null) {
             logger.severe("Unable to send pipeline traces. Tracer is null");
             return;
         }
@@ -114,15 +104,11 @@ public class DatadogTracePipelineLogic {
         // Every found flow node of the DAG is added to the BuildPipeline instance.
         scanner.forEach(pipeline::add);
 
-        //TODO Remove Java Tracer
-        final SpanContext spanContext = tracer.extract(Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatationOld()));
         final TraceSpan.TraceSpanContext traceSpanContext = buildSpanAction.getBuildSpanContext();
 
         final BuildPipelineNode root = pipeline.buildTree();
 
         try {
-            //TODO Remove Java Tracer
-            sendTraceOld(tracer, run, buildData, root, spanContext);
             sendTrace(run, buildData, root, traceSpanContext);
         } catch (Exception e){
             logger.severe("Unable to send traces. Exception:" + e);
@@ -260,82 +246,7 @@ public class DatadogTracePipelineLogic {
 
         span.setEndNano(fixedEndTimeNanos);
 
-        //TODO Implement sending
         agentHttpClient.send(span);
-    }
-
-    @Deprecated
-    //TODO Remove Java Tracer
-    private void sendTraceOld(final Tracer tracer, final Run run, final BuildData buildData, final BuildPipelineNode current, final SpanContext parentSpanContext) {
-        if(!isTraceable(current)){
-            // If the current node is not traceable, we continue with its children
-            for(final BuildPipelineNode child : current.getChildren()) {
-                sendTraceOld(tracer, run, buildData, child, parentSpanContext);
-            }
-            return;
-        }
-
-        // If the root span has propagated queue time, we need to adjust all startTime and endTime from Jenkins pipelines spans
-        // because this time will be subtracted in the root span. See DatadogTraceBuildLogic#finishBuildTrace method.
-        final long propagatedMillisInQueue = Math.max(buildData.getPropagatedMillisInQueue(-1L), 0);
-        final long fixedStartTimeMicros = current.getStartTimeMicros() - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue);
-        final long fixedEndTimeMicros = current.getEndTimeMicros() - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue);
-
-        // At this point, the current node is traceable.
-        final Tracer.SpanBuilder spanBuilder = tracer
-                .buildSpan(buildOperationName(current))
-                // Queue time for the indexed spans is reported on its child spans.
-                // We need to remove the queue time from the span. In this case, we're adding it to the
-                // fixed startTime to avoid having the queue time in the span duration.
-                .withStartTimestamp(fixedStartTimeMicros + TimeUnit.NANOSECONDS.toMicros(getNanosInQueue(current)));
-        if(parentSpanContext != null) {
-            spanBuilder.asChildOf(parentSpanContext);
-        }
-
-        spanBuilder
-                .withTag(DDTags.SERVICE_NAME, DatadogUtilities.getDatadogGlobalDescriptor().getCiInstanceName())
-                .withTag(DDTags.RESOURCE_NAME, current.getName())
-                .withTag(DDTags.SPAN_TYPE, "ci")
-                .withTag(DDTags.LANGUAGE_TAG_KEY, "");
-
-        final Map<String, Object> traceTags = buildTraceTags(run, current, buildData);
-
-        // Set tags
-        for(Map.Entry<String, Object> traceTag : traceTags.entrySet()) {
-            if(traceTag.getValue() instanceof Number) {
-                spanBuilder.withTag(traceTag.getKey(), (Number) traceTag.getValue());
-            } else if(traceTag.getValue() instanceof Boolean) {
-                spanBuilder.withTag(traceTag.getKey(), (Boolean) traceTag.getValue());
-            } else {
-                spanBuilder.withTag(traceTag.getKey(), String.valueOf(traceTag.getValue()));
-            }
-        }
-
-        final Span span = spanBuilder.start();
-
-        try {
-            // Set metrics
-            if(span instanceof MutableSpan) {
-                final MutableSpan mutableSpan = (MutableSpan) span;
-                final Map<String, Long> traceMetrics = buildTraceMetrics(current);
-                for(Map.Entry<String, Long> traceMetric : traceMetrics.entrySet()) {
-                    if(traceMetric.getValue() != null) {
-                        mutableSpan.setMetric(traceMetric.getKey(), traceMetric.getValue());
-                    }
-                }
-            }
-        } catch (Exception e) {
-            logger.severe("Unable to set metrics in the span, exception: " + e);
-        }
-
-        for(final BuildPipelineNode child : current.getChildren()) {
-            sendTraceOld(tracer, run, buildData, child, span.context());
-        }
-
-        //Logs
-        //NOTE: Implement sendNodeLogs
-
-        span.finish(fixedEndTimeMicros);
     }
 
     private Long getNanosInQueue(BuildPipelineNode current) {
@@ -445,12 +356,12 @@ public class DatadogTracePipelineLogic {
         // Errors
         if(current.isError() && current.getErrorObj() != null){
             final Throwable error = current.getErrorObj();
-            tags.put(DDTags.ERROR_MSG, error.getMessage());
-            tags.put(DDTags.ERROR_TYPE, error.getClass().getName());
+            tags.put(CITags.ERROR_MSG, error.getMessage());
+            tags.put(CITags.ERROR_TYPE, error.getClass().getName());
 
             final StringWriter errorString = new StringWriter();
             error.printStackTrace(new PrintWriter(errorString));
-            tags.put(DDTags.ERROR_STACK, errorString.toString());
+            tags.put(CITags.ERROR_STACK, errorString.toString());
         }
 
         // Propagate Pipeline Name
