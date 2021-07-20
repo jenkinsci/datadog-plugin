@@ -1,7 +1,10 @@
 package org.datadog.jenkins.plugins.datadog.transport.message;
 
+import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
+
 import java.net.URL;
 
+@SuppressFBWarnings
 public class HttpMessage {
 
     private final URL url;

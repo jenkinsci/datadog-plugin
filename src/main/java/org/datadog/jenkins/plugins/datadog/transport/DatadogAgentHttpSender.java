@@ -1,6 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.transport;
 
 import org.datadog.jenkins.plugins.datadog.transport.message.HttpMessage;
+import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -24,6 +25,7 @@ public class DatadogAgentHttpSender implements Runnable {
         this.errorHandler = errorHandler;
     }
 
+    @SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_BAD_PRACTICE")
     boolean send(final HttpMessage message){
         if(!shutdown){
             queue.offer(message);
