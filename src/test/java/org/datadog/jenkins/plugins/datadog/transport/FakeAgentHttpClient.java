@@ -70,4 +70,14 @@ public class FakeAgentHttpClient implements AgentHttpClient {
         });
         return spans;
     }
+
+    @Override
+    public void stop() {
+        // N/A
+    }
+
+    @Override
+    public void close() {
+        // N/A
+    }
 }

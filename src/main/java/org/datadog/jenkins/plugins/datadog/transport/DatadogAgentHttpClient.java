@@ -1,26 +1,53 @@
 package org.datadog.jenkins.plugins.datadog.transport;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.traces.TraceSpan;
+import org.datadog.jenkins.plugins.datadog.transport.mapper.JsonTraceSpanMapper;
+import org.datadog.jenkins.plugins.datadog.transport.message.DatadogAgentHttpTraceMessageFactory;
+import org.datadog.jenkins.plugins.datadog.transport.message.HttpMessage;
 
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 public class DatadogAgentHttpClient implements AgentHttpClient {
 
-    private final URL tracesURL;
+    private static final AgentHttpErrorHandler NO_OP_HANDLER = new AgentHttpErrorHandler() {
+        @Override public void handle(final Exception e) { /* No-op */ }
+    };
+
+    private final AgentHttpErrorHandler errorHandler;
+    private final AgentHttpMessageFactory<TraceSpan> httpMessageFactory;
+    private final DatadogAgentHttpSender sender;
+
+    private final ExecutorService executor = Executors.newSingleThreadExecutor(new ThreadFactory() {
+        final ThreadFactory delegate = Executors.defaultThreadFactory();
+        @Override public Thread newThread(final Runnable r) {
+            final Thread result = delegate.newThread(r);
+            result.setName("DDAgentHttp-" + result.getName());
+            result.setDaemon(true);
+            return result;
+        }
+    });
 
     private DatadogAgentHttpClient(final Builder builder) {
         try {
-            final URL baseURL = new URL("http://" + builder.agentHost + ":" + builder.traceAgentPort);
-            this.tracesURL = new URL(baseURL, "/v0.3/traces");
+            final URL tracesURL = new URL("http://" + builder.agentHost + ":" + builder.traceAgentPort + "/v0.3/traces");
+            final TraceSpanMapper tracerMapper = builder.mapper != null ? builder.mapper : new JsonTraceSpanMapper();
+            this.errorHandler = builder.errorHandler != null ? builder.errorHandler : NO_OP_HANDLER;
+            final int queueSize = builder.queueSize != null ? builder.queueSize : Integer.MAX_VALUE;
+            this.httpMessageFactory = builder.httpMessageFactory != null ? builder.httpMessageFactory : new DatadogAgentHttpTraceMessageFactory(tracesURL, tracerMapper);
+
+            this.sender = createSender(queueSize, errorHandler);
+            executor.submit(sender);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    protected DatadogAgentHttpSender createSender(final int queueSize, final AgentHttpErrorHandler errorHandler) {
+        return new DatadogAgentHttpSender(queueSize, errorHandler);
     }
 
     public static DatadogAgentHttpClient.Builder builder() {
@@ -28,92 +55,45 @@ public class DatadogAgentHttpClient implements AgentHttpClient {
     }
 
     public void send(TraceSpan span) {
-        HttpURLConnection conn = null;
-        boolean status = true;
+        final HttpMessage message = httpMessageFactory.create(span);
+        this.sender.send(message);
+    }
+
+    @Override
+    public void stop() {
         try {
-            conn = (HttpURLConnection) tracesURL.openConnection();
-            int timeoutMS = 1 * 60 * 1000;
-            conn.setConnectTimeout(timeoutMS);
-            conn.setReadTimeout(timeoutMS);
-            conn.setRequestMethod("PUT");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setUseCaches(false);
-            conn.setDoInput(true);
-            conn.setDoOutput(true);
-
-            final JSONArray jsonTraces = createTraces(span);
-            OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream(), "UTF-8");
-            wr.write(jsonTraces.toString());
-            wr.close();
-
-            int httpStatus = conn.getResponseCode();
-            System.out.println(""+httpStatus);
-
-        } catch (Exception ex) {
-            System.out.println("--- EXCEPTION: " + ex);
+            sender.shutdown();
+            executor.shutdown();
             try {
-                if(conn != null) {
-                    System.out.println("--- Failed HTTP Status: " + conn.getResponseCode());
+                executor.awaitTermination(30, TimeUnit.SECONDS);
+                if (!executor.isTerminated()) {
+                    executor.shutdownNow();
                 }
-            } catch (IOException ioex) {
-                System.out.println("--- Failed to inspect HTTP response");
+            } catch (Exception e) {
+                errorHandler.handle(e);
+                if (!executor.isTerminated()) {
+                    executor.shutdownNow();
+                }
             }
-            status = false;
-        } finally {
-            if(conn != null) {
-                conn.disconnect();
-            }
+        } catch (final Exception e) {
+            errorHandler.handle(e);
         }
     }
 
-    public JSONArray createTraces(final TraceSpan span) {
-        final JSONObject jsonSpan = new JSONObject();
-        jsonSpan.put("trace_id", span.context().getTraceId());
-        jsonSpan.put("span_id", span.context().getSpanId());
-        if(span.context().getParentId() != 0){
-            jsonSpan.put("parent_id", span.context().getParentId());
-        }
-
-        if(span.isError()){
-            jsonSpan.put("error", 1);
-        }
-
-        jsonSpan.put("name", span.getOperationName());
-        jsonSpan.put("resource", span.getResourceName());
-        jsonSpan.put("service", span.getServiceName());
-        jsonSpan.put("type", span.getType());
-
-        final JSONObject jsonMeta = new JSONObject();
-        final Map<String, String> meta = span.getMeta();
-        for(Map.Entry<String, String> metaEntry : meta.entrySet()) {
-            jsonMeta.put(metaEntry.getKey(), metaEntry.getValue());
-        }
-        jsonSpan.put("meta", jsonMeta);
-
-        final JSONObject jsonMetrics = new JSONObject();
-        final Map<String, Double> metrics = span.getMetrics();
-        for(Map.Entry<String, Double> metric : metrics.entrySet()){
-            jsonMetrics.put(metric.getKey(), metric.getValue());
-        }
-        jsonSpan.put("metrics", jsonMetrics);
-
-        jsonSpan.put("start", span.getStartNano());
-        jsonSpan.put("duration", span.getDurationNano());
-
-        JSONArray jsonTrace = new JSONArray();
-        jsonTrace.add(jsonSpan);
-
-        JSONArray jsonTraces = new JSONArray();
-        jsonTraces.add(jsonTrace);
-
-        System.out.println(jsonTraces);
-        return jsonTraces;
+    @Override
+    public void close() {
+        stop();
     }
+
 
     public static class Builder {
 
         private String agentHost;
         private int traceAgentPort;
+        private TraceSpanMapper mapper;
+        private AgentHttpErrorHandler errorHandler;
+        private AgentHttpMessageFactory httpMessageFactory;
+        private Integer queueSize;
 
         public Builder agentHost(final String agentHost) {
             this.agentHost = agentHost;
@@ -122,6 +102,26 @@ public class DatadogAgentHttpClient implements AgentHttpClient {
 
         public Builder traceAgentPort(final int traceAgentPort) {
             this.traceAgentPort = traceAgentPort;
+            return this;
+        }
+
+        public Builder traceSpanMapper(final TraceSpanMapper mapper) {
+            this.mapper = mapper;
+            return this;
+        }
+
+        public Builder errorHandler(final AgentHttpErrorHandler errorHandler) {
+            this.errorHandler = errorHandler;
+            return this;
+        }
+
+        public Builder queueSize(final int queueSize) {
+            this.queueSize = queueSize;
+            return this;
+        }
+
+        public Builder messageFactory(final AgentHttpMessageFactory messageFactory) {
+            this.httpMessageFactory = messageFactory;
             return this;
         }
 
