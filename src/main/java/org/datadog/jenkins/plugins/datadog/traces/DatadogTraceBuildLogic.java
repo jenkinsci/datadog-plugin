@@ -10,6 +10,7 @@ import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommi
 import hudson.model.Result;
 import hudson.model.Run;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.clients.agent.AgentHttpClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
@@ -17,7 +18,7 @@ import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
-import org.datadog.jenkins.plugins.datadog.transport.AgentHttpClient;
+import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.json.JsonUtils;
 

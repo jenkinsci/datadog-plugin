@@ -1,5 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
+import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
+
 import java.util.HashMap;
 import java.util.Map;
 

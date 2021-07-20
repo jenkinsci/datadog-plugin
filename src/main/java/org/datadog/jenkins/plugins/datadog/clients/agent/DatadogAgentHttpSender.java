@@ -1,6 +1,5 @@
-package org.datadog.jenkins.plugins.datadog.transport;
+package org.datadog.jenkins.plugins.datadog.clients.agent;
 
-import org.datadog.jenkins.plugins.datadog.transport.message.HttpMessage;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 
 import java.io.IOException;
@@ -89,6 +88,8 @@ public class DatadogAgentHttpSender implements Runnable {
             }
         }
     }
+
+
 
     boolean isShutdown() {
         return shutdown;

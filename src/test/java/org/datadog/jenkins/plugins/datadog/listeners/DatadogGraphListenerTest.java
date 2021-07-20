@@ -23,8 +23,8 @@ import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
-import org.datadog.jenkins.plugins.datadog.traces.TraceSpan;
-import org.datadog.jenkins.plugins.datadog.transport.FakeAgentHttpClient;
+import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
+import org.datadog.jenkins.plugins.datadog.transport.FakeTracesAgentHttpClient;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.actions.TimingAction;
@@ -168,7 +168,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
             }
         }
 
-        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        final FakeTracesAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(16);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(16, spans.size());
@@ -200,7 +200,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         jenkins.getGlobalNodeProperties().add(prop);
         job.scheduleBuild2(0).get();
 
-        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        final FakeTracesAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(3);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(3, spans.size());
@@ -236,7 +236,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         jenkins.getGlobalNodeProperties().add(prop);
         job.scheduleBuild2(0).get();
 
-        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        final FakeTracesAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(3);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(3, spans.size());
@@ -270,7 +270,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         jenkins.getGlobalNodeProperties().add(prop);
         job.scheduleBuild2(0).get();
 
-        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        final FakeTracesAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(5);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(5, spans.size());
@@ -305,7 +305,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         jenkins.getGlobalNodeProperties().add(prop);
         job.scheduleBuild2(0).get();
 
-        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        final FakeTracesAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(5);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(5, spans.size());
@@ -331,7 +331,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         }).start();
         jenkinsRule.createOnlineSlave(Label.get("testStageName"));
 
-        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        final FakeTracesAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(6);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(6, spans.size());
@@ -370,7 +370,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         Thread.sleep(10000);
         final DumbSlave worker = jenkinsRule.createOnlineSlave(Label.get("testStage"));
 
-        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        final FakeTracesAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(6);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(6, spans.size());
@@ -437,7 +437,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         Thread.sleep(15000);
         final DumbSlave worker = jenkinsRule.createOnlineSlave(Label.get("testPipeline"));
 
-        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        final FakeTracesAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(3);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(3, spans.size());
@@ -491,7 +491,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final String stagePrefix = BuildPipelineNode.NodeType.STAGE.getTagName();
         final String stepPrefix = BuildPipelineNode.NodeType.STEP.getTagName();
 
-        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        final FakeTracesAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(3);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(3, spans.size());
@@ -582,7 +582,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         job.setDefinition(new CpsFlowDefinition(definition, true));
         job.scheduleBuild2(0).get();
 
-        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        final FakeTracesAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(2);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(2, spans.size());
@@ -619,7 +619,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         clientStub.assertMetric("jenkins.job.stage_duration", hostname, tags);
         clientStub.assertMetric("jenkins.job.stage_pause_duration", 0, hostname, tags);
 
-        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        final FakeTracesAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(0);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(0, spans.size());
@@ -681,7 +681,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final DumbSlave worker02 = jenkinsRule.createOnlineSlave(Label.get("worker02"));
         final DumbSlave worker03 = jenkinsRule.createOnlineSlave(Label.get("worker03"));
 
-        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        final FakeTracesAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(19);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(19, spans.size());
@@ -777,7 +777,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         job.setDefinition(new CpsFlowDefinition(definition, true));
         job.scheduleBuild2(0).get();
 
-        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        final FakeTracesAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(3);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(3, spans.size());
@@ -814,7 +814,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         job.setDefinition(new CpsFlowDefinition(definition, true));
         job.scheduleBuild2(0).get();
 
-        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        final FakeTracesAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(4);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(4, spans.size());

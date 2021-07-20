@@ -35,16 +35,22 @@ import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.clients.agent.AgentHttpClient;
+import org.datadog.jenkins.plugins.datadog.clients.agent.DatadogAgentHttpClient;
+import org.datadog.jenkins.plugins.datadog.clients.agent.DatadogAgentHttpMessageFactory;
+import org.datadog.jenkins.plugins.datadog.clients.agent.HttpMethod;
+import org.datadog.jenkins.plugins.datadog.clients.agent.MessageType;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTracePipelineLogic;
-import org.datadog.jenkins.plugins.datadog.transport.DatadogAgentHttpClient;
+import org.datadog.jenkins.plugins.datadog.traces.mapper.JsonTraceSpanMapper;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 import java.net.ConnectException;
 import java.net.Socket;
+import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.Set;
@@ -68,6 +74,7 @@ public class DatadogAgentClient implements DatadogClient {
     @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL")
     public static boolean enableValidations = true;
 
+    private AgentHttpClient agentHttpClient;
     private DatadogTraceBuildLogic traceBuildLogic;
     private DatadogTracePipelineLogic tracePipelineLogic;
 
@@ -79,7 +86,8 @@ public class DatadogAgentClient implements DatadogClient {
     private Integer port = null;
     private Integer logCollectionPort = null;
     private Integer traceCollectionPort = null;
-    private boolean isStopped = true;
+    private boolean isStoppedStatsDClient = true;
+    private boolean isStoppedAgentHttpClient = true;
 
     /**
      * NOTE: Use ClientFactory.getClient method to instantiate the client in the Jenkins Plugin
@@ -117,9 +125,9 @@ public class DatadogAgentClient implements DatadogClient {
             }
         }
         if (instance != null){
-            instance.reinitialize(true);
+            instance.reinitializeStatsDClient(true);
             instance.reinitializeLogger(true);
-            instance.reinitializeTracer(true);
+            instance.reinitializeAgentHttpClient(true);
         }
         return instance;
     }
@@ -193,21 +201,21 @@ public class DatadogAgentClient implements DatadogClient {
      * @param force - force to reinitialize
      * @return true if reinitialized properly otherwise false
      */
-    private boolean reinitialize(boolean force) {
+    private boolean reinitializeStatsDClient(boolean force) {
         try {
-            if(!this.isStopped && this.statsd != null && !force){
+            if(!this.isStoppedStatsDClient && this.statsd != null && !force){
                 return true;
             }
-            this.stop();
+            this.stopStatsDClient();
             logger.info("Re/Initialize DogStatsD Client: hostname = " + this.hostname + ", port = " + this.port);
             this.statsd = new NonBlockingStatsDClient(null, this.hostname, this.port);
-            this.isStopped = false;
+            this.isStoppedStatsDClient = false;
         } catch (Exception e){
             DatadogUtilities.severe(logger, e, "Failed to reinitialize DogStatsD Client");
-            this.stop();
+            this.stopStatsDClient();
         }
 
-        return !isStopped;
+        return !isStoppedStatsDClient;
     }
 
     /**
@@ -255,8 +263,8 @@ public class DatadogAgentClient implements DatadogClient {
      * @param force - force to reinitialize
      * @return true if reinitialized properly otherwise false
      */
-    private boolean reinitializeTracer(boolean force) {
-        if(this.traceBuildLogic != null && this.tracePipelineLogic != null && !force) {
+    private boolean reinitializeAgentHttpClient(boolean force) {
+        if(!this.isStoppedAgentHttpClient && this.traceBuildLogic != null && this.tracePipelineLogic != null && !force) {
             return true;
         }
 
@@ -265,37 +273,42 @@ public class DatadogAgentClient implements DatadogClient {
         }
 
         try {
-            logger.info("Re/Initialize Datadog-Plugin Tracer: hostname = " + this.hostname + ", traceCollectionPort = " + this.traceCollectionPort);
-            final DatadogAgentHttpClient agentHttpClient = DatadogAgentHttpClient.builder()
-                    .agentHost(this.hostname)
-                    .traceAgentPort(traceCollectionPort)
+            this.stopAgentHttpClient();
+            logger.info("Re/Initialize Datadog-Plugin Agent Http Client: hostname = " + this.hostname + ", traceCollectionPort = " + this.traceCollectionPort);
+            this.agentHttpClient = DatadogAgentHttpClient.builder()
+                    .messageFactory(MessageType.TRACE, DatadogAgentHttpMessageFactory.builder()
+                            .agentURL(new URL("http://"+this.hostname+":"+this.traceCollectionPort+"/v0.3/traces"))
+                            .httpMethod(HttpMethod.PUT)
+                            .payloadMapper(new JsonTraceSpanMapper())
+                            .build())
                     .build();
 
             traceBuildLogic = new DatadogTraceBuildLogic(agentHttpClient);
             tracePipelineLogic = new DatadogTracePipelineLogic(agentHttpClient);
+            this.isStoppedAgentHttpClient = false;
             return true;
-        } catch (NoSuchMethodError err) {
-            // If the user is using the dd-java-agent as -javaagent in the Jenkins startup command
-            // the traces collection initialization will throw NoSuchMethodError, due to the dd-java-agent
-            // packages its classes with a package renaming (to avoid issues during auto-instrumentation).
-            // It’s not allowed to have the library that sends the traces manually
-            // (used by the Jenkins plugin, in this case) and the dd-java-agent (as -javaagent, for example)
-            // in the classpath together.
-            // E.g: java.lang.NoSuchMethodError: datadog.trace.api.IOLogger.<init>(Lorg/slf4j/Logger;)V
-            final String message = err.getMessage() != null ? err.getMessage() : "";
-            if(message.contains("datadog.trace")) {
-                DatadogUtilities.severe(logger, err, "Failed to reinitialize Datadog-Plugin Tracer, Cannot enable traces collection via plugin if the Datadog Java Tracer is being used as javaagent in the Jenkins startup command. This error will not affect your pipelines executions.");
-            } else {
-                DatadogUtilities.severe(logger, err, "Failed to reinitialize Datadog-Plugin Tracer due to unrecoverable error. Set logger level to FINER to know more details. This error will not affect your pipelines executions.");
-            }
-            return false;
         } catch (Throwable e){
-            DatadogUtilities.severe(logger, e, "Failed to reinitialize Datadog-Plugin Tracer");
+            DatadogUtilities.severe(logger, e, "Failed to reinitialize Datadog-Plugin Agent Http Client");
+            this.stopAgentHttpClient();
             return false;
         }
     }
 
-    private boolean stop(){
+    private boolean stopAgentHttpClient() {
+        if(agentHttpClient != null) {
+            try {
+                this.agentHttpClient.stop();
+            } catch (Exception e) {
+                DatadogUtilities.severe(logger, e, "Failed to stop Agent Http Client");
+                return false;
+            }
+            this.agentHttpClient = null;
+        }
+        this.isStoppedAgentHttpClient = true;
+        return true;
+    }
+
+    private boolean stopStatsDClient(){
         if (this.statsd != null){
             try{
                 this.statsd.stop();
@@ -306,7 +319,7 @@ public class DatadogAgentClient implements DatadogClient {
             this.statsd = null;
         }
 
-        this.isStopped = true;
+        this.isStoppedStatsDClient = true;
         return true;
     }
 
@@ -379,7 +392,7 @@ public class DatadogAgentClient implements DatadogClient {
     @Override
     public boolean event(DatadogEvent event) {
         try {
-            boolean status = reinitialize(false);
+            boolean status = reinitializeStatsDClient(false);
             if(!status){
                 return false;
             }
@@ -397,7 +410,7 @@ public class DatadogAgentClient implements DatadogClient {
             return true;
         } catch(Exception e){
             DatadogUtilities.severe(logger, e, "Failed to send event payload to DogStatsD");
-            reinitialize(true);
+            reinitializeStatsDClient(true);
             return false;
         }
     }
@@ -405,7 +418,7 @@ public class DatadogAgentClient implements DatadogClient {
     @Override
     public boolean incrementCounter(String name, String hostname, Map<String, Set<String>> tags) {
         try {
-            boolean status = reinitialize(false);
+            boolean status = reinitializeStatsDClient(false);
             if(!status){
                 return false;
             }
@@ -414,7 +427,7 @@ public class DatadogAgentClient implements DatadogClient {
             return true;
         } catch(Exception e){
             DatadogUtilities.severe(logger, e, "Failed to increment counter with DogStatsD");
-            reinitialize(true);
+            reinitializeStatsDClient(true);
             return false;
         }
     }
@@ -427,7 +440,7 @@ public class DatadogAgentClient implements DatadogClient {
     @Override
     public boolean gauge(String name, long value, String hostname, Map<String, Set<String>> tags) {
         try {
-            boolean status = reinitialize(false);
+            boolean status = reinitializeStatsDClient(false);
             if(!status){
                 return false;
             }
@@ -436,7 +449,7 @@ public class DatadogAgentClient implements DatadogClient {
             return true;
         } catch(Exception e){
             DatadogUtilities.severe(logger, e, "Failed to send gauge metric payload to DogStatsD");
-            reinitialize(true);
+            reinitializeStatsDClient(true);
             return false;
         }
     }
@@ -444,7 +457,7 @@ public class DatadogAgentClient implements DatadogClient {
     @Override
     public boolean serviceCheck(String name, Status status, String hostname, Map<String, Set<String>> tags) {
         try {
-            boolean initStatus = reinitialize(false);
+            boolean initStatus = reinitializeStatsDClient(false);
             if(!initStatus){
                 return false;
             }
@@ -459,7 +472,7 @@ public class DatadogAgentClient implements DatadogClient {
             return true;
         } catch(Exception e){
             DatadogUtilities.severe(logger, e, "Failed to send service check to DogStatsD");
-            reinitialize(true);
+            reinitializeStatsDClient(true);
             return false;
         }
     }
@@ -504,7 +517,7 @@ public class DatadogAgentClient implements DatadogClient {
             previousPayload = payload;
         }catch(Exception e){
             DatadogUtilities.severe(logger, e, "Failed to send log payload to DogStatsD");
-            reinitialize(true);
+            reinitializeStatsDClient(true);
             previousPayload = payload;
             return false;
         }
@@ -514,7 +527,7 @@ public class DatadogAgentClient implements DatadogClient {
     @Override
     public boolean startBuildTrace(BuildData buildData, Run<?, ?> run) {
         try {
-            boolean status = reinitializeTracer(false);
+            boolean status = reinitializeAgentHttpClient(false);
             if(!status) {
                 return false;
             }
@@ -524,7 +537,7 @@ public class DatadogAgentClient implements DatadogClient {
             return true;
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to start build trace");
-            reinitializeTracer(true);
+            reinitializeAgentHttpClient(true);
             return false;
         }
     }
@@ -533,7 +546,7 @@ public class DatadogAgentClient implements DatadogClient {
     @Override
     public boolean finishBuildTrace(BuildData buildData, Run<?, ?> run) {
         try {
-            boolean status = reinitializeTracer(false);
+            boolean status = reinitializeAgentHttpClient(false);
             if(!status) {
                 return false;
             }
@@ -542,7 +555,7 @@ public class DatadogAgentClient implements DatadogClient {
             return true;
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to finish build trace");
-            reinitializeTracer(true);
+            reinitializeAgentHttpClient(true);
             return false;
         }
     }
@@ -550,7 +563,7 @@ public class DatadogAgentClient implements DatadogClient {
     @Override
     public boolean sendPipelineTrace(Run<?, ?> run, FlowNode flowNode) {
         try {
-            boolean status = reinitializeTracer(false);
+            boolean status = reinitializeAgentHttpClient(false);
             if(!status) {
                 return false;
             }
@@ -560,7 +573,7 @@ public class DatadogAgentClient implements DatadogClient {
             return true;
         } catch (Exception e){
             DatadogUtilities.severe(logger, e, "Failed to send pipeline trace");
-            reinitializeTracer(true);
+            reinitializeAgentHttpClient(true);
             return false;
         }
     }

@@ -2,6 +2,7 @@ package org.datadog.jenkins.plugins.datadog.traces;
 
 import hudson.model.InvisibleAction;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 
 import java.io.Serializable;
 import java.util.HashMap;

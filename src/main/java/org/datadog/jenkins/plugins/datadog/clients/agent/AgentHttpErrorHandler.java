@@ -1,4 +1,4 @@
-package org.datadog.jenkins.plugins.datadog.transport;
+package org.datadog.jenkins.plugins.datadog.clients.agent;
 
 public interface AgentHttpErrorHandler {
 

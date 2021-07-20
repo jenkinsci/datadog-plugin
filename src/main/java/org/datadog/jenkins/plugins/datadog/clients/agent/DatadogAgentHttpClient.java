@@ -1,11 +1,7 @@
-package org.datadog.jenkins.plugins.datadog.transport;
+package org.datadog.jenkins.plugins.datadog.clients.agent;
 
-import org.datadog.jenkins.plugins.datadog.traces.TraceSpan;
-import org.datadog.jenkins.plugins.datadog.transport.mapper.JsonTraceSpanMapper;
-import org.datadog.jenkins.plugins.datadog.transport.message.DatadogAgentHttpTraceMessageFactory;
-import org.datadog.jenkins.plugins.datadog.transport.message.HttpMessage;
-
-import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -18,8 +14,8 @@ public class DatadogAgentHttpClient implements AgentHttpClient {
     };
 
     private final AgentHttpErrorHandler errorHandler;
-    private final AgentHttpMessageFactory<TraceSpan> httpMessageFactory;
     private final DatadogAgentHttpSender sender;
+    private final Map<MessageType, DatadogAgentHttpMessageFactory> messageFactoryByType;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor(new ThreadFactory() {
         final ThreadFactory delegate = Executors.defaultThreadFactory();
@@ -33,12 +29,9 @@ public class DatadogAgentHttpClient implements AgentHttpClient {
 
     private DatadogAgentHttpClient(final Builder builder) {
         try {
-            final URL tracesURL = new URL("http://" + builder.agentHost + ":" + builder.traceAgentPort + "/v0.3/traces");
-            final TraceSpanMapper tracerMapper = builder.mapper != null ? builder.mapper : new JsonTraceSpanMapper();
             this.errorHandler = builder.errorHandler != null ? builder.errorHandler : NO_OP_HANDLER;
             final int queueSize = builder.queueSize != null ? builder.queueSize : Integer.MAX_VALUE;
-            this.httpMessageFactory = builder.httpMessageFactory != null ? builder.httpMessageFactory : new DatadogAgentHttpTraceMessageFactory(tracesURL, tracerMapper);
-
+            this.messageFactoryByType = builder.messageFactoryByType;
             this.sender = createSender(queueSize, errorHandler);
             executor.submit(sender);
         } catch (Exception ex) {
@@ -50,12 +43,12 @@ public class DatadogAgentHttpClient implements AgentHttpClient {
         return new DatadogAgentHttpSender(queueSize, errorHandler);
     }
 
-    public static DatadogAgentHttpClient.Builder builder() {
+    public static Builder builder() {
         return new Builder();
     }
 
-    public void send(TraceSpan span) {
-        final HttpMessage message = httpMessageFactory.create(span);
+    public void send(AgentMessage msg) {
+        final HttpMessage message = this.messageFactoryByType.get(msg.getMessageType()).create(msg);
         this.sender.send(message);
     }
 
@@ -85,30 +78,11 @@ public class DatadogAgentHttpClient implements AgentHttpClient {
         stop();
     }
 
-
     public static class Builder {
 
-        private String agentHost;
-        private int traceAgentPort;
-        private TraceSpanMapper mapper;
         private AgentHttpErrorHandler errorHandler;
-        private AgentHttpMessageFactory httpMessageFactory;
         private Integer queueSize;
-
-        public Builder agentHost(final String agentHost) {
-            this.agentHost = agentHost;
-            return this;
-        }
-
-        public Builder traceAgentPort(final int traceAgentPort) {
-            this.traceAgentPort = traceAgentPort;
-            return this;
-        }
-
-        public Builder traceSpanMapper(final TraceSpanMapper mapper) {
-            this.mapper = mapper;
-            return this;
-        }
+        private Map<MessageType, DatadogAgentHttpMessageFactory> messageFactoryByType = new HashMap<>();
 
         public Builder errorHandler(final AgentHttpErrorHandler errorHandler) {
             this.errorHandler = errorHandler;
@@ -120,8 +94,8 @@ public class DatadogAgentHttpClient implements AgentHttpClient {
             return this;
         }
 
-        public Builder messageFactory(final AgentHttpMessageFactory messageFactory) {
-            this.httpMessageFactory = messageFactory;
+        public Builder messageFactory(final MessageType key, final DatadogAgentHttpMessageFactory messageFactory) {
+            this.messageFactoryByType.put(key, messageFactory);
             return this;
         }
 

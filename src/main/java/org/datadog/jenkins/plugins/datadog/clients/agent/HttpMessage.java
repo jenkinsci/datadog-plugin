@@ -1,4 +1,4 @@
-package org.datadog.jenkins.plugins.datadog.transport.message;
+package org.datadog.jenkins.plugins.datadog.clients.agent;
 
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 

@@ -1,14 +1,14 @@
-package org.datadog.jenkins.plugins.datadog.transport.mapper;
+package org.datadog.jenkins.plugins.datadog.traces.mapper;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-import org.datadog.jenkins.plugins.datadog.traces.TraceSpan;
-import org.datadog.jenkins.plugins.datadog.transport.TraceSpanMapper;
+import org.datadog.jenkins.plugins.datadog.clients.agent.PayloadMapper;
+import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
-public class JsonTraceSpanMapper implements TraceSpanMapper {
+public class JsonTraceSpanMapper implements PayloadMapper<TraceSpan> {
 
     @Override
     public byte[] map(final TraceSpan span) {

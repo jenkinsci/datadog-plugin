@@ -18,8 +18,8 @@ import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
-import org.datadog.jenkins.plugins.datadog.traces.TraceSpan;
-import org.datadog.jenkins.plugins.datadog.transport.FakeAgentHttpClient;
+import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
+import org.datadog.jenkins.plugins.datadog.transport.FakeTracesAgentHttpClient;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -70,7 +70,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         Thread.sleep(5000);
         jenkinsRule.createOnlineSlave(Label.get("testBuild"));
 
-        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        final FakeTracesAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(1);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(1, spans.size());
@@ -100,7 +100,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         FreeStyleBuild run = project.scheduleBuild2(0).get();
         final String buildPrefix = BuildPipelineNode.NodeType.PIPELINE.getTagName();
 
-        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        final FakeTracesAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(1);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(1, spans.size());
@@ -156,7 +156,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         }
         project.scheduleBuild2(0).get();
 
-        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        final FakeTracesAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(1);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(1, spans.size());
@@ -182,7 +182,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         }
         project.scheduleBuild2(0).get();
 
-        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        final FakeTracesAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(1);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(1, spans.size());
@@ -199,7 +199,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccess-notraces");
         project.scheduleBuild2(0).get();
 
-        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        final FakeTracesAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(0);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(0, spans.size());
@@ -215,7 +215,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessTags_job");
         project.scheduleBuild2(0).get();
 
-        final FakeAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
+        final FakeTracesAgentHttpClient agentHttpClient = clientStub.agentHttpClient();
         agentHttpClient.waitForTraces(1);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(1, spans.size());

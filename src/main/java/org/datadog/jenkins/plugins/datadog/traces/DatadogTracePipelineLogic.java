@@ -15,6 +15,7 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.clients.agent.AgentHttpClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipeline;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
@@ -24,7 +25,7 @@ import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
-import org.datadog.jenkins.plugins.datadog.transport.AgentHttpClient;
+import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
@@ -105,7 +106,6 @@ public class DatadogTracePipelineLogic {
         scanner.forEach(pipeline::add);
 
         final TraceSpan.TraceSpanContext traceSpanContext = buildSpanAction.getBuildSpanContext();
-
         final BuildPipelineNode root = pipeline.buildTree();
 
         try {
@@ -216,6 +216,7 @@ public class DatadogTracePipelineLogic {
         span.setResource(current.getName());
         span.setType("ci");
         span.putMeta(CITags.LANGUAGE_TAG_KEY, "");
+        span.setError(current.isError());
 
         final Map<String, Object> traceTags = buildTraceTags(run, current, buildData);
         // Set tags

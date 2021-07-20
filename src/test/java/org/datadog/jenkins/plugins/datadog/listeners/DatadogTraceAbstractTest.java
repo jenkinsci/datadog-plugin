@@ -14,7 +14,7 @@ import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
 import org.datadog.jenkins.plugins.datadog.traces.IsPipelineAction;
 import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
-import org.datadog.jenkins.plugins.datadog.traces.TraceSpan;
+import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 
 import java.util.Map;
 
