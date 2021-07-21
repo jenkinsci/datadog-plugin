@@ -336,23 +336,18 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(6, spans.size());
 
-        for(int i=0; i<spans.size(); i++) {
-            TraceSpan span = spans.get(i);
-            System.out.println("-- " + i + ", " + span.getOperationName() + ", " + span.getResourceName() + ", " + span.getStartNano());
-        }
-
-        final TraceSpan stage1 = spans.get(2);
+        final TraceSpan stage1 = searchSpan(spans, "Stage 1");
         final String stage1Name = stage1.getMeta().get(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME);
         assertTrue(stage1Name != null && !stage1Name.isEmpty());
 
-        final TraceSpan stepStage1 = spans.get(3);
+        final TraceSpan stepStage1 = searchFirstChild(spans, stage1);
         assertEquals(stage1Name, stepStage1.getMeta().get(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));
 
-        final TraceSpan stage2 = spans.get(4);
+        final TraceSpan stage2 = searchSpan(spans, "Stage 2");
         final String stage2Name = stage2.getMeta().get(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME);
         assertTrue(stage2Name != null && !stage2Name.isEmpty());
 
-        final TraceSpan stepStage2 = spans.get(5);
+        final TraceSpan stepStage2 = searchFirstChild(spans, stage2);
         assertEquals(stage2Name, stepStage2.getMeta().get(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));
     }
 
@@ -380,11 +375,6 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(6, spans.size());
 
-        for(int i=0; i<spans.size(); i++) {
-            TraceSpan span = spans.get(i);
-            System.out.println("-- " + i + ", " + span.getOperationName() + ", " + span.getResourceName() + ", " + span.getStartNano());
-        }
-
         final TraceSpan buildSpan = spans.get(0);
         assertEquals(Double.valueOf(0), buildSpan.getMetrics().get(CITags.QUEUE_TIME));
         assertEquals("master", buildSpan.getMeta().get(CITags.NODE_NAME));
@@ -395,7 +385,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals("master", runStages.getMeta().get(CITags.NODE_NAME));
         assertEquals("[\"master\"]", runStages.getMeta().get(CITags.NODE_LABELS));
 
-        final TraceSpan stage1 = spans.get(2);
+        final TraceSpan stage1 = searchSpan(spans, "Stage 1");
         final Double stage1QueueTime = stage1.getMetrics().get(CITags.QUEUE_TIME);
         assertTrue(stage1QueueTime > 0L);
         assertTrue(stage1QueueTime > TimeUnit.NANOSECONDS.toSeconds(stage1.getDurationNano()));
@@ -403,12 +393,12 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals(worker.getNodeName(), stage1.getMeta().get(CITags.NODE_NAME));
         assertTrue(stage1.getMeta().get(CITags.NODE_LABELS).contains("testStage"));
 
-        final TraceSpan stepStage1 = spans.get(3);
+        final TraceSpan stepStage1 = searchFirstChild(spans, stage1);
         assertEquals(Double.valueOf(0), stepStage1.getMetrics().get(CITags.QUEUE_TIME));
         assertEquals(worker.getNodeName(), stepStage1.getMeta().get(CITags.NODE_NAME));
         assertTrue(stepStage1.getMeta().get(CITags.NODE_LABELS).contains("testStage"));
 
-        final TraceSpan stage2 = spans.get(4);
+        final TraceSpan stage2 = searchSpan(spans, "Stage 2");
         final Double stage2QueueTime = stage2.getMetrics().get(CITags.QUEUE_TIME);
         assertTrue(stage2QueueTime > 0L);
         assertTrue(stage2QueueTime > TimeUnit.NANOSECONDS.toSeconds(stage2.getDurationNano()));
@@ -416,10 +406,28 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals(worker.getNodeName(), stage2.getMeta().get(CITags.NODE_NAME));
         assertTrue(stage2.getMeta().get(CITags.NODE_LABELS).contains("testStage"));
 
-        final TraceSpan stepStage2 = spans.get(5);
+        final TraceSpan stepStage2 = searchFirstChild(spans, stage2);
         assertEquals(Double.valueOf(0), stepStage2.getMetrics().get(CITags.QUEUE_TIME));
         assertEquals(worker.getNodeName(), stepStage2.getMeta().get(CITags.NODE_NAME));
         assertTrue(stepStage2.getMeta().get(CITags.NODE_LABELS).contains("testStage"));
+    }
+
+    private TraceSpan searchFirstChild(List<TraceSpan> spans, TraceSpan parentSpan) {
+        for(TraceSpan span : spans) {
+            if(span.context().getParentId() == parentSpan.context().getSpanId()) {
+                return span;
+            }
+        }
+        return null;
+    }
+
+    private TraceSpan searchSpan(List<TraceSpan> spans, String resourceName) {
+        for(TraceSpan span : spans) {
+            if(resourceName.equalsIgnoreCase(span.getResourceName())) {
+                return span;
+            }
+        }
+        return null;
     }
 
 
