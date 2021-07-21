@@ -10,40 +10,55 @@ import java.util.Map;
 
 public class JsonTraceSpanMapper implements PayloadMapper<TraceSpan> {
 
+    static final String TRACE_ID = "trace_id";
+    static final String SPAN_ID = "span_id";
+    static final String PARENT_ID = "parent_id";
+
+    static final String ERROR = "error";
+    static final String OPERATION_NAME = "name";
+    static final String RESOURCE_NAME = "resource";
+    static final String SERVICE_NAME = "service";
+    static final String SPAN_TYPE = "type";
+
+    static final String META = "meta";
+    static final String METRICS = "metrics";
+    static final String START = "start";
+    static final String DURATION = "duration";
+
     @Override
     public byte[] map(final TraceSpan span) {
         final JSONObject jsonSpan = new JSONObject();
-        jsonSpan.put("trace_id", span.context().getTraceId());
-        jsonSpan.put("span_id", span.context().getSpanId());
+        jsonSpan.put(TRACE_ID, span.context().getTraceId());
+        jsonSpan.put(SPAN_ID, span.context().getSpanId());
         if(span.context().getParentId() != 0){
-            jsonSpan.put("parent_id", span.context().getParentId());
+            jsonSpan.put(PARENT_ID, span.context().getParentId());
         }
 
         if(span.isError()){
-            jsonSpan.put("error", 1);
+            jsonSpan.put(ERROR, 1);
         }
 
-        jsonSpan.put("name", span.getOperationName());
-        jsonSpan.put("resource", span.getResourceName());
-        jsonSpan.put("service", span.getServiceName());
-        jsonSpan.put("type", span.getType());
+        jsonSpan.put(OPERATION_NAME, span.getOperationName());
+        jsonSpan.put(RESOURCE_NAME, span.getResourceName());
+        jsonSpan.put(SERVICE_NAME, span.getServiceName());
+        jsonSpan.put(SPAN_TYPE, span.getType());
 
         final JSONObject jsonMeta = new JSONObject();
         final Map<String, String> meta = span.getMeta();
         for(Map.Entry<String, String> metaEntry : meta.entrySet()) {
             jsonMeta.put(metaEntry.getKey(), metaEntry.getValue());
         }
-        jsonSpan.put("meta", jsonMeta);
+        jsonSpan.put(META, jsonMeta);
 
         final JSONObject jsonMetrics = new JSONObject();
         final Map<String, Double> metrics = span.getMetrics();
         for(Map.Entry<String, Double> metric : metrics.entrySet()){
             jsonMetrics.put(metric.getKey(), metric.getValue());
         }
-        jsonSpan.put("metrics", jsonMetrics);
+        jsonSpan.put(METRICS, jsonMetrics);
 
-        jsonSpan.put("start", span.getStartNano());
-        jsonSpan.put("duration", span.getDurationNano());
+        jsonSpan.put(START, span.getStartNano());
+        jsonSpan.put(DURATION, span.getDurationNano());
 
         JSONArray jsonTrace = new JSONArray();
         jsonTrace.add(jsonSpan);

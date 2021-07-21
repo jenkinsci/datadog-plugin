@@ -107,7 +107,7 @@ public class DatadogTraceBuildLogic {
         final String buildLevel = BuildPipelineNode.NodeType.PIPELINE.getBuildLevel();
         final long endTimeMicros = buildData.getEndTime(0L) * 1000;
 
-        buildSpan.setService(DatadogUtilities.getDatadogGlobalDescriptor().getCiInstanceName());
+        buildSpan.setServiceName(DatadogUtilities.getDatadogGlobalDescriptor().getCiInstanceName());
         buildSpan.setType("ci");
         buildSpan.putMeta(CITags.CI_PROVIDER_NAME, "jenkins");
         buildSpan.putMeta(CITags.LANGUAGE_TAG_KEY, "");
@@ -185,7 +185,7 @@ public class DatadogTraceBuildLogic {
         }
 
         final JobNameWrapper jobNameWrapper = new JobNameWrapper(buildData.getJobName(""), gitBranch != null ? gitBranch : gitTag);
-        buildSpan.setResource(jobNameWrapper.getTraceJobName());
+        buildSpan.setResourceName(jobNameWrapper.getTraceJobName());
 
         buildSpan.putMeta(prefix + CITags._NAME, jobNameWrapper.getTraceJobName());
 

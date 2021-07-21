@@ -212,8 +212,8 @@ public class DatadogTracePipelineLogic {
 
         // At this point, the current node is traceable.
         final TraceSpan span = new TraceSpan(buildOperationName(current), fixedStartTimeNanos + getNanosInQueue(current), parentSpanContext);
-        span.setService(DatadogUtilities.getDatadogGlobalDescriptor().getCiInstanceName());
-        span.setResource(current.getName());
+        span.setServiceName(DatadogUtilities.getDatadogGlobalDescriptor().getCiInstanceName());
+        span.setResourceName(current.getName());
         span.setType("ci");
         span.putMeta(CITags.LANGUAGE_TAG_KEY, "");
         span.setError(current.isError());

@@ -12,9 +12,9 @@ public class TraceSpan implements PayloadMessage {
     public static final String PRIORITY_SAMPLING_KEY = "_sampling_priority_v1";
 
     private final TraceSpanContext traceSpanContext;
-    private final String name;
-    private String service;
-    private String resource;
+    private final String operationName;
+    private String serviceName;
+    private String resourceName;
     private boolean error;
     private String type;
 
@@ -29,7 +29,7 @@ public class TraceSpan implements PayloadMessage {
     }
 
     public TraceSpan(final String name, final long startNano, final TraceSpanContext parent) {
-        this.name = name;
+        this.operationName = name;
         this.startNano = startNano;
         this.traceSpanContext = parent != null ? new TraceSpanContext(parent) : new TraceSpanContext();
 
@@ -61,12 +61,12 @@ public class TraceSpan implements PayloadMessage {
         this.type = type;
     }
 
-    public void setResource(final String resource) {
-        this.resource = resource;
+    public void setResourceName(final String resourceName) {
+        this.resourceName = resourceName;
     }
 
-    public void setService(final String service) {
-        this.service = service;
+    public void setServiceName(final String serviceName) {
+        this.serviceName = serviceName;
     }
 
     public void setError(boolean error) {
@@ -78,15 +78,15 @@ public class TraceSpan implements PayloadMessage {
     }
 
     public String getOperationName() {
-        return this.name;
+        return this.operationName;
     }
 
     public String getResourceName() {
-        return this.resource;
+        return this.resourceName;
     }
 
     public String getServiceName() {
-        return this.service;
+        return this.serviceName;
     }
 
     public String getType() {
