@@ -25,6 +25,8 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.clients;
 
+import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getHttpURLConnection;
+
 import hudson.ProxyConfiguration;
 import hudson.model.Run;
 import hudson.util.Secret;
@@ -546,50 +548,6 @@ public class DatadogHttpClient implements DatadogClient {
             }
         }
         return true;
-    }
-
-    /**
-     * Returns an HTTP url connection given a url object. Supports jenkins configured proxy.
-     *
-     * @param url - a URL object containing the URL to open a connection to.
-     * @return a HttpURLConnection object.
-     * @throws IOException if HttpURLConnection fails to open connection
-     */
-    private static HttpURLConnection getHttpURLConnection(final URL url) throws IOException {
-        HttpURLConnection conn = null;
-        ProxyConfiguration proxyConfig = null;
-
-        Jenkins jenkins = Jenkins.getInstance();
-        if(jenkins != null){
-            proxyConfig = jenkins.proxy;
-        }
-
-        /* Attempt to use proxy */
-        if (proxyConfig != null) {
-            Proxy proxy = proxyConfig.createProxy(url.getHost());
-            if (proxy != null && proxy.type() == Proxy.Type.HTTP) {
-                logger.fine("Attempting to use the Jenkins proxy configuration");
-                conn = (HttpURLConnection) url.openConnection(proxy);
-            }
-        } else {
-            logger.fine("Jenkins proxy configuration not found");
-        }
-
-        /* If proxy fails, use HttpURLConnection */
-        if (conn == null) {
-            conn = (HttpURLConnection) url.openConnection();
-            logger.fine("Using HttpURLConnection, without proxy");
-        }
-
-        /* Timeout of 1 minutes for connecting and reading.
-        * this prevents this plugin from causing jobs to hang in case of
-        * flaky network or Datadog being down. Left intentionally long.
-        */
-        int timeoutMS = 1 * 60 * 1000;
-        conn.setConnectTimeout(timeoutMS);
-        conn.setReadTimeout(timeoutMS);
-
-        return conn;
     }
 
     public static boolean validateDefaultIntakeConnection(String url, Secret apiKey) throws IOException {

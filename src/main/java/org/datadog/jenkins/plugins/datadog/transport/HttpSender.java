@@ -1,5 +1,8 @@
 package org.datadog.jenkins.plugins.datadog.transport;
 
+import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getHttpURLConnection;
+
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 
 import java.io.IOException;
@@ -58,10 +61,7 @@ public class HttpSender implements Runnable {
         HttpURLConnection conn = null;
         boolean status = true;
         try {
-            conn = (HttpURLConnection) message.getURL().openConnection();
-            int timeoutMS = 1 * 60 * 1000;
-            conn.setConnectTimeout(timeoutMS);
-            conn.setReadTimeout(timeoutMS);
+            conn = getHttpURLConnection(message.getURL());
             conn.setRequestMethod(message.getMethod().name());
             conn.setRequestProperty("Content-Type", message.getContentType());
             conn.setUseCaches(false);

@@ -336,6 +336,11 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(6, spans.size());
 
+        for(int i=0; i<spans.size(); i++) {
+            TraceSpan span = spans.get(i);
+            System.out.println("-- " + i + ", " + span.getOperationName() + ", " + span.getResourceName() + ", " + span.getStartNano());
+        }
+
         final TraceSpan stage1 = spans.get(2);
         final String stage1Name = stage1.getMeta().get(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME);
         assertTrue(stage1Name != null && !stage1Name.isEmpty());
@@ -374,6 +379,11 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         agentHttpClient.waitForTraces(6);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(6, spans.size());
+
+        for(int i=0; i<spans.size(); i++) {
+            TraceSpan span = spans.get(i);
+            System.out.println("-- " + i + ", " + span.getOperationName() + ", " + span.getResourceName() + ", " + span.getStartNano());
+        }
 
         final TraceSpan buildSpan = spans.get(0);
         assertEquals(Double.valueOf(0), buildSpan.getMetrics().get(CITags.QUEUE_TIME));

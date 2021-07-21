@@ -28,6 +28,7 @@ package org.datadog.jenkins.plugins.datadog;
 import hudson.EnvVars;
 import hudson.ExtensionList;
 import hudson.FilePath;
+import hudson.ProxyConfiguration;
 import hudson.XmlFile;
 import hudson.console.AnnotatedLargeText;
 import hudson.model.*;
@@ -66,7 +67,10 @@ import org.jenkinsci.plugins.workflow.steps.StepContext;
 
 import javax.annotation.Nonnull;
 import java.io.*;
+import java.net.HttpURLConnection;
 import java.net.Inet4Address;
+import java.net.Proxy;
+import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
@@ -881,6 +885,50 @@ public class DatadogUtilities {
      */
     public static String getGitRepositoryUrl(final Map<String, String> envVars) {
         return StringUtils.isNotEmpty(envVars.get("GIT_URL")) ? envVars.get("GIT_URL") : envVars.get("GIT_URL_1");
+    }
+
+    /**
+     * Returns an HTTP url connection given a url object. Supports jenkins configured proxy.
+     *
+     * @param url - a URL object containing the URL to open a connection to.
+     * @return a HttpURLConnection object.
+     * @throws IOException if HttpURLConnection fails to open connection
+     */
+    public static HttpURLConnection getHttpURLConnection(final URL url) throws IOException {
+        HttpURLConnection conn = null;
+        ProxyConfiguration proxyConfig = null;
+
+        Jenkins jenkins = Jenkins.getInstance();
+        if(jenkins != null){
+            proxyConfig = jenkins.proxy;
+        }
+
+        /* Attempt to use proxy */
+        if (proxyConfig != null) {
+            Proxy proxy = proxyConfig.createProxy(url.getHost());
+            if (proxy != null && proxy.type() == Proxy.Type.HTTP) {
+                logger.fine("Attempting to use the Jenkins proxy configuration");
+                conn = (HttpURLConnection) url.openConnection(proxy);
+            }
+        } else {
+            logger.fine("Jenkins proxy configuration not found");
+        }
+
+        /* If proxy fails, use HttpURLConnection */
+        if (conn == null) {
+            conn = (HttpURLConnection) url.openConnection();
+            logger.fine("Using HttpURLConnection, without proxy");
+        }
+
+        /* Timeout of 1 minutes for connecting and reading.
+         * this prevents this plugin from causing jobs to hang in case of
+         * flaky network or Datadog being down. Left intentionally long.
+         */
+        int timeoutMS = 1 * 60 * 1000;
+        conn.setConnectTimeout(timeoutMS);
+        conn.setReadTimeout(timeoutMS);
+
+        return conn;
     }
 
 }

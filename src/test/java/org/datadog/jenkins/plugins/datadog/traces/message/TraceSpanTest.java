@@ -9,7 +9,6 @@ public class TraceSpanTest {
 
     @Test
     public void testCorrectPrioritySamplingValue() {
-        //Given
         final TraceSpan sut = new TraceSpan("test-name", 0);
         assertEquals(Double.valueOf(1), sut.getMetrics().get(PRIORITY_SAMPLING_KEY));
     }
