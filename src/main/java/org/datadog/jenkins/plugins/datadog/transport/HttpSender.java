@@ -8,8 +8,11 @@ import java.net.HttpURLConnection;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 public class HttpSender implements Runnable {
+
+    private static final Logger logger = Logger.getLogger(HttpSender.class.getName());
 
     private final BlockingQueue<HttpMessage> queue;
     private final HttpErrorHandler errorHandler;
@@ -70,16 +73,18 @@ public class HttpSender implements Runnable {
             outputStream.close();
 
             int httpStatus = conn.getResponseCode();
-            System.out.println(""+httpStatus);
-
+            if(httpStatus >= 400) {
+                logger.severe("Failed to send HTTP request: "+message.getMethod()+" "+ message.getURL()+ " - Status: HTTP "+conn.getResponseCode());
+                status = false;
+            }
         } catch (Exception ex) {
-            System.out.println("--- EXCEPTION: " + ex);
+            errorHandler.handle(ex);
             try {
                 if(conn != null) {
-                    System.out.println("--- Failed HTTP Status: " + conn.getResponseCode());
+                    logger.severe("Failed to send HTTP request: "+message.getMethod()+" "+ message.getURL()+ " - Status: HTTP "+conn.getResponseCode());
                 }
             } catch (IOException ioex) {
-                System.out.println("--- Failed to inspect HTTP response");
+                errorHandler.handle(ioex);
             }
             status = false;
         } finally {

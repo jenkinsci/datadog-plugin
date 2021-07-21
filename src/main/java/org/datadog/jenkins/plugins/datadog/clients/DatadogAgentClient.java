@@ -25,6 +25,8 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.clients;
 
+import static org.datadog.jenkins.plugins.datadog.transport.LoggerHttpErrorHandler.LOGGER_HTTP_ERROR_HANDLER;
+
 import com.timgroup.statsd.Event;
 import com.timgroup.statsd.NonBlockingStatsDClient;
 import com.timgroup.statsd.ServiceCheck;
@@ -274,14 +276,17 @@ public class DatadogAgentClient implements DatadogClient {
 
         try {
             this.stopAgentHttpClient();
-            logger.info("Re/Initialize Datadog-Plugin Agent Http Client: hostname = " + this.hostname + ", traceCollectionPort = " + this.traceCollectionPort);
+            logger.info("Re/Initialize Datadog-Plugin Agent Http Client");
+            final URL tracesURL = new URL("http://"+this.hostname+":"+this.traceCollectionPort+"/v0.3/traces");
             this.agentHttpClient = NonBlockingHttpClient.builder()
+                    .errorHandler(LOGGER_HTTP_ERROR_HANDLER)
                     .messageRoute(PayloadMessage.Type.TRACE, HttpMessageFactory.builder()
-                            .agentURL(new URL("http://"+this.hostname+":"+this.traceCollectionPort+"/v0.3/traces"))
+                            .agentURL(tracesURL)
                             .httpMethod(HttpMessage.HttpMethod.PUT)
                             .payloadMapper(new JsonTraceSpanMapper())
                             .build())
                     .build();
+            logger.info("-- Added Route: TRACE -> "+tracesURL.toString());
 
             traceBuildLogic = new DatadogTraceBuildLogic(agentHttpClient);
             tracePipelineLogic = new DatadogTracePipelineLogic(agentHttpClient);
