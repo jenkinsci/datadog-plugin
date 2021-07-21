@@ -18,20 +18,9 @@ public class BuildSpanAction extends InvisibleAction implements Serializable {
     private final BuildData buildData;
     private final TraceSpan.TraceSpanContext buildSpanContext;
 
-    //TODO Remove Java Tracer
-    private Map<String, String> buildSpanPropatationOld;
-
-
     public BuildSpanAction(final BuildData buildData, final TraceSpan.TraceSpanContext buildSpanContext){
-        this.buildData = buildData;
-        this.buildSpanPropatationOld = new HashMap<>();
-
+       this.buildData = buildData;
        this.buildSpanContext = buildSpanContext;
-    }
-
-    //TODO Remove Java Tracer
-    public Map<String, String> getBuildSpanPropatationOld() {
-        return buildSpanPropatationOld;
     }
 
     public BuildData getBuildData() {
