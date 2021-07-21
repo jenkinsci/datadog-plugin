@@ -73,8 +73,9 @@ public class HttpSender implements Runnable {
             outputStream.close();
 
             int httpStatus = conn.getResponseCode();
+            logger.fine("HTTP/"+message.getMethod()+" " + message.getURL() + " ["+payload.length+" bytes] --> HTTP " + httpStatus);
             if(httpStatus >= 400) {
-                logger.severe("Failed to send HTTP request: "+message.getMethod()+" "+ message.getURL()+ " - Status: HTTP "+conn.getResponseCode());
+                logger.severe("Failed to send HTTP request: "+message.getMethod()+" "+ message.getURL()+ " - Status: HTTP "+httpStatus);
                 status = false;
             }
         } catch (Exception ex) {
