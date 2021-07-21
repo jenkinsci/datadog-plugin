@@ -1,4 +1,4 @@
-package org.datadog.jenkins.plugins.datadog.clients.agent;
+package org.datadog.jenkins.plugins.datadog.transport;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -7,47 +7,43 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-public class DatadogAgentHttpClient implements AgentHttpClient {
+public class NonBlockingHttpClient implements HttpClient {
 
-    private static final AgentHttpErrorHandler NO_OP_HANDLER = new AgentHttpErrorHandler() {
+    private static final HttpErrorHandler NO_OP_HANDLER = new HttpErrorHandler() {
         @Override public void handle(final Exception e) { /* No-op */ }
     };
 
-    private final AgentHttpErrorHandler errorHandler;
-    private final DatadogAgentHttpSender sender;
-    private final Map<MessageType, DatadogAgentHttpMessageFactory> messageFactoryByType;
+    private final HttpErrorHandler errorHandler;
+    private final HttpSender sender;
+    private final Map<PayloadMessage.Type, HttpMessageFactory> messageFactoryByType;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor(new ThreadFactory() {
         final ThreadFactory delegate = Executors.defaultThreadFactory();
         @Override public Thread newThread(final Runnable r) {
             final Thread result = delegate.newThread(r);
-            result.setName("DDAgentHttp-" + result.getName());
+            result.setName("DDNonBlockingHttpClient-" + result.getName());
             result.setDaemon(true);
             return result;
         }
     });
 
-    private DatadogAgentHttpClient(final Builder builder) {
-        try {
-            this.errorHandler = builder.errorHandler != null ? builder.errorHandler : NO_OP_HANDLER;
-            final int queueSize = builder.queueSize != null ? builder.queueSize : Integer.MAX_VALUE;
-            this.messageFactoryByType = builder.messageFactoryByType;
-            this.sender = createSender(queueSize, errorHandler);
-            executor.submit(sender);
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    protected DatadogAgentHttpSender createSender(final int queueSize, final AgentHttpErrorHandler errorHandler) {
-        return new DatadogAgentHttpSender(queueSize, errorHandler);
+    private NonBlockingHttpClient(final Builder builder) {
+        final int queueSize = builder.queueSize != null ? builder.queueSize : Integer.MAX_VALUE;
+        this.errorHandler = builder.errorHandler != null ? builder.errorHandler : NO_OP_HANDLER;
+        this.messageFactoryByType = builder.messageFactoryByType;
+        this.sender = createSender(queueSize, errorHandler);
+        executor.submit(sender);
     }
 
     public static Builder builder() {
         return new Builder();
     }
 
-    public void send(AgentMessage msg) {
+    private HttpSender createSender(final int queueSize, final HttpErrorHandler errorHandler) {
+        return new HttpSender(queueSize, errorHandler);
+    }
+
+    public void send(PayloadMessage msg) {
         final HttpMessage message = this.messageFactoryByType.get(msg.getMessageType()).create(msg);
         this.sender.send(message);
     }
@@ -80,11 +76,11 @@ public class DatadogAgentHttpClient implements AgentHttpClient {
 
     public static class Builder {
 
-        private AgentHttpErrorHandler errorHandler;
+        private HttpErrorHandler errorHandler;
         private Integer queueSize;
-        private Map<MessageType, DatadogAgentHttpMessageFactory> messageFactoryByType = new HashMap<>();
+        private Map<PayloadMessage.Type, HttpMessageFactory> messageFactoryByType = new HashMap<>();
 
-        public Builder errorHandler(final AgentHttpErrorHandler errorHandler) {
+        public Builder errorHandler(final HttpErrorHandler errorHandler) {
             this.errorHandler = errorHandler;
             return this;
         }
@@ -94,13 +90,13 @@ public class DatadogAgentHttpClient implements AgentHttpClient {
             return this;
         }
 
-        public Builder messageFactory(final MessageType key, final DatadogAgentHttpMessageFactory messageFactory) {
+        public Builder messageRoute(final PayloadMessage.Type key, final HttpMessageFactory messageFactory) {
             this.messageFactoryByType.put(key, messageFactory);
             return this;
         }
 
-        public DatadogAgentHttpClient build() {
-            return new DatadogAgentHttpClient(this);
+        public NonBlockingHttpClient build() {
+            return new NonBlockingHttpClient(this);
         }
 
     }

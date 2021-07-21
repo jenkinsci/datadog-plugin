@@ -1,14 +1,13 @@
 package org.datadog.jenkins.plugins.datadog.traces.message;
 
-import org.datadog.jenkins.plugins.datadog.clients.agent.AgentMessage;
-import org.datadog.jenkins.plugins.datadog.clients.agent.MessageType;
 import org.datadog.jenkins.plugins.datadog.traces.IdGenerator;
+import org.datadog.jenkins.plugins.datadog.transport.PayloadMessage;
 
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TraceSpan implements AgentMessage {
+public class TraceSpan implements PayloadMessage {
 
     public static final String PRIORITY_SAMPLING_KEY = "_sampling_priority_v1";
 
@@ -115,8 +114,8 @@ public class TraceSpan implements AgentMessage {
     }
 
     @Override
-    public MessageType getMessageType() {
-        return MessageType.TRACE;
+    public PayloadMessage.Type getMessageType() {
+        return PayloadMessage.Type.TRACE;
     }
 
     public static class TraceSpanContext implements Serializable {

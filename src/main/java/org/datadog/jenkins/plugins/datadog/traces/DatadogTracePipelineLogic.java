@@ -15,7 +15,7 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.agent.AgentHttpClient;
+import org.datadog.jenkins.plugins.datadog.transport.HttpClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipeline;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
@@ -55,9 +55,9 @@ public class DatadogTracePipelineLogic {
     private static final String HOSTNAME_NONE = "none";
     private static final Logger logger = Logger.getLogger(DatadogTracePipelineLogic.class.getName());
 
-    private final AgentHttpClient agentHttpClient;
+    private final HttpClient agentHttpClient;
 
-    public DatadogTracePipelineLogic(AgentHttpClient agentHttpClient) {
+    public DatadogTracePipelineLogic(HttpClient agentHttpClient) {
         this.agentHttpClient = agentHttpClient;
     }
 

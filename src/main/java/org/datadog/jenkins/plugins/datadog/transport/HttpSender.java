@@ -1,4 +1,4 @@
-package org.datadog.jenkins.plugins.datadog.clients.agent;
+package org.datadog.jenkins.plugins.datadog.transport;
 
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 
@@ -9,17 +9,17 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-public class DatadogAgentHttpSender implements Runnable {
+public class HttpSender implements Runnable {
 
     private final BlockingQueue<HttpMessage> queue;
-    private final AgentHttpErrorHandler errorHandler;
+    private final HttpErrorHandler errorHandler;
     private volatile boolean shutdown;
 
-    DatadogAgentHttpSender(final int queueSize, final AgentHttpErrorHandler errorHandler) {
+    HttpSender(final int queueSize, final HttpErrorHandler errorHandler) {
         this(new LinkedBlockingQueue<HttpMessage>(queueSize), errorHandler);
     }
 
-    DatadogAgentHttpSender(final BlockingQueue<HttpMessage> queue, final AgentHttpErrorHandler errorHandler) {
+    HttpSender(final BlockingQueue<HttpMessage> queue, final HttpErrorHandler errorHandler) {
         this.queue = queue;
         this.errorHandler = errorHandler;
     }
@@ -59,7 +59,7 @@ public class DatadogAgentHttpSender implements Runnable {
             int timeoutMS = 1 * 60 * 1000;
             conn.setConnectTimeout(timeoutMS);
             conn.setReadTimeout(timeoutMS);
-            conn.setRequestMethod(message.getMethod());
+            conn.setRequestMethod(message.getMethod().name());
             conn.setRequestProperty("Content-Type", message.getContentType());
             conn.setUseCaches(false);
             conn.setDoOutput(true);

@@ -1,14 +1,14 @@
-package org.datadog.jenkins.plugins.datadog.clients.agent;
+package org.datadog.jenkins.plugins.datadog.transport;
 
 import java.net.URL;
 
-public class DatadogAgentHttpMessageFactory {
+public class HttpMessageFactory {
 
     private final URL agentURL;
-    private final HttpMethod httpMethod;
-    private final PayloadMapper payloadMapper;
+    private final HttpMessage.HttpMethod httpMethod;
+    private final PayloadMapper<PayloadMessage> payloadMapper;
 
-    private DatadogAgentHttpMessageFactory(final Builder builder) {
+    private HttpMessageFactory(final Builder builder) {
         this.agentURL = builder.agentURL;
         this.httpMethod = builder.httpMethod;
         this.payloadMapper = builder.payloadMapper;
@@ -21,15 +21,15 @@ public class DatadogAgentHttpMessageFactory {
     public static class Builder {
 
         private URL agentURL;
-        private HttpMethod httpMethod;
-        private PayloadMapper payloadMapper;
+        private HttpMessage.HttpMethod httpMethod;
+        private PayloadMapper<PayloadMessage> payloadMapper;
 
         public Builder agentURL(URL agentURL) {
             this.agentURL = agentURL;
             return this;
         }
 
-        public Builder httpMethod(final HttpMethod httpMethod) {
+        public Builder httpMethod(final HttpMessage.HttpMethod httpMethod) {
             this.httpMethod = httpMethod;
             return this;
         }
@@ -39,12 +39,12 @@ public class DatadogAgentHttpMessageFactory {
             return this;
         }
 
-        public DatadogAgentHttpMessageFactory build() {
-            return new DatadogAgentHttpMessageFactory(this);
+        public HttpMessageFactory build() {
+            return new HttpMessageFactory(this);
         }
     }
 
-    public HttpMessage create(Object obj) {
-        return new HttpMessage(this.agentURL, this.httpMethod.name(), this.payloadMapper.contentType(), this.payloadMapper.map(obj));
+    public HttpMessage create(PayloadMessage msg) {
+        return new HttpMessage(this.agentURL, this.httpMethod, this.payloadMapper.contentType(), this.payloadMapper.map(msg));
     }
 }

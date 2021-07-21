@@ -2,7 +2,7 @@ package org.datadog.jenkins.plugins.datadog.traces.mapper;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-import org.datadog.jenkins.plugins.datadog.clients.agent.PayloadMapper;
+import org.datadog.jenkins.plugins.datadog.transport.PayloadMapper;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 
 import java.nio.charset.StandardCharsets;

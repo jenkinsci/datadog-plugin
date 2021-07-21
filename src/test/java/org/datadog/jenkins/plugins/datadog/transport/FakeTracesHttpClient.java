@@ -1,7 +1,5 @@
 package org.datadog.jenkins.plugins.datadog.transport;
 
-import org.datadog.jenkins.plugins.datadog.clients.agent.AgentHttpClient;
-import org.datadog.jenkins.plugins.datadog.clients.agent.AgentMessage;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,17 +14,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class FakeTracesAgentHttpClient implements AgentHttpClient {
-    private static final Logger log = LoggerFactory.getLogger(FakeTracesAgentHttpClient.class);
+public class FakeTracesHttpClient implements HttpClient {
+    private static final Logger log = LoggerFactory.getLogger(FakeTracesHttpClient.class);
 
     private final List<TraceSpan> spans = new CopyOnWriteArrayList<>();
     private final List<CountDownLatch> latches = new ArrayList();
     private final AtomicInteger traceCount = new AtomicInteger();
 
     @Override
-    public void send(AgentMessage msg) {
+    public void send(PayloadMessage msg) {
         final TraceSpan span = (TraceSpan) msg;
-        System.out.println("--- send: " + span.getOperationName());
         this.traceCount.incrementAndGet();
         synchronized (this.latches) {
             spans.add(span);

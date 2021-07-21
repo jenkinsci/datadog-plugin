@@ -33,7 +33,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTracePipelineLogic;
-import org.datadog.jenkins.plugins.datadog.transport.FakeTracesAgentHttpClient;
+import org.datadog.jenkins.plugins.datadog.transport.FakeTracesHttpClient;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.junit.Assert;
 
@@ -52,7 +52,7 @@ public class DatadogClientStub implements DatadogClient {
     public List<DatadogEventStub> events;
     public List<JSONObject> logLines;
 
-    public FakeTracesAgentHttpClient agentHttpClient;
+    public FakeTracesHttpClient agentHttpClient;
 
     public DatadogTraceBuildLogic traceBuildLogic;
     public DatadogTracePipelineLogic tracePipelineLogic;
@@ -62,7 +62,7 @@ public class DatadogClientStub implements DatadogClient {
         this.serviceChecks = new ArrayList<>();
         this.events = new ArrayList<>();
         this.logLines = new ArrayList<>();
-        this.agentHttpClient = new FakeTracesAgentHttpClient();
+        this.agentHttpClient = new FakeTracesHttpClient();
         this.traceBuildLogic = new DatadogTraceBuildLogic(this.agentHttpClient);
         this.tracePipelineLogic = new DatadogTracePipelineLogic(this.agentHttpClient);
     }
@@ -179,7 +179,7 @@ public class DatadogClientStub implements DatadogClient {
         return true;
     }
 
-    public FakeTracesAgentHttpClient agentHttpClient(){
+    public FakeTracesHttpClient agentHttpClient(){
         return this.agentHttpClient;
     }
 

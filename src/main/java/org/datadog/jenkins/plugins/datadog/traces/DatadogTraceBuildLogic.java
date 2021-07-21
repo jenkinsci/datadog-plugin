@@ -10,7 +10,7 @@ import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommi
 import hudson.model.Result;
 import hudson.model.Run;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.agent.AgentHttpClient;
+import org.datadog.jenkins.plugins.datadog.transport.HttpClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
@@ -39,9 +39,9 @@ public class DatadogTraceBuildLogic {
     private static final String HOSTNAME_NONE = "none";
     private static final Logger logger = Logger.getLogger(DatadogTraceBuildLogic.class.getName());
 
-    private final AgentHttpClient agentHttpClient;
+    private final HttpClient agentHttpClient;
 
-    public DatadogTraceBuildLogic(final AgentHttpClient agentHttpClient) {
+    public DatadogTraceBuildLogic(final HttpClient agentHttpClient) {
         this.agentHttpClient = agentHttpClient;
     }
 

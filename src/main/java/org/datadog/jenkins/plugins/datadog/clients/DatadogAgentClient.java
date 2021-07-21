@@ -35,15 +35,15 @@ import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.agent.AgentHttpClient;
-import org.datadog.jenkins.plugins.datadog.clients.agent.DatadogAgentHttpClient;
-import org.datadog.jenkins.plugins.datadog.clients.agent.DatadogAgentHttpMessageFactory;
-import org.datadog.jenkins.plugins.datadog.clients.agent.HttpMethod;
-import org.datadog.jenkins.plugins.datadog.clients.agent.MessageType;
+import org.datadog.jenkins.plugins.datadog.transport.HttpMessage;
+import org.datadog.jenkins.plugins.datadog.transport.HttpClient;
+import org.datadog.jenkins.plugins.datadog.transport.HttpMessageFactory;
+import org.datadog.jenkins.plugins.datadog.transport.NonBlockingHttpClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTracePipelineLogic;
 import org.datadog.jenkins.plugins.datadog.traces.mapper.JsonTraceSpanMapper;
+import org.datadog.jenkins.plugins.datadog.transport.PayloadMessage;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
@@ -74,7 +74,7 @@ public class DatadogAgentClient implements DatadogClient {
     @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL")
     public static boolean enableValidations = true;
 
-    private AgentHttpClient agentHttpClient;
+    private HttpClient agentHttpClient;
     private DatadogTraceBuildLogic traceBuildLogic;
     private DatadogTracePipelineLogic tracePipelineLogic;
 
@@ -275,10 +275,10 @@ public class DatadogAgentClient implements DatadogClient {
         try {
             this.stopAgentHttpClient();
             logger.info("Re/Initialize Datadog-Plugin Agent Http Client: hostname = " + this.hostname + ", traceCollectionPort = " + this.traceCollectionPort);
-            this.agentHttpClient = DatadogAgentHttpClient.builder()
-                    .messageFactory(MessageType.TRACE, DatadogAgentHttpMessageFactory.builder()
+            this.agentHttpClient = NonBlockingHttpClient.builder()
+                    .messageRoute(PayloadMessage.Type.TRACE, HttpMessageFactory.builder()
                             .agentURL(new URL("http://"+this.hostname+":"+this.traceCollectionPort+"/v0.3/traces"))
-                            .httpMethod(HttpMethod.PUT)
+                            .httpMethod(HttpMessage.HttpMethod.PUT)
                             .payloadMapper(new JsonTraceSpanMapper())
                             .build())
                     .build();
