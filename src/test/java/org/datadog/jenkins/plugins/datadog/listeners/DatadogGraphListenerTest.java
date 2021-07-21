@@ -332,7 +332,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         jenkinsRule.createOnlineSlave(Label.get("testStageName"));
 
         final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
-        agentHttpClient.waitForTraces(6);
+        agentHttpClient.waitForTraces(2);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(6, spans.size());
 

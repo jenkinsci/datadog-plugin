@@ -1,6 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.transport;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,9 +44,14 @@ public class NonBlockingHttpClient implements HttpClient {
         return new HttpSender(queueSize, errorHandler);
     }
 
-    public void send(PayloadMessage msg) {
-        final HttpMessage message = this.messageFactoryByType.get(msg.getMessageType()).create(msg);
-        this.sender.send(message);
+    public void send(List<PayloadMessage> messages) {
+        if(messages != null && !messages.isEmpty()) {
+            // We assume all payload messages belong to the same message type for now.
+            final PayloadMessage.Type type = messages.get(0).getMessageType();
+            final HttpMessage message = this.messageFactoryByType.get(type).create(messages);
+            this.sender.send(message);
+        }
+
     }
 
     @Override

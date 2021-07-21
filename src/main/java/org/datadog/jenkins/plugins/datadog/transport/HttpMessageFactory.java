@@ -1,12 +1,13 @@
 package org.datadog.jenkins.plugins.datadog.transport;
 
 import java.net.URL;
+import java.util.List;
 
 public class HttpMessageFactory {
 
     private final URL agentURL;
     private final HttpMessage.HttpMethod httpMethod;
-    private final PayloadMapper<PayloadMessage> payloadMapper;
+    private final PayloadMapper<List<PayloadMessage>> payloadMapper;
 
     private HttpMessageFactory(final Builder builder) {
         this.agentURL = builder.agentURL;
@@ -22,7 +23,7 @@ public class HttpMessageFactory {
 
         private URL agentURL;
         private HttpMessage.HttpMethod httpMethod;
-        private PayloadMapper<PayloadMessage> payloadMapper;
+        private PayloadMapper<List<PayloadMessage>> payloadMapper;
 
         public Builder agentURL(URL agentURL) {
             this.agentURL = agentURL;
@@ -44,7 +45,7 @@ public class HttpMessageFactory {
         }
     }
 
-    public HttpMessage create(PayloadMessage msg) {
-        return new HttpMessage(this.agentURL, this.httpMethod, this.payloadMapper.contentType(), this.payloadMapper.map(msg));
+    public HttpMessage create(List<PayloadMessage> messages) {
+        return new HttpMessage(this.agentURL, this.httpMethod, this.payloadMapper.contentType(), this.payloadMapper.map(messages));
     }
 }

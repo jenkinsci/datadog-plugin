@@ -26,6 +26,7 @@ import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
+import org.datadog.jenkins.plugins.datadog.transport.PayloadMessage;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
@@ -37,6 +38,7 @@ import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -108,8 +110,13 @@ public class DatadogTracePipelineLogic {
         final TraceSpan.TraceSpanContext traceSpanContext = buildSpanAction.getBuildSpanContext();
         final BuildPipelineNode root = pipeline.buildTree();
 
+        final List<PayloadMessage> spanBuffer = new ArrayList<>();
+        collectTraces(run, spanBuffer, buildData, root, traceSpanContext);
+
         try {
-            sendTrace(run, buildData, root, traceSpanContext);
+            if(!spanBuffer.isEmpty()) {
+                agentHttpClient.send(spanBuffer);
+            }
         } catch (Exception e){
             logger.severe("Unable to send traces. Exception:" + e);
         } finally {
@@ -195,11 +202,11 @@ public class DatadogTracePipelineLogic {
         }
     }
 
-    private void sendTrace(final Run run, final BuildData buildData, final BuildPipelineNode current, final TraceSpan.TraceSpanContext parentSpanContext) {
+    private void collectTraces(final Run run, final List<PayloadMessage> spanBuffer, final BuildData buildData, final BuildPipelineNode current, final TraceSpan.TraceSpanContext parentSpanContext) {
         if(!isTraceable(current)) {
             // If the current node is not traceable, we continue with its children
             for(final BuildPipelineNode child : current.getChildren()) {
-                sendTrace(run, buildData, child, parentSpanContext);
+                collectTraces(run, spanBuffer, buildData, child, parentSpanContext);
             }
             return;
         }
@@ -239,7 +246,7 @@ public class DatadogTracePipelineLogic {
         }
 
         for(final BuildPipelineNode child : current.getChildren()) {
-            sendTrace(run, buildData, child, span.context());
+            collectTraces(run, spanBuffer, buildData, child, span.context());
         }
 
         //Logs
@@ -247,7 +254,7 @@ public class DatadogTracePipelineLogic {
 
         span.setEndNano(fixedEndTimeNanos);
 
-        agentHttpClient.send(span);
+        spanBuffer.add(span);
     }
 
     private Long getNanosInQueue(BuildPipelineNode current) {

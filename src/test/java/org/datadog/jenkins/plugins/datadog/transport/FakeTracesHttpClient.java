@@ -22,15 +22,17 @@ public class FakeTracesHttpClient implements HttpClient {
     private final AtomicInteger traceCount = new AtomicInteger();
 
     @Override
-    public void send(PayloadMessage msg) {
-        final TraceSpan span = (TraceSpan) msg;
-        this.traceCount.incrementAndGet();
-        synchronized (this.latches) {
-            spans.add(span);
-            for(final CountDownLatch latch : latches) {
-                if(spans.size() >= latch.getCount()) {
-                    while (latch.getCount() > 0) {
-                        latch.countDown();
+    public void send(List<PayloadMessage> messages) {
+        for(PayloadMessage msg : messages){
+            final TraceSpan span = (TraceSpan) msg;
+            this.traceCount.incrementAndGet();
+            synchronized (this.latches) {
+                spans.add(span);
+                for(final CountDownLatch latch : latches) {
+                    if(spans.size() >= latch.getCount()) {
+                        while (latch.getCount() > 0) {
+                            latch.countDown();
+                        }
                     }
                 }
             }

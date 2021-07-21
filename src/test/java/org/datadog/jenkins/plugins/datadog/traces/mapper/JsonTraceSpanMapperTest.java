@@ -20,6 +20,8 @@ import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 
 public class JsonTraceSpanMapperTest {
@@ -39,7 +41,7 @@ public class JsonTraceSpanMapperTest {
         span.setEndNano(1000);
 
         //When
-        final JSONArray traces = JSONArray.fromObject(new String(sut.map(span), StandardCharsets.UTF_8));
+        final JSONArray traces = JSONArray.fromObject(new String(sut.map(Collections.singletonList(span)), StandardCharsets.UTF_8));
 
         //Then
         assertEquals(1, traces.size());
@@ -62,4 +64,29 @@ public class JsonTraceSpanMapperTest {
         assertEquals(1000, jsonSpan.get(DURATION));
     }
 
+    @Test
+    public void testSameTrace() {
+        //Given
+        final TraceSpan rootSpan = new TraceSpan("root", 0);
+        final TraceSpan childSpan = new TraceSpan("child", 0, rootSpan.context());
+
+        //When
+        final JSONArray traces = JSONArray.fromObject(new String(sut.map(Arrays.asList(rootSpan, childSpan)), StandardCharsets.UTF_8));
+
+        //Then
+        assertEquals(1, traces.size());
+    }
+
+    @Test
+    public void testDifferentTrace() {
+        //Given
+        final TraceSpan rootOneSpan = new TraceSpan("rootOne", 0);
+        final TraceSpan rootTwoSpan = new TraceSpan("rootTwo", 0);
+
+        //When
+        final JSONArray traces = JSONArray.fromObject(new String(sut.map(Arrays.asList(rootOneSpan, rootTwoSpan)), StandardCharsets.UTF_8));
+
+        //Then
+        assertEquals(2, traces.size());
+    }
 }

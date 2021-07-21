@@ -242,7 +242,7 @@ public class DatadogTraceBuildLogic {
         // When the root span starts, we don't have the propagated queue time yet. We need to wait till the
         // end of the pipeline execution and do it in the endTime, adjusting all child spans if needed.
         buildSpan.setEndNano(TimeUnit.MICROSECONDS.toNanos(endTimeMicros - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue)));
-        agentHttpClient.send(buildSpan);
+        agentHttpClient.send(Collections.singletonList(buildSpan));
     }
 
     private String getNodeName(Run<?, ?> run, BuildData buildData, BuildData updatedBuildData) {
