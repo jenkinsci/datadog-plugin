@@ -286,7 +286,6 @@ public class DatadogAgentClient implements DatadogClient {
                             .payloadMapper(new JsonTraceSpanMapper())
                             .build())
                     .build();
-            logger.info("-- Added Route: TRACE -> "+tracesURL.toString());
 
             traceBuildLogic = new DatadogTraceBuildLogic(agentHttpClient);
             tracePipelineLogic = new DatadogTracePipelineLogic(agentHttpClient);

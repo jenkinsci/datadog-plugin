@@ -5,12 +5,12 @@ import java.util.List;
 
 public class HttpMessageFactory {
 
-    private final URL agentURL;
+    private final URL url;
     private final HttpMessage.HttpMethod httpMethod;
     private final PayloadMapper<List<PayloadMessage>> payloadMapper;
 
     private HttpMessageFactory(final Builder builder) {
-        this.agentURL = builder.agentURL;
+        this.url = builder.agentURL;
         this.httpMethod = builder.httpMethod;
         this.payloadMapper = builder.payloadMapper;
     }
@@ -45,7 +45,11 @@ public class HttpMessageFactory {
         }
     }
 
+    public URL getURL() {
+        return this.url;
+    }
+
     public HttpMessage create(List<PayloadMessage> messages) {
-        return new HttpMessage(this.agentURL, this.httpMethod, this.payloadMapper.contentType(), this.payloadMapper.map(messages));
+        return new HttpMessage(this.url, this.httpMethod, this.payloadMapper.contentType(), this.payloadMapper.map(messages));
     }
 }

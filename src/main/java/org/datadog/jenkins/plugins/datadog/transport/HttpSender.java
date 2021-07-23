@@ -59,7 +59,6 @@ public class HttpSender implements Runnable {
 
     private void blockingSend(HttpMessage message) {
         HttpURLConnection conn = null;
-        boolean status = true;
         try {
             conn = getHttpURLConnection(message.getURL());
             conn.setRequestMethod(message.getMethod().name());
@@ -76,7 +75,6 @@ public class HttpSender implements Runnable {
             logger.fine("HTTP/"+message.getMethod()+" " + message.getURL() + " ["+payload.length+" bytes] --> HTTP " + httpStatus);
             if(httpStatus >= 400) {
                 logger.severe("Failed to send HTTP request: "+message.getMethod()+" "+ message.getURL()+ " - Status: HTTP "+httpStatus);
-                status = false;
             }
         } catch (Exception ex) {
             errorHandler.handle(ex);
@@ -87,7 +85,6 @@ public class HttpSender implements Runnable {
             } catch (IOException ioex) {
                 errorHandler.handle(ioex);
             }
-            status = false;
         } finally {
             if(conn != null) {
                 conn.disconnect();
@@ -96,10 +93,6 @@ public class HttpSender implements Runnable {
     }
 
 
-
-    boolean isShutdown() {
-        return shutdown;
-    }
 
     void shutdown() {
         shutdown = true;

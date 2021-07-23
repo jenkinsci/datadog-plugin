@@ -7,8 +7,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 public class NonBlockingHttpClient implements HttpClient {
+
+    private static final Logger logger = Logger.getLogger(NonBlockingHttpClient.class.getName());
 
     private static final HttpErrorHandler NO_OP_HANDLER = new HttpErrorHandler() {
         @Override public void handle(final Exception e) { /* No-op */ }
@@ -34,6 +37,12 @@ public class NonBlockingHttpClient implements HttpClient {
         this.messageFactoryByType = builder.messageFactoryByType;
         this.sender = createSender(queueSize, errorHandler);
         executor.submit(sender);
+
+        if(this.messageFactoryByType != null) {
+            for(Map.Entry<PayloadMessage.Type, HttpMessageFactory> messageFactoryEntry : messageFactoryByType.entrySet()) {
+                logger.info(messageFactoryEntry.getKey() + " -> " + messageFactoryEntry.getValue().getURL());
+            }
+        }
     }
 
     public static Builder builder() {
