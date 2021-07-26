@@ -2,7 +2,6 @@ package org.datadog.jenkins.plugins.datadog.transport;
 
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getHttpURLConnection;
 
-import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 
 import java.io.IOException;
@@ -19,15 +18,18 @@ public class HttpSender implements Runnable {
 
     private final BlockingQueue<HttpMessage> queue;
     private final HttpErrorHandler errorHandler;
+    private final int httpTimeoutMs;
+
     private volatile boolean shutdown;
 
-    HttpSender(final int queueSize, final HttpErrorHandler errorHandler) {
-        this(new LinkedBlockingQueue<HttpMessage>(queueSize), errorHandler);
+    HttpSender(final int queueSize, final HttpErrorHandler errorHandler, final int httpTimeoutMs) {
+        this(new LinkedBlockingQueue<HttpMessage>(queueSize), errorHandler, httpTimeoutMs);
     }
 
-    HttpSender(final BlockingQueue<HttpMessage> queue, final HttpErrorHandler errorHandler) {
+    HttpSender(final BlockingQueue<HttpMessage> queue, final HttpErrorHandler errorHandler, final int httpTimeoutMs) {
         this.queue = queue;
         this.errorHandler = errorHandler;
+        this.httpTimeoutMs = httpTimeoutMs;
     }
 
     @SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_BAD_PRACTICE")
@@ -65,7 +67,7 @@ public class HttpSender implements Runnable {
     private void blockingSend(HttpMessage message) {
         HttpURLConnection conn = null;
         try {
-            conn = getHttpURLConnection(message.getURL());
+            conn = getHttpURLConnection(message.getURL(), httpTimeoutMs);
             conn.setRequestMethod(message.getMethod().name());
             conn.setRequestProperty("Content-Type", message.getContentType());
             conn.setUseCaches(false);

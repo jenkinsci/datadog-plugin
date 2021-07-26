@@ -895,7 +895,7 @@ public class DatadogUtilities {
      * @return a HttpURLConnection object.
      * @throws IOException if HttpURLConnection fails to open connection
      */
-    public static HttpURLConnection getHttpURLConnection(final URL url) throws IOException {
+    public static HttpURLConnection getHttpURLConnection(final URL url, final int timeoutMS) throws IOException {
         HttpURLConnection conn = null;
         ProxyConfiguration proxyConfig = null;
 
@@ -921,11 +921,6 @@ public class DatadogUtilities {
             logger.fine("Using HttpURLConnection, without proxy");
         }
 
-        /* Timeout of 1 minutes for connecting and reading.
-         * this prevents this plugin from causing jobs to hang in case of
-         * flaky network or Datadog being down. Left intentionally long.
-         */
-        int timeoutMS = 1 * 60 * 1000;
         conn.setConnectTimeout(timeoutMS);
         conn.setReadTimeout(timeoutMS);
 

@@ -54,6 +54,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -76,6 +77,12 @@ public class DatadogHttpClient implements DatadogClient {
 
     private static final Integer HTTP_FORBIDDEN = 403;
     private static final Integer BAD_REQUEST = 400;
+
+    /* Timeout of 1 minutes for connecting and reading.
+     * this prevents this plugin from causing jobs to hang in case of
+     * flaky network or Datadog being down. Left intentionally long.
+     */
+    private static final int HTTP_TIMEOUT_MS = 60 * 1000;
 
     @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL")
     public static boolean enableValidations = true;
@@ -416,7 +423,7 @@ public class DatadogHttpClient implements DatadogClient {
 
         try {
             logger.fine("Setting up HttpURLConnection...");
-            conn = getHttpURLConnection(new URL(this.getUrl() + type + urlParameters));
+            conn = getHttpURLConnection(new URL(this.getUrl() + type + urlParameters), HTTP_TIMEOUT_MS);
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setUseCaches(false);
@@ -497,7 +504,7 @@ public class DatadogHttpClient implements DatadogClient {
         try {
             URL logsEndpointURL = new URL(url);
             logger.fine("Setting up HttpURLConnection...");
-            conn = getHttpURLConnection(logsEndpointURL);
+            conn = getHttpURLConnection(logsEndpointURL, HTTP_TIMEOUT_MS);
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("DD-API-KEY", Secret.toString(apiKey));
@@ -556,7 +563,7 @@ public class DatadogHttpClient implements DatadogClient {
         boolean status = true;
         try {
             // Make request
-            conn = getHttpURLConnection(new URL(url + VALIDATE + urlParameters));
+            conn = getHttpURLConnection(new URL(url + VALIDATE + urlParameters), HTTP_TIMEOUT_MS);
             conn.setRequestMethod("GET");
 
             // Get response

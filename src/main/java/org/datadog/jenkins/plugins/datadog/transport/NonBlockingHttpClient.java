@@ -13,6 +13,7 @@ import java.util.logging.Logger;
 
 public class NonBlockingHttpClient implements HttpClient {
 
+    private static final int DEFAULT_TIMEOUT_MS = 10 * 1000;
     private static final int SIZE_SPANS_SEND_BUFFER = 100;
 
     private static final Logger logger = Logger.getLogger(NonBlockingHttpClient.class.getName());
@@ -37,9 +38,10 @@ public class NonBlockingHttpClient implements HttpClient {
 
     private NonBlockingHttpClient(final Builder builder) {
         final int queueSize = builder.queueSize != null ? builder.queueSize : Integer.MAX_VALUE;
+        final int httpTimeoutMs = builder.httpTimeoutMs != null ? builder.httpTimeoutMs : DEFAULT_TIMEOUT_MS;
         this.errorHandler = builder.errorHandler != null ? builder.errorHandler : NO_OP_HANDLER;
         this.messageFactoryByType = builder.messageFactoryByType;
-        this.sender = createSender(queueSize, errorHandler);
+        this.sender = createSender(queueSize, errorHandler, httpTimeoutMs);
         executor.submit(sender);
 
         if(this.messageFactoryByType != null) {
@@ -53,8 +55,8 @@ public class NonBlockingHttpClient implements HttpClient {
         return new Builder();
     }
 
-    private HttpSender createSender(final int queueSize, final HttpErrorHandler errorHandler) {
-        return new HttpSender(queueSize, errorHandler);
+    private HttpSender createSender(final int queueSize, final HttpErrorHandler errorHandler, final int httpTimeoutMs) {
+        return new HttpSender(queueSize, errorHandler, httpTimeoutMs);
     }
 
     public void send(List<PayloadMessage> messages) {
@@ -106,6 +108,7 @@ public class NonBlockingHttpClient implements HttpClient {
 
         private HttpErrorHandler errorHandler;
         private Integer queueSize;
+        private Integer httpTimeoutMs;
         private Map<PayloadMessage.Type, HttpMessageFactory> messageFactoryByType = new HashMap<>();
 
         public Builder errorHandler(final HttpErrorHandler errorHandler) {
@@ -120,6 +123,11 @@ public class NonBlockingHttpClient implements HttpClient {
 
         public Builder messageRoute(final PayloadMessage.Type key, final HttpMessageFactory messageFactory) {
             this.messageFactoryByType.put(key, messageFactory);
+            return this;
+        }
+
+        public Builder httpTimeoutMs(final int httpTimeoutMs) {
+            this.httpTimeoutMs = httpTimeoutMs;
             return this;
         }
 
