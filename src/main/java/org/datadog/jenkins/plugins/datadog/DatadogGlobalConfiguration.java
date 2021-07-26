@@ -39,6 +39,7 @@ import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogHttpClient;
 import org.datadog.jenkins.plugins.datadog.clients.DogStatsDClient;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
+import org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -55,47 +56,53 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static final Logger logger = Logger.getLogger(DatadogGlobalConfiguration.class.getName());
     private static final String DISPLAY_NAME = "Datadog Plugin";
 
+    // Standard Agent EnvVars
+    public static final String DD_AGENT_HOST = "DD_AGENT_HOST";
+    public static final String DD_AGENT_PORT = "DD_AGENT_PORT";
+    public static final String DD_TRACE_AGENT_PORT = "DD_TRACE_AGENT_PORT";
+    public static final String DD_TRACE_AGENT_URL = "DD_TRACE_AGENT_URL";
+    // Jenkins Agent EnvVars
+    public static final String TARGET_HOST_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_HOST";
+    public static final String TARGET_PORT_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_PORT";
+    public static final String TARGET_TRACE_COLLECTION_PORT_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_TRACE_COLLECTION_PORT";
 
-    private static String REPORT_WITH_PROPERTY = "DATADOG_JENKINS_PLUGIN_REPORT_WITH";
-    private static String TARGET_API_URL_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_API_URL";
-    private static String TARGET_LOG_INTAKE_URL_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_LOG_INTAKE_URL";
-    private static String TARGET_API_KEY_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_API_KEY";
-    private static String TARGET_HOST_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_HOST";
-    private static String TARGET_PORT_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_PORT";
-    private static String TARGET_LOG_COLLECTION_PORT_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT";
-    private static String TARGET_TRACE_COLLECTION_PORT_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_TRACE_COLLECTION_PORT";
+    private static final String REPORT_WITH_PROPERTY = "DATADOG_JENKINS_PLUGIN_REPORT_WITH";
+    private static final String TARGET_API_URL_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_API_URL";
+    private static final String TARGET_LOG_INTAKE_URL_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_LOG_INTAKE_URL";
+    private static final String TARGET_API_KEY_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_API_KEY";
+    private static final String TARGET_LOG_COLLECTION_PORT_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT";
     private static final String TARGET_TRACE_SERVICE_NAME_PROPERTY = "DATADOG_JENKINS_PLUGIN_TRACE_SERVICE_NAME";
-    private static String HOSTNAME_PROPERTY = "DATADOG_JENKINS_PLUGIN_HOSTNAME";
-    private static String EXCLUDED_PROPERTY = "DATADOG_JENKINS_PLUGIN_EXCLUDED";
-    private static String INCLUDED_PROPERTY = "DATADOG_JENKINS_PLUGIN_INCLUDED";
+    private static final String HOSTNAME_PROPERTY = "DATADOG_JENKINS_PLUGIN_HOSTNAME";
+    private static final String EXCLUDED_PROPERTY = "DATADOG_JENKINS_PLUGIN_EXCLUDED";
+    private static final String INCLUDED_PROPERTY = "DATADOG_JENKINS_PLUGIN_INCLUDED";
     //Deprecated
-    private static String BLACKLIST_PROPERTY = "DATADOG_JENKINS_PLUGIN_BLACKLIST";
-    private static String WHITELIST_PROPERTY = "DATADOG_JENKINS_PLUGIN_WHITELIST";
+    private static final String BLACKLIST_PROPERTY = "DATADOG_JENKINS_PLUGIN_BLACKLIST";
+    private static final String WHITELIST_PROPERTY = "DATADOG_JENKINS_PLUGIN_WHITELIST";
     
-    private static String GLOBAL_TAG_FILE_PROPERTY = "DATADOG_JENKINS_PLUGIN_GLOBAL_TAG_FILE";
-    private static String GLOBAL_TAGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_GLOBAL_TAGS";
-    private static String GLOBAL_JOB_TAGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_GLOBAL_JOB_TAGS";
-    private static String EMIT_SECURITY_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_SECURITY_EVENTS";
-    private static String EMIT_SYSTEM_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS";
-    private static String EMIT_CONFIG_CHANGE_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_CONFIG_CHANGE_EVENTS";
-    private static String COLLECT_BUILD_LOGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS";
+    private static final String GLOBAL_TAG_FILE_PROPERTY = "DATADOG_JENKINS_PLUGIN_GLOBAL_TAG_FILE";
+    private static final String GLOBAL_TAGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_GLOBAL_TAGS";
+    private static final String GLOBAL_JOB_TAGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_GLOBAL_JOB_TAGS";
+    private static final String EMIT_SECURITY_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_SECURITY_EVENTS";
+    private static final String EMIT_SYSTEM_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS";
+    private static final String EMIT_CONFIG_CHANGE_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_CONFIG_CHANGE_EVENTS";
+    private static final String COLLECT_BUILD_LOGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS";
 
-    private static String ENABLE_CI_VISIBILITY_PROPERTY = "DATADOG_JENKINS_PLUGIN_ENABLE_CI_VISIBILITY";
-    private static String CI_VISIBILITY_CI_INSTANCE_NAME_PROPERTY = "DATADOG_JENKINS_PLUGIN_CI_VISIBILITY_CI_INSTANCE_NAME";
+    private static final String ENABLE_CI_VISIBILITY_PROPERTY = "DATADOG_JENKINS_PLUGIN_ENABLE_CI_VISIBILITY";
+    private static final String CI_VISIBILITY_CI_INSTANCE_NAME_PROPERTY = "DATADOG_JENKINS_PLUGIN_CI_VISIBILITY_CI_INSTANCE_NAME";
 
-    private static String DEFAULT_REPORT_WITH_VALUE = DatadogClient.ClientType.HTTP.name();
-    private static String DEFAULT_TARGET_API_URL_VALUE = "https://api.datadoghq.com/api/";
-    private static String DEFAULT_TARGET_LOG_INTAKE_URL_VALUE = "https://http-intake.logs.datadoghq.com/v1/input/";
-    private static String DEFAULT_TARGET_HOST_VALUE = "localhost";
-    private static Integer DEFAULT_TARGET_PORT_VALUE = 8125;
-    private static Integer DEFAULT_TRACE_COLLECTION_PORT_VALUE = null;
-    private static String DEFAULT_CI_INSTANCE_NAME = "jenkins";
-    private static Integer DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE = null;
-    private static boolean DEFAULT_EMIT_SECURITY_EVENTS_VALUE = true;
-    private static boolean DEFAULT_EMIT_SYSTEM_EVENTS_VALUE = true;
-    private static boolean DEFAULT_EMIT_CONFIG_CHANGE_EVENTS_VALUE = false;
-    private static boolean DEFAULT_COLLECT_BUILD_LOGS_VALUE = false;
-    private static boolean DEFAULT_COLLECT_BUILD_TRACES_VALUE = false;
+    private static final String DEFAULT_REPORT_WITH_VALUE = DatadogClient.ClientType.HTTP.name();
+    private static final String DEFAULT_TARGET_API_URL_VALUE = "https://api.datadoghq.com/api/";
+    private static final String DEFAULT_TARGET_LOG_INTAKE_URL_VALUE = "https://http-intake.logs.datadoghq.com/v1/input/";
+    private static final String DEFAULT_TARGET_HOST_VALUE = "localhost";
+    private static final Integer DEFAULT_TARGET_PORT_VALUE = 8125;
+    private static final Integer DEFAULT_TRACE_COLLECTION_PORT_VALUE = null;
+    private static final String DEFAULT_CI_INSTANCE_NAME = "jenkins";
+    private static final Integer DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE = null;
+    private static final boolean DEFAULT_EMIT_SECURITY_EVENTS_VALUE = true;
+    private static final boolean DEFAULT_EMIT_SYSTEM_EVENTS_VALUE = true;
+    private static final boolean DEFAULT_EMIT_CONFIG_CHANGE_EVENTS_VALUE = false;
+    private static final boolean DEFAULT_COLLECT_BUILD_LOGS_VALUE = false;
+    private static final boolean DEFAULT_COLLECT_BUILD_TRACES_VALUE = false;
 
     private String reportWith = DEFAULT_REPORT_WITH_VALUE;
     private String targetApiURL = DEFAULT_TARGET_API_URL_VALUE;
@@ -147,24 +154,22 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.targetApiKey = Secret.fromString(targetApiKeyEnvVar);
         }
 
-        String targetHostEnvVar = System.getenv(TARGET_HOST_PROPERTY);
-        if(StringUtils.isNotBlank(targetHostEnvVar)){
-            this.targetHost = targetHostEnvVar;
+        final DatadogAgentConfiguration agentConfig = DatadogAgentConfiguration.resolve(System.getenv());
+        if(StringUtils.isNotBlank(agentConfig.getHost())){
+            this.targetHost = agentConfig.getHost();
         }
 
-        String targetPortEnvVar = System.getenv(TARGET_PORT_PROPERTY);
-        if(StringUtils.isNotBlank(targetPortEnvVar) && StringUtils.isNumeric(targetPortEnvVar)){
-            this.targetPort = Integer.valueOf(targetPortEnvVar);
+        if(agentConfig.getPort() != null){
+            this.targetPort = agentConfig.getPort();
+        }
+
+        if(agentConfig.getTracesPort() != null) {
+            this.targetTraceCollectionPort = agentConfig.getTracesPort();
         }
 
         String targetLogCollectionPortEnvVar = System.getenv(TARGET_LOG_COLLECTION_PORT_PROPERTY);
         if(StringUtils.isNotBlank(targetLogCollectionPortEnvVar) && StringUtils.isNumeric(targetLogCollectionPortEnvVar)){
             this.targetLogCollectionPort = Integer.valueOf(targetLogCollectionPortEnvVar);
-        }
-
-        String targetTraceCollectionPortEnvVar = System.getenv(TARGET_TRACE_COLLECTION_PORT_PROPERTY);
-        if(StringUtils.isNotBlank(targetTraceCollectionPortEnvVar) && StringUtils.isNumeric(targetTraceCollectionPortEnvVar)) {
-            this.targetTraceCollectionPort = Integer.valueOf(targetTraceCollectionPortEnvVar);
         }
 
         String traceServiceNameVar = System.getenv(TARGET_TRACE_SERVICE_NAME_PROPERTY);
