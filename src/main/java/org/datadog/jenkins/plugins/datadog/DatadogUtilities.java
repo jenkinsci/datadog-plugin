@@ -69,6 +69,7 @@ import javax.annotation.Nonnull;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.Inet4Address;
+import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -930,5 +931,18 @@ public class DatadogUtilities {
 
         return conn;
     }
+
+    /**
+     * Returns an HTTP URL
+     * @param hostname - the Hostname
+     * @param port - the port to use
+     * @param path - the path
+     * @return the HTTP URL
+     * @throws MalformedURLException
+     */
+    public static URL buildHttpURL(final String hostname, final Integer port, final String path) throws MalformedURLException {
+        return new URL(String.format("http://%s:%d"+path, hostname, port));
+    }
+
 
 }

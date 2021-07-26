@@ -25,6 +25,7 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.clients;
 
+import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.buildHttpURL;
 import static org.datadog.jenkins.plugins.datadog.transport.LoggerHttpErrorHandler.LOGGER_HTTP_ERROR_HANDLER;
 
 import com.timgroup.statsd.Event;
@@ -51,6 +52,7 @@ import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 import java.net.ConnectException;
+import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -259,7 +261,6 @@ public class DatadogAgentClient implements DatadogClient {
         return true;
     }
 
-
     /**
      * reinitialize the Tracer Client
      * @param force - force to reinitialize
@@ -274,10 +275,10 @@ public class DatadogAgentClient implements DatadogClient {
             return false;
         }
 
+        this.stopAgentHttpClient();
         try {
-            this.stopAgentHttpClient();
             logger.info("Re/Initialize Datadog-Plugin Agent Http Client");
-            final URL tracesURL = new URL("http://"+this.hostname+":"+this.traceCollectionPort+"/v0.3/traces");
+            final URL tracesURL = buildHttpURL(this.hostname, this.traceCollectionPort, "/v0.3/traces");
             this.agentHttpClient = NonBlockingHttpClient.builder()
                     .errorHandler(LOGGER_HTTP_ERROR_HANDLER)
                     .messageRoute(PayloadMessage.Type.TRACE, HttpMessageFactory.builder()
@@ -302,7 +303,7 @@ public class DatadogAgentClient implements DatadogClient {
         if(agentHttpClient != null) {
             try {
                 this.agentHttpClient.stop();
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 DatadogUtilities.severe(logger, e, "Failed to stop Agent Http Client");
                 return false;
             }
