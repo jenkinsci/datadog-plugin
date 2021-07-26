@@ -41,8 +41,13 @@ public class HttpSender implements Runnable {
 
     @Override
     public void run() {
-        while (!(queue.isEmpty() && shutdown)) {
+        // Consumer loop.
+        // Consume till shutdown=true and queue is empty.
+        while (!queue.isEmpty() || !shutdown) {
             try {
+                // Try to retrieve (and remove) the head of the queue
+                // with 1 second of timeout to avoid blocking
+                // the thread indefinitely.
                 final HttpMessage message = queue.poll(1, TimeUnit.SECONDS);
                 if(null != message) {
                     blockingSend(message);
