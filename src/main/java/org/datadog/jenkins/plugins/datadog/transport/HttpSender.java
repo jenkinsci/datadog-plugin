@@ -64,7 +64,7 @@ public class HttpSender implements Runnable {
         }
     }
 
-    private void blockingSend(HttpMessage message) {
+    protected void blockingSend(HttpMessage message) {
         HttpURLConnection conn = null;
         try {
             conn = getHttpURLConnection(message.getURL(), httpTimeoutMs);
