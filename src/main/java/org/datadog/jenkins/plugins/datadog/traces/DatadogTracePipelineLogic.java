@@ -57,8 +57,6 @@ public class DatadogTracePipelineLogic {
     private static final String HOSTNAME_NONE = "none";
     private static final Logger logger = Logger.getLogger(DatadogTracePipelineLogic.class.getName());
 
-    private static final int SIZE_SPANS_SEND_BUFFER = 100;
-
     private final HttpClient agentHttpClient;
 
     public DatadogTracePipelineLogic(HttpClient agentHttpClient) {
@@ -117,16 +115,7 @@ public class DatadogTracePipelineLogic {
 
         try {
             if(!spanBuffer.isEmpty()) {
-                final List<PayloadMessage> spanSendBuffer = new ArrayList<>(SIZE_SPANS_SEND_BUFFER);
-                for(int i = 0; i < spanBuffer.size(); i++) {
-                    spanSendBuffer.add(spanBuffer.get(i));
-
-                    // Send every 100 spans or the last one.
-                    if(spanSendBuffer.size() == SIZE_SPANS_SEND_BUFFER || i == (spanBuffer.size() - 1)) {
-                        agentHttpClient.send(Collections.unmodifiableList(spanSendBuffer));
-                        spanSendBuffer.clear();
-                    }
-                }
+                this.agentHttpClient.send(spanBuffer);
             }
         } catch (Exception e){
             logger.severe("Unable to send traces. Exception:" + e);

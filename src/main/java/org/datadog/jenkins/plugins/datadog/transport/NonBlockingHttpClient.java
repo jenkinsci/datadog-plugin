@@ -1,5 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.transport;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +12,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 public class NonBlockingHttpClient implements HttpClient {
+
+    private static final int SIZE_SPANS_SEND_BUFFER = 100;
 
     private static final Logger logger = Logger.getLogger(NonBlockingHttpClient.class.getName());
 
@@ -55,12 +59,21 @@ public class NonBlockingHttpClient implements HttpClient {
 
     public void send(List<PayloadMessage> messages) {
         if(messages != null && !messages.isEmpty()) {
-            // We assume all payload messages belong to the same message type for now.
-            final PayloadMessage.Type type = messages.get(0).getMessageType();
-            final HttpMessage message = this.messageFactoryByType.get(type).create(messages);
-            this.sender.send(message);
-        }
+            final List<PayloadMessage> spanSendBuffer = new ArrayList<>(SIZE_SPANS_SEND_BUFFER);
+            for(int i = 0; i < messages.size(); i++) {
+                spanSendBuffer.add(messages.get(i));
 
+                // Send every 100 spans or the last one.
+                if(spanSendBuffer.size() == SIZE_SPANS_SEND_BUFFER || i == (messages.size() - 1)) {
+                    final List<PayloadMessage> buffer = Collections.unmodifiableList(spanSendBuffer);
+                    // We assume all payload messages belong to the same message type for now.
+                    final PayloadMessage.Type type = buffer.get(0).getMessageType();
+                    final HttpMessage message = this.messageFactoryByType.get(type).create(messages);
+                    this.sender.send(message);
+                    spanSendBuffer.clear();
+                }
+            }
+        }
     }
 
     @Override
