@@ -28,7 +28,6 @@ package org.datadog.jenkins.plugins.datadog;
 import com.timgroup.statsd.ServiceCheck;
 import hudson.model.Run;
 import hudson.util.Secret;
-import io.opentracing.Tracer;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 

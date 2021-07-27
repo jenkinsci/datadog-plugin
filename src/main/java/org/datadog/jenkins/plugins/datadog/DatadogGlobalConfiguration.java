@@ -37,7 +37,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogHttpClient;
-import org.datadog.jenkins.plugins.datadog.clients.DogStatsDClient;
+import org.datadog.jenkins.plugins.datadog.clients.DatadogAgentClient;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -285,7 +285,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                 return FormValidation.error("The port is not valid");
             }
 
-            final DogStatsDClient.ConnectivityResult connectivity = DogStatsDClient.checkConnectivity(host, Integer.parseInt(port));
+            final DatadogAgentClient.ConnectivityResult connectivity = DatadogAgentClient.checkConnectivity(host, Integer.parseInt(port));
             if(connectivity.isError()) {
                 return FormValidation.error("Connection to " + host + ":" + port + " FAILED: " + connectivity.getErrorMessage());
             }

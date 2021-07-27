@@ -7,14 +7,10 @@ import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeB
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
 
-import datadog.trace.api.DDTags;
-import datadog.trace.api.interceptor.MutableSpan;
 import hudson.model.Result;
 import hudson.model.Run;
-import io.opentracing.Span;
-import io.opentracing.Tracer;
-import io.opentracing.propagation.Format;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.transport.HttpClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
@@ -22,6 +18,7 @@ import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
+import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.json.JsonUtils;
 
@@ -42,10 +39,10 @@ public class DatadogTraceBuildLogic {
     private static final String HOSTNAME_NONE = "none";
     private static final Logger logger = Logger.getLogger(DatadogTraceBuildLogic.class.getName());
 
-    private final Tracer tracer;
+    private final HttpClient agentHttpClient;
 
-    public DatadogTraceBuildLogic(final Tracer tracer) {
-        this.tracer = tracer;
+    public DatadogTraceBuildLogic(final HttpClient agentHttpClient) {
+        this.agentHttpClient = agentHttpClient;
     }
 
     public void startBuildTrace(final BuildData buildData, Run run) {
@@ -55,17 +52,12 @@ public class DatadogTraceBuildLogic {
         }
 
         // Traces
-        if(this.tracer == null) {
+        if(this.agentHttpClient == null) {
             logger.severe("Unable to send build traces. Tracer is null");
             return;
         }
 
-        final long startTimeMicros = buildData.getStartTime(0L) * 1000;
-
-        final Span buildSpan = tracer.buildSpan("jenkins.build")
-                .withStartTimestamp(startTimeMicros)
-                .start();
-
+        final TraceSpan buildSpan = new TraceSpan("jenkins.build", TimeUnit.MILLISECONDS.toNanos(buildData.getStartTime(0L)));
         getBuildSpanManager().put(buildData.getBuildTag(""), buildSpan);
 
         // The buildData object is stored in the BuildSpanAction to be updated
@@ -74,8 +66,7 @@ public class DatadogTraceBuildLogic {
         // Jenkins Pipelines, there are many information that is missing when the
         // root span is created, such as Git info (this is calculated in an inner step
         // of the pipeline)
-        final BuildSpanAction buildSpanAction = new BuildSpanAction(buildData);
-        this.tracer.inject(buildSpan.context(), Format.Builtin.TEXT_MAP, new BuildTextMapAdapter(buildSpanAction.getBuildSpanPropatation()));
+        final BuildSpanAction buildSpanAction = new BuildSpanAction(buildData, buildSpan.context());
         run.addAction(buildSpanAction);
 
         final StepDataAction stepDataAction = new StepDataAction();
@@ -96,8 +87,7 @@ public class DatadogTraceBuildLogic {
             return;
         }
 
-        // APM Traces
-        final Span buildSpan = getBuildSpanManager().remove(buildData.getBuildTag(""));
+        final TraceSpan buildSpan = getBuildSpanManager().remove(buildData.getBuildTag(""));
         if(buildSpan == null) {
             return;
         }
@@ -116,91 +106,93 @@ public class DatadogTraceBuildLogic {
         final String prefix = BuildPipelineNode.NodeType.PIPELINE.getTagName();
         final String buildLevel = BuildPipelineNode.NodeType.PIPELINE.getBuildLevel();
         final long endTimeMicros = buildData.getEndTime(0L) * 1000;
-        buildSpan.setTag(DDTags.SERVICE_NAME, DatadogUtilities.getDatadogGlobalDescriptor().getCiInstanceName());
-        buildSpan.setTag(DDTags.SPAN_TYPE, "ci");
-        buildSpan.setTag(CITags.CI_PROVIDER_NAME, "jenkins");
-        buildSpan.setTag(DDTags.LANGUAGE_TAG_KEY, "");
-        buildSpan.setTag(CITags._DD_CI_INTERNAL, false);
-        buildSpan.setTag(CITags._DD_CI_BUILD_LEVEL, buildLevel);
-        buildSpan.setTag(CITags._DD_CI_LEVEL, buildLevel);
-        buildSpan.setTag(CITags._DD_ORIGIN, ORIGIN_CIAPP_PIPELINE);
-        buildSpan.setTag(CITags.USER_NAME, buildData.getUserId());
-        buildSpan.setTag(prefix + CITags._ID, buildData.getBuildTag(""));
-        buildSpan.setTag(prefix + CITags._NUMBER, buildData.getBuildNumber(""));
-        buildSpan.setTag(prefix + CITags._URL, buildData.getBuildUrl(""));
-        if (buildSpan instanceof MutableSpan) {
-            ((MutableSpan) buildSpan).setMetric(CITags.QUEUE_TIME, TimeUnit.MILLISECONDS.toSeconds(getMillisInQueue(updatedBuildData)));
-        }
+
+        buildSpan.setServiceName(DatadogUtilities.getDatadogGlobalDescriptor().getCiInstanceName());
+        buildSpan.setType("ci");
+        buildSpan.putMeta(CITags.CI_PROVIDER_NAME, "jenkins");
+        buildSpan.putMeta(CITags.LANGUAGE_TAG_KEY, "");
+        buildSpan.putMeta(CITags._DD_CI_INTERNAL, "false");
+        buildSpan.putMeta(CITags._DD_CI_BUILD_LEVEL, buildLevel);
+        buildSpan.putMeta(CITags._DD_CI_LEVEL, buildLevel);
+        buildSpan.putMeta(CITags._DD_ORIGIN, ORIGIN_CIAPP_PIPELINE);
+        buildSpan.putMeta(CITags.USER_NAME, buildData.getUserId());
+        buildSpan.putMeta(prefix + CITags._ID, buildData.getBuildTag(""));
+        buildSpan.putMeta(prefix + CITags._NUMBER, buildData.getBuildNumber(""));
+        buildSpan.putMeta(prefix + CITags._URL, buildData.getBuildUrl(""));
+        buildSpan.putMetric(CITags.QUEUE_TIME, TimeUnit.MILLISECONDS.toSeconds(getMillisInQueue(updatedBuildData)));
 
         final String workspace = buildData.getWorkspace("").isEmpty() ? updatedBuildData.getWorkspace("") : buildData.getWorkspace("");
-        buildSpan.setTag(CITags.WORKSPACE_PATH, workspace);
+        buildSpan.putMeta(CITags.WORKSPACE_PATH, workspace);
 
         final String nodeName = getNodeName(run, buildData, updatedBuildData);
-        buildSpan.setTag(CITags.NODE_NAME, nodeName);
+        buildSpan.putMeta(CITags.NODE_NAME, nodeName);
 
         final String nodeLabelsJson = toJson(getNodeLabels(run, nodeName));
         if(!nodeLabelsJson.isEmpty()){
-            buildSpan.setTag(CITags.NODE_LABELS, nodeLabelsJson);
+            buildSpan.putMeta(CITags.NODE_LABELS, nodeLabelsJson);
         }
         // If the NodeName == master, we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
         // If the NodeName != master, we set _dd.hostname to 'none' explicitly, cause we cannot calculate the worker hostname.
         if(!"master".equalsIgnoreCase(nodeName)) {
-            buildSpan.setTag(CITags._DD_HOSTNAME, HOSTNAME_NONE);
+            buildSpan.putMeta(CITags._DD_HOSTNAME, HOSTNAME_NONE);
         }
 
         // Git Info
         final String gitUrl = buildData.getGitUrl("").isEmpty() ? updatedBuildData.getGitUrl("") : buildData.getGitUrl("");
-        buildSpan.setTag(CITags.GIT_REPOSITORY_URL, gitUrl);
+        buildSpan.putMeta(CITags.GIT_REPOSITORY_URL, gitUrl);
 
         final String gitCommit = buildData.getGitCommit("").isEmpty() ? updatedBuildData.getGitCommit("") : buildData.getGitCommit("");
         if(!isValidCommit(gitCommit)) {
             logger.warning("Couldn't find a valid commit for pipelineID '"+buildData.getBuildTag("")+"'. GIT_COMMIT environment variable was not found or has invalid SHA1 string: " + gitCommit);
         }
-        buildSpan.setTag(CITags.GIT_COMMIT__SHA, gitCommit); //Maintain retrocompatibility
-        buildSpan.setTag(CITags.GIT_COMMIT_SHA, gitCommit);
+
+        buildSpan.putMeta(CITags.GIT_COMMIT__SHA, gitCommit); //Maintain retrocompatibility
+        buildSpan.putMeta(CITags.GIT_COMMIT_SHA, gitCommit);
 
         final String gitMessage = buildData.getGitMessage("").isEmpty() ? updatedBuildData.getGitMessage("") : buildData.getGitMessage("");
-        buildSpan.setTag(CITags.GIT_COMMIT_MESSAGE, gitMessage);
+        buildSpan.putMeta(CITags.GIT_COMMIT_MESSAGE, gitMessage);
 
         final String gitAuthor = buildData.getGitAuthorName("").isEmpty() ? updatedBuildData.getGitAuthorName("") : buildData.getGitAuthorName("");
-        buildSpan.setTag(CITags.GIT_COMMIT_AUTHOR_NAME, gitAuthor);
+        buildSpan.putMeta(CITags.GIT_COMMIT_AUTHOR_NAME, gitAuthor);
 
         final String gitAuthorEmail = buildData.getGitAuthorEmail("").isEmpty() ? updatedBuildData.getGitAuthorEmail("") : buildData.getGitAuthorEmail("");
-        buildSpan.setTag(CITags.GIT_COMMIT_AUTHOR_EMAIL, gitAuthorEmail);
+        buildSpan.putMeta(CITags.GIT_COMMIT_AUTHOR_EMAIL, gitAuthorEmail);
 
         final String gitAuthorDate = buildData.getGitAuthorDate("").isEmpty() ? updatedBuildData.getGitAuthorDate("") : buildData.getGitAuthorDate("");
-        buildSpan.setTag(CITags.GIT_COMMIT_AUTHOR_DATE, gitAuthorDate);
+        buildSpan.putMeta(CITags.GIT_COMMIT_AUTHOR_DATE, gitAuthorDate);
 
         final String gitCommitter = buildData.getGitCommitterName("").isEmpty() ? updatedBuildData.getGitCommitterName("") : buildData.getGitCommitterName("");
-        buildSpan.setTag(CITags.GIT_COMMIT_COMMITTER_NAME, gitCommitter);
+        buildSpan.putMeta(CITags.GIT_COMMIT_COMMITTER_NAME, gitCommitter);
 
         final String gitCommitterEmail = buildData.getGitCommitterEmail("").isEmpty() ? updatedBuildData.getGitCommitterEmail("") : buildData.getGitCommitterEmail("");
-        buildSpan.setTag(CITags.GIT_COMMIT_COMMITTER_EMAIL, gitCommitterEmail);
+        buildSpan.putMeta(CITags.GIT_COMMIT_COMMITTER_EMAIL, gitCommitterEmail);
 
         final String gitCommitterDate = buildData.getGitCommitterDate("").isEmpty() ? updatedBuildData.getGitCommitterDate("") : buildData.getGitCommitterDate("");
-        buildSpan.setTag(CITags.GIT_COMMIT_COMMITTER_DATE, gitCommitterDate);
+        buildSpan.putMeta(CITags.GIT_COMMIT_COMMITTER_DATE, gitCommitterDate);
 
         final String gitDefaultBranch = buildData.getGitDefaultBranch("").isEmpty() ? updatedBuildData.getGitDefaultBranch("") : buildData.getGitDefaultBranch("");
-        buildSpan.setTag(CITags.GIT_DEFAULT_BRANCH, gitDefaultBranch);
+        buildSpan.putMeta(CITags.GIT_DEFAULT_BRANCH, gitDefaultBranch);
 
         final String rawGitBranch = buildData.getBranch("").isEmpty() ? updatedBuildData.getBranch("") : buildData.getBranch("");
         final String gitBranch = normalizeBranch(rawGitBranch);
         if(gitBranch != null) {
-            buildSpan.setTag(CITags.GIT_BRANCH, gitBranch);
+            buildSpan.putMeta(CITags.GIT_BRANCH, gitBranch);
         }
 
         final String gitTag = normalizeTag(rawGitBranch);
         if(gitTag != null) {
-            buildSpan.setTag(CITags.GIT_TAG, gitTag);
+            buildSpan.putMeta(CITags.GIT_TAG, gitTag);
         }
 
         final JobNameWrapper jobNameWrapper = new JobNameWrapper(buildData.getJobName(""), gitBranch != null ? gitBranch : gitTag);
-        buildSpan.setTag(DDTags.RESOURCE_NAME, jobNameWrapper.getTraceJobName());
-        buildSpan.setTag(prefix + CITags._NAME, jobNameWrapper.getTraceJobName());
+        buildSpan.setResourceName(jobNameWrapper.getTraceJobName());
+
+        buildSpan.putMeta(prefix + CITags._NAME, jobNameWrapper.getTraceJobName());
 
         if(!jobNameWrapper.getConfigurations().isEmpty()){
             for(Map.Entry<String, String> entry : jobNameWrapper.getConfigurations().entrySet()) {
-                buildSpan.setTag(prefix + CITags._CONFIGURATION + "." + entry.getKey(), entry.getValue());
+                buildSpan.putMeta(prefix + CITags._CONFIGURATION + "." + entry.getKey(), entry.getValue());
+
             }
         }
 
@@ -212,20 +204,21 @@ public class DatadogTraceBuildLogic {
             Collections.sort(stages);
 
             final String stagesJson = JsonUtils.toJson(new ArrayList<>(stages));
-            buildSpan.setTag(CITags._DD_CI_STAGES, stagesJson);
+            buildSpan.putMeta(CITags._DD_CI_STAGES, stagesJson);
         }
 
         // Jenkins specific
-        buildSpan.setTag(CITags.JENKINS_TAG, buildData.getBuildTag(""));
-        buildSpan.setTag(CITags.JENKINS_EXECUTOR_NUMBER, buildData.getExecutorNumber(""));
+        buildSpan.putMeta(CITags.JENKINS_TAG, buildData.getBuildTag(""));
+        buildSpan.putMeta(CITags.JENKINS_EXECUTOR_NUMBER, buildData.getExecutorNumber(""));
 
         final String jenkinsResult = buildData.getResult("");
         final String pipelineResult = getNormalizedResultForTraces(jenkinsResult);
-        buildSpan.setTag(prefix + CITags._RESULT, pipelineResult);
-        buildSpan.setTag(CITags.STATUS, pipelineResult);
-        buildSpan.setTag(CITags.JENKINS_RESULT, jenkinsResult.toLowerCase());
+        buildSpan.putMeta(prefix + CITags._RESULT, pipelineResult);
+        buildSpan.putMeta(CITags.STATUS, pipelineResult);
+        buildSpan.putMeta(CITags.JENKINS_RESULT, jenkinsResult.toLowerCase());
+
         if(Result.FAILURE.toString().equals(jenkinsResult)) {
-            buildSpan.setTag(CITags.ERROR, true);
+            buildSpan.setError(true);
         }
 
         // CI Tags propagation
@@ -233,7 +226,7 @@ public class DatadogTraceBuildLogic {
         if(ciGlobalTagsAction != null) {
             final Map<String, String> tags = ciGlobalTagsAction.getTags();
             for(Map.Entry<String, String> tagEntry : tags.entrySet()) {
-                buildSpan.setTag(tagEntry.getKey(), tagEntry.getValue());
+                buildSpan.putMeta(tagEntry.getKey(), tagEntry.getValue());
             }
         }
 
@@ -248,7 +241,8 @@ public class DatadogTraceBuildLogic {
         // at the end of the build, because we would lose the logs correlation.
         // When the root span starts, we don't have the propagated queue time yet. We need to wait till the
         // end of the pipeline execution and do it in the endTime, adjusting all child spans if needed.
-        buildSpan.finish(endTimeMicros - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue));
+        buildSpan.setEndNano(TimeUnit.MICROSECONDS.toNanos(endTimeMicros - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue)));
+        agentHttpClient.send(Collections.singletonList(buildSpan));
     }
 
     private String getNodeName(Run<?, ?> run, BuildData buildData, BuildData updatedBuildData) {
