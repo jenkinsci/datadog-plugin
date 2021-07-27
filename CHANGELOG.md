@@ -1,5 +1,13 @@
 Changes
 =======
+## 3.1.0 / 2021-07-27
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.0.2...datadog-3.1.0
+
+### Changes
+* [Added] Add support to the standard Datadog Agent environment variables config. See [#235](https://github.com/jenkinsci/datadog-plugin/pull/235)
+* [Changed] Remove APM Java Tracer dependency. See [#234](https://github.com/jenkinsci/datadog-plugin/pull/234)
+
 ## 3.0.2 / 2021-07-19
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.0.1...datadog-3.0.2
