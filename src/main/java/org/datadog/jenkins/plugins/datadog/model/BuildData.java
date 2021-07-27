@@ -33,11 +33,10 @@ import hudson.model.TaskListener;
 import hudson.triggers.SCMTrigger;
 import hudson.triggers.TimerTrigger;
 import hudson.util.LogTaskListener;
-import io.opentracing.Span;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
+import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
@@ -180,10 +179,10 @@ public class BuildData implements Serializable {
         setJenkinsUrl(jenkinsUrl);
 
         // Set Tracing IDs
-        final Span buildSpan = BuildSpanManager.get().get(getBuildTag(""));
+        final TraceSpan buildSpan = BuildSpanManager.get().get(getBuildTag(""));
         if(buildSpan !=null) {
-            setTraceId(buildSpan.context().toTraceId());
-            setSpanId(buildSpan.context().toSpanId());
+            setTraceId(Long.toUnsignedString(buildSpan.context().getTraceId()));
+            setSpanId(Long.toUnsignedString(buildSpan.context().getSpanId()));
         }
     }
 

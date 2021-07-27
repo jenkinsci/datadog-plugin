@@ -75,45 +75,6 @@
 
   <dependencies>
 
-    <!-- OpenTracing API -->
-    <dependency>
-      <groupId>io.opentracing</groupId>
-      <artifactId>opentracing-api</artifactId>
-      <version>0.32.0</version>
-    </dependency>
-
-    <dependency>
-      <groupId>io.opentracing</groupId>
-      <artifactId>opentracing-util</artifactId>
-      <version>0.32.0</version>
-    </dependency>
-
-    <!-- Datadog API -->
-    <dependency>
-      <groupId>com.datadoghq</groupId>
-      <artifactId>dd-trace-api</artifactId>
-      <version>${dd-trace-java.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <!-- Datadog OpenTracing bridge (only needed if you do not use dd-java-agent for autoinstrumentation) -->
-    <dependency>
-      <groupId>com.datadoghq</groupId>
-      <artifactId>dd-trace-ot</artifactId>
-      <version>${dd-trace-java.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
     <dependency>
       <groupId>com.datadoghq</groupId>
       <artifactId>java-dogstatsd-client</artifactId>

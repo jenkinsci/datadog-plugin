@@ -6,13 +6,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import datadog.trace.common.writer.ListWriter;
-import datadog.trace.core.DDSpan;
 import hudson.EnvVars;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Label;
-import hudson.model.Run;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
@@ -20,16 +17,9 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
-import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
-import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
-import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
-import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
-import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
-import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
-import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
-import org.datadog.jenkins.plugins.datadog.traces.IsPipelineAction;
-import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
+import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
+import org.datadog.jenkins.plugins.datadog.transport.FakeTracesHttpClient;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -39,6 +29,7 @@ import org.jvnet.hudson.test.JenkinsRule;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
@@ -60,7 +51,6 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
         clientStub = new DatadogClientStub();
         ClientFactory.setTestClient(clientStub);
-        clientStub.tracerWriter.start();
 
         Jenkins jenkins = jenkinsRule.jenkins;
         jenkins.getGlobalNodeProperties().remove(EnvironmentVariablesNodeProperty.class);
@@ -80,17 +70,14 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         Thread.sleep(5000);
         jenkinsRule.createOnlineSlave(Label.get("testBuild"));
 
-        final ListWriter tracerWriter = clientStub.tracerWriter();
-        tracerWriter.waitForTraces(1);
-        assertEquals(1, tracerWriter.size());
+        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(1);
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(1, spans.size());
 
-        final List<DDSpan> buildTrace = tracerWriter.get(0);
-        assertEquals(1, buildTrace.size());
-
-        final DDSpan buildSpan = buildTrace.get(0);
-        long queueTime = (long) buildSpan.getUnsafeMetrics().get(CITags.QUEUE_TIME);
+        final TraceSpan buildSpan = spans.get(0);
+        double queueTime = buildSpan.getMetrics().get(CITags.QUEUE_TIME);
         assertTrue(queueTime > 0L);
-        assertEquals("none", buildSpan.getTag(CITags._DD_HOSTNAME));
         assertTrue(queueTime > TimeUnit.NANOSECONDS.toSeconds(buildSpan.getDurationNano()));
         assertTrue(buildSpan.getDurationNano() > 1L);
     }
@@ -111,41 +98,41 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
             project.setScm(new ExtractResourceSCM(gitZip));
         }
         FreeStyleBuild run = project.scheduleBuild2(0).get();
-
-        final ListWriter tracerWriter = clientStub.tracerWriter();
-        tracerWriter.waitForTraces(1);
-        assertEquals(1, tracerWriter.size());
-
-        final List<DDSpan> buildTrace = tracerWriter.get(0);
-        assertEquals(1, buildTrace.size());
-
         final String buildPrefix = BuildPipelineNode.NodeType.PIPELINE.getTagName();
-        final DDSpan buildSpan = buildTrace.get(0);
+
+        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(1);
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(1, spans.size());
+
+        final TraceSpan buildSpan = spans.get(0);
         assertGitVariables(buildSpan, "master");
-        assertEquals(BuildPipelineNode.NodeType.PIPELINE.getBuildLevel(), buildSpan.getTag(CITags._DD_CI_BUILD_LEVEL));
-        assertEquals(BuildPipelineNode.NodeType.PIPELINE.getBuildLevel(), buildSpan.getTag(CITags._DD_CI_LEVEL));
-        assertEquals(ORIGIN_CIAPP_PIPELINE, buildSpan.getTag(CITags._DD_ORIGIN));
+        final Map<String, String> meta = buildSpan.getMeta();
+        final Map<String, Double> metrics = buildSpan.getMetrics();
+        assertEquals(BuildPipelineNode.NodeType.PIPELINE.getBuildLevel(), meta.get(CITags._DD_CI_BUILD_LEVEL));
+        assertEquals(BuildPipelineNode.NodeType.PIPELINE.getBuildLevel(), meta.get(CITags._DD_CI_LEVEL));
+        assertEquals(ORIGIN_CIAPP_PIPELINE, meta.get(CITags._DD_ORIGIN));
         assertEquals("jenkins.build", buildSpan.getOperationName());
         assertEquals(SAMPLE_SERVICE_NAME, buildSpan.getServiceName());
         assertEquals("buildIntegrationSuccess", buildSpan.getResourceName());
         assertEquals("ci", buildSpan.getType());
-        assertEquals("jenkins", buildSpan.getTag(CITags.CI_PROVIDER_NAME));
-        assertEquals("anonymous", buildSpan.getTag(CITags.USER_NAME));
-        assertEquals("jenkins-buildIntegrationSuccess-1", buildSpan.getTag(buildPrefix + CITags._ID));
-        assertNotNull(buildSpan.getUnsafeMetrics().get(CITags.QUEUE_TIME));
-        assertEquals("buildIntegrationSuccess", buildSpan.getTag(buildPrefix + CITags._NAME));
-        assertEquals("1", buildSpan.getTag(buildPrefix + CITags._NUMBER));
-        assertNotNull(buildSpan.getTag(buildPrefix + CITags._URL));
-        assertNotNull(buildSpan.getTag(CITags.WORKSPACE_PATH));
-        assertEquals("success", buildSpan.getTag(buildPrefix + CITags._RESULT));
-        assertEquals("success", buildSpan.getTag(CITags.STATUS));
-        assertNotNull(buildSpan.getTag(CITags.NODE_NAME));
-        assertNotNull(buildSpan.getTag(CITags.NODE_LABELS));
-        assertNull(buildSpan.getTag(CITags._DD_HOSTNAME));
-        assertEquals("success", buildSpan.getTag(CITags.JENKINS_RESULT));
-        assertEquals("jenkins-buildIntegrationSuccess-1", buildSpan.getTag(CITags.JENKINS_TAG));
-        assertNotNull(buildSpan.getTag(CITags._DD_CI_STAGES));
-        assertEquals("[]", buildSpan.getTag(CITags._DD_CI_STAGES));
+        assertEquals("jenkins", meta.get(CITags.CI_PROVIDER_NAME));
+        assertEquals("anonymous", meta.get(CITags.USER_NAME));
+        assertEquals("jenkins-buildIntegrationSuccess-1", meta.get(buildPrefix + CITags._ID));
+        assertNotNull(metrics.get(CITags.QUEUE_TIME));
+        assertEquals("buildIntegrationSuccess", meta.get(buildPrefix + CITags._NAME));
+        assertEquals("1", meta.get(buildPrefix + CITags._NUMBER));
+        assertNotNull(meta.get(buildPrefix + CITags._URL));
+        assertNotNull(meta.get(CITags.WORKSPACE_PATH));
+        assertEquals("success", meta.get(buildPrefix + CITags._RESULT));
+        assertEquals("success", meta.get(CITags.STATUS));
+        assertNotNull(meta.get(CITags.NODE_NAME));
+        assertNotNull(meta.get(CITags.NODE_LABELS));
+        assertNull(meta.get(CITags._DD_HOSTNAME));
+        assertEquals("success", meta.get(CITags.JENKINS_RESULT));
+        assertEquals("jenkins-buildIntegrationSuccess-1", meta.get(CITags.JENKINS_TAG));
+        assertNotNull(meta.get(CITags._DD_CI_STAGES));
+        assertEquals("[]", meta.get(CITags._DD_CI_STAGES));
 
         assertCleanupActions(run);
     }
@@ -169,14 +156,12 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         }
         project.scheduleBuild2(0).get();
 
-        final ListWriter tracerWriter = clientStub.tracerWriter();
-        tracerWriter.waitForTraces(1);
-        assertEquals(1, tracerWriter.size());
+        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(1);
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(1, spans.size());
 
-        final List<DDSpan> buildTrace = tracerWriter.get(0);
-        assertEquals(1, buildTrace.size());
-
-        final DDSpan buildSpan = buildTrace.get(0);
+        final TraceSpan buildSpan = spans.get(0);
         assertGitVariables(buildSpan, "hardcoded-master");
     }
 
@@ -197,14 +182,12 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         }
         project.scheduleBuild2(0).get();
 
-        final ListWriter tracerWriter = clientStub.tracerWriter();
-        tracerWriter.waitForTraces(1);
-        assertEquals(1, tracerWriter.size());
+        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(1);
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(1, spans.size());
 
-        final List<DDSpan> buildTrace = tracerWriter.get(0);
-        assertEquals(1, buildTrace.size());
-
-        final DDSpan buildSpan = buildTrace.get(0);
+        final TraceSpan buildSpan = spans.get(0);
         assertGitVariables(buildSpan, "master");
     }
 
@@ -216,9 +199,10 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccess-notraces");
         project.scheduleBuild2(0).get();
 
-        final ListWriter tracerWriter = clientStub.tracerWriter();
-        tracerWriter.waitForTraces(0);
-        assertEquals(0, tracerWriter.size());
+        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(0);
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(0, spans.size());
     }
 
     @Test
@@ -231,15 +215,14 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessTags_job");
         project.scheduleBuild2(0).get();
 
-        final ListWriter tracerWriter = clientStub.tracerWriter();
-        tracerWriter.waitForTraces(1);
-        assertEquals(1, tracerWriter.size());
+        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(1);
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(1, spans.size());
 
-        final List<DDSpan> buildTrace = tracerWriter.get(0);
-        assertEquals(1, buildTrace.size());
-
-        final DDSpan buildSpan = buildTrace.get(0);
-        assertEquals("value", buildSpan.getTag("global_job_tag"));
-        assertEquals("value", buildSpan.getTag("global_tag"));
+        final TraceSpan buildSpan = spans.get(0);
+        final Map<String, String> meta = buildSpan.getMeta();
+        assertEquals("value", meta.get("global_job_tag"));
+        assertEquals("value", meta.get("global_tag"));
     }
 }

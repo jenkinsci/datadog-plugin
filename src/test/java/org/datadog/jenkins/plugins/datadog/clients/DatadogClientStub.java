@@ -25,18 +25,15 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.clients;
 
-import datadog.opentracing.DDTracer;
-import datadog.trace.common.writer.ListWriter;
-import datadog.trace.core.DDSpan;
 import hudson.model.Run;
 import hudson.util.Secret;
-import io.opentracing.Tracer;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTracePipelineLogic;
+import org.datadog.jenkins.plugins.datadog.transport.FakeTracesHttpClient;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.junit.Assert;
 
@@ -54,8 +51,8 @@ public class DatadogClientStub implements DatadogClient {
     public List<DatadogMetric> serviceChecks;
     public List<DatadogEventStub> events;
     public List<JSONObject> logLines;
-    public ListWriter tracerWriter;
-    public Tracer tracer;
+
+    public FakeTracesHttpClient agentHttpClient;
 
     public DatadogTraceBuildLogic traceBuildLogic;
     public DatadogTracePipelineLogic tracePipelineLogic;
@@ -65,18 +62,9 @@ public class DatadogClientStub implements DatadogClient {
         this.serviceChecks = new ArrayList<>();
         this.events = new ArrayList<>();
         this.logLines = new ArrayList<>();
-
-        this.tracerWriter = new ListWriter() {
-            @Override
-            public boolean add(final List<DDSpan> trace) {
-                final boolean result = super.add(trace);
-                return result;
-            }
-        };
-
-        this.tracer = DDTracer.builder().writer(tracerWriter).build();
-        this.traceBuildLogic = new DatadogTraceBuildLogic(tracer);
-        this.tracePipelineLogic = new DatadogTracePipelineLogic(tracer);
+        this.agentHttpClient = new FakeTracesHttpClient();
+        this.traceBuildLogic = new DatadogTraceBuildLogic(this.agentHttpClient);
+        this.tracePipelineLogic = new DatadogTracePipelineLogic(this.agentHttpClient);
     }
 
     @Override
@@ -191,8 +179,8 @@ public class DatadogClientStub implements DatadogClient {
         return true;
     }
 
-    public ListWriter tracerWriter() {
-        return this.tracerWriter;
+    public FakeTracesHttpClient agentHttpClient(){
+        return this.agentHttpClient;
     }
 
     public boolean assertMetric(String name, double value, String hostname, String[] tags) {

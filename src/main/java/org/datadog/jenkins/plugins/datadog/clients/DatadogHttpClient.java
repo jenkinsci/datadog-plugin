@@ -25,24 +25,28 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.clients;
 
+import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getHttpURLConnection;
+
 import hudson.ProxyConfiguration;
 import hudson.model.Run;
 import hudson.util.Secret;
-import io.opentracing.Tracer;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
+import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
-import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.Proxy;
 import java.net.URL;
@@ -50,6 +54,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -72,6 +77,12 @@ public class DatadogHttpClient implements DatadogClient {
 
     private static final Integer HTTP_FORBIDDEN = 403;
     private static final Integer BAD_REQUEST = 400;
+
+    /* Timeout of 1 minutes for connecting and reading.
+     * this prevents this plugin from causing jobs to hang in case of
+     * flaky network or Datadog being down. Left intentionally long.
+     */
+    private static final int HTTP_TIMEOUT_MS = 60 * 1000;
 
     @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL")
     public static boolean enableValidations = true;
@@ -412,7 +423,7 @@ public class DatadogHttpClient implements DatadogClient {
 
         try {
             logger.fine("Setting up HttpURLConnection...");
-            conn = getHttpURLConnection(new URL(this.getUrl() + type + urlParameters));
+            conn = getHttpURLConnection(new URL(this.getUrl() + type + urlParameters), HTTP_TIMEOUT_MS);
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setUseCaches(false);
@@ -493,7 +504,7 @@ public class DatadogHttpClient implements DatadogClient {
         try {
             URL logsEndpointURL = new URL(url);
             logger.fine("Setting up HttpURLConnection...");
-            conn = getHttpURLConnection(logsEndpointURL);
+            conn = getHttpURLConnection(logsEndpointURL, HTTP_TIMEOUT_MS);
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("DD-API-KEY", Secret.toString(apiKey));
@@ -546,57 +557,13 @@ public class DatadogHttpClient implements DatadogClient {
         return true;
     }
 
-    /**
-     * Returns an HTTP url connection given a url object. Supports jenkins configured proxy.
-     *
-     * @param url - a URL object containing the URL to open a connection to.
-     * @return a HttpURLConnection object.
-     * @throws IOException if HttpURLConnection fails to open connection
-     */
-    private static HttpURLConnection getHttpURLConnection(final URL url) throws IOException {
-        HttpURLConnection conn = null;
-        ProxyConfiguration proxyConfig = null;
-
-        Jenkins jenkins = Jenkins.getInstance();
-        if(jenkins != null){
-            proxyConfig = jenkins.proxy;
-        }
-
-        /* Attempt to use proxy */
-        if (proxyConfig != null) {
-            Proxy proxy = proxyConfig.createProxy(url.getHost());
-            if (proxy != null && proxy.type() == Proxy.Type.HTTP) {
-                logger.fine("Attempting to use the Jenkins proxy configuration");
-                conn = (HttpURLConnection) url.openConnection(proxy);
-            }
-        } else {
-            logger.fine("Jenkins proxy configuration not found");
-        }
-
-        /* If proxy fails, use HttpURLConnection */
-        if (conn == null) {
-            conn = (HttpURLConnection) url.openConnection();
-            logger.fine("Using HttpURLConnection, without proxy");
-        }
-
-        /* Timeout of 1 minutes for connecting and reading.
-        * this prevents this plugin from causing jobs to hang in case of
-        * flaky network or Datadog being down. Left intentionally long.
-        */
-        int timeoutMS = 1 * 60 * 1000;
-        conn.setConnectTimeout(timeoutMS);
-        conn.setReadTimeout(timeoutMS);
-
-        return conn;
-    }
-
     public static boolean validateDefaultIntakeConnection(String url, Secret apiKey) throws IOException {
         String urlParameters = "?api_key=" + Secret.toString(apiKey);
         HttpURLConnection conn = null;
         boolean status = true;
         try {
             // Make request
-            conn = getHttpURLConnection(new URL(url + VALIDATE + urlParameters));
+            conn = getHttpURLConnection(new URL(url + VALIDATE + urlParameters), HTTP_TIMEOUT_MS);
             conn.setRequestMethod("GET");
 
             // Get response
