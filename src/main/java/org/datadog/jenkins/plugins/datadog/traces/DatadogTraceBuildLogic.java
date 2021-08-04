@@ -9,6 +9,7 @@ import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommi
 
 import hudson.model.Result;
 import hudson.model.Run;
+import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.transport.HttpClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
@@ -110,7 +111,6 @@ public class DatadogTraceBuildLogic {
         buildSpan.setServiceName(DatadogUtilities.getDatadogGlobalDescriptor().getCiInstanceName());
         buildSpan.setType("ci");
         buildSpan.putMeta(CITags.CI_PROVIDER_NAME, "jenkins");
-        buildSpan.putMeta(CITags.LANGUAGE_TAG_KEY, "");
         buildSpan.putMeta(CITags._DD_CI_INTERNAL, "false");
         buildSpan.putMeta(CITags._DD_CI_BUILD_LEVEL, buildLevel);
         buildSpan.putMeta(CITags._DD_CI_LEVEL, buildLevel);
@@ -139,48 +139,68 @@ public class DatadogTraceBuildLogic {
 
         // Git Info
         final String gitUrl = buildData.getGitUrl("").isEmpty() ? updatedBuildData.getGitUrl("") : buildData.getGitUrl("");
-        buildSpan.putMeta(CITags.GIT_REPOSITORY_URL, gitUrl);
+        if(StringUtils.isNotEmpty(gitUrl)){
+            buildSpan.putMeta(CITags.GIT_REPOSITORY_URL, gitUrl);
+        }
 
         final String gitCommit = buildData.getGitCommit("").isEmpty() ? updatedBuildData.getGitCommit("") : buildData.getGitCommit("");
         if(!isValidCommit(gitCommit)) {
             logger.warning("Couldn't find a valid commit for pipelineID '"+buildData.getBuildTag("")+"'. GIT_COMMIT environment variable was not found or has invalid SHA1 string: " + gitCommit);
         }
 
-        buildSpan.putMeta(CITags.GIT_COMMIT__SHA, gitCommit); //Maintain retrocompatibility
-        buildSpan.putMeta(CITags.GIT_COMMIT_SHA, gitCommit);
+        if(StringUtils.isNotEmpty(gitCommit)){
+            buildSpan.putMeta(CITags.GIT_COMMIT__SHA, gitCommit); //Maintain retrocompatibility
+            buildSpan.putMeta(CITags.GIT_COMMIT_SHA, gitCommit);
+        }
 
         final String gitMessage = buildData.getGitMessage("").isEmpty() ? updatedBuildData.getGitMessage("") : buildData.getGitMessage("");
-        buildSpan.putMeta(CITags.GIT_COMMIT_MESSAGE, gitMessage);
+        if(StringUtils.isNotEmpty(gitMessage)){
+            buildSpan.putMeta(CITags.GIT_COMMIT_MESSAGE, gitMessage);
+        }
 
         final String gitAuthor = buildData.getGitAuthorName("").isEmpty() ? updatedBuildData.getGitAuthorName("") : buildData.getGitAuthorName("");
-        buildSpan.putMeta(CITags.GIT_COMMIT_AUTHOR_NAME, gitAuthor);
+        if(StringUtils.isNotEmpty(gitAuthor)){
+            buildSpan.putMeta(CITags.GIT_COMMIT_AUTHOR_NAME, gitAuthor);
+        }
 
         final String gitAuthorEmail = buildData.getGitAuthorEmail("").isEmpty() ? updatedBuildData.getGitAuthorEmail("") : buildData.getGitAuthorEmail("");
-        buildSpan.putMeta(CITags.GIT_COMMIT_AUTHOR_EMAIL, gitAuthorEmail);
+        if(StringUtils.isNotEmpty(gitAuthorEmail)){
+            buildSpan.putMeta(CITags.GIT_COMMIT_AUTHOR_EMAIL, gitAuthorEmail);
+        }
 
         final String gitAuthorDate = buildData.getGitAuthorDate("").isEmpty() ? updatedBuildData.getGitAuthorDate("") : buildData.getGitAuthorDate("");
-        buildSpan.putMeta(CITags.GIT_COMMIT_AUTHOR_DATE, gitAuthorDate);
+        if(StringUtils.isNotEmpty(gitAuthorDate)){
+            buildSpan.putMeta(CITags.GIT_COMMIT_AUTHOR_DATE, gitAuthorDate);
+        }
 
         final String gitCommitter = buildData.getGitCommitterName("").isEmpty() ? updatedBuildData.getGitCommitterName("") : buildData.getGitCommitterName("");
-        buildSpan.putMeta(CITags.GIT_COMMIT_COMMITTER_NAME, gitCommitter);
+        if(StringUtils.isNotEmpty(gitCommitter)){
+            buildSpan.putMeta(CITags.GIT_COMMIT_COMMITTER_NAME, gitCommitter);
+        }
 
         final String gitCommitterEmail = buildData.getGitCommitterEmail("").isEmpty() ? updatedBuildData.getGitCommitterEmail("") : buildData.getGitCommitterEmail("");
-        buildSpan.putMeta(CITags.GIT_COMMIT_COMMITTER_EMAIL, gitCommitterEmail);
+        if(StringUtils.isNotEmpty(gitCommitterEmail)){
+            buildSpan.putMeta(CITags.GIT_COMMIT_COMMITTER_EMAIL, gitCommitterEmail);
+        }
 
         final String gitCommitterDate = buildData.getGitCommitterDate("").isEmpty() ? updatedBuildData.getGitCommitterDate("") : buildData.getGitCommitterDate("");
-        buildSpan.putMeta(CITags.GIT_COMMIT_COMMITTER_DATE, gitCommitterDate);
+        if(StringUtils.isNotEmpty(gitCommitterDate)){
+            buildSpan.putMeta(CITags.GIT_COMMIT_COMMITTER_DATE, gitCommitterDate);
+        }
 
         final String gitDefaultBranch = buildData.getGitDefaultBranch("").isEmpty() ? updatedBuildData.getGitDefaultBranch("") : buildData.getGitDefaultBranch("");
-        buildSpan.putMeta(CITags.GIT_DEFAULT_BRANCH, gitDefaultBranch);
+        if(StringUtils.isNotEmpty(gitDefaultBranch)){
+            buildSpan.putMeta(CITags.GIT_DEFAULT_BRANCH, gitDefaultBranch);
+        }
 
         final String rawGitBranch = buildData.getBranch("").isEmpty() ? updatedBuildData.getBranch("") : buildData.getBranch("");
         final String gitBranch = normalizeBranch(rawGitBranch);
-        if(gitBranch != null) {
+        if(StringUtils.isNotEmpty(gitBranch)) {
             buildSpan.putMeta(CITags.GIT_BRANCH, gitBranch);
         }
 
         final String gitTag = normalizeTag(rawGitBranch);
-        if(gitTag != null) {
+        if(StringUtils.isNotEmpty(gitTag)) {
             buildSpan.putMeta(CITags.GIT_TAG, gitTag);
         }
 
