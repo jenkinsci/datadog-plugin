@@ -225,4 +225,28 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         assertEquals("value", meta.get("global_job_tag"));
         assertEquals("value", meta.get("global_tag"));
     }
+
+    @Test
+    public void testAvoidSettingEmptyGitInfoOnTraces() throws Exception {
+        final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessTagsNoGitInfo");
+        project.scheduleBuild2(0).get();
+
+        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(1);
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(1, spans.size());
+
+        final TraceSpan buildSpan = spans.get(0);
+        final Map<String, String> meta = buildSpan.getMeta();
+        assertNull(meta.get(CITags.GIT_REPOSITORY_URL));
+        assertNull(meta.get(CITags.GIT_BRANCH));
+        assertNull(meta.get(CITags.GIT_DEFAULT_BRANCH));
+        assertNull(meta.get(CITags.GIT_COMMIT_SHA));
+        assertNull(meta.get(CITags.GIT_COMMIT_AUTHOR_NAME));
+        assertNull(meta.get(CITags.GIT_COMMIT_AUTHOR_EMAIL));
+        assertNull(meta.get(CITags.GIT_COMMIT_AUTHOR_DATE));
+        assertNull(meta.get(CITags.GIT_COMMIT_COMMITTER_NAME));
+        assertNull(meta.get(CITags.GIT_COMMIT_COMMITTER_EMAIL));
+        assertNull(meta.get(CITags.GIT_COMMIT_COMMITTER_DATE));
+    }
 }
