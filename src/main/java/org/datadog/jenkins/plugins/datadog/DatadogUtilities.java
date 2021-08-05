@@ -832,6 +832,28 @@ public class DatadogUtilities {
         return sb.toString();
     }
 
+    public static String toJson(final Map<String, String> map) {
+        if(map == null || map.isEmpty()) {
+            return "";
+        }
+
+        // We want to avoid using Json libraries cause
+        // may cause incompatibilities on different Jenkins versions.
+        final StringBuilder sb = new StringBuilder();
+        sb.append("{");
+        int index = 1;
+        for(Map.Entry<String, String> entry : map.entrySet()) {
+            sb.append("\"").append(entry.getKey()).append("\"").append(":").append("\"").append(entry.getValue()).append("\"");
+            if(index < map.size()) {
+                sb.append(",");
+            }
+            index += 1;
+        }
+        sb.append("}");
+
+        return sb.toString();
+    }
+
     /**
      * Removes all actions related to traces for Jenkins pipelines.
      * @param run the current run.

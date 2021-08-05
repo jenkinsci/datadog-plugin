@@ -140,7 +140,7 @@ public class DatadogUtilitiesTest {
 
     @Test
     public void testToJsonSet() {
-        Assert.assertEquals("", DatadogUtilities.toJson(null));
+        Assert.assertEquals("", DatadogUtilities.toJson((Set<String>)null));
         Assert.assertEquals("", DatadogUtilities.toJson(new HashSet<>()));
 
         final Set<String> oneItem = new HashSet<>();
@@ -152,6 +152,22 @@ public class DatadogUtilitiesTest {
         multipleItems.add("item2");
         multipleItems.add("item3");
         Assert.assertEquals("[\"item1\",\"item2\",\"item3\"]", DatadogUtilities.toJson(multipleItems));
+    }
+
+    @Test
+    public void testToJsonMap() {
+        Assert.assertEquals("", DatadogUtilities.toJson((Map<String,String>)null));
+        Assert.assertEquals("", DatadogUtilities.toJson(new HashMap<>()));
+
+        final Map<String, String> oneItem = new HashMap<>();
+        oneItem.put("itemKey1","itemValue1");
+        Assert.assertEquals("{\"itemKey1\":\"itemValue1\"}", DatadogUtilities.toJson(oneItem));
+
+        final Map<String, String> multipleItems = new LinkedHashMap<>();
+        multipleItems.put("itemKey1", "itemValue1");
+        multipleItems.put("itemKey2", "itemValue2");
+        multipleItems.put("itemKey3", "itemValue3");
+        Assert.assertEquals("{\"itemKey1\":\"itemValue1\",\"itemKey2\":\"itemValue2\",\"itemKey3\":\"itemValue3\"}", DatadogUtilities.toJson(multipleItems));
     }
 
 }
