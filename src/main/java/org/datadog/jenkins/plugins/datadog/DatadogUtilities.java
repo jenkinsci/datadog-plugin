@@ -832,6 +832,11 @@ public class DatadogUtilities {
         return sb.toString();
     }
 
+    /**
+     * Returns a JSON object string based on the map.
+     * @param map the map to transform into a JSON
+     * @return json object string
+     */
     public static String toJson(final Map<String, String> map) {
         if(map == null || map.isEmpty()) {
             return "";
