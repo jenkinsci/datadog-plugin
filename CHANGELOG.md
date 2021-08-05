@@ -1,5 +1,12 @@
 Changes
 =======
+## 3.1.1 / 2021-08-05
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.1.0...datadog-3.1.1
+
+### Changes
+* [Fixed] Avoid sending empty Git info in CI Pipelines. See [#237](https://github.com/jenkinsci/datadog-plugin/pull/237)
+
 ## 3.1.0 / 2021-07-27
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.0.2...datadog-3.1.0
