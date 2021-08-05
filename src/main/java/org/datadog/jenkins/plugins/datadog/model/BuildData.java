@@ -211,10 +211,10 @@ public class BuildData implements Serializable {
             }
 
             for(final ParameterValue parameter : parameters) {
-                // Only support parameters as string, boolean and credentials for the moment.
+                // Only support parameters as string (only single line), boolean and credentials for the moment.
                 // Credentials parameters are safe because the value will show the credential ID, not the secret itself.
                 // Choice parameters are treated as string parameters internally.
-                if((parameter instanceof StringParameterValue)
+                if((parameter instanceof StringParameterValue && !(parameter instanceof TextParameterValue))
                         || parameter instanceof BooleanParameterValue
                         || parameter instanceof CredentialsParameterValue) {
                     this.buildParameters.put(parameter.getName(), String.valueOf(parameter.getValue()));
