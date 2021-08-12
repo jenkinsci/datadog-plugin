@@ -554,8 +554,10 @@ public class DatadogTracePipelineLogic {
             return;
         }
 
-        final Map<String, String> tags = TagsUtil.convertTagsToMapSingleValues(DatadogUtilities.getTagsFromPipelineAction(run));
-        ciGlobalTagsAction.putAll(tags);
+        if(ciGlobalTagsAction.getTags().isEmpty()){
+            final Map<String, String> tags = TagsUtil.convertTagsToMapSingleValues(DatadogUtilities.getTagsFromPipelineAction(run));
+            ciGlobalTagsAction.putAll(tags);
+        }
     }
 
     /**

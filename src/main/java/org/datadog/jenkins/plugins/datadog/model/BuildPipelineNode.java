@@ -73,7 +73,6 @@ public class BuildPipelineNode {
     private String propagatedNodeName;
     private Set<String> propagatedNodeLabels;
     private String nodeHostname;
-    private AnnotatedLargeText logText;
     private long startTime;
     private long startTimeMicros;
     private long endTime;
@@ -145,7 +144,6 @@ public class BuildPipelineNode {
             this.nanosInQueue = queueData.getNanosInQueue();
         }
 
-        this.logText = getLogText(endNode);
         this.startTime = getTime(startNode);
         this.startTimeMicros = this.startTime * 1000;
         this.endTime = getTime(endNode);
@@ -181,7 +179,6 @@ public class BuildPipelineNode {
             this.nanosInQueue = queueData.getNanosInQueue();
         }
 
-        this.logText = getLogText(stepNode);
         this.startTime = getTime(stepNode);
         this.startTimeMicros = this.startTime * 1000;
         this.endTime = -1L;
@@ -260,10 +257,6 @@ public class BuildPipelineNode {
 
     public String getNodeHostname() {
         return nodeHostname;
-    }
-
-    public AnnotatedLargeText getLogText() {
-        return logText;
     }
 
     public long getStartTime() {
@@ -363,7 +356,6 @@ public class BuildPipelineNode {
         this.nodeName = buildNode.nodeName;
         this.nodeHostname = buildNode.nodeHostname;
         this.nodeLabels = buildNode.nodeLabels;
-        this.logText = buildNode.logText;
         this.startTime = buildNode.startTime;
         this.startTimeMicros = buildNode.startTimeMicros;
         this.endTime = buildNode.endTime;
