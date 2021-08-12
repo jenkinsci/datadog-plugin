@@ -3,6 +3,7 @@ package org.datadog.jenkins.plugins.datadog.listeners;
 import hudson.Extension;
 import hudson.model.Run;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
 import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StepData;
 import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
@@ -73,6 +74,16 @@ public class DatadogStepListener implements StepListener {
 
             // If the parent block from the first 'Allocate node : Start' node is the 'Start of Pipeline' node
             // the worker node where this Step was executed will be the worker node for the pipeline.
+            findStartOfPipeline(run, stepData, firstAllocateNodeStart);
+
+        } catch (Exception ex) {
+            logger.severe("Unable to extract Run information of the StepContext. " + ex);
+        }
+    }
+
+    private void findStartOfPipeline(final Run<?,?> run, final StepData stepData, final FlowNode firstAllocateNodeStart) {
+        long start = DatadogAudit.currentTimeMillis();
+        try {
             final Iterator<BlockStartNode> blockStartNodes = firstAllocateNodeStart.iterateEnclosingBlocks().iterator();
             if(blockStartNodes.hasNext()) {
                 final FlowNode candidate = blockStartNodes.next();
@@ -80,18 +91,24 @@ public class DatadogStepListener implements StepListener {
                     run.addAction(new PipelineNodeInfoAction(stepData.getNodeName() != null ? stepData.getNodeName() : "master", stepData.getNodeLabels()));
                 }
             }
-
-        } catch (Exception ex) {
-            logger.severe("Unable to extract Run information of the StepContext. " + ex);
+        } finally {
+            long end = DatadogAudit.currentTimeMillis();
+            DatadogAudit.log("DatadogStepListener.findStartOfPipeline", start, end);
         }
     }
 
     private FlowNode findFirstAllocateNodeStart(FlowNode current) {
-        for(FlowNode block : current.iterateEnclosingBlocks()) {
-            if("Allocate node : Start".equalsIgnoreCase(block.getDisplayName())){
-                return block;
+        long start = DatadogAudit.currentTimeMillis();
+        try {
+            for(FlowNode block : current.iterateEnclosingBlocks()) {
+                if("Allocate node : Start".equalsIgnoreCase(block.getDisplayName())){
+                    return block;
+                }
             }
+            return null;
+        } finally {
+            long end = DatadogAudit.currentTimeMillis();
+            DatadogAudit.log("DatadogStepListener.findFirstAllocateNodeStart", start, end);
         }
-        return null;
     }
 }

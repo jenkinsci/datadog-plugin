@@ -12,11 +12,11 @@ import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommi
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidRepositoryURL;
 
 import hudson.EnvVars;
-import hudson.model.Build;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
 import org.datadog.jenkins.plugins.datadog.transport.HttpClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipeline;
@@ -129,88 +129,94 @@ public class DatadogTracePipelineLogic {
     }
 
     private void updateBuildData(BuildData buildData, Run<?, ?> run, BuildPipelineNode pipelineNode, FlowNode node) {
-        if(pipelineNode == null){
-            return;
-        }
+        long start = DatadogAudit.currentTimeMillis();
+        try {
+            if(pipelineNode == null){
+                return;
+            }
 
-        buildData.setPropagatedMillisInQueue(TimeUnit.NANOSECONDS.toMillis(getNanosInQueue(pipelineNode)));
+            buildData.setPropagatedMillisInQueue(TimeUnit.NANOSECONDS.toMillis(getNanosInQueue(pipelineNode)));
 
-        final String gitBranch = pipelineNode.getEnvVars().get("GIT_BRANCH");
-        if(gitBranch != null && buildData.getBranch("").isEmpty()) {
-            buildData.setBranch(gitBranch);
-        }
+            final String gitBranch = pipelineNode.getEnvVars().get("GIT_BRANCH");
+            if(gitBranch != null && buildData.getBranch("").isEmpty()) {
+                buildData.setBranch(gitBranch);
+            }
 
-        final String gitUrl = getGitRepositoryUrl(pipelineNode.getEnvVars());
-        if(gitUrl != null && buildData.getGitUrl("").isEmpty()) {
-            buildData.setGitUrl(gitUrl);
-        }
+            final String gitUrl = getGitRepositoryUrl(pipelineNode.getEnvVars());
+            if(gitUrl != null && buildData.getGitUrl("").isEmpty()) {
+                buildData.setGitUrl(gitUrl);
+            }
 
-        final String gitCommit = pipelineNode.getEnvVars().get("GIT_COMMIT");
-        final String buildDataGitCommit = buildData.getGitCommit("");
-        if(gitCommit != null && (buildDataGitCommit.isEmpty() || !isValidCommit(buildDataGitCommit))){
-            buildData.setGitCommit(gitCommit);
-        }
+            final String gitCommit = pipelineNode.getEnvVars().get("GIT_COMMIT");
+            final String buildDataGitCommit = buildData.getGitCommit("");
+            if(gitCommit != null && (buildDataGitCommit.isEmpty() || !isValidCommit(buildDataGitCommit))){
+                buildData.setGitCommit(gitCommit);
+            }
 
-        // The Git client will be not null if there is some git information to calculate.
-        // We use the same Git client instance to calculate all git information
-        // because creating a Git client is a very expensive operation.
-        final GitClient gitClient = getGitClient(run, pipelineNode, node, gitUrl, gitCommit);
+            // The Git client will be not null if there is some git information to calculate.
+            // We use the same Git client instance to calculate all git information
+            // because creating a Git client is a very expensive operation.
+            final GitClient gitClient = getGitClient(run, pipelineNode, node, gitUrl, gitCommit);
 
-        if(gitClient != null) {
-            final GitCommitAction commitAction = buildGitCommitAction(run, gitClient, pipelineNode);
-            if(commitAction != null) {
-                if(buildData.getGitMessage("").isEmpty()){
-                    buildData.setGitMessage(commitAction.getMessage());
-                }
+            if(gitClient != null) {
+                final GitCommitAction commitAction = buildGitCommitAction(run, gitClient, pipelineNode);
+                if(commitAction != null) {
+                    if(buildData.getGitMessage("").isEmpty()){
+                        buildData.setGitMessage(commitAction.getMessage());
+                    }
 
-                if(buildData.getGitAuthorName("").isEmpty()) {
-                    buildData.setGitAuthorName(commitAction.getAuthorName());
-                }
+                    if(buildData.getGitAuthorName("").isEmpty()) {
+                        buildData.setGitAuthorName(commitAction.getAuthorName());
+                    }
 
-                if(buildData.getGitAuthorEmail("").isEmpty()){
-                    buildData.setGitAuthorEmail(commitAction.getAuthorEmail());
-                }
+                    if(buildData.getGitAuthorEmail("").isEmpty()){
+                        buildData.setGitAuthorEmail(commitAction.getAuthorEmail());
+                    }
 
-                if(buildData.getGitAuthorDate("").isEmpty()){
-                    buildData.setGitAuthorDate(commitAction.getAuthorDate());
-                }
+                    if(buildData.getGitAuthorDate("").isEmpty()){
+                        buildData.setGitAuthorDate(commitAction.getAuthorDate());
+                    }
 
-                if(buildData.getGitCommitterName("").isEmpty()){
-                    buildData.setGitCommitterName(commitAction.getCommitterName());
-                }
+                    if(buildData.getGitCommitterName("").isEmpty()){
+                        buildData.setGitCommitterName(commitAction.getCommitterName());
+                    }
 
-                if(buildData.getGitCommitterEmail("").isEmpty()){
-                    buildData.setGitCommitterEmail(commitAction.getCommitterEmail());
-                }
+                    if(buildData.getGitCommitterEmail("").isEmpty()){
+                        buildData.setGitCommitterEmail(commitAction.getCommitterEmail());
+                    }
 
-                if(buildData.getGitCommitterDate("").isEmpty()){
-                    buildData.setGitCommitterDate(commitAction.getCommitterDate());
+                    if(buildData.getGitCommitterDate("").isEmpty()){
+                        buildData.setGitCommitterDate(commitAction.getCommitterDate());
+                    }
                 }
             }
-        }
 
-        if(gitClient != null) {
-            final GitRepositoryAction repositoryAction = buildGitRepositoryAction(run, gitClient, pipelineNode);
-            if(repositoryAction != null) {
-                if(buildData.getGitDefaultBranch("").isEmpty()) {
-                    buildData.setGitDefaultBranch(repositoryAction.getDefaultBranch());
+            if(gitClient != null) {
+                final GitRepositoryAction repositoryAction = buildGitRepositoryAction(run, gitClient, pipelineNode);
+                if(repositoryAction != null) {
+                    if(buildData.getGitDefaultBranch("").isEmpty()) {
+                        buildData.setGitDefaultBranch(repositoryAction.getDefaultBranch());
+                    }
                 }
             }
-        }
 
-        final String workspace = pipelineNode.getWorkspace();
-        if(workspace != null && buildData.getWorkspace("").isEmpty()){
-            buildData.setWorkspace(workspace);
-        }
+            final String workspace = pipelineNode.getWorkspace();
+            if(workspace != null && buildData.getWorkspace("").isEmpty()){
+                buildData.setWorkspace(workspace);
+            }
 
-        final String nodeName = pipelineNode.getNodeName();
-        if(nodeName != null && buildData.getNodeName("").isEmpty()){
-            buildData.setNodeName(nodeName);
-        }
+            final String nodeName = pipelineNode.getNodeName();
+            if(nodeName != null && buildData.getNodeName("").isEmpty()){
+                buildData.setNodeName(nodeName);
+            }
 
-        final String nodeHostname = pipelineNode.getNodeHostname();
-        if(nodeHostname != null && buildData.getHostname("").isEmpty()) {
-            buildData.setHostname(nodeHostname);
+            final String nodeHostname = pipelineNode.getNodeHostname();
+            if(nodeHostname != null && buildData.getHostname("").isEmpty()) {
+                buildData.setHostname(nodeHostname);
+            }
+        } finally {
+            long end = DatadogAudit.currentTimeMillis();
+            DatadogAudit.log("DatadogTracePipelineLogic.updateBuildData", start, end);
         }
     }
 
@@ -516,47 +522,63 @@ public class DatadogTracePipelineLogic {
     }
 
     private BuildPipelineNode buildPipelineNode(FlowNode flowNode) {
-        BuildPipelineNode pipelineNode = null;
-        if(flowNode instanceof BlockEndNode) {
-            pipelineNode = new BuildPipelineNode((BlockEndNode) flowNode);
-        } else if(flowNode instanceof StepAtomNode) {
-            pipelineNode = new BuildPipelineNode((StepAtomNode) flowNode);
+        long start = DatadogAudit.currentTimeMillis();
+        try {
+            BuildPipelineNode pipelineNode = null;
+            if(flowNode instanceof BlockEndNode) {
+                pipelineNode = new BuildPipelineNode((BlockEndNode) flowNode);
+            } else if(flowNode instanceof StepAtomNode) {
+                pipelineNode = new BuildPipelineNode((StepAtomNode) flowNode);
+            }
+            return pipelineNode;
+        } finally {
+            long end = DatadogAudit.currentTimeMillis();
+            DatadogAudit.log("DatadogTracePipelineLogic.buildPipelineNode", start, end);
         }
-        return pipelineNode;
     }
 
     private void updateStageBreakdown(final Run<?,?> run, BuildPipelineNode pipelineNode) {
-        final StageBreakdownAction stageBreakdownAction = run.getAction(StageBreakdownAction.class);
-        if(stageBreakdownAction == null){
-            return;
+        long start = DatadogAudit.currentTimeMillis();
+        try {
+            final StageBreakdownAction stageBreakdownAction = run.getAction(StageBreakdownAction.class);
+            if(stageBreakdownAction == null){
+                return;
+            }
+
+            if(pipelineNode == null){
+                return;
+            }
+
+            if(!BuildPipelineNode.NodeType.STAGE.equals(pipelineNode.getType())){
+                return;
+            }
+
+            final StageData stageData = StageData.builder()
+                    .withName(pipelineNode.getName())
+                    .withStartTimeInMicros(pipelineNode.getStartTimeMicros())
+                    .withEndTimeInMicros(pipelineNode.getEndTimeMicros())
+                    .build();
+
+            stageBreakdownAction.put(stageData.getName(), stageData);
+        } finally {
+            long end = DatadogAudit.currentTimeMillis();
+            DatadogAudit.log("DatadogTracePipelineLogic.updateStageBreakdown", start, end);
         }
-
-        if(pipelineNode == null){
-            return;
-        }
-
-        if(!BuildPipelineNode.NodeType.STAGE.equals(pipelineNode.getType())){
-            return;
-        }
-
-        final StageData stageData = StageData.builder()
-                .withName(pipelineNode.getName())
-                .withStartTimeInMicros(pipelineNode.getStartTimeMicros())
-                .withEndTimeInMicros(pipelineNode.getEndTimeMicros())
-                .build();
-
-        stageBreakdownAction.put(stageData.getName(), stageData);
     }
 
     private void updateCIGlobalTags(Run run) {
-        final CIGlobalTagsAction ciGlobalTagsAction = run.getAction(CIGlobalTagsAction.class);
-        if(ciGlobalTagsAction == null) {
-            return;
-        }
+        long start = DatadogAudit.currentTimeMillis();
+        try {
+            final CIGlobalTagsAction ciGlobalTagsAction = run.getAction(CIGlobalTagsAction.class);
+            if(ciGlobalTagsAction == null) {
+                return;
+            }
 
-        if(ciGlobalTagsAction.getTags().isEmpty()){
             final Map<String, String> tags = TagsUtil.convertTagsToMapSingleValues(DatadogUtilities.getTagsFromPipelineAction(run));
             ciGlobalTagsAction.putAll(tags);
+        } finally {
+            long end = DatadogAudit.currentTimeMillis();
+            DatadogAudit.log("DatadogTracePipelineLogic.updateCIGlobalTags", start, end);
         }
     }
 
