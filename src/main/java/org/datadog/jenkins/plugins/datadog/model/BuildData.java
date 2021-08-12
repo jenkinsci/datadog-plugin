@@ -229,7 +229,6 @@ public class BuildData implements Serializable {
         // First we obtain the actions to check if the Git information was already calculated.
         // If so, we want to use this information to avoid creating a new Git client instance
         // to calculate the same information.
-
         GitCommitAction gitCommitAction = run.getAction(GitCommitAction.class);
         GitRepositoryAction gitRepositoryAction = run.getAction(GitRepositoryAction.class);
 
