@@ -27,13 +27,13 @@ public final class RepositoryInfoCallback implements RepositoryCallback<Reposito
             Ref head = repository.getRefDatabase().findRef("HEAD");
             if(head == null) {
                 LOGGER.fine("Unable to build RepositoryInfo. HEAD is null.");
-                return null;
+                return RepositoryInfo.EMPTY_REPOSITORY_INFO;
             }
 
             // Discarded if it's not a symbolic to refs.
             if(!head.isSymbolic()) {
                 LOGGER.fine("Unable to build RepositoryInfo. HEAD is not symbolic.");
-                return null;
+                return RepositoryInfo.EMPTY_REPOSITORY_INFO;
             }
 
             final String defaultBranch = GitInfoUtils.normalizeBranch(head.getTarget().getName());

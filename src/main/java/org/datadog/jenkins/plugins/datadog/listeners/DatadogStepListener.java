@@ -2,6 +2,7 @@ package org.datadog.jenkins.plugins.datadog.listeners;
 
 import hudson.Extension;
 import hudson.model.Run;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StepData;
 import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
@@ -23,6 +24,10 @@ public class DatadogStepListener implements StepListener {
 
     @Override
     public void notifyOfNewStep(@Nonnull Step step, @Nonnull StepContext context) {
+        if (!DatadogUtilities.getDatadogGlobalDescriptor().isEnabledCiVisibility()) {
+            return;
+        }
+
         try {
             final Run<?,?> run = context.get(Run.class);
             final StepDataAction stepDataAction = run.getAction(StepDataAction.class);
@@ -43,7 +48,6 @@ public class DatadogStepListener implements StepListener {
 
             final StepData stepData = new StepData(context);
             stepDataAction.put(flowNode, stepData);
-
 
             // We use the PipelineNodeInfoAction to propagate
             // the correct node name to the root span (ci.pipeline).

@@ -16,6 +16,9 @@ import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 import org.jenkinsci.plugins.workflow.FilePathUtils;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -23,6 +26,7 @@ public final class GitUtils {
 
     private static transient final Logger LOGGER = Logger.getLogger(GitUtils.class.getName());
     private static transient final Pattern SHA1_PATTERN = Pattern.compile("\\b[a-f0-9]{40}\\b");
+    private static transient final Pattern SCP_REPO_URI_REGEX = Pattern.compile("^([\\w.~-]+@)?(?<host>[\\w.-]+):(?<path>[\\w./-]+)(?:\\?|$)(.*)$");
 
     private GitUtils(){}
 
@@ -121,7 +125,6 @@ public final class GitUtils {
         }
     }
 
-
     /**
      * Returns the GitCommitAction of the Run instance.
      * If the Run instance does not have GitCommitAction or
@@ -133,18 +136,14 @@ public final class GitUtils {
      * it's fairly expensive to calculate. To avoid calculating
      * every time, it's store in the Run instance as an action.
      * @param run a particular execution of a Jenkins build
-     * @param listener the task listener
-     * @param envVars the env vars available
+     * @param gitClient the Git client
      * @param gitCommit the git commit SHA to use
-     * @param nodeName the node name to use to build the Git client
-     * @param workspace the workspace to use to build the Git client
      * @return the GitCommitAction with the information about Git Commit.
      */
-    public static GitCommitAction buildGitCommitAction(Run<?, ?> run, TaskListener listener, EnvVars envVars, final String gitCommit, final String nodeName, final String workspace) {
+    public static GitCommitAction buildGitCommitAction(final Run<?,?> run, final GitClient gitClient, String gitCommit) {
         GitCommitAction commitAction = run.getAction(GitCommitAction.class);
         if(commitAction == null || !gitCommit.equals(commitAction.getCommit())) {
             try {
-                final GitClient gitClient = GitUtils.newGitClient(run, listener, envVars, nodeName, workspace);
                 if(gitClient == null){
                     LOGGER.fine("Unable to build GitCommitAction. GitClient is null");
                     return null;
@@ -190,6 +189,19 @@ public final class GitUtils {
         return commitAction;
     }
 
+/*    public static GitRepositoryAction buildGitRepositoryAction(Run<?, ?> run, TaskListener listener, EnvVars envVars, final String gitRepositoryURL, final String nodeName, final String workspace) {
+        GitRepositoryAction repoAction = run.getAction(GitRepositoryAction.class);
+        if(repoAction == null || !gitRepositoryURL.equals(repoAction.getRepositoryURL())) {
+            try {
+                final GitClient gitClient = GitUtils.newGitClient(run, listener, envVars, nodeName, workspace);
+                return buildGitRepositoryAction(run, gitClient, envVars, gitRepositoryURL);
+            } catch (Exception e) {
+                LOGGER.fine("Unable to build GitRepositoryAction. Error: " + e);
+            }
+        }
+        return repoAction;
+    }*/
+
     /**
      * Returns the GitRepositoryAction of the Run instance.
      * If the Run instance does not have GitRepositoryAction or
@@ -200,17 +212,15 @@ public final class GitUtils {
      * it's fairly expensive to calculate. To avoid calculating
      * every time, it's store in the Run instance as an action.
      * @param run a particular execution of a Jenkins build
-     * @param listener the task listener
+     * @param gitClient the Git client
      * @param envVars the env vars available
-     * @param nodeName the node name to use to build the Git client
-     * @param workspace the workspace to use to build the Git client
+     * @param gitRepositoryURL the git repository URL to use
      * @return the GitRepositoryAction with the information about Git repository.
      */
-    public static GitRepositoryAction buildGitRepositoryAction(Run<?, ?> run, TaskListener listener, EnvVars envVars, final String nodeName, final String workspace) {
+    public static GitRepositoryAction buildGitRepositoryAction(Run<?, ?> run, GitClient gitClient, final EnvVars envVars, final String gitRepositoryURL) {
         GitRepositoryAction repoAction = run.getAction(GitRepositoryAction.class);
-        if(repoAction == null || repoAction.getDefaultBranch() == null) {
+        if(repoAction == null || !gitRepositoryURL.equals(repoAction.getRepositoryURL())) {
             try {
-                final GitClient gitClient = GitUtils.newGitClient(run, listener, envVars, nodeName, workspace);
                 if(gitClient == null){
                     LOGGER.fine("Unable to build GitRepositoryAction. GitClient is null");
                     return null;
@@ -223,6 +233,7 @@ public final class GitUtils {
                 }
 
                 final GitRepositoryAction.Builder builder = GitRepositoryAction.newBuilder();
+                builder.withRepositoryURL(gitRepositoryURL);
                 builder.withDefaultBranch(repositoryInfo.getDefaultBranch());
 
                 repoAction = builder.build();
@@ -277,5 +288,23 @@ public final class GitUtils {
         }
 
         return SHA1_PATTERN.matcher(gitCommit).matches();
+    }
+
+    /**
+     * Check if the git repository URL is a valid repository
+     * @param gitRepositoryURL
+     * @return true if the git repository url is a valid repository in either http or scp form.
+     */
+    public static boolean isValidRepositoryURL(String gitRepositoryURL) {
+        if(gitRepositoryURL == null || gitRepositoryURL.isEmpty()) {
+            return false;
+        }
+
+        try {
+            final URI uri = new URI(gitRepositoryURL);
+            return uri.getHost() != null;
+        } catch (URISyntaxException e) {
+            return SCP_REPO_URI_REGEX.matcher(gitRepositoryURL).matches();
+        }
     }
 }

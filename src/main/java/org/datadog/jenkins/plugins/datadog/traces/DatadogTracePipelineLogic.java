@@ -9,8 +9,10 @@ import static org.datadog.jenkins.plugins.datadog.traces.CITags.Values.ORIGIN_CI
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidRepositoryURL;
 
 import hudson.EnvVars;
+import hudson.model.Build;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.apache.commons.lang.StringUtils;
@@ -30,6 +32,7 @@ import org.datadog.jenkins.plugins.datadog.transport.PayloadMessage;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
+import org.jenkinsci.plugins.gitclient.GitClient;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
@@ -148,41 +151,50 @@ public class DatadogTracePipelineLogic {
             buildData.setGitCommit(gitCommit);
         }
 
-        final GitCommitAction commitAction = buildGitCommitAction(run,pipelineNode, node);
-        if(commitAction != null) {
-            if(buildData.getGitMessage("").isEmpty()){
-                buildData.setGitMessage(commitAction.getMessage());
-            }
+        // The Git client will be not null if there is some git information to calculate.
+        // We use the same Git client instance to calculate all git information
+        // because creating a Git client is a very expensive operation.
+        final GitClient gitClient = getGitClient(run, pipelineNode, node, gitUrl, gitCommit);
 
-            if(buildData.getGitAuthorName("").isEmpty()) {
-                buildData.setGitAuthorName(commitAction.getAuthorName());
-            }
+        if(gitClient != null) {
+            final GitCommitAction commitAction = buildGitCommitAction(run, gitClient, pipelineNode);
+            if(commitAction != null) {
+                if(buildData.getGitMessage("").isEmpty()){
+                    buildData.setGitMessage(commitAction.getMessage());
+                }
 
-            if(buildData.getGitAuthorEmail("").isEmpty()){
-                buildData.setGitAuthorEmail(commitAction.getAuthorEmail());
-            }
+                if(buildData.getGitAuthorName("").isEmpty()) {
+                    buildData.setGitAuthorName(commitAction.getAuthorName());
+                }
 
-            if(buildData.getGitAuthorDate("").isEmpty()){
-                buildData.setGitAuthorDate(commitAction.getAuthorDate());
-            }
+                if(buildData.getGitAuthorEmail("").isEmpty()){
+                    buildData.setGitAuthorEmail(commitAction.getAuthorEmail());
+                }
 
-            if(buildData.getGitCommitterName("").isEmpty()){
-                buildData.setGitCommitterName(commitAction.getCommitterName());
-            }
+                if(buildData.getGitAuthorDate("").isEmpty()){
+                    buildData.setGitAuthorDate(commitAction.getAuthorDate());
+                }
 
-            if(buildData.getGitCommitterEmail("").isEmpty()){
-                buildData.setGitCommitterEmail(commitAction.getCommitterEmail());
-            }
+                if(buildData.getGitCommitterName("").isEmpty()){
+                    buildData.setGitCommitterName(commitAction.getCommitterName());
+                }
 
-            if(buildData.getGitCommitterDate("").isEmpty()){
-                buildData.setGitCommitterDate(commitAction.getCommitterDate());
+                if(buildData.getGitCommitterEmail("").isEmpty()){
+                    buildData.setGitCommitterEmail(commitAction.getCommitterEmail());
+                }
+
+                if(buildData.getGitCommitterDate("").isEmpty()){
+                    buildData.setGitCommitterDate(commitAction.getCommitterDate());
+                }
             }
         }
 
-        final GitRepositoryAction repositoryAction = buildGitRepositoryAction(run, pipelineNode, node);
-        if(repositoryAction != null) {
-            if(buildData.getGitDefaultBranch("").isEmpty()) {
-                buildData.setGitDefaultBranch(repositoryAction.getDefaultBranch());
+        if(gitClient != null) {
+            final GitRepositoryAction repositoryAction = buildGitRepositoryAction(run, gitClient, pipelineNode);
+            if(repositoryAction != null) {
+                if(buildData.getGitDefaultBranch("").isEmpty()) {
+                    buildData.setGitDefaultBranch(repositoryAction.getDefaultBranch());
+                }
             }
         }
 
@@ -474,31 +486,29 @@ public class DatadogTracePipelineLogic {
         return flowNode instanceof FlowEndNode;
     }
 
-    private GitCommitAction buildGitCommitAction(Run<?, ?> run, BuildPipelineNode pipelineNode, FlowNode node) {
+    private GitCommitAction buildGitCommitAction(Run<?, ?> run, GitClient gitClient, BuildPipelineNode pipelineNode) {
         try {
-            final TaskListener listener = node.getExecution().getOwner().getListener();
-            final EnvVars envVars = new EnvVars(pipelineNode.getEnvVars());
             final String gitCommit = pipelineNode.getEnvVars().get("GIT_COMMIT");
             if(!isValidCommit(gitCommit)) {
                 return null;
             }
 
-            final String nodeName = pipelineNode.getNodeName();
-            final String workspace = pipelineNode.getWorkspace();
-            return GitUtils.buildGitCommitAction(run, listener, envVars, gitCommit, nodeName, workspace);
+            return GitUtils.buildGitCommitAction(run, gitClient, gitCommit);
         } catch (Exception e) {
             logger.fine("Unable to build GitCommitAction. Error: " + e);
             return null;
         }
     }
 
-    private GitRepositoryAction buildGitRepositoryAction(Run<?, ?> run, BuildPipelineNode pipelineNode, FlowNode node) {
+    private GitRepositoryAction buildGitRepositoryAction(Run<?, ?> run, GitClient gitClient, BuildPipelineNode pipelineNode) {
         try {
-            final TaskListener listener = node.getExecution().getOwner().getListener();
+            final String gitRepositoryURL = getGitRepositoryUrl(pipelineNode.getEnvVars());
+            if(!isValidRepositoryURL(gitRepositoryURL)){
+                return null;
+            }
+
             final EnvVars envVars = new EnvVars(pipelineNode.getEnvVars());
-            final String nodeName = pipelineNode.getNodeName();
-            final String workspace = pipelineNode.getWorkspace();
-            return GitUtils.buildGitRepositoryAction(run, listener, envVars, nodeName, workspace);
+            return GitUtils.buildGitRepositoryAction(run, gitClient, envVars, gitRepositoryURL);
         } catch (Exception e) {
             logger.fine("Unable to build GitRepositoryAction. Error: " + e);
             return null;
@@ -546,5 +556,43 @@ public class DatadogTracePipelineLogic {
 
         final Map<String, String> tags = TagsUtil.convertTagsToMapSingleValues(DatadogUtilities.getTagsFromPipelineAction(run));
         ciGlobalTagsAction.putAll(tags);
+    }
+
+    /**
+     * Creates a new Git client only if there is a Git information pending to calculate.
+     * This method tries to avoid creating Git clients as much as possible cause it's a very expensive operation.
+     * @param run
+     * @param pipelineNode
+     * @param node
+     * @param gitUrl
+     * @param gitCommit
+     * @return a git client if there is some git information to calculate. In other cases, it returns null.
+     */
+    private GitClient getGitClient(final Run<?, ?> run, final BuildPipelineNode pipelineNode, final FlowNode node, final String gitUrl, final String gitCommit) {
+        GitClient gitClient = null;
+        try {
+            if(!isValidCommit(gitCommit) && !isValidRepositoryURL(gitUrl)) {
+                return null;
+            }
+
+            GitCommitAction commitAction = run.getAction(GitCommitAction.class);
+            GitRepositoryAction repositoryAction = run.getAction(GitRepositoryAction.class);
+
+            final boolean commitInfoAlreadyCreated = commitAction != null && commitAction.getCommit() != null && commitAction.getCommit().equals(gitCommit);
+            final boolean repoInfoAlreadyCreated = repositoryAction != null && repositoryAction.getRepositoryURL() != null && repositoryAction.getRepositoryURL().equals(gitUrl);
+
+            // Only if there is some git information pending to obtain, we create a Git client.
+            if(!commitInfoAlreadyCreated || !repoInfoAlreadyCreated) {
+                final TaskListener listener = node.getExecution().getOwner().getListener();
+                final EnvVars envVars = new EnvVars(pipelineNode.getEnvVars());
+
+                // Create a new Git client is a very expensive operation.
+                // Avoid creating Git clients as much as possible.
+                gitClient = GitUtils.newGitClient(run, listener, envVars, pipelineNode.getNodeName(), pipelineNode.getWorkspace());
+            }
+        } catch (Exception ex) {
+            logger.fine("Unable to get GitClient. Error: " + ex);
+        }
+        return gitClient;
     }
 }
