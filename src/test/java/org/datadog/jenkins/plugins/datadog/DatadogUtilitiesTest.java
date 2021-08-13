@@ -140,8 +140,8 @@ public class DatadogUtilitiesTest {
 
     @Test
     public void testToJsonSet() {
-        Assert.assertEquals("", DatadogUtilities.toJson((Set<String>)null));
-        Assert.assertEquals("", DatadogUtilities.toJson(new HashSet<>()));
+        Assert.assertNull(DatadogUtilities.toJson((Set<String>)null));
+        Assert.assertNull(DatadogUtilities.toJson(new HashSet<>()));
 
         final Set<String> oneItem = new HashSet<>();
         oneItem.add("item1");
@@ -156,8 +156,8 @@ public class DatadogUtilitiesTest {
 
     @Test
     public void testToJsonMap() {
-        Assert.assertEquals("", DatadogUtilities.toJson((Map<String,String>)null));
-        Assert.assertEquals("", DatadogUtilities.toJson(new HashMap<>()));
+        Assert.assertNull(DatadogUtilities.toJson((Map<String,String>)null));
+        Assert.assertNull(DatadogUtilities.toJson(new HashMap<>()));
 
         final Map<String, String> oneItem = new HashMap<>();
         oneItem.put("itemKey1","itemValue1");

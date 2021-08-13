@@ -35,6 +35,7 @@ import hudson.model.*;
 import hudson.model.labels.LabelAtom;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.ObjectUtils.Null;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
@@ -812,7 +813,7 @@ public class DatadogUtilities {
      */
     public static String toJson(final Set<String> set) {
         if(set == null || set.isEmpty()) {
-            return "";
+            return null;
         }
 
         // We want to avoid using Json libraries cause
@@ -821,7 +822,8 @@ public class DatadogUtilities {
         sb.append("[");
         int index = 1;
         for(String val : set) {
-            sb.append("\"").append(val).append("\"");
+            final String escapedValue = StringEscapeUtils.escapeJava(val);
+            sb.append("\"").append(escapedValue).append("\"");
             if(index < set.size()) {
                 sb.append(",");
             }
@@ -839,7 +841,7 @@ public class DatadogUtilities {
      */
     public static String toJson(final Map<String, String> map) {
         if(map == null || map.isEmpty()) {
-            return "";
+            return null;
         }
 
         // We want to avoid using Json libraries cause
@@ -848,7 +850,9 @@ public class DatadogUtilities {
         sb.append("{");
         int index = 1;
         for(Map.Entry<String, String> entry : map.entrySet()) {
-            sb.append("\"").append(entry.getKey()).append("\"").append(":").append("\"").append(entry.getValue()).append("\"");
+            final String escapedKey = StringEscapeUtils.escapeJava(entry.getKey());
+            final String escapedValue = StringEscapeUtils.escapeJava(entry.getValue());
+            sb.append(String.format("\"%s\":\"%s\"", escapedKey, escapedValue));
             if(index < map.size()) {
                 sb.append(",");
             }
