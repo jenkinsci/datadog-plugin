@@ -121,6 +121,11 @@ public class DatadogTraceBuildLogic {
         buildSpan.putMeta(prefix + CITags._URL, buildData.getBuildUrl(""));
         buildSpan.putMetric(CITags.QUEUE_TIME, TimeUnit.MILLISECONDS.toSeconds(getMillisInQueue(updatedBuildData)));
 
+        // Pipeline Parameters
+        if(!buildData.getBuildParameters().isEmpty()) {
+            buildSpan.putMeta(CITags.CI_PARAMETERS, toJson(buildData.getBuildParameters()));
+        }
+
         final String workspace = buildData.getWorkspace("").isEmpty() ? updatedBuildData.getWorkspace("") : buildData.getWorkspace("");
         buildSpan.putMeta(CITags.WORKSPACE_PATH, workspace);
 

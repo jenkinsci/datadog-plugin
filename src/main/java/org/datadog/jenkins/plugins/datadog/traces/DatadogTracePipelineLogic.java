@@ -301,6 +301,11 @@ public class DatadogTracePipelineLogic {
         tags.put(prefix + CITags._RESULT, status);
         tags.put(CITags.STATUS, status);
 
+        // Pipeline Parameters
+        if(!buildData.getBuildParameters().isEmpty()) {
+            tags.put(CITags.CI_PARAMETERS, toJson(buildData.getBuildParameters()));
+        }
+
         final String url = envVars.get("BUILD_URL") != null ? envVars.get("BUILD_URL") : buildData.getBuildUrl("");
         if(StringUtils.isNotBlank(url)) {
             tags.put(prefix + CITags._URL, url + "execution/node/"+current.getId()+"/");
