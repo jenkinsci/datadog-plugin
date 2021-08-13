@@ -25,11 +25,17 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.model;
 
+import com.cloudbees.plugins.credentials.CredentialsParameterValue;
 import hudson.EnvVars;
+import hudson.model.BooleanParameterValue;
 import hudson.model.Cause;
 import hudson.model.CauseAction;
+import hudson.model.ParameterValue;
+import hudson.model.ParametersAction;
 import hudson.model.Run;
+import hudson.model.StringParameterValue;
 import hudson.model.TaskListener;
+import hudson.model.TextParameterValue;
 import hudson.triggers.SCMTrigger;
 import hudson.triggers.TimerTrigger;
 import hudson.util.LogTaskListener;
@@ -60,6 +66,7 @@ public class BuildData implements Serializable {
     private String buildNumber;
     private String buildId;
     private String buildUrl;
+    private Map<String, String> buildParameters = new HashMap<>();
     private String charsetName;
     private String nodeName;
     private String jobName;
@@ -178,11 +185,43 @@ public class BuildData implements Serializable {
         }
         setJenkinsUrl(jenkinsUrl);
 
+        // Build parameters
+        populateBuildParameters(run);
+
         // Set Tracing IDs
         final TraceSpan buildSpan = BuildSpanManager.get().get(getBuildTag(""));
         if(buildSpan !=null) {
             setTraceId(Long.toUnsignedString(buildSpan.context().getTraceId()));
             setSpanId(Long.toUnsignedString(buildSpan.context().getSpanId()));
+        }
+    }
+
+    private void populateBuildParameters(Run<?,?> run) {
+        // Build parameters can be defined via Jenkins UI
+        // or via Jenkinsfile (https://www.jenkins.io/doc/book/pipeline/syntax/#parameters)
+        try {
+            final ParametersAction parametersAction = run.getAction(ParametersAction.class);
+            if(parametersAction == null){
+                return;
+            }
+
+            final List<ParameterValue> parameters = parametersAction.getAllParameters();
+            if(parameters == null || parameters.isEmpty()){
+                return;
+            }
+
+            for(final ParameterValue parameter : parameters) {
+                // Only support parameters as string (only single line), boolean and credentials for the moment.
+                // Credentials parameters are safe because the value will show the credential ID, not the secret itself.
+                // Choice parameters are treated as string parameters internally.
+                if((parameter instanceof StringParameterValue && !(parameter instanceof TextParameterValue))
+                        || parameter instanceof BooleanParameterValue
+                        || parameter instanceof CredentialsParameterValue) {
+                    this.buildParameters.put(parameter.getName(), String.valueOf(parameter.getValue()));
+                }
+            }
+        } catch (Throwable ex) {
+            DatadogUtilities.severe(LOGGER, ex, "Failed to populate Jenkins build parameters.");
         }
     }
 
@@ -366,6 +405,10 @@ public class BuildData implements Serializable {
         if (charset != null) {
             this.charsetName = charset.name();
         }
+    }
+
+    public Map<String, String> getBuildParameters() {
+        return this.buildParameters;
     }
 
     public String getNodeName(String value) {
