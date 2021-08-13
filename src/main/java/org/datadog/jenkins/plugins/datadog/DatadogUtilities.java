@@ -822,7 +822,7 @@ public class DatadogUtilities {
         sb.append("[");
         int index = 1;
         for(String val : set) {
-            final String escapedValue = StringEscapeUtils.escapeJava(val);
+            final String escapedValue = StringEscapeUtils.escapeJavaScript(val);
             sb.append("\"").append(escapedValue).append("\"");
             if(index < set.size()) {
                 sb.append(",");
@@ -850,8 +850,8 @@ public class DatadogUtilities {
         sb.append("{");
         int index = 1;
         for(Map.Entry<String, String> entry : map.entrySet()) {
-            final String escapedKey = StringEscapeUtils.escapeJava(entry.getKey());
-            final String escapedValue = StringEscapeUtils.escapeJava(entry.getValue());
+            final String escapedKey = StringEscapeUtils.escapeJavaScript(entry.getKey());
+            final String escapedValue = StringEscapeUtils.escapeJavaScript(entry.getValue());
             sb.append(String.format("\"%s\":\"%s\"", escapedKey, escapedValue));
             if(index < map.size()) {
                 sb.append(",");
