@@ -38,6 +38,7 @@ import java.util.logging.Logger;
 public class DatadogTraceBuildLogic {
 
     private static final String HOSTNAME_NONE = "none";
+    private static final int MAX_TAG_LENGTH = 5000;
     private static final Logger logger = Logger.getLogger(DatadogTraceBuildLogic.class.getName());
 
     private final HttpClient agentHttpClient;
@@ -229,7 +230,11 @@ public class DatadogTraceBuildLogic {
             Collections.sort(stages);
 
             final String stagesJson = JsonUtils.toJson(new ArrayList<>(stages));
-            buildSpan.putMeta(CITags._DD_CI_STAGES, stagesJson);
+            if (stagesJson.length() <= MAX_TAG_LENGTH) {
+                buildSpan.putMeta(CITags._DD_CI_STAGES, stagesJson);
+            } else {
+                logger.warning("Stage breakdown is too big so it won't be sent to Datadog");
+            }
         }
 
         // Jenkins specific

@@ -12,7 +12,7 @@ import java.util.Collection;
 @RunWith(Parameterized.class)
 public class StageDataTest {
 
-    private static final String SAMPLE_NAME = "stage-name";
+    private static final String SAMPLE_NAME = "stage-name\nline-2";
 
     @Parameterized.Parameters
     public static Collection<Object[]> data() {
@@ -31,7 +31,7 @@ public class StageDataTest {
                         .withName(SAMPLE_NAME)
                         .withStartTimeInMicros(1000)
                         .withEndTimeInMicros(2000)
-                        .build(), "{\"name\":\"stage-name\",\"duration\":1000000}"}
+                        .build(), "{\"name\":\"stage-name\\nline-2\",\"duration\":1000000}"}
         });
     }
 
