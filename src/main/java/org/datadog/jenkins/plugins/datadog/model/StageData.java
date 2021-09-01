@@ -1,5 +1,6 @@
 package org.datadog.jenkins.plugins.datadog.model;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.datadog.jenkins.plugins.datadog.util.json.ToJson;
 
 import java.io.Serializable;
@@ -114,7 +115,7 @@ public class StageData implements Serializable, Comparable<StageData>, ToJson {
         }
 
         final StringBuilder sb = new StringBuilder("{");
-        sb.append("\"name\"").append(":").append("\"").append(name).append("\"").append(",");
+        sb.append("\"name\"").append(":").append("\"").append(StringEscapeUtils.escapeJavaScript(name)).append("\"").append(",");
         sb.append("\"duration\"").append(":").append(durationInNanos);
         sb.append("}");
         return sb.toString();
