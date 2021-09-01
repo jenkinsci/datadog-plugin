@@ -24,6 +24,7 @@ public final class RepositoryInfoCallback implements RepositoryCallback<Reposito
     @Override
     public RepositoryInfo invoke(Repository repository, VirtualChannel channel) throws IOException, InterruptedException {
         try {
+            System.out.println("Repository: " + repository);
             Ref head = repository.getRefDatabase().findRef("HEAD");
             if(head == null) {
                 LOGGER.info("Unable to build RepositoryInfo. HEAD is null.");
@@ -33,6 +34,7 @@ public final class RepositoryInfoCallback implements RepositoryCallback<Reposito
             // Discarded if it's not a symbolic to refs.
             if(!head.isSymbolic()) {
                 LOGGER.info("Unable to build RepositoryInfo. HEAD is not symbolic.");
+                LOGGER.info("HEAD: " + head);
                 return RepositoryInfo.EMPTY_REPOSITORY_INFO;
             }
 
