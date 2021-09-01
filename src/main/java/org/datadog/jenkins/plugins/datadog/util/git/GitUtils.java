@@ -39,15 +39,14 @@ public final class GitUtils {
      */
     public static FilePath buildFilePath(final String nodeName, final String workspace) {
         if(nodeName == null || workspace == null){
-            LOGGER.info("Unable to build FilePath. Either NodeName or Workspace is null");
-            System.out.println("Unable to build FilePath. Either NodeName or Workspace is null");
+            LOGGER.fine("Unable to build FilePath. Either NodeName or Workspace is null");
             return null;
         }
 
         try {
             return "master".equals(nodeName) ? new FilePath(FilePath.localChannel, workspace):  FilePathUtils.find(nodeName, workspace);
         } catch (Exception e) {
-            LOGGER.info("Unable to build FilePath. Error: " + e);
+            LOGGER.fine("Unable to build FilePath. Error: " + e);
             return null;
         }
     }
@@ -60,21 +59,19 @@ public final class GitUtils {
     public static FilePath buildFilePath(final Run<?, ?> run){
         try {
             if(run == null) {
-                LOGGER.info("Unable to build FilePath. Run is null");
-                System.out.println("Unable to build FilePath. Run is null");
+                LOGGER.fine("Unable to build FilePath. Run is null");
                 return null;
             }
 
             final Executor executor = run.getExecutor();
             if(executor == null) {
-                LOGGER.info("Unable to build FilePath. Run executor is null");
-                System.out.println("Unable to build FilePath. Run executor is null");
+                LOGGER.fine("Unable to build FilePath. Run executor is null");
                 return null;
             }
 
             return executor.getCurrentWorkspace();
         } catch (Exception e) {
-            LOGGER.info("Unable to build FilePath. Error: " + e);
+            LOGGER.fine("Unable to build FilePath. Error: " + e);
             return null;
         }
     }
@@ -88,13 +85,13 @@ public final class GitUtils {
     public static RevCommit searchRevCommit(final GitClient gitClient, final String gitCommit) {
         try {
             if(gitClient == null) {
-                LOGGER.info("Unable to search RevCommit. GitClient is null");
+                LOGGER.fine("Unable to search RevCommit. GitClient is null");
                 return null;
             }
 
             return gitClient.withRepository(new RevCommitRepositoryCallback(gitCommit));
         } catch (Exception e) {
-            LOGGER.info("Unable to search RevCommit. Error: " + e);
+            LOGGER.fine("Unable to search RevCommit. Error: " + e);
             return null;
         }
     }
@@ -112,19 +109,19 @@ public final class GitUtils {
             // the Git client is not always possible cause it depends on how Jenkins checkouts
             // the repository. Not always there is a symbolic reference to the default branch.
             final String defaultBranch = GitInfoUtils.normalizeBranch(envVars.get("DD_GIT_DEFAULT_BRANCH", null));
-            LOGGER.info("Detected default branch from environment variables: " + defaultBranch);
+            LOGGER.fine("Detected default branch from environment variables: " + defaultBranch);
             if(defaultBranch != null && !defaultBranch.isEmpty()) {
                 return new RepositoryInfo(defaultBranch);
             }
 
             if(gitClient == null){
-                LOGGER.info("Unable to search RevCommit. GitClient is null");
+                LOGGER.fine("Unable to search RevCommit. GitClient is null");
                 return null;
             }
 
             return gitClient.withRepository(new RepositoryInfoCallback());
         } catch (Exception e) {
-            LOGGER.info("Unable to search Repository Info. Error: " + e);
+            LOGGER.fine("Unable to search Repository Info. Error: " + e);
             return null;
         }
     }
@@ -151,13 +148,13 @@ public final class GitUtils {
             if(commitAction == null || !gitCommit.equals(commitAction.getCommit())) {
                 try {
                     if(gitClient == null){
-                        LOGGER.info("Unable to build GitCommitAction. GitClient is null");
+                        LOGGER.fine("Unable to build GitCommitAction. GitClient is null");
                         return null;
                     }
 
                     final RevCommit revCommit = GitUtils.searchRevCommit(gitClient, gitCommit);
                     if(revCommit == null) {
-                        LOGGER.info("Unable to build GitCommitAction. RevCommit is null. [gitCommit: "+gitCommit+"]");
+                        LOGGER.fine("Unable to build GitCommitAction. RevCommit is null. [gitCommit: "+gitCommit+"]");
                         return null;
                     }
 
@@ -167,7 +164,7 @@ public final class GitUtils {
                     try {
                         message = StringUtils.abbreviate(revCommit.getFullMessage(), 1500);
                     } catch (Exception e) {
-                        LOGGER.info("Unable to obtain git commit full message. Selecting short message. Error: " + e);
+                        LOGGER.fine("Unable to obtain git commit full message. Selecting short message. Error: " + e);
                         message = revCommit.getShortMessage();
                     }
                     builder.withMessage(message);
@@ -189,7 +186,7 @@ public final class GitUtils {
                     commitAction = builder.build();
                     run.addOrReplaceAction(commitAction);
                 } catch (Exception e) {
-                    LOGGER.info("Unable to build GitCommitAction. Error: " + e);
+                    LOGGER.fine("Unable to build GitCommitAction. Error: " + e);
                 }
             }
             return commitAction;
@@ -221,13 +218,13 @@ public final class GitUtils {
             if(repoAction == null || !gitRepositoryURL.equals(repoAction.getRepositoryURL())) {
                 try {
                     if(gitClient == null){
-                        LOGGER.info("Unable to build GitRepositoryAction. GitClient is null");
+                        LOGGER.fine("Unable to build GitRepositoryAction. GitClient is null");
                         return null;
                     }
 
                     final RepositoryInfo repositoryInfo = GitUtils.searchRepositoryInfo(gitClient, envVars);
                     if(repositoryInfo == null) {
-                        LOGGER.info("Unable to build GitRepositoryAction. RepositoryInfo is null");
+                        LOGGER.fine("Unable to build GitRepositoryAction. RepositoryInfo is null");
                         return null;
                     }
 
@@ -238,7 +235,7 @@ public final class GitUtils {
                     repoAction = builder.build();
                     run.addOrReplaceAction(repoAction);
                 } catch (Exception e) {
-                    LOGGER.info("Unable to build GitRepositoryAction. Error: " + e);
+                    LOGGER.fine("Unable to build GitRepositoryAction. Error: " + e);
                 }
             }
             return repoAction;
@@ -274,7 +271,7 @@ public final class GitUtils {
                 final Git git = Git.with(listener, envVars).in(ws);
                 return git.getClient();
             } catch (Exception e) {
-                LOGGER.info("Unable to create GitClient. Error: " + e);
+                LOGGER.fine("Unable to create GitClient. Error: " + e);
                 return null;
             }
         } finally {

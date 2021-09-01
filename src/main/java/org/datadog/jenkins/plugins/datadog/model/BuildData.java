@@ -240,7 +240,6 @@ public class BuildData implements Serializable {
         setExecutorNumber(envVars.get("EXECUTOR_NUMBER"));
         setJavaHome(envVars.get("JAVA_HOME"));
         setWorkspace(envVars.get("WORKSPACE"));
-        System.out.println("WORKSPACE: " + envVars.get("WORKSPACE"));
         if (envVars.get("GIT_BRANCH") != null) {
             setBranch(envVars.get("GIT_BRANCH"));
             setGitUrl(DatadogUtilities.getGitRepositoryUrl(envVars));
