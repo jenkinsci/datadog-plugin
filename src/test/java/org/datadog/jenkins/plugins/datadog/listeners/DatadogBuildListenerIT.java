@@ -28,6 +28,7 @@ import org.jvnet.hudson.test.ExtractResourceSCM;
 import org.jvnet.hudson.test.JenkinsRule;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
@@ -95,9 +96,11 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccess");
         final FilePath ws = jenkins.getWorkspaceFor(project);
-        final URL gitZip = getClass().getClassLoader().getResource("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
+        env.put("NODE_NAME", "master");
+        env.put("WORKSPACE", ws.getRemote());
+        InputStream gitZip = getClass().getClassLoader().getResourceAsStream("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
         if(gitZip != null) {
-            project.setScm(new ExtractResourceSCM(gitZip));
+            ws.unzipFrom(gitZip);
         }
         FreeStyleBuild run = project.scheduleBuild2(0).get();
         final String buildPrefix = BuildPipelineNode.NodeType.PIPELINE.getTagName();
@@ -178,10 +181,14 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         jenkins.getGlobalNodeProperties().add(prop);
 
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessAltRepoUrl");
-        final URL gitZip = getClass().getClassLoader().getResource("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
+        final FilePath ws = jenkins.getWorkspaceFor(project);
+        env.put("NODE_NAME", "master");
+        env.put("WORKSPACE", ws.getRemote());
+        InputStream gitZip = getClass().getClassLoader().getResourceAsStream("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
         if(gitZip != null) {
-            project.setScm(new ExtractResourceSCM(gitZip));
+            ws.unzipFrom(gitZip);
         }
+
         project.scheduleBuild2(0).get();
 
         final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
