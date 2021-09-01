@@ -95,8 +95,6 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccess");
         final FilePath ws = jenkins.getWorkspaceFor(project);
-        env.put("NODE_NAME", "master");
-        env.put("WORKSPACE", ws.getRemote());
         final URL gitZip = getClass().getClassLoader().getResource("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
         if(gitZip != null) {
             project.setScm(new ExtractResourceSCM(gitZip));
@@ -180,9 +178,6 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         jenkins.getGlobalNodeProperties().add(prop);
 
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessAltRepoUrl");
-        final FilePath ws = jenkins.getWorkspaceFor(project);
-        env.put("NODE_NAME", "master");
-        env.put("WORKSPACE", ws.getRemote());
         final URL gitZip = getClass().getClassLoader().getResource("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
         if(gitZip != null) {
             project.setScm(new ExtractResourceSCM(gitZip));
