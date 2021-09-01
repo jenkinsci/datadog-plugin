@@ -305,7 +305,6 @@ public class BuildData implements Serializable {
         if(isValidCommit(gitCommit) || isValidRepositoryURL(this.gitUrl)) {
             // Create a new Git client is a very expensive operation.
             // Avoid creating Git clients as much as possible.
-            LOGGER.info("Creating gitClient: gitURL: " + this.gitUrl + ", gitCommit: " + this.gitCommit + ", nodeName: " + this.nodeName + ". workspace: " + this.workspace);
             gitClient = GitUtils.newGitClient(run, listener, envVars, this.nodeName, this.workspace);
         }
 
