@@ -40,6 +40,7 @@ public final class GitUtils {
     public static FilePath buildFilePath(final String nodeName, final String workspace) {
         if(nodeName == null || workspace == null){
             LOGGER.fine("Unable to build FilePath. Either NodeName or Workspace is null");
+            System.out.println("Unable to build FilePath. Either NodeName or Workspace is null");
             return null;
         }
 
@@ -47,6 +48,8 @@ public final class GitUtils {
             return "master".equals(nodeName) ? new FilePath(FilePath.localChannel, workspace):  FilePathUtils.find(nodeName, workspace);
         } catch (Exception e) {
             LOGGER.fine("Unable to build FilePath. Error: " + e);
+            System.out.println("Unable to build FilePath.");
+            e.printStackTrace(System.out);
             return null;
         }
     }
@@ -60,18 +63,22 @@ public final class GitUtils {
         try {
             if(run == null) {
                 LOGGER.fine("Unable to build FilePath. Run is null");
+                System.out.println("Unable to build FilePath. Run is null");
                 return null;
             }
 
             final Executor executor = run.getExecutor();
             if(executor == null) {
                 LOGGER.fine("Unable to build FilePath. Run executor is null");
+                System.out.println("Unable to build FilePath. Run executor is null");
                 return null;
             }
 
             return executor.getCurrentWorkspace();
         } catch (Exception e) {
             LOGGER.fine("Unable to build FilePath. Error: " + e);
+            System.out.println("Unable to build FilePath.");
+            e.printStackTrace(System.out);
             return null;
         }
     }
@@ -272,6 +279,8 @@ public final class GitUtils {
                 return git.getClient();
             } catch (Exception e) {
                 LOGGER.fine("Unable to create GitClient. Error: " + e);
+                System.out.println("Unable to create GitClient. Error: ");
+                e.printStackTrace(System.out);
                 return null;
             }
         } finally {
