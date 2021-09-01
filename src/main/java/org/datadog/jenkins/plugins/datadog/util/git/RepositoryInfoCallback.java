@@ -26,13 +26,13 @@ public final class RepositoryInfoCallback implements RepositoryCallback<Reposito
         try {
             Ref head = repository.getRefDatabase().findRef("HEAD");
             if(head == null) {
-                LOGGER.fine("Unable to build RepositoryInfo. HEAD is null.");
+                LOGGER.info("Unable to build RepositoryInfo. HEAD is null.");
                 return RepositoryInfo.EMPTY_REPOSITORY_INFO;
             }
 
             // Discarded if it's not a symbolic to refs.
             if(!head.isSymbolic()) {
-                LOGGER.fine("Unable to build RepositoryInfo. HEAD is not symbolic.");
+                LOGGER.info("Unable to build RepositoryInfo. HEAD is not symbolic.");
                 return RepositoryInfo.EMPTY_REPOSITORY_INFO;
             }
 
@@ -40,7 +40,7 @@ public final class RepositoryInfoCallback implements RepositoryCallback<Reposito
             return new RepositoryInfo(defaultBranch);
 
         } catch (Exception e) {
-            LOGGER.fine("Unable to build RepositoryInfo. Error: " + e);
+            LOGGER.info("Unable to build RepositoryInfo. Error: " + e);
             return null;
         }
     }
