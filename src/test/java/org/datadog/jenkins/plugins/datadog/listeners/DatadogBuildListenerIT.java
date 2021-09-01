@@ -7,6 +7,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import hudson.EnvVars;
+import hudson.FilePath;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Label;
@@ -93,6 +94,9 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         jenkins.getGlobalNodeProperties().add(prop);
 
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccess");
+        final FilePath ws = jenkins.getWorkspaceFor(project);
+        env.put("NODE_NAME", "master");
+        env.put("WORKSPACE", ws.getRemote());
         final URL gitZip = getClass().getClassLoader().getResource("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
         if(gitZip != null) {
             project.setScm(new ExtractResourceSCM(gitZip));
@@ -176,6 +180,9 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         jenkins.getGlobalNodeProperties().add(prop);
 
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessAltRepoUrl");
+        final FilePath ws = jenkins.getWorkspaceFor(project);
+        env.put("NODE_NAME", "master");
+        env.put("WORKSPACE", ws.getRemote());
         final URL gitZip = getClass().getClassLoader().getResource("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
         if(gitZip != null) {
             project.setScm(new ExtractResourceSCM(gitZip));
