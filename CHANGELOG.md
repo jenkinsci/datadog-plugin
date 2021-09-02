@@ -1,5 +1,13 @@
 Changes
 =======
+## 3.1.2 / 2021-09-02
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.1.1...datadog-3.1.2
+
+### Changes
+* [Fixed] Fix ConcurrentModificationException when serializing StepDataAction. See [#243](https://github.com/jenkinsci/datadog-plugin/pull/243)
+* [Fixed] Fix stage breakdown to json conversion. See [#241](https://github.com/jenkinsci/datadog-plugin/pull/241)
+
 ## 3.1.1 / 2021-08-05
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.1.0...datadog-3.1.1
