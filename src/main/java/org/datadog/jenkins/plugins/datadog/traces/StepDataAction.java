@@ -12,6 +12,10 @@ import java.util.Map;
 
 /**
  * Keeps the Step data during a certain Run.
+ *
+ * Note: We need to synchronize with the run instance because in parallel pipelines the WorkflowRun.save() method
+ * may raise a ConcurrentModificationException if the action is being persisted and it's modified during the process.
+ * We synchronize based on the run instance because the WorkflowRun.save() method synchronize on this.
  */
 public class StepDataAction extends InvisibleAction implements Serializable {
 
