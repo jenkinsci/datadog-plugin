@@ -13,10 +13,10 @@ public class DatadogAudit {
     private static transient final Logger LOGGER = Logger.getLogger(DatadogAudit.class.getName());
 
     static {
-        logFine("## DatadogAudit enabled ##");
+        log("## DatadogAudit enabled ##");
     }
 
-    private static void logFine(String msg) {
+    public static void log(String msg) {
         if(!LOGGER.isLoggable(Level.FINE)){
             return;
         }
@@ -24,22 +24,14 @@ public class DatadogAudit {
         LOGGER.fine(msg);
     }
 
-    public static long currentTimeMillis() {
-        if(!LOGGER.isLoggable(Level.FINE)){
-            return -1L;
-        }
-
-        return System.currentTimeMillis();
-    }
-
     public static void log(String msg, long start, long end) {
-        if(start == -1L || end == -1L){
+        if(!LOGGER.isLoggable(Level.FINE)){
             return;
         }
 
         long duration = end - start;
         if(duration > 10){
-            logFine(msg +" [duration: "+duration+" ms, start: " + start + ", end: " + end+"]");
+            LOGGER.fine(msg +" [duration: "+duration+" ms, start: " + start + ", end: " + end+"]");
         }
     }
 }

@@ -82,7 +82,7 @@ public class DatadogStepListener implements StepListener {
     }
 
     private void findStartOfPipeline(final Run<?,?> run, final StepData stepData, final FlowNode firstAllocateNodeStart) {
-        long start = DatadogAudit.currentTimeMillis();
+        long start = System.currentTimeMillis();
         try {
             final Iterator<BlockStartNode> blockStartNodes = firstAllocateNodeStart.iterateEnclosingBlocks().iterator();
             if(blockStartNodes.hasNext()) {
@@ -92,13 +92,13 @@ public class DatadogStepListener implements StepListener {
                 }
             }
         } finally {
-            long end = DatadogAudit.currentTimeMillis();
+            long end = System.currentTimeMillis();
             DatadogAudit.log("DatadogStepListener.findStartOfPipeline", start, end);
         }
     }
 
     private FlowNode findFirstAllocateNodeStart(FlowNode current) {
-        long start = DatadogAudit.currentTimeMillis();
+        long start = System.currentTimeMillis();
         try {
             for(FlowNode block : current.iterateEnclosingBlocks()) {
                 if("Allocate node : Start".equalsIgnoreCase(block.getDisplayName())){
@@ -107,7 +107,7 @@ public class DatadogStepListener implements StepListener {
             }
             return null;
         } finally {
-            long end = DatadogAudit.currentTimeMillis();
+            long end = System.currentTimeMillis();
             DatadogAudit.log("DatadogStepListener.findFirstAllocateNodeStart", start, end);
         }
     }

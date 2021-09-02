@@ -142,7 +142,7 @@ public final class GitUtils {
      * @return the GitCommitAction with the information about Git Commit.
      */
     public static GitCommitAction buildGitCommitAction(final Run<?,?> run, final GitClient gitClient, String gitCommit) {
-        long start = DatadogAudit.currentTimeMillis();
+        long start = System.currentTimeMillis();
         try {
             GitCommitAction commitAction = run.getAction(GitCommitAction.class);
             if(commitAction == null || !gitCommit.equals(commitAction.getCommit())) {
@@ -191,7 +191,7 @@ public final class GitUtils {
             }
             return commitAction;
         } finally {
-            long end = DatadogAudit.currentTimeMillis();
+            long end = System.currentTimeMillis();
             DatadogAudit.log("GitUtils.buildGitCommitAction", start, end);
         }
     }
@@ -212,7 +212,7 @@ public final class GitUtils {
      * @return the GitRepositoryAction with the information about Git repository.
      */
     public static GitRepositoryAction buildGitRepositoryAction(Run<?, ?> run, GitClient gitClient, final EnvVars envVars, final String gitRepositoryURL) {
-        long start = DatadogAudit.currentTimeMillis();
+        long start = System.currentTimeMillis();
         try {
             GitRepositoryAction repoAction = run.getAction(GitRepositoryAction.class);
             if(repoAction == null || !gitRepositoryURL.equals(repoAction.getRepositoryURL())) {
@@ -240,7 +240,7 @@ public final class GitUtils {
             }
             return repoAction;
         } finally {
-            long end = DatadogAudit.currentTimeMillis();
+            long end = System.currentTimeMillis();
             DatadogAudit.log("GitUtils.buildGitRepositoryAction", start, end);
         }
     }
@@ -255,7 +255,7 @@ public final class GitUtils {
      * @return gitClient
      */
     public static GitClient newGitClient(final Run<?,?> run, final TaskListener listener, final EnvVars envVars, final String nodeName, final String workspace) {
-        long start = DatadogAudit.currentTimeMillis();
+        long start = System.currentTimeMillis();
 
         try {
             try {
@@ -275,7 +275,7 @@ public final class GitUtils {
                 return null;
             }
         } finally {
-            long end = DatadogAudit.currentTimeMillis();
+            long end = System.currentTimeMillis();
             DatadogAudit.log("GitUtils.newGitClient", start, end);
         }
     }

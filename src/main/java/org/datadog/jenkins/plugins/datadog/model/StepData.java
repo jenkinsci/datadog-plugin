@@ -27,7 +27,7 @@ public class StepData implements Serializable {
     private final Set<String> nodeLabels;
 
     public StepData(final StepContext stepContext){
-        long start = DatadogAudit.currentTimeMillis();
+        long start = System.currentTimeMillis();
         try {
             this.envVars = getEnvVars(stepContext);
             this.nodeName = getNodeName(stepContext);
@@ -35,7 +35,7 @@ public class StepData implements Serializable {
             this.workspace = getNodeWorkspace(stepContext);
             this.nodeLabels = getNodeLabels(stepContext);
         } finally {
-            long end = DatadogAudit.currentTimeMillis();
+            long end = System.currentTimeMillis();
             DatadogAudit.log("StepData.ctor", start, end);
         }
     }

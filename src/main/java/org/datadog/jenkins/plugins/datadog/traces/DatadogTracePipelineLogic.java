@@ -129,7 +129,7 @@ public class DatadogTracePipelineLogic {
     }
 
     private void updateBuildData(BuildData buildData, Run<?, ?> run, BuildPipelineNode pipelineNode, FlowNode node) {
-        long start = DatadogAudit.currentTimeMillis();
+        long start = System.currentTimeMillis();
         try {
             if(pipelineNode == null){
                 return;
@@ -215,7 +215,7 @@ public class DatadogTracePipelineLogic {
                 buildData.setHostname(nodeHostname);
             }
         } finally {
-            long end = DatadogAudit.currentTimeMillis();
+            long end = System.currentTimeMillis();
             DatadogAudit.log("DatadogTracePipelineLogic.updateBuildData", start, end);
         }
     }
@@ -527,7 +527,7 @@ public class DatadogTracePipelineLogic {
     }
 
     private BuildPipelineNode buildPipelineNode(FlowNode flowNode) {
-        long start = DatadogAudit.currentTimeMillis();
+        long start = System.currentTimeMillis();
         try {
             BuildPipelineNode pipelineNode = null;
             if(flowNode instanceof BlockEndNode) {
@@ -537,13 +537,13 @@ public class DatadogTracePipelineLogic {
             }
             return pipelineNode;
         } finally {
-            long end = DatadogAudit.currentTimeMillis();
+            long end = System.currentTimeMillis();
             DatadogAudit.log("DatadogTracePipelineLogic.buildPipelineNode", start, end);
         }
     }
 
     private void updateStageBreakdown(final Run<?,?> run, BuildPipelineNode pipelineNode) {
-        long start = DatadogAudit.currentTimeMillis();
+        long start = System.currentTimeMillis();
         try {
             final StageBreakdownAction stageBreakdownAction = run.getAction(StageBreakdownAction.class);
             if(stageBreakdownAction == null){
@@ -566,13 +566,13 @@ public class DatadogTracePipelineLogic {
 
             stageBreakdownAction.put(stageData.getName(), stageData);
         } finally {
-            long end = DatadogAudit.currentTimeMillis();
+            long end = System.currentTimeMillis();
             DatadogAudit.log("DatadogTracePipelineLogic.updateStageBreakdown", start, end);
         }
     }
 
     private void updateCIGlobalTags(Run run) {
-        long start = DatadogAudit.currentTimeMillis();
+        long start = System.currentTimeMillis();
         try {
             final CIGlobalTagsAction ciGlobalTagsAction = run.getAction(CIGlobalTagsAction.class);
             if(ciGlobalTagsAction == null) {
@@ -582,7 +582,7 @@ public class DatadogTracePipelineLogic {
             final Map<String, String> tags = TagsUtil.convertTagsToMapSingleValues(DatadogUtilities.getTagsFromPipelineAction(run));
             ciGlobalTagsAction.putAll(tags);
         } finally {
-            long end = DatadogAudit.currentTimeMillis();
+            long end = System.currentTimeMillis();
             DatadogAudit.log("DatadogTracePipelineLogic.updateCIGlobalTags", start, end);
         }
     }
