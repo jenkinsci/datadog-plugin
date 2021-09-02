@@ -284,13 +284,7 @@ public class BuildData implements Serializable {
                 gitCommitAction.getCommit().equals(this.gitCommit);
 
         if(commitInfoAlreadyCalculated){
-            this.gitMessage = gitCommitAction.getMessage();
-            this.gitAuthorName = gitCommitAction.getAuthorName();
-            this.gitAuthorEmail = gitCommitAction.getAuthorEmail();
-            this.gitAuthorDate = gitCommitAction.getAuthorDate();
-            this.gitCommitterName = gitCommitAction.getCommitterName();
-            this.gitCommitterEmail = gitCommitAction.getCommitterEmail();
-            this.gitCommitterDate = gitCommitAction.getCommitterDate();
+            populateCommitInfo(gitCommitAction);
         }
 
         // If all Git info was already calculated, we finish the method here.
@@ -301,24 +295,15 @@ public class BuildData implements Serializable {
         // At this point, there is some Git information that we need to calculate.
         // We use the same Git client instance to calculate all git information
         // because creating a Git client is a very expensive operation.
-        GitClient gitClient = null;
-        if(isValidCommit(gitCommit) || isValidRepositoryURL(this.gitUrl)) {
-            // Create a new Git client is a very expensive operation.
-            // Avoid creating Git clients as much as possible.
-            gitClient = GitUtils.newGitClient(run, listener, envVars, this.nodeName, this.workspace);
+        // Create a new Git client is a very expensive operation.
+        // Avoid creating Git clients as much as possible.
+        if(!isValidCommit(gitCommit) && !isValidRepositoryURL(this.gitUrl)) {
+            return;
         }
 
+        final GitClient gitClient = GitUtils.newGitClient(run, listener, envVars, this.nodeName, this.workspace);
         if(isValidCommit(this.gitCommit)){
-            gitCommitAction = GitUtils.buildGitCommitAction(run, gitClient ,this.gitCommit);
-            if(gitCommitAction != null) {
-                this.gitMessage = gitCommitAction.getMessage();
-                this.gitAuthorName = gitCommitAction.getAuthorName();
-                this.gitAuthorEmail = gitCommitAction.getAuthorEmail();
-                this.gitAuthorDate = gitCommitAction.getAuthorDate();
-                this.gitCommitterName = gitCommitAction.getCommitterName();
-                this.gitCommitterEmail = gitCommitAction.getCommitterEmail();
-                this.gitCommitterDate = gitCommitAction.getCommitterDate();
-            }
+            populateCommitInfo(GitUtils.buildGitCommitAction(run, gitClient ,this.gitCommit));
         }
 
         if(isValidRepositoryURL(this.gitUrl)){
@@ -326,6 +311,22 @@ public class BuildData implements Serializable {
             if(gitRepositoryAction != null) {
                 this.gitDefaultBranch = gitRepositoryAction.getDefaultBranch();
             }
+        }
+    }
+
+    /**
+     * Populate the information related to the commit (message, author and committer) based on the GitCommitAction
+     * @param gitCommitAction
+     */
+    private void populateCommitInfo(GitCommitAction gitCommitAction) {
+        if(gitCommitAction != null) {
+            this.gitMessage = gitCommitAction.getMessage();
+            this.gitAuthorName = gitCommitAction.getAuthorName();
+            this.gitAuthorEmail = gitCommitAction.getAuthorEmail();
+            this.gitAuthorDate = gitCommitAction.getAuthorDate();
+            this.gitCommitterName = gitCommitAction.getCommitterName();
+            this.gitCommitterEmail = gitCommitAction.getCommitterEmail();
+            this.gitCommitterDate = gitCommitAction.getCommitterDate();
         }
     }
 
