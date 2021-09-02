@@ -314,4 +314,14 @@ public final class GitUtils {
             return SCP_REPO_URI_REGEX.matcher(gitRepositoryURL).matches();
         }
     }
+
+    public static boolean isRepositoryInfoAlreadyCreated(Run<?, ?> run, final String gitRepositoryUrl) {
+        final GitRepositoryAction repositoryAction = run.getAction(GitRepositoryAction.class);
+        return repositoryAction != null && repositoryAction.getRepositoryURL() != null && repositoryAction.getRepositoryURL().equals(gitRepositoryUrl);
+    }
+
+    public static boolean isCommitInfoAlreadyCreated(Run<?, ?> run, final String gitCommit) {
+        GitCommitAction commitAction = run.getAction(GitCommitAction.class);
+        return commitAction != null && commitAction.getCommit() != null && commitAction.getCommit().equals(gitCommit);
+    }
 }

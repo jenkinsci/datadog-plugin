@@ -8,6 +8,8 @@ import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.NodeTy
 import static org.datadog.jenkins.plugins.datadog.traces.CITags.Values.ORIGIN_CIAPP_PIPELINE;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isCommitInfoAlreadyCreated;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isRepositoryInfoAlreadyCreated;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidRepositoryURL;
 
@@ -604,11 +606,8 @@ public class DatadogTracePipelineLogic {
                 return null;
             }
 
-            GitCommitAction commitAction = run.getAction(GitCommitAction.class);
-            GitRepositoryAction repositoryAction = run.getAction(GitRepositoryAction.class);
-
-            final boolean commitInfoAlreadyCreated = commitAction != null && commitAction.getCommit() != null && commitAction.getCommit().equals(gitCommit);
-            final boolean repoInfoAlreadyCreated = repositoryAction != null && repositoryAction.getRepositoryURL() != null && repositoryAction.getRepositoryURL().equals(gitUrl);
+            final boolean commitInfoAlreadyCreated = isCommitInfoAlreadyCreated(run, gitCommit);
+            final boolean repoInfoAlreadyCreated = isRepositoryInfoAlreadyCreated(run, gitUrl);
 
             // Only if there is some git information pending to obtain, we create a Git client.
             if(!commitInfoAlreadyCreated || !repoInfoAlreadyCreated) {

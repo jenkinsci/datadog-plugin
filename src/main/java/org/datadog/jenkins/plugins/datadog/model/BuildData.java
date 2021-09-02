@@ -25,6 +25,8 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.model;
 
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isCommitInfoAlreadyCreated;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isRepositoryInfoAlreadyCreated;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidRepositoryURL;
 
@@ -268,27 +270,22 @@ public class BuildData implements Serializable {
         // First we obtain the actions to check if the Git information was already calculated.
         // If so, we want to use this information to avoid creating a new Git client instance
         // to calculate the same information.
-        GitCommitAction gitCommitAction = run.getAction(GitCommitAction.class);
+
+        boolean commitInfoAlreadyCreated = isCommitInfoAlreadyCreated(run, this.gitCommit);
+        boolean repositoryInfoAlreadyCreated = isRepositoryInfoAlreadyCreated(run, this.gitUrl);
+
         GitRepositoryAction gitRepositoryAction = run.getAction(GitRepositoryAction.class);
-
-        boolean repoInfoAlreadyCalculated = gitRepositoryAction != null &&
-                gitRepositoryAction.getRepositoryURL() != null &&
-                gitRepositoryAction.getRepositoryURL().equals(this.gitUrl);
-
-        if(repoInfoAlreadyCalculated){
+        if(repositoryInfoAlreadyCreated){
             this.gitDefaultBranch = gitRepositoryAction.getDefaultBranch();
         }
 
-        boolean commitInfoAlreadyCalculated = gitCommitAction != null &&
-                gitCommitAction.getCommit() != null &&
-                gitCommitAction.getCommit().equals(this.gitCommit);
-
-        if(commitInfoAlreadyCalculated){
+        final GitCommitAction gitCommitAction = run.getAction(GitCommitAction.class);
+        if(commitInfoAlreadyCreated){
             populateCommitInfo(gitCommitAction);
         }
 
         // If all Git info was already calculated, we finish the method here.
-        if(repoInfoAlreadyCalculated && commitInfoAlreadyCalculated) {
+        if(repositoryInfoAlreadyCreated && commitInfoAlreadyCreated) {
             return;
         }
 
