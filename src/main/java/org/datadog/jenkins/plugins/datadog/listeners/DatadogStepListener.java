@@ -42,7 +42,9 @@ public class DatadogStepListener implements StepListener {
             }
 
             final StepData stepData = new StepData(context);
-            stepDataAction.put(flowNode, stepData);
+            synchronized (run){
+                stepDataAction.put(flowNode, stepData);
+            }
 
 
             // We use the PipelineNodeInfoAction to propagate
