@@ -445,7 +445,7 @@ public class BuildPipelineNode {
             return null;
         }
 
-        return stepDataAction.get(flowNode);
+        return stepDataAction.synchronizedGet(run, flowNode);
     }
 
     private FlowNodeQueueData getQueueData(FlowNode node) {
