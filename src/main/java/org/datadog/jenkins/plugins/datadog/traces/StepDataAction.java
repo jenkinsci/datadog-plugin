@@ -9,6 +9,8 @@ import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Keeps the Step data during a certain Run.
@@ -21,7 +23,7 @@ public class StepDataAction extends InvisibleAction implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private final Map<String, StepData> stepDataByDescriptor = new HashMap<>();
+    private final ConcurrentMap<String, StepData> stepDataByDescriptor = new ConcurrentHashMap<>();
 
     public StepData synchronizedPut(final Run<?,?> run, final FlowNode flowNode, final StepData stepData) {
         synchronized (run){
