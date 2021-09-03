@@ -24,17 +24,16 @@ public final class RepositoryInfoCallback implements RepositoryCallback<Reposito
     @Override
     public RepositoryInfo invoke(Repository repository, VirtualChannel channel) throws IOException, InterruptedException {
         try {
-            System.out.println("Repository: " + repository);
             Ref head = repository.getRefDatabase().findRef("HEAD");
             if(head == null) {
-                LOGGER.info("Unable to build RepositoryInfo. HEAD is null.");
+                LOGGER.fine("Unable to build RepositoryInfo. HEAD is null.");
                 return RepositoryInfo.EMPTY_REPOSITORY_INFO;
             }
 
             // Discarded if it's not a symbolic to refs.
             if(!head.isSymbolic()) {
-                LOGGER.info("Unable to build RepositoryInfo. HEAD is not symbolic.");
-                LOGGER.info("HEAD: " + head);
+                LOGGER.fine("Unable to build RepositoryInfo. HEAD is not symbolic.");
+                LOGGER.fine("HEAD: " + head);
                 return RepositoryInfo.EMPTY_REPOSITORY_INFO;
             }
 
@@ -42,7 +41,7 @@ public final class RepositoryInfoCallback implements RepositoryCallback<Reposito
             return new RepositoryInfo(defaultBranch);
 
         } catch (Exception e) {
-            LOGGER.info("Unable to build RepositoryInfo. Error: " + e);
+            LOGGER.fine("Unable to build RepositoryInfo. Error: " + e);
             return null;
         }
     }
