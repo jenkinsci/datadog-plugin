@@ -4,6 +4,8 @@ import java.io.Serializable;
 
 public class RepositoryInfo implements Serializable {
 
+    public static final RepositoryInfo EMPTY_REPOSITORY_INFO = new RepositoryInfo("");
+
     private static final long serialVersionUID = 1L;
 
     private final String defaultBranch;

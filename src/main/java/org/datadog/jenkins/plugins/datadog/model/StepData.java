@@ -4,6 +4,7 @@ import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.Computer;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 
 import java.io.Serializable;
@@ -26,11 +27,17 @@ public class StepData implements Serializable {
     private final Set<String> nodeLabels;
 
     public StepData(final StepContext stepContext){
-        this.envVars = getEnvVars(stepContext);
-        this.nodeName = getNodeName(stepContext);
-        this.nodeHostname = getNodeHostname(stepContext);
-        this.workspace = getNodeWorkspace(stepContext);
-        this.nodeLabels = getNodeLabels(stepContext);
+        long start = System.currentTimeMillis();
+        try {
+            this.envVars = getEnvVars(stepContext);
+            this.nodeName = getNodeName(stepContext);
+            this.nodeHostname = getNodeHostname(stepContext);
+            this.workspace = getNodeWorkspace(stepContext);
+            this.nodeLabels = getNodeLabels(stepContext);
+        } finally {
+            long end = System.currentTimeMillis();
+            DatadogAudit.log("StepData.ctor", start, end);
+        }
     }
 
     public Map<String, String> getEnvVars() {

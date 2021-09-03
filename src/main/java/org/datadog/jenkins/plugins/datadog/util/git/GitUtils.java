@@ -7,6 +7,7 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
 import org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils;
@@ -16,6 +17,9 @@ import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 import org.jenkinsci.plugins.workflow.FilePathUtils;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -23,6 +27,7 @@ public final class GitUtils {
 
     private static transient final Logger LOGGER = Logger.getLogger(GitUtils.class.getName());
     private static transient final Pattern SHA1_PATTERN = Pattern.compile("\\b[a-f0-9]{40}\\b");
+    private static transient final Pattern SCP_REPO_URI_REGEX = Pattern.compile("^([\\w.~-]+@)?(?<host>[\\w.-]+):(?<path>[\\w./-]+)(?:\\?|$)(.*)$");
 
     private GitUtils(){}
 
@@ -121,7 +126,6 @@ public final class GitUtils {
         }
     }
 
-
     /**
      * Returns the GitCommitAction of the Run instance.
      * If the Run instance does not have GitCommitAction or
@@ -133,61 +137,63 @@ public final class GitUtils {
      * it's fairly expensive to calculate. To avoid calculating
      * every time, it's store in the Run instance as an action.
      * @param run a particular execution of a Jenkins build
-     * @param listener the task listener
-     * @param envVars the env vars available
+     * @param gitClient the Git client
      * @param gitCommit the git commit SHA to use
-     * @param nodeName the node name to use to build the Git client
-     * @param workspace the workspace to use to build the Git client
      * @return the GitCommitAction with the information about Git Commit.
      */
-    public static GitCommitAction buildGitCommitAction(Run<?, ?> run, TaskListener listener, EnvVars envVars, final String gitCommit, final String nodeName, final String workspace) {
-        GitCommitAction commitAction = run.getAction(GitCommitAction.class);
-        if(commitAction == null || !gitCommit.equals(commitAction.getCommit())) {
-            try {
-                final GitClient gitClient = GitUtils.newGitClient(run, listener, envVars, nodeName, workspace);
-                if(gitClient == null){
-                    LOGGER.fine("Unable to build GitCommitAction. GitClient is null");
-                    return null;
-                }
-
-                final RevCommit revCommit = GitUtils.searchRevCommit(gitClient, gitCommit);
-                if(revCommit == null) {
-                    LOGGER.fine("Unable to build GitCommitAction. RevCommit is null. [gitCommit: "+gitCommit+"]");
-                    return null;
-                }
-
-                final GitCommitAction.Builder builder = GitCommitAction.newBuilder();
-                builder.withCommit(gitCommit);
-                String message;
+    public static GitCommitAction buildGitCommitAction(final Run<?,?> run, final GitClient gitClient, String gitCommit) {
+        long start = System.currentTimeMillis();
+        try {
+            GitCommitAction commitAction = run.getAction(GitCommitAction.class);
+            if(commitAction == null || !gitCommit.equals(commitAction.getCommit())) {
                 try {
-                    message = StringUtils.abbreviate(revCommit.getFullMessage(), 1500);
+                    if(gitClient == null){
+                        LOGGER.fine("Unable to build GitCommitAction. GitClient is null");
+                        return null;
+                    }
+
+                    final RevCommit revCommit = GitUtils.searchRevCommit(gitClient, gitCommit);
+                    if(revCommit == null) {
+                        LOGGER.fine("Unable to build GitCommitAction. RevCommit is null. [gitCommit: "+gitCommit+"]");
+                        return null;
+                    }
+
+                    final GitCommitAction.Builder builder = GitCommitAction.newBuilder();
+                    builder.withCommit(gitCommit);
+                    String message;
+                    try {
+                        message = StringUtils.abbreviate(revCommit.getFullMessage(), 1500);
+                    } catch (Exception e) {
+                        LOGGER.fine("Unable to obtain git commit full message. Selecting short message. Error: " + e);
+                        message = revCommit.getShortMessage();
+                    }
+                    builder.withMessage(message);
+
+                    final PersonIdent authorIdent = revCommit.getAuthorIdent();
+                    if(authorIdent != null){
+                        builder.withAuthorName(authorIdent.getName())
+                                .withAuthorEmail(authorIdent.getEmailAddress())
+                                .withAuthorDate(DatadogUtilities.toISO8601(authorIdent.getWhen()));
+                    }
+
+                    final PersonIdent committerIdent = revCommit.getCommitterIdent();
+                    if(committerIdent != null) {
+                        builder.withCommitterName(committerIdent.getName())
+                                .withCommitterEmail(committerIdent.getEmailAddress())
+                                .withCommitterDate(DatadogUtilities.toISO8601(committerIdent.getWhen()));
+                    }
+
+                    commitAction = builder.build();
+                    run.addOrReplaceAction(commitAction);
                 } catch (Exception e) {
-                    LOGGER.fine("Unable to obtain git commit full message. Selecting short message. Error: " + e);
-                    message = revCommit.getShortMessage();
+                    LOGGER.fine("Unable to build GitCommitAction. Error: " + e);
                 }
-                builder.withMessage(message);
-
-                final PersonIdent authorIdent = revCommit.getAuthorIdent();
-                if(authorIdent != null){
-                    builder.withAuthorName(authorIdent.getName())
-                            .withAuthorEmail(authorIdent.getEmailAddress())
-                            .withAuthorDate(DatadogUtilities.toISO8601(authorIdent.getWhen()));
-                }
-
-                final PersonIdent committerIdent = revCommit.getCommitterIdent();
-                if(committerIdent != null) {
-                    builder.withCommitterName(committerIdent.getName())
-                            .withCommitterEmail(committerIdent.getEmailAddress())
-                            .withCommitterDate(DatadogUtilities.toISO8601(committerIdent.getWhen()));
-                }
-
-                commitAction = builder.build();
-                run.addOrReplaceAction(commitAction);
-            } catch (Exception e) {
-                LOGGER.fine("Unable to build GitCommitAction. Error: " + e);
             }
+            return commitAction;
+        } finally {
+            long end = System.currentTimeMillis();
+            DatadogAudit.log("GitUtils.buildGitCommitAction", start, end);
         }
-        return commitAction;
     }
 
     /**
@@ -200,38 +206,43 @@ public final class GitUtils {
      * it's fairly expensive to calculate. To avoid calculating
      * every time, it's store in the Run instance as an action.
      * @param run a particular execution of a Jenkins build
-     * @param listener the task listener
+     * @param gitClient the Git client
      * @param envVars the env vars available
-     * @param nodeName the node name to use to build the Git client
-     * @param workspace the workspace to use to build the Git client
+     * @param gitRepositoryURL the git repository URL to use
      * @return the GitRepositoryAction with the information about Git repository.
      */
-    public static GitRepositoryAction buildGitRepositoryAction(Run<?, ?> run, TaskListener listener, EnvVars envVars, final String nodeName, final String workspace) {
-        GitRepositoryAction repoAction = run.getAction(GitRepositoryAction.class);
-        if(repoAction == null || repoAction.getDefaultBranch() == null) {
-            try {
-                final GitClient gitClient = GitUtils.newGitClient(run, listener, envVars, nodeName, workspace);
-                if(gitClient == null){
-                    LOGGER.fine("Unable to build GitRepositoryAction. GitClient is null");
-                    return null;
+    public static GitRepositoryAction buildGitRepositoryAction(Run<?, ?> run, GitClient gitClient, final EnvVars envVars, final String gitRepositoryURL) {
+        long start = System.currentTimeMillis();
+        try {
+            GitRepositoryAction repoAction = run.getAction(GitRepositoryAction.class);
+            if(repoAction == null || !gitRepositoryURL.equals(repoAction.getRepositoryURL())) {
+                try {
+                    if(gitClient == null){
+                        LOGGER.fine("Unable to build GitRepositoryAction. GitClient is null");
+                        return null;
+                    }
+
+                    final RepositoryInfo repositoryInfo = GitUtils.searchRepositoryInfo(gitClient, envVars);
+                    if(repositoryInfo == null) {
+                        LOGGER.fine("Unable to build GitRepositoryAction. RepositoryInfo is null");
+                        return null;
+                    }
+
+                    final GitRepositoryAction.Builder builder = GitRepositoryAction.newBuilder();
+                    builder.withRepositoryURL(gitRepositoryURL);
+                    builder.withDefaultBranch(repositoryInfo.getDefaultBranch());
+
+                    repoAction = builder.build();
+                    run.addOrReplaceAction(repoAction);
+                } catch (Exception e) {
+                    LOGGER.fine("Unable to build GitRepositoryAction. Error: " + e);
                 }
-
-                final RepositoryInfo repositoryInfo = GitUtils.searchRepositoryInfo(gitClient, envVars);
-                if(repositoryInfo == null) {
-                    LOGGER.fine("Unable to build GitRepositoryAction. RepositoryInfo is null");
-                    return null;
-                }
-
-                final GitRepositoryAction.Builder builder = GitRepositoryAction.newBuilder();
-                builder.withDefaultBranch(repositoryInfo.getDefaultBranch());
-
-                repoAction = builder.build();
-                run.addOrReplaceAction(repoAction);
-            } catch (Exception e) {
-                LOGGER.fine("Unable to build GitRepositoryAction. Error: " + e);
             }
+            return repoAction;
+        } finally {
+            long end = System.currentTimeMillis();
+            DatadogAudit.log("GitUtils.buildGitRepositoryAction", start, end);
         }
-        return repoAction;
     }
 
     /**
@@ -244,21 +255,28 @@ public final class GitUtils {
      * @return gitClient
      */
     public static GitClient newGitClient(final Run<?,?> run, final TaskListener listener, final EnvVars envVars, final String nodeName, final String workspace) {
-        try {
-            FilePath ws = GitUtils.buildFilePath(run);
-            if(ws == null){
-                ws = GitUtils.buildFilePath(nodeName, workspace);
-            }
+        long start = System.currentTimeMillis();
 
-            if(ws == null) {
+        try {
+            try {
+                FilePath ws = GitUtils.buildFilePath(run);
+                if(ws == null){
+                    ws = GitUtils.buildFilePath(nodeName, workspace);
+                }
+
+                if(ws == null) {
+                    return null;
+                }
+
+                final Git git = Git.with(listener, envVars).in(ws);
+                return git.getClient();
+            } catch (Exception e) {
+                LOGGER.fine("Unable to create GitClient. Error: " + e);
                 return null;
             }
-
-            final Git git = Git.with(listener, envVars).in(ws);
-            return git.getClient();
-        } catch (Exception e) {
-            LOGGER.fine("Unable to create GitClient. Error: " + e);
-            return null;
+        } finally {
+            long end = System.currentTimeMillis();
+            DatadogAudit.log("GitUtils.newGitClient", start, end);
         }
     }
 
@@ -277,5 +295,33 @@ public final class GitUtils {
         }
 
         return SHA1_PATTERN.matcher(gitCommit).matches();
+    }
+
+    /**
+     * Check if the git repository URL is a valid repository
+     * @param gitRepositoryURL
+     * @return true if the git repository url is a valid repository in either http or scp form.
+     */
+    public static boolean isValidRepositoryURL(String gitRepositoryURL) {
+        if(gitRepositoryURL == null || gitRepositoryURL.isEmpty()) {
+            return false;
+        }
+
+        try {
+            final URI uri = new URI(gitRepositoryURL);
+            return uri.getHost() != null;
+        } catch (URISyntaxException e) {
+            return SCP_REPO_URI_REGEX.matcher(gitRepositoryURL).matches();
+        }
+    }
+
+    public static boolean isRepositoryInfoAlreadyCreated(Run<?, ?> run, final String gitRepositoryUrl) {
+        final GitRepositoryAction repositoryAction = run.getAction(GitRepositoryAction.class);
+        return repositoryAction != null && repositoryAction.getRepositoryURL() != null && repositoryAction.getRepositoryURL().equals(gitRepositoryUrl);
+    }
+
+    public static boolean isCommitInfoAlreadyCreated(Run<?, ?> run, final String gitCommit) {
+        GitCommitAction commitAction = run.getAction(GitCommitAction.class);
+        return commitAction != null && commitAction.getCommit() != null && commitAction.getCommit().equals(gitCommit);
     }
 }

@@ -25,6 +25,11 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.model;
 
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isCommitInfoAlreadyCreated;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isRepositoryInfoAlreadyCreated;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidRepositoryURL;
+
 import com.cloudbees.plugins.credentials.CredentialsParameterValue;
 import hudson.EnvVars;
 import hudson.model.BooleanParameterValue;
@@ -46,6 +51,7 @@ import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
+import org.jenkinsci.plugins.gitclient.GitClient;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -261,7 +267,55 @@ public class BuildData implements Serializable {
      * @param envVars
      */
     private void populateGitVariables(Run<?,?> run, TaskListener listener, EnvVars envVars) {
-        final GitCommitAction gitCommitAction = GitUtils.buildGitCommitAction(run, listener, envVars, this.gitCommit, this.nodeName, this.workspace);
+        // First we obtain the actions to check if the Git information was already calculated.
+        // If so, we want to use this information to avoid creating a new Git client instance
+        // to calculate the same information.
+
+        boolean commitInfoAlreadyCreated = isCommitInfoAlreadyCreated(run, this.gitCommit);
+        boolean repositoryInfoAlreadyCreated = isRepositoryInfoAlreadyCreated(run, this.gitUrl);
+
+        GitRepositoryAction gitRepositoryAction = run.getAction(GitRepositoryAction.class);
+        if(repositoryInfoAlreadyCreated){
+            this.gitDefaultBranch = gitRepositoryAction.getDefaultBranch();
+        }
+
+        final GitCommitAction gitCommitAction = run.getAction(GitCommitAction.class);
+        if(commitInfoAlreadyCreated){
+            populateCommitInfo(gitCommitAction);
+        }
+
+        // If all Git info was already calculated, we finish the method here.
+        if(repositoryInfoAlreadyCreated && commitInfoAlreadyCreated) {
+            return;
+        }
+
+        // At this point, there is some Git information that we need to calculate.
+        // We use the same Git client instance to calculate all git information
+        // because creating a Git client is a very expensive operation.
+        // Create a new Git client is a very expensive operation.
+        // Avoid creating Git clients as much as possible.
+        if(!isValidCommit(gitCommit) && !isValidRepositoryURL(this.gitUrl)) {
+            return;
+        }
+
+        final GitClient gitClient = GitUtils.newGitClient(run, listener, envVars, this.nodeName, this.workspace);
+        if(isValidCommit(this.gitCommit)){
+            populateCommitInfo(GitUtils.buildGitCommitAction(run, gitClient ,this.gitCommit));
+        }
+
+        if(isValidRepositoryURL(this.gitUrl)){
+            gitRepositoryAction = GitUtils.buildGitRepositoryAction(run, gitClient, envVars, this.gitUrl);
+            if(gitRepositoryAction != null) {
+                this.gitDefaultBranch = gitRepositoryAction.getDefaultBranch();
+            }
+        }
+    }
+
+    /**
+     * Populate the information related to the commit (message, author and committer) based on the GitCommitAction
+     * @param gitCommitAction
+     */
+    private void populateCommitInfo(GitCommitAction gitCommitAction) {
         if(gitCommitAction != null) {
             this.gitMessage = gitCommitAction.getMessage();
             this.gitAuthorName = gitCommitAction.getAuthorName();
@@ -270,11 +324,6 @@ public class BuildData implements Serializable {
             this.gitCommitterName = gitCommitAction.getCommitterName();
             this.gitCommitterEmail = gitCommitAction.getCommitterEmail();
             this.gitCommitterDate = gitCommitAction.getCommitterDate();
-        }
-
-        final GitRepositoryAction gitRepositoryAction = GitUtils.buildGitRepositoryAction(run, listener, envVars, this.nodeName, this.workspace);
-        if(gitRepositoryAction != null) {
-            this.gitDefaultBranch = gitRepositoryAction.getDefaultBranch();
         }
     }
 
