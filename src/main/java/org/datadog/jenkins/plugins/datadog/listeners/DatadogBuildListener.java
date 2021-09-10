@@ -31,6 +31,10 @@ import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.isPipeline;
 import com.cloudbees.workflow.rest.external.RunExt;
 import com.cloudbees.workflow.rest.external.StageNodeExt;
 import hudson.Extension;
+import hudson.Launcher;
+import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
+import hudson.model.Environment;
 import hudson.model.Queue;
 import hudson.model.Result;
 import hudson.model.Run;
@@ -44,15 +48,9 @@ import org.datadog.jenkins.plugins.datadog.events.BuildAbortedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildFinishedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildStartedEventImpl;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
-import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
-import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
-import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
-import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
-import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
-import org.datadog.jenkins.plugins.datadog.traces.IsPipelineAction;
-import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
+
+import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import javax.annotation.Nonnull;
@@ -74,6 +72,9 @@ import java.util.logging.Logger;
 public class DatadogBuildListener extends RunListener<Run> {
 
     private static final Logger logger = Logger.getLogger(DatadogBuildListener.class.getName());
+
+    public static final String TRACE_ID_ENVVAR_KEY = "DD_CUSTOM_TRACE_ID";
+    public static final String CUSTOM_PARENT_ID_ENVVAR_KEY = "DD_CUSTOM_PARENT_ID";
 
 
     /**
@@ -113,6 +114,42 @@ public class DatadogBuildListener extends RunListener<Run> {
     }
 
     /**
+     * Called before the SCMCheckout is run in a Jenkins build.
+     * This method is called after onInitialize callback.
+     */
+    @Override
+    public Environment setUpEnvironment(AbstractBuild build, Launcher launcher, BuildListener listener) throws Run.RunnerAbortedException {
+        try {
+            logger.fine("Start DatadogBuildListener#setUpEnvironment");
+
+            final BuildSpanAction buildSpanAction = build.getAction(BuildSpanAction.class);
+            if(buildSpanAction == null || buildSpanAction.getBuildData() == null) {
+                return new Environment() {
+                };
+            }
+
+            final TraceSpan.TraceSpanContext traceSpanContext = buildSpanAction.getBuildSpanContext();
+            final long traceId = traceSpanContext.getTraceId();
+            final long spanId = traceSpanContext.getSpanId();
+
+            Environment newEnv = new Environment() {
+                @Override
+                public void buildEnvVars(Map<String, String> env) {
+                    env.put(TRACE_ID_ENVVAR_KEY, Long.toString(traceId));
+                    env.put(CUSTOM_PARENT_ID_ENVVAR_KEY, Long.toString(spanId));
+                }
+            };
+
+            logger.fine("End DatadogBuildListener#setUpEnvironment");
+            return newEnv;
+        } catch (Exception e) {
+            DatadogUtilities.severe(logger, e, null);
+            return new Environment() {
+            };
+        }
+    }
+
+    /**
      * Called when a build is first started.
      *
      * @param run - A Run object representing a particular execution of Job.
@@ -147,7 +184,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             DatadogEvent event = new BuildStartedEventImpl(buildData);
             client.event(event);
 
-            // Send an metric
+            // Send a metric
             // item.getInQueueSince() may raise a NPE if a worker node is spinning up to run the job.
             // This could be expected behavior with ec2 spot instances/ecs containers, meaning no waiting
             // queue times if the plugin is spinning up an instance/container for one/first job.
