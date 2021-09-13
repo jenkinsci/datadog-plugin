@@ -65,10 +65,9 @@ public class TraceStepEnvironmentContributor extends StepEnvironmentContributor 
 
             final String traceIdStr = Long.toUnsignedString(buildSpanAction.getBuildSpanContext().getTraceId());
             final String spanIdStr  = Long.toUnsignedString(stepTraceData.getSpanId());
-            envs.put(TRACE_ID_ENVVAR_KEY, traceIdStr);
-            envs.put(SPAN_ID_ENVVAR_KEY, spanIdStr);
+            envs.putIfAbsent(TRACE_ID_ENVVAR_KEY, traceIdStr);
+            envs.putIfAbsent(SPAN_ID_ENVVAR_KEY, spanIdStr);
             logger.fine("Set DD_CUSTOM_TRACE_ID="+traceIdStr+", DD_CUSTOM_PARENT_ID="+spanIdStr+" for FlowNode: "+flowNode);
-
         } catch (Exception ex) {
             logger.severe("Unable to set traces IDs as environment variables before step execution. " + ex);
         }
