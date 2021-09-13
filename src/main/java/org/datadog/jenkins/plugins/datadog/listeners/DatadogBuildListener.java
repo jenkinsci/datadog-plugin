@@ -27,6 +27,8 @@ package org.datadog.jenkins.plugins.datadog.listeners;
 
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.cleanUpTraceActions;
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.isPipeline;
+import static org.datadog.jenkins.plugins.datadog.traces.TracerConstants.SPAN_ID_ENVVAR_KEY;
+import static org.datadog.jenkins.plugins.datadog.traces.TracerConstants.TRACE_ID_ENVVAR_KEY;
 
 import com.cloudbees.workflow.rest.external.RunExt;
 import com.cloudbees.workflow.rest.external.StageNodeExt;
@@ -72,9 +74,6 @@ import java.util.logging.Logger;
 public class DatadogBuildListener extends RunListener<Run> {
 
     private static final Logger logger = Logger.getLogger(DatadogBuildListener.class.getName());
-
-    public static final String TRACE_ID_ENVVAR_KEY = "DD_CUSTOM_TRACE_ID";
-    public static final String CUSTOM_PARENT_ID_ENVVAR_KEY = "DD_CUSTOM_PARENT_ID";
 
 
     /**
@@ -132,11 +131,11 @@ public class DatadogBuildListener extends RunListener<Run> {
             final long traceId = traceSpanContext.getTraceId();
             final long spanId = traceSpanContext.getSpanId();
 
-            Environment newEnv = new Environment() {
+            final Environment newEnv = new Environment() {
                 @Override
                 public void buildEnvVars(Map<String, String> env) {
                     env.put(TRACE_ID_ENVVAR_KEY, Long.toString(traceId));
-                    env.put(CUSTOM_PARENT_ID_ENVVAR_KEY, Long.toString(spanId));
+                    env.put(SPAN_ID_ENVVAR_KEY, Long.toString(spanId));
                 }
             };
 

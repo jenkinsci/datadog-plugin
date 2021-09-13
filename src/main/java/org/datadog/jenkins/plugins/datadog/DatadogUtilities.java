@@ -47,6 +47,7 @@ import org.datadog.jenkins.plugins.datadog.steps.DatadogPipelineAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
 import org.datadog.jenkins.plugins.datadog.traces.IsPipelineAction;
 import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
+import org.datadog.jenkins.plugins.datadog.traces.StepTraceDataAction;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.pipeline.StageStatus;
@@ -878,6 +879,7 @@ public class DatadogUtilities {
             run.removeActions(PipelineQueueInfoAction.class);
             run.removeActions(StageBreakdownAction.class);
             run.removeActions(IsPipelineAction.class);
+            run.removeActions(StepTraceDataAction.class);
         }
     }
 

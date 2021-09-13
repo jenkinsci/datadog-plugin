@@ -74,6 +74,9 @@ public class DatadogTraceBuildLogic {
         final StepDataAction stepDataAction = new StepDataAction();
         run.addAction(stepDataAction);
 
+        final StepTraceDataAction stepTraceDataAction = new StepTraceDataAction();
+        run.addAction(stepTraceDataAction);
+
         final StageBreakdownAction stageBreakdownAction = new StageBreakdownAction();
         run.addAction(stageBreakdownAction);
 
