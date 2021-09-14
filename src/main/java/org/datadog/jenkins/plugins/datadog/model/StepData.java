@@ -5,6 +5,7 @@ import hudson.FilePath;
 import hudson.model.Computer;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
+import org.datadog.jenkins.plugins.datadog.traces.IdGenerator;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 
 import java.io.Serializable;
@@ -59,7 +60,6 @@ public class StepData implements Serializable {
     public Set<String> getNodeLabels() {
         return nodeLabels;
     }
-
 
     /**
      * Returns the workspace filepath of the remote node which is executing a determined {@code Step}

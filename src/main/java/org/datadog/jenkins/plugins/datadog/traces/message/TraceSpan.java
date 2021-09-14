@@ -28,10 +28,10 @@ public class TraceSpan implements PayloadMessage {
         this(name, startNano, null);
     }
 
-    public TraceSpan(final String name, final long startNano, final TraceSpanContext parent) {
+    public TraceSpan(final String name, final long startNano, final TraceSpanContext spanContext) {
         this.operationName = name;
         this.startNano = startNano;
-        this.traceSpanContext = parent != null ? new TraceSpanContext(parent) : new TraceSpanContext();
+        this.traceSpanContext = spanContext != null ? spanContext : new TraceSpanContext();
 
         // Avoid sampling
         this.metrics.put(PRIORITY_SAMPLING_KEY, 1.0);
@@ -132,10 +132,10 @@ public class TraceSpan implements PayloadMessage {
             this.parentId = 0;
         }
 
-        public TraceSpanContext(final TraceSpanContext parent) {
-            this.traceId = parent.getTraceId();
-            this.parentId = parent.getSpanId();
-            this.spanId = IdGenerator.generate();
+        public TraceSpanContext(final long traceId, final long parentId, final long spanId) {
+            this.traceId = traceId;
+            this.parentId = parentId;
+            this.spanId = (spanId != -1L) ? spanId : IdGenerator.generate();
         }
 
         public long getTraceId() {

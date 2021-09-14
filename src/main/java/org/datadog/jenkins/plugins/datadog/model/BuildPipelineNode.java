@@ -4,6 +4,7 @@ import hudson.console.AnnotatedLargeText;
 import hudson.model.Run;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
+import org.datadog.jenkins.plugins.datadog.traces.StepTraceDataAction;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
@@ -87,6 +88,9 @@ public class BuildPipelineNode {
     // Throwable of the node.
     // Although the error flag was true, this can be null.
     private Throwable errorObj;
+
+    //Tracing
+    private long spanId = -1L;
 
     public BuildPipelineNode(final String id, final String name) {
         this(new BuildPipelineNodeKey(id, name));
@@ -172,6 +176,11 @@ public class BuildPipelineNode {
             this.nodeName = stepData.getNodeName();
             this.nodeHostname = stepData.getNodeHostname();
             this.nodeLabels = stepData.getNodeLabels();
+        }
+
+        final StepTraceData stepTraceData = getStepTraceData(stepNode);
+        if(stepTraceData != null) {
+            this.spanId = stepTraceData.getSpanId();
         }
 
         final FlowNodeQueueData queueData = getQueueData(stepNode);
@@ -320,6 +329,10 @@ public class BuildPipelineNode {
         this.error = error;
     }
 
+    public long getSpanId() {
+        return spanId;
+    }
+
     public List<BuildPipelineNode> getParents(){ return parents; }
 
     public List<BuildPipelineNode> getChildren() {
@@ -365,6 +378,7 @@ public class BuildPipelineNode {
         this.error = buildNode.error;
         this.errorObj = buildNode.errorObj;
         this.parents.addAll(buildNode.parents);
+        this.spanId = buildNode.spanId;
     }
 
     public void addChild(final BuildPipelineNode child) {
@@ -438,6 +452,23 @@ public class BuildPipelineNode {
         }
 
         return stepDataAction.synchronizedGet(run, flowNode);
+    }
+
+    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
+    private StepTraceData getStepTraceData(FlowNode flowNode) {
+        final Run<?, ?> run = getRun(flowNode);
+        if(run == null) {
+            logger.fine("Unable to get StepTraceData from flowNode '"+flowNode.getDisplayName()+"'. Run is null");
+            return null;
+        }
+
+        final StepTraceDataAction stepTraceDataAction = run.getAction(StepTraceDataAction.class);
+        if(stepTraceDataAction == null) {
+            logger.fine("Unable to get StepTraceData from flowNode '"+flowNode.getDisplayName()+"'. StepTraceDataAction is null");
+            return null;
+        }
+
+        return stepTraceDataAction.synchronizedGet(run, flowNode);
     }
 
     private FlowNodeQueueData getQueueData(FlowNode node) {

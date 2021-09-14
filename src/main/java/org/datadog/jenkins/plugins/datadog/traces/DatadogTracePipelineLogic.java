@@ -238,7 +238,8 @@ public class DatadogTracePipelineLogic {
         final long fixedEndTimeNanos = TimeUnit.MICROSECONDS.toNanos(current.getEndTimeMicros() - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue));
 
         // At this point, the current node is traceable.
-        final TraceSpan span = new TraceSpan(buildOperationName(current), fixedStartTimeNanos + getNanosInQueue(current), parentSpanContext);
+        final TraceSpan.TraceSpanContext spanContext = new TraceSpan.TraceSpanContext(parentSpanContext.getTraceId(), parentSpanContext.getSpanId(), current.getSpanId());
+        final TraceSpan span = new TraceSpan(buildOperationName(current), fixedStartTimeNanos + getNanosInQueue(current), spanContext);
         span.setServiceName(DatadogUtilities.getDatadogGlobalDescriptor().getCiInstanceName());
         span.setResourceName(current.getName());
         span.setType("ci");
