@@ -24,7 +24,7 @@ public class TraceStepEnvironmentContributor extends StepEnvironmentContributor 
 
     @Override
     public void buildEnvironmentFor(StepContext stepContext, EnvVars envs, TaskListener listener) throws IOException, InterruptedException {
-        if (!DatadogUtilities.getDatadogGlobalDescriptor().isEnabledCiVisibility()) {
+        if (!DatadogUtilities.getDatadogGlobalDescriptor().isEnableCiVisibility()) {
             return;
         }
 

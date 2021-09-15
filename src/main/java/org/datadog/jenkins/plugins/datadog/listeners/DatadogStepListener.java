@@ -25,7 +25,7 @@ public class DatadogStepListener implements StepListener {
 
     @Override
     public void notifyOfNewStep(@Nonnull Step step, @Nonnull StepContext context) {
-        if (!DatadogUtilities.getDatadogGlobalDescriptor().isEnabledCiVisibility()) {
+        if (!DatadogUtilities.getDatadogGlobalDescriptor().isEnableCiVisibility()) {
             return;
         }
 

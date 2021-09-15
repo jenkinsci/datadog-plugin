@@ -27,7 +27,6 @@ package org.datadog.jenkins.plugins.datadog.clients;
 
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getHttpURLConnection;
 
-import hudson.ProxyConfiguration;
 import hudson.model.Run;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
@@ -48,13 +47,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
-import java.net.Proxy;
 import java.net.URL;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -162,7 +159,7 @@ public class DatadogHttpClient implements DatadogClient {
             }
         }
 
-        if (DatadogUtilities.getDatadogGlobalDescriptor().isEnabledCiVisibility() ) {
+        if (DatadogUtilities.getDatadogGlobalDescriptor().isEnableCiVisibility() ) {
             logger.warning("Traces Collection only can be used if Datadog Agent reports to Datadog.");
         }
 

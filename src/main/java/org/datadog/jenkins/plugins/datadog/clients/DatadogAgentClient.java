@@ -52,7 +52,6 @@ import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 import java.net.ConnectException;
-import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -163,7 +162,7 @@ public class DatadogAgentClient implements DatadogClient {
             logger.warning("Datadog Log Collection Port is not set properly");
         }
 
-        if (DatadogUtilities.getDatadogGlobalDescriptor().isEnabledCiVisibility()  && traceCollectionPort == null) {
+        if (DatadogUtilities.getDatadogGlobalDescriptor().isEnableCiVisibility()  && traceCollectionPort == null) {
             logger.warning("Datadog Trace Collection Port is not set properly");
         }
         return;
@@ -271,7 +270,7 @@ public class DatadogAgentClient implements DatadogClient {
             return true;
         }
 
-        if(!DatadogUtilities.getDatadogGlobalDescriptor().isEnabledCiVisibility() || this.hostname == null || this.traceCollectionPort == null) {
+        if(!DatadogUtilities.getDatadogGlobalDescriptor().isEnableCiVisibility() || this.hostname == null || this.traceCollectionPort == null) {
             return false;
         }
 
