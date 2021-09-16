@@ -48,7 +48,7 @@ public class DatadogTraceBuildLogic {
     }
 
     public void startBuildTrace(final BuildData buildData, Run run) {
-        if (!DatadogUtilities.getDatadogGlobalDescriptor().isEnabledCiVisibility()) {
+        if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
             logger.fine("CI Visibility is disabled");
             return;
         }
@@ -88,7 +88,7 @@ public class DatadogTraceBuildLogic {
     }
 
     public void finishBuildTrace(final BuildData buildData, final Run<?,?> run) {
-        if (!DatadogUtilities.getDatadogGlobalDescriptor().isEnabledCiVisibility()) {
+        if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
             return;
         }
 
