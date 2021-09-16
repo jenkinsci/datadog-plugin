@@ -7,7 +7,7 @@ https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.1.2...datadog-3.2.
 ### Changes
 * [Added] Propagate trace/span IDs via environment variables for Jenkins Pipelines. See [#246](https://github.com/jenkinsci/datadog-plugin/pull/246)
 * [Fixed] Avoid unnecessary `GitClient` instantiation in CI Pipelines. See [#240](https://github.com/jenkinsci/datadog-plugin/pull/240)
-* [Fixed] Fix enableCiVisibility property to be use for Jenkins configuration-as-code plugin. See [#249](https://github.com/jenkinsci/datadog-plugin/pull/249)
+* [Fixed] Fix `enableCiVisibility` property to be use for Jenkins `configuration-as-code` plugin. See [#249](https://github.com/jenkinsci/datadog-plugin/pull/249)
 
 ## 3.1.2 / 2021-09-02
 ### Details
