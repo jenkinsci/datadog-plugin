@@ -69,7 +69,7 @@ public class DatadogTracePipelineLogic {
     }
 
     public void execute(Run run, FlowNode flowNode) {
-        if (!DatadogUtilities.getDatadogGlobalDescriptor().isEnableCiVisibility()) {
+        if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
             return;
         }
 

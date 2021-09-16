@@ -1045,7 +1045,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     /**
      * @return - A {@link Boolean} indicating if the user has configured Datadog to enable CI Visibility.
      */
-    public boolean isEnableCiVisibility() {
+    public boolean getEnableCiVisibility() {
         return this.collectBuildTraces;
     }
 
