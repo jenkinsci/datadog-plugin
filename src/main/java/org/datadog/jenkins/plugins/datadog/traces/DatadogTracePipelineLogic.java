@@ -1,14 +1,12 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.cleanUpTraceActions;
-import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getGitRepositoryUrl;
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getNormalizedResultForTraces;
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.toJson;
 import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.NodeType.PIPELINE;
 import static org.datadog.jenkins.plugins.datadog.traces.CITags.Values.ORIGIN_CIAPP_PIPELINE;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_BRANCH;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_DATE;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_EMAIL;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_NAME;
@@ -17,14 +15,15 @@ import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_C
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_NAME;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_MESSAGE;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_SHA;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_REPOSITORY_URL;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_TAG;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_BRANCH;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_COMMIT;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isCommitInfoAlreadyCreated;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isRepositoryInfoAlreadyCreated;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidRepositoryURL;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.resolveGitBranch;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.resolveGitCommit;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.resolveGitRepositoryUrl;
 
 import hudson.EnvVars;
 import hudson.model.Run;
@@ -32,7 +31,6 @@ import hudson.model.TaskListener;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
-import org.datadog.jenkins.plugins.datadog.transport.HttpClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipeline;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
@@ -43,6 +41,7 @@ import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
+import org.datadog.jenkins.plugins.datadog.transport.HttpClient;
 import org.datadog.jenkins.plugins.datadog.transport.PayloadMessage;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
@@ -62,7 +61,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -153,22 +151,17 @@ public class DatadogTracePipelineLogic {
 
             buildData.setPropagatedMillisInQueue(TimeUnit.NANOSECONDS.toMillis(getNanosInQueue(pipelineNode)));
 
-            final String gitBranch = Optional.ofNullable(pipelineNode.getEnvVars().get(DD_GIT_BRANCH))
-                                .orElse(pipelineNode.getEnvVars().get(GIT_BRANCH));
+            final String gitBranch = resolveGitBranch(pipelineNode.getEnvVars(), null);
             if(gitBranch != null && buildData.getBranch("").isEmpty()) {
                 buildData.setBranch(gitBranch);
             }
 
-            final String gitUrl = Optional.ofNullable(pipelineNode.getEnvVars().get(DD_GIT_REPOSITORY_URL))
-                              .filter(GitUtils::isValidRepositoryURL)
-                              .orElse(getGitRepositoryUrl(pipelineNode.getEnvVars()));
+            final String gitUrl = resolveGitRepositoryUrl(pipelineNode.getEnvVars(), null);
             if(gitUrl != null && buildData.getGitUrl("").isEmpty()) {
                 buildData.setGitUrl(gitUrl);
             }
 
-            final String gitCommit = Optional.ofNullable(pipelineNode.getEnvVars().get(DD_GIT_COMMIT_SHA))
-                                 .filter(GitUtils::isValidCommit)
-                                 .orElse(pipelineNode.getEnvVars().get(GIT_COMMIT));
+            final String gitCommit = resolveGitCommit(pipelineNode.getEnvVars(), null);
             final String buildDataGitCommit = buildData.getGitCommit("");
             if(gitCommit != null && (buildDataGitCommit.isEmpty() || !isValidCommit(buildDataGitCommit))){
                 buildData.setGitCommit(gitCommit);
@@ -586,7 +579,7 @@ public class DatadogTracePipelineLogic {
 
     private GitRepositoryAction buildGitRepositoryAction(Run<?, ?> run, GitClient gitClient, BuildPipelineNode pipelineNode) {
         try {
-            final String gitRepositoryURL = getGitRepositoryUrl(pipelineNode.getEnvVars());
+            final String gitRepositoryURL = resolveGitRepositoryUrl(pipelineNode.getEnvVars(), null);
             if(!isValidRepositoryURL(gitRepositoryURL)){
                 return null;
             }
