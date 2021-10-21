@@ -167,7 +167,7 @@ public class DatadogTracePipelineLogic {
                 buildData.setGitCommit(gitCommit);
             }
 
-            // Git tag can only set manually by the user.
+            // Git tag can only be set manually by the user.
             // Otherwise, Jenkins reports it in the branch.
             final String gitTag = pipelineNode.getEnvVars().get(DD_GIT_TAG);
             if(gitTag != null && buildData.getGitTag("").isEmpty()){
