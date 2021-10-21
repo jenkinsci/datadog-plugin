@@ -1,5 +1,16 @@
 package org.datadog.jenkins.plugins.datadog.util.git;
 
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_COMMIT_INFO_ENVVARS;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_DATE;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_EMAIL;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_NAME;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_DATE;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_EMAIL;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_NAME;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_MESSAGE;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_SHA;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_DEFAULT_BRANCH;
+
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.Executor;
@@ -108,7 +119,7 @@ public final class GitUtils {
             // This is needed because the automatic detection of the default branch using
             // the Git client is not always possible cause it depends on how Jenkins checkouts
             // the repository. Not always there is a symbolic reference to the default branch.
-            final String defaultBranch = GitInfoUtils.normalizeBranch(envVars.get("DD_GIT_DEFAULT_BRANCH", null));
+            final String defaultBranch = GitInfoUtils.normalizeBranch(envVars.get(DD_GIT_DEFAULT_BRANCH, null));
             LOGGER.fine("Detected default branch from environment variables: " + defaultBranch);
             if(defaultBranch != null && !defaultBranch.isEmpty()) {
                 return new RepositoryInfo(defaultBranch);

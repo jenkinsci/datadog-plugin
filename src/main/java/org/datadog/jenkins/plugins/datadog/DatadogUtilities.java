@@ -25,6 +25,9 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog;
 
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_REPOSITORY_URL;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_REPOSITORY_URL_ALT;
+
 import hudson.EnvVars;
 import hudson.ExtensionList;
 import hudson.FilePath;
@@ -918,7 +921,7 @@ public class DatadogUtilities {
      * @return git repository URL
      */
     public static String getGitRepositoryUrl(final Map<String, String> envVars) {
-        return StringUtils.isNotEmpty(envVars.get("GIT_URL")) ? envVars.get("GIT_URL") : envVars.get("GIT_URL_1");
+        return StringUtils.isNotEmpty(envVars.get(GIT_REPOSITORY_URL)) ? envVars.get(GIT_REPOSITORY_URL) : envVars.get(GIT_REPOSITORY_URL_ALT);
     }
 
     /**

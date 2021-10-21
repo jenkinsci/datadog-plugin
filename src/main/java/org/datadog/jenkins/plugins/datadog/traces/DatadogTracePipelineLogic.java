@@ -8,6 +8,18 @@ import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.NodeTy
 import static org.datadog.jenkins.plugins.datadog.traces.CITags.Values.ORIGIN_CIAPP_PIPELINE;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_BRANCH;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_DATE;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_EMAIL;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_NAME;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_DATE;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_EMAIL;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_NAME;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_MESSAGE;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_SHA;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_REPOSITORY_URL;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_BRANCH;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_COMMIT;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isCommitInfoAlreadyCreated;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isRepositoryInfoAlreadyCreated;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
@@ -49,6 +61,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -139,20 +152,62 @@ public class DatadogTracePipelineLogic {
 
             buildData.setPropagatedMillisInQueue(TimeUnit.NANOSECONDS.toMillis(getNanosInQueue(pipelineNode)));
 
-            final String gitBranch = pipelineNode.getEnvVars().get("GIT_BRANCH");
+            final String gitBranch = Optional.ofNullable(pipelineNode.getEnvVars().get(DD_GIT_BRANCH))
+                                .orElse(pipelineNode.getEnvVars().get(GIT_BRANCH));
             if(gitBranch != null && buildData.getBranch("").isEmpty()) {
                 buildData.setBranch(gitBranch);
             }
 
-            final String gitUrl = getGitRepositoryUrl(pipelineNode.getEnvVars());
+            final String gitUrl = Optional.ofNullable(pipelineNode.getEnvVars().get(DD_GIT_REPOSITORY_URL))
+                              .filter(GitUtils::isValidRepositoryURL)
+                              .orElse(getGitRepositoryUrl(pipelineNode.getEnvVars()));
             if(gitUrl != null && buildData.getGitUrl("").isEmpty()) {
                 buildData.setGitUrl(gitUrl);
             }
 
-            final String gitCommit = pipelineNode.getEnvVars().get("GIT_COMMIT");
+            final String gitCommit = Optional.ofNullable(pipelineNode.getEnvVars().get(DD_GIT_COMMIT_SHA))
+                                 .filter(GitUtils::isValidCommit)
+                                 .orElse(pipelineNode.getEnvVars().get(GIT_COMMIT));
             final String buildDataGitCommit = buildData.getGitCommit("");
             if(gitCommit != null && (buildDataGitCommit.isEmpty() || !isValidCommit(buildDataGitCommit))){
                 buildData.setGitCommit(gitCommit);
+            }
+
+            // Git data supplied by the user has prevalence. We set them first.
+            // Only the data that has not been set will be updated later.
+            final String ddGitMessage = pipelineNode.getEnvVars().get(DD_GIT_COMMIT_MESSAGE);
+            if(ddGitMessage != null && buildData.getGitMessage("").isEmpty()) {
+                buildData.setGitMessage(ddGitMessage);
+            }
+
+            final String ddGitAuthorName = pipelineNode.getEnvVars().get(DD_GIT_COMMIT_AUTHOR_NAME);
+            if(ddGitAuthorName != null && buildData.getGitAuthorName("").isEmpty()) {
+                buildData.setGitAuthorName(ddGitAuthorName);
+            }
+
+            final String ddGitAuthorEmail = pipelineNode.getEnvVars().get(DD_GIT_COMMIT_AUTHOR_EMAIL);
+            if(ddGitAuthorEmail != null && buildData.getGitAuthorEmail("").isEmpty()) {
+                buildData.setGitAuthorEmail(ddGitAuthorEmail);
+            }
+
+            final String ddGitAuthorDate = pipelineNode.getEnvVars().get(DD_GIT_COMMIT_AUTHOR_DATE);
+            if(ddGitAuthorDate != null && buildData.getGitAuthorDate("").isEmpty()) {
+                buildData.setGitAuthorDate(ddGitAuthorDate);
+            }
+
+            final String ddGitCommitterName = pipelineNode.getEnvVars().get(DD_GIT_COMMIT_COMMITTER_NAME);
+            if(ddGitCommitterName != null && buildData.getGitCommitterName("").isEmpty()){
+                buildData.setGitCommitterName(ddGitCommitterName);
+            }
+
+            final String ddGitCommitterEmail = pipelineNode.getEnvVars().get(DD_GIT_COMMIT_COMMITTER_EMAIL);
+            if(ddGitCommitterEmail != null && buildData.getGitCommitterEmail("").isEmpty()){
+                buildData.setGitCommitterEmail(ddGitCommitterEmail);
+            }
+
+            final String ddGitCommitterDate = pipelineNode.getEnvVars().get(DD_GIT_COMMIT_COMMITTER_DATE);
+            if(ddGitCommitterDate != null && buildData.getGitCommitterDate("").isEmpty()){
+                buildData.setGitCommitterDate(ddGitCommitterDate);
             }
 
             // The Git client will be not null if there is some git information to calculate.
@@ -502,7 +557,9 @@ public class DatadogTracePipelineLogic {
 
     private GitCommitAction buildGitCommitAction(Run<?, ?> run, GitClient gitClient, BuildPipelineNode pipelineNode) {
         try {
-            final String gitCommit = pipelineNode.getEnvVars().get("GIT_COMMIT");
+            final String gitCommit = pipelineNode.getEnvVars().get(DD_GIT_COMMIT_SHA) != null ?
+                    pipelineNode.getEnvVars().get(DD_GIT_COMMIT_SHA) :
+                    pipelineNode.getEnvVars().get(GIT_COMMIT);
             if(!isValidCommit(gitCommit)) {
                 return null;
             }
