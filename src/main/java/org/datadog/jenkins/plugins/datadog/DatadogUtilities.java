@@ -975,5 +975,12 @@ public class DatadogUtilities {
         return new URL(String.format("http://%s:%d"+path, hostname, port));
     }
 
+    public static Map<String, String> toMap(EnvVars envVars) {
+        if(envVars == null) {
+            return Collections.emptyMap();
+        }
+
+        return envVars.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
 
 }

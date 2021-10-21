@@ -18,6 +18,7 @@ import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_C
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_MESSAGE;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_SHA;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_REPOSITORY_URL;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_TAG;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_BRANCH;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_COMMIT;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isCommitInfoAlreadyCreated;
@@ -171,6 +172,13 @@ public class DatadogTracePipelineLogic {
             final String buildDataGitCommit = buildData.getGitCommit("");
             if(gitCommit != null && (buildDataGitCommit.isEmpty() || !isValidCommit(buildDataGitCommit))){
                 buildData.setGitCommit(gitCommit);
+            }
+
+            // Git tag can only set manually by the user.
+            // Otherwise, Jenkins reports it in the branch.
+            final String gitTag = pipelineNode.getEnvVars().get(DD_GIT_TAG);
+            if(gitTag != null && buildData.getGitTag("").isEmpty()){
+                buildData.setGitTag(gitTag);
             }
 
             // Git data supplied by the user has prevalence. We set them first.
@@ -381,7 +389,7 @@ public class DatadogTracePipelineLogic {
         tags.put(CITags.ERROR, String.valueOf(current.isError()));
 
         //Git Info
-        final String rawGitBranch = envVars.get("GIT_BRANCH") != null ? envVars.get("GIT_BRANCH") : buildData.getBranch("");
+        final String rawGitBranch = GitUtils.resolveGitBranch(envVars, buildData);
         String gitBranch = null;
         String gitTag = null;
         if(rawGitBranch != null && !rawGitBranch.isEmpty()) {
@@ -396,19 +404,24 @@ public class DatadogTracePipelineLogic {
             }
         }
 
+        // If the user set DD_GIT_TAG manually,
+        // we override the git.tag value.
+        gitTag = GitUtils.resolveGitTag(envVars, buildData);
+        if(StringUtils.isNotEmpty(gitTag)){
+            tags.put(CITags.GIT_TAG, gitTag);
+        }
+
         // If we could detect a valid commit, the buildData object will contain that commit.
         // If we could not detect a valid commit, that means that the GIT_COMMIT environment variable
         // was overridden by the user at top level, so we set the content what we have (despite it's not valid).
         // We will show a logger.warning at the end of the pipeline.
-        final String envGitCommit = envVars.get("GIT_COMMIT");
-        final String gitCommit = (isValidCommit(envGitCommit)) ? envGitCommit : buildData.getGitCommit("");
+        final String gitCommit = GitUtils.resolveGitCommit(envVars, buildData);
         if(gitCommit != null && !gitCommit.isEmpty()) {
             tags.put(CITags.GIT_COMMIT__SHA, gitCommit); //Maintain retrocompatibility
             tags.put(CITags.GIT_COMMIT_SHA, gitCommit);
         }
 
-        final String nodeGitRepositoryUrl = getGitRepositoryUrl(envVars);
-        final String gitRepoUrl = nodeGitRepositoryUrl != null ? nodeGitRepositoryUrl : buildData.getGitUrl("");
+        final String gitRepoUrl = GitUtils.resolveGitRepositoryUrl(envVars, buildData);
         if (gitRepoUrl != null && !gitRepoUrl.isEmpty()) {
             tags.put(CITags.GIT_REPOSITORY_URL, gitRepoUrl);
         }

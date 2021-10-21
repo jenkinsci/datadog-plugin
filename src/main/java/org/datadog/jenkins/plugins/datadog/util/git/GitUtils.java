@@ -1,15 +1,14 @@
 package org.datadog.jenkins.plugins.datadog.util.git;
 
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_COMMIT_INFO_ENVVARS;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_DATE;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_EMAIL;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_NAME;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_DATE;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_EMAIL;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_NAME;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_MESSAGE;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_BRANCH;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_SHA;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_DEFAULT_BRANCH;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_REPOSITORY_URL;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_TAG;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_BRANCH;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_COMMIT;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_REPOSITORY_URL;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_REPOSITORY_URL_ALT;
 
 import hudson.EnvVars;
 import hudson.FilePath;
@@ -19,6 +18,7 @@ import hudson.model.TaskListener;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
+import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
 import org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils;
@@ -28,6 +28,7 @@ import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 import org.jenkinsci.plugins.workflow.FilePathUtils;
 
+import javax.xml.crypto.Data;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
@@ -334,5 +335,53 @@ public final class GitUtils {
     public static boolean isCommitInfoAlreadyCreated(Run<?, ?> run, final String gitCommit) {
         GitCommitAction commitAction = run.getAction(GitCommitAction.class);
         return commitAction != null && commitAction.getCommit() != null && commitAction.getCommit().equals(gitCommit);
+    }
+
+    public static String resolveGitBranch(Map<String, String> envVars, BuildData buildData) {
+        if(StringUtils.isNotEmpty(envVars.get(DD_GIT_BRANCH))){
+            return envVars.get(DD_GIT_BRANCH);
+        } else if (StringUtils.isNotEmpty(envVars.get(GIT_BRANCH))){
+            return envVars.get(GIT_BRANCH);
+        } else if(buildData != null){
+            return buildData.getBranch("");
+        } else {
+            return null;
+        }
+    }
+
+    public static String resolveGitCommit(Map<String, String> envVars, BuildData buildData) {
+        if(isValidCommit(envVars.get(DD_GIT_COMMIT_SHA))){
+            return envVars.get(DD_GIT_COMMIT_SHA);
+        } else if(isValidCommit(envVars.get(GIT_COMMIT))){
+            return envVars.get(GIT_COMMIT);
+        } else if(buildData != null){
+            return buildData.getGitCommit("");
+        } else {
+            return null;
+        }
+    }
+
+    public static String resolveGitRepositoryUrl(Map<String, String> envVars, BuildData buildData) {
+        if(isValidRepositoryURL(envVars.get(DD_GIT_REPOSITORY_URL))){
+            return envVars.get(DD_GIT_REPOSITORY_URL);
+        } else if(isValidRepositoryURL(envVars.get(GIT_REPOSITORY_URL))) {
+            return envVars.get(GIT_REPOSITORY_URL);
+        } else if(isValidRepositoryURL(envVars.get(GIT_REPOSITORY_URL_ALT))){
+            return envVars.get(GIT_REPOSITORY_URL_ALT);
+        } else if(buildData != null){
+            return buildData.getGitUrl("");
+        } else {
+            return null;
+        }
+    }
+
+    public static String resolveGitTag(Map<String, String> envVars, BuildData buildData) {
+        if(StringUtils.isNotEmpty(envVars.get(DD_GIT_TAG))){
+            return envVars.get(DD_GIT_TAG);
+        } else if(buildData != null){
+            return buildData.getGitTag("");
+        } else {
+            return null;
+        }
     }
 }

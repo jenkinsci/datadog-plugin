@@ -5,6 +5,7 @@ public final class GitConstants {
     // User Supplied Git Environment Variables
     public static final String DD_GIT_REPOSITORY_URL = "DD_GIT_REPOSITORY_URL";
     public static final String DD_GIT_BRANCH = "DD_GIT_BRANCH";
+    public static final String DD_GIT_TAG = "DD_GIT_TAG";
     public static final String DD_GIT_DEFAULT_BRANCH = "DD_GIT_DEFAULT_BRANCH";
     public static final String DD_GIT_COMMIT_SHA = "DD_GIT_COMMIT_SHA";
     public static final String DD_GIT_COMMIT_MESSAGE = "DD_GIT_COMMIT_MESSAGE";

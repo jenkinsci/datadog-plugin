@@ -35,6 +35,7 @@ import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_C
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_MESSAGE;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_SHA;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_REPOSITORY_URL;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_TAG;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_BRANCH;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_COMMIT;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isCommitInfoAlreadyCreated;
@@ -106,6 +107,7 @@ public class BuildData implements Serializable {
     private String gitCommitterEmail;
     private String gitCommitterDate;
     private String gitDefaultBranch;
+    private String gitTag;
 
     // Environment variable from the promoted build plugin
     // - See https://plugins.jenkins.io/promoted-builds
@@ -256,13 +258,11 @@ public class BuildData implements Serializable {
         setJavaHome(envVars.get("JAVA_HOME"));
         setWorkspace(envVars.get("WORKSPACE"));
         if (isGit(envVars)) {
-            setBranch(envVars.get(DD_GIT_BRANCH, envVars.get(GIT_BRANCH)));
-            setGitUrl(Optional.ofNullable(envVars.get(DD_GIT_REPOSITORY_URL))
-                    .filter(GitUtils::isValidRepositoryURL)
-                    .orElse(DatadogUtilities.getGitRepositoryUrl(envVars)));
-            setGitCommit(Optional.ofNullable(envVars.get(DD_GIT_COMMIT_SHA))
-                    .filter(GitUtils::isValidCommit)
-                    .orElse(envVars.get(GIT_COMMIT)));
+            final Map<String, String> envVarsMap = DatadogUtilities.toMap(envVars);
+            setBranch(GitUtils.resolveGitBranch(envVarsMap, null));
+            setGitUrl(GitUtils.resolveGitRepositoryUrl(envVarsMap, null));
+            setGitCommit(GitUtils.resolveGitCommit(envVarsMap, null));
+            setGitTag(GitUtils.resolveGitTag(envVarsMap, null));
 
             // Git data supplied by the user has prevalence. We set them first.
             // Only the data that has not been set will be updated later.
@@ -395,7 +395,7 @@ public class BuildData implements Serializable {
             return false;
         }
 
-        return envVars.get(DD_GIT_REPOSITORY_URL) != null || envVars.get(DD_GIT_BRANCH) != null || envVars.get(DD_GIT_COMMIT_SHA) != null;
+        return envVars.get(DD_GIT_REPOSITORY_URL) != null || envVars.get(DD_GIT_BRANCH) != null || envVars.get(DD_GIT_TAG) != null || envVars.get(DD_GIT_COMMIT_SHA) != null;
     }
 
     /**
@@ -708,6 +708,14 @@ public class BuildData implements Serializable {
 
     public void setGitDefaultBranch(String gitDefaultBranch) {
         this.gitDefaultBranch = gitDefaultBranch;
+    }
+
+    public String getGitTag(String value) {
+        return defaultIfNull(gitTag, value);
+    }
+
+    public void setGitTag(String gitTag) {
+        this.gitTag = gitTag;
     }
 
     public String getPromotedUrl(String value) {
