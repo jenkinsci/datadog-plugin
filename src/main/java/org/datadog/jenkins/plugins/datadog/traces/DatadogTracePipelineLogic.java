@@ -21,9 +21,6 @@ import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isCommitInfo
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isRepositoryInfoAlreadyCreated;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidRepositoryURL;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.resolveGitBranch;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.resolveGitCommit;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.resolveGitRepositoryUrl;
 
 import hudson.EnvVars;
 import hudson.model.Run;
@@ -151,17 +148,17 @@ public class DatadogTracePipelineLogic {
 
             buildData.setPropagatedMillisInQueue(TimeUnit.NANOSECONDS.toMillis(getNanosInQueue(pipelineNode)));
 
-            final String gitBranch = resolveGitBranch(pipelineNode.getEnvVars(), null);
+            final String gitBranch = GitUtils.resolveGitBranch(pipelineNode.getEnvVars(), null);
             if(gitBranch != null && buildData.getBranch("").isEmpty()) {
                 buildData.setBranch(gitBranch);
             }
 
-            final String gitUrl = resolveGitRepositoryUrl(pipelineNode.getEnvVars(), null);
+            final String gitUrl = GitUtils.resolveGitRepositoryUrl(pipelineNode.getEnvVars(), null);
             if(gitUrl != null && buildData.getGitUrl("").isEmpty()) {
                 buildData.setGitUrl(gitUrl);
             }
 
-            final String gitCommit = resolveGitCommit(pipelineNode.getEnvVars(), null);
+            final String gitCommit = GitUtils.resolveGitCommit(pipelineNode.getEnvVars(), null);
             final String buildDataGitCommit = buildData.getGitCommit("");
             if(gitCommit != null && (buildDataGitCommit.isEmpty() || !isValidCommit(buildDataGitCommit))){
                 buildData.setGitCommit(gitCommit);
@@ -579,7 +576,7 @@ public class DatadogTracePipelineLogic {
 
     private GitRepositoryAction buildGitRepositoryAction(Run<?, ?> run, GitClient gitClient, BuildPipelineNode pipelineNode) {
         try {
-            final String gitRepositoryURL = resolveGitRepositoryUrl(pipelineNode.getEnvVars(), null);
+            final String gitRepositoryURL = GitUtils.resolveGitRepositoryUrl(pipelineNode.getEnvVars(), null);
             if(!isValidRepositoryURL(gitRepositoryURL)){
                 return null;
             }

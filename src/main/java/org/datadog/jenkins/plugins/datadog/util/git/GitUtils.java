@@ -327,16 +327,39 @@ public final class GitUtils {
         }
     }
 
+    /**
+     * Check if the GitRepositoryAction has been already created and populated.
+     * Typically this method is used to avoid calculating the action multiple times.
+     * @param run
+     * @param gitRepositoryUrl
+     * @return true if the action has been created and populated.
+     */
     public static boolean isRepositoryInfoAlreadyCreated(Run<?, ?> run, final String gitRepositoryUrl) {
         final GitRepositoryAction repositoryAction = run.getAction(GitRepositoryAction.class);
         return repositoryAction != null && repositoryAction.getRepositoryURL() != null && repositoryAction.getRepositoryURL().equals(gitRepositoryUrl);
     }
 
+    /**
+     * Check if the GitCommitAction has been already created and populated.
+     * Typically this method is used to avoid calculating the action multiple times.
+     * @param run
+     * @param gitCommit
+     * @return true if the action has been created and populated.
+     */
     public static boolean isCommitInfoAlreadyCreated(Run<?, ?> run, final String gitCommit) {
         GitCommitAction commitAction = run.getAction(GitCommitAction.class);
         return commitAction != null && commitAction.getCommit() != null && commitAction.getCommit().equals(gitCommit);
     }
 
+    /**
+     * Resolve the value for the git branch based
+     * 1: Check user supplied env var
+     * 2: Check Jenkins env var
+     * 3: Check BuildData already calculated
+     * @param envVars
+     * @param buildData
+     * @return the branch value.
+     */
     public static String resolveGitBranch(Map<String, String> envVars, BuildData buildData) {
         if(StringUtils.isNotEmpty(envVars.get(DD_GIT_BRANCH))){
             return envVars.get(DD_GIT_BRANCH);
@@ -349,6 +372,15 @@ public final class GitUtils {
         }
     }
 
+    /**
+     * Resolve the value for the git commit sha based
+     * 1: Check user supplied env var
+     * 2: Check Jenkins env var
+     * 3: Check BuildData already calculated
+     * @param envVars
+     * @param buildData
+     * @return the commit sha value.
+     */
     public static String resolveGitCommit(Map<String, String> envVars, BuildData buildData) {
         if(isValidCommit(envVars.get(DD_GIT_COMMIT_SHA))){
             return envVars.get(DD_GIT_COMMIT_SHA);
@@ -361,6 +393,15 @@ public final class GitUtils {
         }
     }
 
+    /**
+     * Resolve the value for the git repository url based
+     * 1: Check user supplied env var
+     * 2: Check Jenkins env var
+     * 3: Check BuildData already calculated
+     * @param envVars
+     * @param buildData
+     * @return the git repository url value.
+     */
     public static String resolveGitRepositoryUrl(Map<String, String> envVars, BuildData buildData) {
         if(isValidRepositoryURL(envVars.get(DD_GIT_REPOSITORY_URL))){
             return envVars.get(DD_GIT_REPOSITORY_URL);
@@ -375,6 +416,14 @@ public final class GitUtils {
         }
     }
 
+    /**
+     * Resolve the value for the git tag based
+     * 1: Check user supplied env var
+     * 3: Check BuildData already calculated
+     * @param envVars
+     * @param buildData
+     * @return the git tag value.
+     */
     public static String resolveGitTag(Map<String, String> envVars, BuildData buildData) {
         if(StringUtils.isNotEmpty(envVars.get(DD_GIT_TAG))){
             return envVars.get(DD_GIT_TAG);

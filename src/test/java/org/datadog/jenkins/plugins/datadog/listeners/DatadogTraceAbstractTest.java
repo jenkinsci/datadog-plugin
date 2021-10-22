@@ -23,11 +23,6 @@ public abstract class DatadogTraceAbstractTest {
 
     protected void assertGitVariables(TraceSpan span, String defaultBranch) {
         final Map<String, String> meta = span.getMeta();
-        assertEquals("https://github.com/johndoe/foobar.git", meta.get(CITags.GIT_REPOSITORY_URL));
-        assertEquals("master", meta.get(CITags.GIT_BRANCH));
-        assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get(CITags.GIT_COMMIT__SHA));
-        assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get(CITags.GIT_COMMIT_SHA));
-        assertEquals(defaultBranch, meta.get(CITags.GIT_DEFAULT_BRANCH));
         assertEquals("Initial commit\n", meta.get(CITags.GIT_COMMIT_MESSAGE));
         assertEquals("John Doe", meta.get(CITags.GIT_COMMIT_AUTHOR_NAME));
         assertEquals("john@doe.com", meta.get(CITags.GIT_COMMIT_AUTHOR_EMAIL));
@@ -35,6 +30,11 @@ public abstract class DatadogTraceAbstractTest {
         assertEquals("John Doe", meta.get(CITags.GIT_COMMIT_COMMITTER_NAME));
         assertEquals("john@doe.com", meta.get(CITags.GIT_COMMIT_COMMITTER_EMAIL));
         assertEquals("2020-10-08T07:49:32.000Z", meta.get(CITags.GIT_COMMIT_COMMITTER_DATE));
+        assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get(CITags.GIT_COMMIT__SHA));
+        assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get(CITags.GIT_COMMIT_SHA));
+        assertEquals("master", meta.get(CITags.GIT_BRANCH));
+        assertEquals("https://github.com/johndoe/foobar.git", meta.get(CITags.GIT_REPOSITORY_URL));
+        assertEquals(defaultBranch, meta.get(CITags.GIT_DEFAULT_BRANCH));
     }
 
     protected void assertCleanupActions(Run<?,?> run) {

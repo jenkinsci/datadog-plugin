@@ -12,6 +12,7 @@ import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_C
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_SHA;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_DEFAULT_BRANCH;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_REPOSITORY_URL;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_TAG;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -330,9 +331,10 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         Jenkins jenkins = jenkinsRule.jenkins;
         final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
         EnvVars env = prop.getEnvVars();
-        env.put("DD_GIT_REPOSITORY_URL", "https://github.com/johndoe/foobar.git");
-        env.put("DD_GIT_BRANCH", "master");
-        env.put("DD_GIT_COMMIT_SHA", "401d997a6eede777602669ccaec059755c98161f");
+        env.put(DD_GIT_REPOSITORY_URL, "https://github.com/johndoe/foobar.git");
+        env.put(DD_GIT_BRANCH, "master");
+        env.put(DD_GIT_COMMIT_SHA, "401d997a6eede777602669ccaec059755c98161f");
+        env.put(DD_GIT_TAG, "0.1.0");
 
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationUserSuppliedGitWithoutCommitInfo");
         String definition = IOUtils.toString(
@@ -357,6 +359,8 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals(3, spans.size());
         final TraceSpan buildSpan = spans.get(0);
         assertGitVariables(buildSpan, "master");
+        final Map<String, String> meta = buildSpan.getMeta();
+        assertEquals("0.1.0", meta.get(CITags.GIT_TAG));
     }
 
     @Test

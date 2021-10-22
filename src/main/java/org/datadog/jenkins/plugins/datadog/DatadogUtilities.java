@@ -955,6 +955,12 @@ public class DatadogUtilities {
         return new URL(String.format("http://%s:%d"+path, hostname, port));
     }
 
+    /**
+     * Returns a java.lang.Map of String,String based on the EnvVars object.
+     * If EnvVars object is null, returns an empty map.
+     * @param envVars
+     * @return map
+     */
     public static Map<String, String> toMap(EnvVars envVars) {
         if(envVars == null) {
             return Collections.emptyMap();

@@ -210,7 +210,7 @@ public class DatadogTraceBuildLogic {
         }
 
         // Check if the user set manually the DD_GIT_TAG environment variable.
-        // Otherwise, Jenkins reports the tag in the GIT_BRANCH information.
+        // Otherwise, Jenkins reports the tag in the Git branch information. (e.g. origin/tags/0.1.0)
         final String gitTag = Optional.of(buildData.getGitTag("").isEmpty() ? updatedBuildData.getGitTag("") : buildData.getGitTag(""))
                 .filter(tag -> !tag.isEmpty())
                 .orElse(normalizeTag(rawGitBranch));

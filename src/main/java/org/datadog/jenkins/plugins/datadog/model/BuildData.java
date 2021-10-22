@@ -342,10 +342,15 @@ public class BuildData implements Serializable {
 
     /**
      * Populate the information related to the commit (message, author and committer) based on the GitCommitAction
+     * only if the user has not set the value manually.
      * @param gitCommitAction
      */
     private void populateCommitInfo(GitCommitAction gitCommitAction) {
         if(gitCommitAction != null) {
+            // If any value is not empty, it means that
+            // the user supplied the value manually
+            // via environment variables.
+
             if(getGitMessage("").isEmpty()){
                 this.gitMessage = gitCommitAction.getMessage();
             }
@@ -378,16 +383,18 @@ public class BuildData implements Serializable {
 
     /**
      * Return if the Run is based on Git repository checking
-     * the GIT_BRANCH environment variable.
+     * the GIT_BRANCH environment variable or the user supplied
+     * environment variables DD_GIT_REPOSITORY_URL, DD_GIT_BRANCH,
+     * DD_GIT_TAG or DD_GIT_COMMIT_SHA.
      * @param envVars
-     * @return true if GIT_BRANCH is set.
+     * @return true if GIT_BRANCH is set or the user supplied GIT information via env vars.
      */
     private boolean isGit(EnvVars envVars) {
         if(envVars == null){
             return false;
         }
 
-        return isUserSuppliedGit(envVars) || envVars.get("GIT_BRANCH") != null;
+        return isUserSuppliedGit(envVars) || envVars.get(GIT_BRANCH) != null;
     }
 
     private boolean isUserSuppliedGit(EnvVars envVars) {
@@ -395,7 +402,11 @@ public class BuildData implements Serializable {
             return false;
         }
 
-        return envVars.get(DD_GIT_REPOSITORY_URL) != null || envVars.get(DD_GIT_BRANCH) != null || envVars.get(DD_GIT_TAG) != null || envVars.get(DD_GIT_COMMIT_SHA) != null;
+        // These are the most common values the user will provide.
+        return envVars.get(DD_GIT_REPOSITORY_URL) != null ||
+                envVars.get(DD_GIT_BRANCH) != null ||
+                envVars.get(DD_GIT_TAG) != null ||
+                envVars.get(DD_GIT_COMMIT_SHA) != null;
     }
 
     /**
