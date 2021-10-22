@@ -560,9 +560,7 @@ public class DatadogTracePipelineLogic {
 
     private GitCommitAction buildGitCommitAction(Run<?, ?> run, GitClient gitClient, BuildPipelineNode pipelineNode) {
         try {
-            final String gitCommit = pipelineNode.getEnvVars().get(DD_GIT_COMMIT_SHA) != null ?
-                    pipelineNode.getEnvVars().get(DD_GIT_COMMIT_SHA) :
-                    pipelineNode.getEnvVars().get(GIT_COMMIT);
+            final String gitCommit = GitUtils.resolveGitCommit(pipelineNode.getEnvVars(), null);
             if(!isValidCommit(gitCommit)) {
                 return null;
             }
