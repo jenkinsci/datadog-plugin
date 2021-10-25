@@ -1,5 +1,13 @@
 Changes
 =======
+## 3.3.0 / 2021-10-25
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.2.0...datadog-3.3.0
+
+### Changes
+* [Added] Add `user.email` to the CI Visibility pipeline attributes. See [#253](https://github.com/jenkinsci/datadog-plugin/pull/253)
+* [Added] Allow setting Git information via environment variables. See [#252](https://github.com/jenkinsci/datadog-plugin/pull/252)
+
 ## 3.2.0 / 2021-09-16
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.1.2...datadog-3.2.0
