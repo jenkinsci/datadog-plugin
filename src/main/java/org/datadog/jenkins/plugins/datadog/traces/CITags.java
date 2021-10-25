@@ -31,6 +31,7 @@ public class CITags {
 
     public static final String CI_PROVIDER_NAME = "ci.provider.name";
     public static final String USER_NAME = "user.name";
+    public static final String USER_EMAIL = "user.email";
 
 
     public static final String GIT_REPOSITORY_URL = "git.repository_url";
