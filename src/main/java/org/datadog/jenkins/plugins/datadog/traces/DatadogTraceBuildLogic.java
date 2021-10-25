@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -208,7 +209,11 @@ public class DatadogTraceBuildLogic {
             buildSpan.putMeta(CITags.GIT_BRANCH, gitBranch);
         }
 
-        final String gitTag = normalizeTag(rawGitBranch);
+        // Check if the user set manually the DD_GIT_TAG environment variable.
+        // Otherwise, Jenkins reports the tag in the Git branch information. (e.g. origin/tags/0.1.0)
+        final String gitTag = Optional.of(buildData.getGitTag("").isEmpty() ? updatedBuildData.getGitTag("") : buildData.getGitTag(""))
+                .filter(tag -> !tag.isEmpty())
+                .orElse(normalizeTag(rawGitBranch));
         if(StringUtils.isNotEmpty(gitTag)) {
             buildSpan.putMeta(CITags.GIT_TAG, gitTag);
         }

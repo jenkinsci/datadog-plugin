@@ -27,16 +27,16 @@ package org.datadog.jenkins.plugins.datadog;
 
 import hudson.EnvVars;
 import hudson.ExtensionList;
-import hudson.FilePath;
 import hudson.ProxyConfiguration;
 import hudson.XmlFile;
-import hudson.console.AnnotatedLargeText;
-import hudson.model.*;
+import hudson.model.Computer;
+import hudson.model.Item;
+import hudson.model.Result;
+import hudson.model.Run;
+import hudson.model.User;
 import hudson.model.labels.LabelAtom;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.ObjectUtils.Null;
 import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
@@ -53,22 +53,24 @@ import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.pipeline.StageStatus;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
-import org.jenkinsci.plugins.workflow.actions.LogAction;
 import org.jenkinsci.plugins.workflow.actions.NotExecutedNodeAction;
 import org.jenkinsci.plugins.workflow.actions.QueueItemAction;
 import org.jenkinsci.plugins.workflow.actions.StageAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
-import org.jenkinsci.plugins.workflow.actions.TimingAction;
 import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
-import org.jenkinsci.plugins.workflow.steps.StepContext;
 
 import javax.annotation.Nonnull;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.Inet4Address;
 import java.net.MalformedURLException;
@@ -77,7 +79,16 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TimeZone;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -894,34 +905,6 @@ public class DatadogUtilities {
     }
 
     /**
-     * Returns the Git repository URL based on the EnvVars.
-     *
-     * Sometimes multiple repositories can be involved (e.g. forks).
-     * Jenkins can use the pattern GIT_URL_N with N {1,2,…}.
-     * By convention, GIT_URL_1 should be the same as GIT_URL
-     *
-     * @param envVars
-     * @return git repository URL
-     */
-    public static String getGitRepositoryUrl(final EnvVars envVars) {
-        return getGitRepositoryUrl(envVars.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
-    }
-
-    /**
-     * Returns the Git repository URL based on the EnvVars.
-     *
-     * Sometimes multiple repositories can be involved (e.g. forks).
-     * Jenkins can use the pattern GIT_URL_N with N {1,2,…}.
-     * By convention, GIT_URL_1 should be the same as GIT_URL
-     *
-     * @param envVars
-     * @return git repository URL
-     */
-    public static String getGitRepositoryUrl(final Map<String, String> envVars) {
-        return StringUtils.isNotEmpty(envVars.get("GIT_URL")) ? envVars.get("GIT_URL") : envVars.get("GIT_URL_1");
-    }
-
-    /**
      * Returns an HTTP url connection given a url object. Supports jenkins configured proxy.
      *
      * @param url - a URL object containing the URL to open a connection to.
@@ -971,6 +954,4 @@ public class DatadogUtilities {
     public static URL buildHttpURL(final String hostname, final Integer port, final String path) throws MalformedURLException {
         return new URL(String.format("http://%s:%d"+path, hostname, port));
     }
-
-
 }

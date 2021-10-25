@@ -25,8 +25,21 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.model;
 
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_BRANCH;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_DATE;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_EMAIL;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_NAME;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_DATE;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_EMAIL;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_NAME;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_MESSAGE;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_SHA;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_REPOSITORY_URL;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_TAG;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_BRANCH;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isCommitInfoAlreadyCreated;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isRepositoryInfoAlreadyCreated;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isUserSuppliedGit;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidRepositoryURL;
 
@@ -93,6 +106,7 @@ public class BuildData implements Serializable {
     private String gitCommitterEmail;
     private String gitCommitterDate;
     private String gitDefaultBranch;
+    private String gitTag;
 
     // Environment variable from the promoted build plugin
     // - See https://plugins.jenkins.io/promoted-builds
@@ -242,10 +256,23 @@ public class BuildData implements Serializable {
         setExecutorNumber(envVars.get("EXECUTOR_NUMBER"));
         setJavaHome(envVars.get("JAVA_HOME"));
         setWorkspace(envVars.get("WORKSPACE"));
-        if (envVars.get("GIT_BRANCH") != null) {
-            setBranch(envVars.get("GIT_BRANCH"));
-            setGitUrl(DatadogUtilities.getGitRepositoryUrl(envVars));
-            setGitCommit(envVars.get("GIT_COMMIT"));
+        if (isGit(envVars)) {
+            setBranch(GitUtils.resolveGitBranch(envVars, null));
+            setGitUrl(GitUtils.resolveGitRepositoryUrl(envVars, null));
+            setGitCommit(GitUtils.resolveGitCommit(envVars, null));
+            setGitTag(GitUtils.resolveGitTag(envVars, null));
+
+            // Git data supplied by the user has prevalence. We set them first.
+            // Only the data that has not been set will be updated later.
+            // If any value is not provided, we maintained the original value if any.
+            setGitMessage(envVars.get(DD_GIT_COMMIT_MESSAGE, this.gitMessage));
+            setGitAuthorName(envVars.get(DD_GIT_COMMIT_AUTHOR_NAME, this.gitAuthorName));
+            setGitAuthorEmail(envVars.get(DD_GIT_COMMIT_AUTHOR_EMAIL, this.gitAuthorEmail));
+            setGitAuthorDate(envVars.get(DD_GIT_COMMIT_AUTHOR_DATE, this.gitAuthorDate));
+            setGitCommitterName(envVars.get(DD_GIT_COMMIT_COMMITTER_NAME, this.gitCommitterName));
+            setGitCommitterEmail(envVars.get(DD_GIT_COMMIT_COMMITTER_EMAIL, this.gitCommitterEmail));
+            setGitCommitterDate(envVars.get(DD_GIT_COMMIT_COMMITTER_DATE, this.gitCommitterDate));
+
         } else if (envVars.get("CVS_BRANCH") != null) {
             setBranch(envVars.get("CVS_BRANCH"));
         }
@@ -300,7 +327,7 @@ public class BuildData implements Serializable {
 
         final GitClient gitClient = GitUtils.newGitClient(run, listener, envVars, this.nodeName, this.workspace);
         if(isValidCommit(this.gitCommit)){
-            populateCommitInfo(GitUtils.buildGitCommitAction(run, gitClient ,this.gitCommit));
+            populateCommitInfo(GitUtils.buildGitCommitAction(run, gitClient, this.gitCommit));
         }
 
         if(isValidRepositoryURL(this.gitUrl)){
@@ -313,31 +340,58 @@ public class BuildData implements Serializable {
 
     /**
      * Populate the information related to the commit (message, author and committer) based on the GitCommitAction
+     * only if the user has not set the value manually.
      * @param gitCommitAction
      */
     private void populateCommitInfo(GitCommitAction gitCommitAction) {
         if(gitCommitAction != null) {
-            this.gitMessage = gitCommitAction.getMessage();
-            this.gitAuthorName = gitCommitAction.getAuthorName();
-            this.gitAuthorEmail = gitCommitAction.getAuthorEmail();
-            this.gitAuthorDate = gitCommitAction.getAuthorDate();
-            this.gitCommitterName = gitCommitAction.getCommitterName();
-            this.gitCommitterEmail = gitCommitAction.getCommitterEmail();
-            this.gitCommitterDate = gitCommitAction.getCommitterDate();
+            // If any value is not empty, it means that
+            // the user supplied the value manually
+            // via environment variables.
+
+            if(getGitMessage("").isEmpty()){
+                setGitMessage(gitCommitAction.getMessage());
+            }
+
+            if(getGitAuthorName("").isEmpty()){
+                setGitAuthorName(gitCommitAction.getAuthorName());
+            }
+
+            if(getGitAuthorEmail("").isEmpty()) {
+                setGitAuthorEmail(gitCommitAction.getAuthorEmail());
+            }
+
+            if(getGitAuthorDate("").isEmpty()){
+                setGitAuthorDate(gitCommitAction.getAuthorDate());
+            }
+
+            if(getGitCommitterName("").isEmpty()){
+                setGitCommitterName(gitCommitAction.getCommitterName());
+            }
+
+            if(getGitCommitterEmail("").isEmpty()){
+                setGitCommitterEmail(gitCommitAction.getCommitterEmail());
+            }
+
+            if(getGitCommitterDate("").isEmpty()){
+                setGitCommitterDate(gitCommitAction.getCommitterDate());
+            }
         }
     }
 
     /**
      * Return if the Run is based on Git repository checking
-     * the GIT_BRANCH environment variable.
+     * the GIT_BRANCH environment variable or the user supplied
+     * environment variables.
      * @param envVars
-     * @return true if GIT_BRANCH is set.
+     * @return true if GIT_BRANCH is set or the user supplied GIT information via env vars.
      */
     private boolean isGit(EnvVars envVars) {
         if(envVars == null){
             return false;
         }
-        return envVars.get("GIT_BRANCH") != null;
+
+        return isUserSuppliedGit(envVars) || envVars.get(GIT_BRANCH) != null;
     }
 
     /**
@@ -650,6 +704,14 @@ public class BuildData implements Serializable {
 
     public void setGitDefaultBranch(String gitDefaultBranch) {
         this.gitDefaultBranch = gitDefaultBranch;
+    }
+
+    public String getGitTag(String value) {
+        return defaultIfNull(gitTag, value);
+    }
+
+    public void setGitTag(String gitTag) {
+        this.gitTag = gitTag;
     }
 
     public String getPromotedUrl(String value) {

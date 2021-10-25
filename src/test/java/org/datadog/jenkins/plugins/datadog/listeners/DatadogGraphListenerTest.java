@@ -1,6 +1,18 @@
 package org.datadog.jenkins.plugins.datadog.listeners;
 
 import static org.datadog.jenkins.plugins.datadog.traces.CITags.Values.ORIGIN_CIAPP_PIPELINE;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_BRANCH;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_DATE;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_EMAIL;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_NAME;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_DATE;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_EMAIL;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_NAME;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_MESSAGE;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_SHA;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_DEFAULT_BRANCH;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_REPOSITORY_URL;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_TAG;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -312,6 +324,97 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         for(TraceSpan span : spans) {
             assertEquals("https://github.com/johndoe/foobar.git", span.getMeta().get(CITags.GIT_REPOSITORY_URL));
         }
+    }
+
+    @Test
+    public void testUserSuppliedGitWithoutCommitInfo() throws Exception {
+        Jenkins jenkins = jenkinsRule.jenkins;
+        final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
+        EnvVars env = prop.getEnvVars();
+        env.put(DD_GIT_REPOSITORY_URL, "https://github.com/johndoe/foobar.git");
+        env.put(DD_GIT_BRANCH, "master");
+        env.put(DD_GIT_COMMIT_SHA, "401d997a6eede777602669ccaec059755c98161f");
+        env.put(DD_GIT_TAG, "0.1.0");
+
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationUserSuppliedGitWithoutCommitInfo");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineSuccess.txt"),
+                "UTF-8"
+        );
+
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        final FilePath ws = jenkins.getWorkspaceFor(job);
+        env.put("NODE_NAME", "master");
+        env.put("WORKSPACE", ws.getRemote());
+        InputStream gitZip = getClass().getClassLoader().getResourceAsStream("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
+        if(gitZip != null) {
+            ws.unzipFrom(gitZip);
+        }
+        jenkins.getGlobalNodeProperties().add(prop);
+        job.scheduleBuild2(0).get();
+
+        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(3);
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(3, spans.size());
+        final TraceSpan buildSpan = spans.get(0);
+        assertGitVariables(buildSpan, "master");
+        final Map<String, String> meta = buildSpan.getMeta();
+        assertEquals("0.1.0", meta.get(CITags.GIT_TAG));
+    }
+
+    @Test
+    public void testUserSuppliedGitWithCommitInfo() throws Exception {
+        Jenkins jenkins = jenkinsRule.jenkins;
+        final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
+        EnvVars env = prop.getEnvVars();
+        env.put(DD_GIT_REPOSITORY_URL, "https://github.com/johndoe/foobar.git");
+        env.put(DD_GIT_BRANCH, "master");
+        env.put(DD_GIT_COMMIT_SHA, "401d997a6eede777602669ccaec059755c98161f");
+        env.put(DD_GIT_COMMIT_MESSAGE, "hardcoded-message");
+        env.put(DD_GIT_COMMIT_AUTHOR_NAME, "hardcoded-author-name");
+        env.put(DD_GIT_COMMIT_AUTHOR_EMAIL, "hardcoded-author-email");
+        env.put(DD_GIT_COMMIT_AUTHOR_DATE, "hardcoded-author-date");
+        env.put(DD_GIT_COMMIT_COMMITTER_NAME, "hardcoded-committer-name");
+        env.put(DD_GIT_COMMIT_COMMITTER_EMAIL, "hardcoded-committer-email");
+        env.put(DD_GIT_COMMIT_COMMITTER_DATE, "hardcoded-committer-date");
+        final String defaultBranch = "refs/heads/hardcoded-master";
+        env.put(DD_GIT_DEFAULT_BRANCH, defaultBranch);
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationUserSuppliedGitWithCommitInfo");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineSuccess.txt"),
+                "UTF-8"
+        );
+
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        final FilePath ws = jenkins.getWorkspaceFor(job);
+        env.put("NODE_NAME", "master");
+        env.put("WORKSPACE", ws.getRemote());
+        InputStream gitZip = getClass().getClassLoader().getResourceAsStream("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
+        if(gitZip != null) {
+            ws.unzipFrom(gitZip);
+        }
+        jenkins.getGlobalNodeProperties().add(prop);
+        job.scheduleBuild2(0).get();
+
+        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(3);
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(3, spans.size());
+        final TraceSpan buildSpan = spans.get(0);
+        final Map<String, String> meta = buildSpan.getMeta();
+        assertEquals("hardcoded-message", meta.get(CITags.GIT_COMMIT_MESSAGE));
+        assertEquals("hardcoded-author-name", meta.get(CITags.GIT_COMMIT_AUTHOR_NAME));
+        assertEquals("hardcoded-author-email", meta.get(CITags.GIT_COMMIT_AUTHOR_EMAIL));
+        assertEquals("hardcoded-author-date", meta.get(CITags.GIT_COMMIT_AUTHOR_DATE));
+        assertEquals("hardcoded-committer-name", meta.get(CITags.GIT_COMMIT_COMMITTER_NAME));
+        assertEquals("hardcoded-committer-email", meta.get(CITags.GIT_COMMIT_COMMITTER_EMAIL));
+        assertEquals("hardcoded-committer-date", meta.get(CITags.GIT_COMMIT_COMMITTER_DATE));
+        assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get(CITags.GIT_COMMIT__SHA));
+        assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get(CITags.GIT_COMMIT_SHA));
+        assertEquals("master", meta.get(CITags.GIT_BRANCH));
+        assertEquals("https://github.com/johndoe/foobar.git", meta.get(CITags.GIT_REPOSITORY_URL));
+        assertEquals("hardcoded-master", meta.get(CITags.GIT_DEFAULT_BRANCH));
     }
 
     @Test

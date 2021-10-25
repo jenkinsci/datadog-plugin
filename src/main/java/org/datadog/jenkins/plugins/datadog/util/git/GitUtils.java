@@ -1,5 +1,16 @@
 package org.datadog.jenkins.plugins.datadog.util.git;
 
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_BRANCH;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_SHA;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_DEFAULT_BRANCH;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_REPOSITORY_URL;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_TAG;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_BRANCH;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_COMMIT;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_REPOSITORY_URL;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_REPOSITORY_URL_ALT;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.USER_SUPPLIED_GIT_ENVVARS;
+
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.Executor;
@@ -8,6 +19,7 @@ import hudson.model.TaskListener;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
+import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
 import org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils;
@@ -108,7 +120,7 @@ public final class GitUtils {
             // This is needed because the automatic detection of the default branch using
             // the Git client is not always possible cause it depends on how Jenkins checkouts
             // the repository. Not always there is a symbolic reference to the default branch.
-            final String defaultBranch = GitInfoUtils.normalizeBranch(envVars.get("DD_GIT_DEFAULT_BRANCH", null));
+            final String defaultBranch = GitInfoUtils.normalizeBranch(envVars.get(DD_GIT_DEFAULT_BRANCH, null));
             LOGGER.fine("Detected default branch from environment variables: " + defaultBranch);
             if(defaultBranch != null && !defaultBranch.isEmpty()) {
                 return new RepositoryInfo(defaultBranch);
@@ -315,13 +327,128 @@ public final class GitUtils {
         }
     }
 
+    /**
+     * Check if the GitRepositoryAction has been already created and populated.
+     * Typically this method is used to avoid calculating the action multiple times.
+     * @param run
+     * @param gitRepositoryUrl
+     * @return true if the action has been created and populated.
+     */
     public static boolean isRepositoryInfoAlreadyCreated(Run<?, ?> run, final String gitRepositoryUrl) {
         final GitRepositoryAction repositoryAction = run.getAction(GitRepositoryAction.class);
         return repositoryAction != null && repositoryAction.getRepositoryURL() != null && repositoryAction.getRepositoryURL().equals(gitRepositoryUrl);
     }
 
+    /**
+     * Check if the GitCommitAction has been already created and populated.
+     * Typically this method is used to avoid calculating the action multiple times.
+     * @param run
+     * @param gitCommit
+     * @return true if the action has been created and populated.
+     */
     public static boolean isCommitInfoAlreadyCreated(Run<?, ?> run, final String gitCommit) {
         GitCommitAction commitAction = run.getAction(GitCommitAction.class);
         return commitAction != null && commitAction.getCommit() != null && commitAction.getCommit().equals(gitCommit);
+    }
+
+    /**
+     * Resolve the value for the git branch based
+     * 1: Check user supplied env var
+     * 2: Check Jenkins env var
+     * 3: Check BuildData already calculated
+     * @param envVars
+     * @param buildData
+     * @return the branch value.
+     */
+    public static String resolveGitBranch(Map<String, String> envVars, BuildData buildData) {
+        if(StringUtils.isNotEmpty(envVars.get(DD_GIT_BRANCH))){
+            return envVars.get(DD_GIT_BRANCH);
+        } else if (StringUtils.isNotEmpty(envVars.get(GIT_BRANCH))){
+            return envVars.get(GIT_BRANCH);
+        } else if(buildData != null){
+            return buildData.getBranch("");
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Resolve the value for the git commit sha based
+     * 1: Check user supplied env var
+     * 2: Check Jenkins env var
+     * 3: Check BuildData already calculated
+     * @param envVars
+     * @param buildData
+     * @return the commit sha value.
+     */
+    public static String resolveGitCommit(Map<String, String> envVars, BuildData buildData) {
+        if(isValidCommit(envVars.get(DD_GIT_COMMIT_SHA))){
+            return envVars.get(DD_GIT_COMMIT_SHA);
+        } else if(isValidCommit(envVars.get(GIT_COMMIT))){
+            return envVars.get(GIT_COMMIT);
+        } else if(buildData != null){
+            return buildData.getGitCommit("");
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Resolve the value for the git repository url based
+     * 1: Check user supplied env var
+     * 2: Check Jenkins env var
+     * 3: Check BuildData already calculated
+     * @param envVars
+     * @param buildData
+     * @return the git repository url value.
+     */
+    public static String resolveGitRepositoryUrl(Map<String, String> envVars, BuildData buildData) {
+        if(isValidRepositoryURL(envVars.get(DD_GIT_REPOSITORY_URL))){
+            return envVars.get(DD_GIT_REPOSITORY_URL);
+        } else if(isValidRepositoryURL(envVars.get(GIT_REPOSITORY_URL))) {
+            return envVars.get(GIT_REPOSITORY_URL);
+        } else if(isValidRepositoryURL(envVars.get(GIT_REPOSITORY_URL_ALT))){
+            return envVars.get(GIT_REPOSITORY_URL_ALT);
+        } else if(buildData != null){
+            return buildData.getGitUrl("");
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Resolve the value for the git tag based
+     * 1: Check user supplied env var
+     * 3: Check BuildData already calculated
+     * @param envVars
+     * @param buildData
+     * @return the git tag value.
+     */
+    public static String resolveGitTag(Map<String, String> envVars, BuildData buildData) {
+        if(StringUtils.isNotEmpty(envVars.get(DD_GIT_TAG))){
+            return envVars.get(DD_GIT_TAG);
+        } else if(buildData != null){
+            return buildData.getGitTag("");
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Check if the env vars map contains any environment variable with Git information supplied by the user manually.
+     * @param envVars the environment variables
+     * @return true if any of the env vars is not empty.
+     */
+    public static boolean isUserSuppliedGit(Map<String, String> envVars) {
+        if(envVars == null) {
+            return false;
+        }
+
+        for (final String key : USER_SUPPLIED_GIT_ENVVARS) {
+            if (StringUtils.isNotEmpty(envVars.get(key))) {
+                return true;
+            }
+        }
+        return false;
     }
 }
