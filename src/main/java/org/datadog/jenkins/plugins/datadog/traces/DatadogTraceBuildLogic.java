@@ -11,7 +11,6 @@ import hudson.model.Result;
 import hudson.model.Run;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.transport.HttpClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
@@ -20,6 +19,7 @@ import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
+import org.datadog.jenkins.plugins.datadog.transport.HttpClient;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.json.JsonUtils;
 
@@ -121,6 +121,9 @@ public class DatadogTraceBuildLogic {
         buildSpan.putMeta(CITags._DD_CI_LEVEL, buildLevel);
         buildSpan.putMeta(CITags._DD_ORIGIN, ORIGIN_CIAPP_PIPELINE);
         buildSpan.putMeta(CITags.USER_NAME, buildData.getUserId());
+        if(StringUtils.isNotEmpty(buildData.getUserEmail(""))){
+            buildSpan.putMeta(CITags.USER_EMAIL, buildData.getUserEmail(""));
+        }
         buildSpan.putMeta(prefix + CITags._ID, buildData.getBuildTag(""));
         buildSpan.putMeta(prefix + CITags._NUMBER, buildData.getBuildNumber(""));
         buildSpan.putMeta(prefix + CITags._URL, buildData.getBuildUrl(""));

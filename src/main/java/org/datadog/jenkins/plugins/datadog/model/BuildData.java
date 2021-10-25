@@ -25,7 +25,6 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.model;
 
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_BRANCH;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_DATE;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_EMAIL;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_NAME;
@@ -33,9 +32,6 @@ import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_C
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_EMAIL;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_NAME;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_MESSAGE;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_SHA;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_REPOSITORY_URL;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_TAG;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_BRANCH;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isCommitInfoAlreadyCreated;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isRepositoryInfoAlreadyCreated;
@@ -54,10 +50,13 @@ import hudson.model.Run;
 import hudson.model.StringParameterValue;
 import hudson.model.TaskListener;
 import hudson.model.TextParameterValue;
+import hudson.model.User;
+import hudson.tasks.Mailer;
 import hudson.triggers.SCMTrigger;
 import hudson.triggers.TimerTrigger;
 import hudson.util.LogTaskListener;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
@@ -124,6 +123,7 @@ public class BuildData implements Serializable {
     private boolean isCompleted;
     private String hostname;
     private String userId;
+    private String userEmail;
     private Map<String, Set<String>> tags;
 
     private Long startTime;
@@ -178,6 +178,11 @@ public class BuildData implements Serializable {
         setJenkinsUrl(DatadogUtilities.getJenkinsUrl());
         // Set UserId
         setUserId(getUserId(run));
+        // Set UserEmail
+        if(StringUtils.isEmpty(getUserEmail(""))){
+            setUserEmail(getUserEmailByUserId(getUserId()));
+        }
+
         // Set Result and completed status
         setResult(run.getResult() == null ? null : run.getResult().toString());
         setCompleted(run.getResult() != null && run.getResult().completeBuild);
@@ -835,6 +840,37 @@ public class BuildData implements Serializable {
             }
         }
         return null;
+    }
+
+    public String getUserEmail(final String value) {
+        return defaultIfNull(this.userEmail, value);
+    }
+
+    private String getUserEmailByUserId(String userId) {
+        try {
+            if(StringUtils.isEmpty(userId)) {
+                return null;
+            }
+
+            final User user = User.getById(userId, false);
+            if(user == null){
+                return null;
+            }
+
+            final Mailer.UserProperty mailInfo = user.getProperty(Mailer.UserProperty.class);
+            if(mailInfo != null) {
+                return mailInfo.getEmailAddress();
+            }
+
+            return null;
+        } catch (Throwable ex) {
+            DatadogUtilities.severe(LOGGER, ex, "Failed to obtain the user email associated with the user " + userId);
+            return null;
+        }
+    }
+
+    public void setUserEmail(final String userEmail) {
+        this.userEmail = userEmail;
     }
 
     public void setTraceId(String traceId) {
