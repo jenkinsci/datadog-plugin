@@ -320,7 +320,7 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 
 #### Log Collection for Agents
 
-**Note**: This configuration only applies to those using the [Datadog Agent configuration](#dogstatsd-forwarding-plugin).
+**Note**: This configuration only applies to those using the [Datadog Agent configuration](##plugin-user-interface).
 
 1. Collecting logs is disabled by default in the Datadog Agent, enable it in your `datadog.yaml` file:
 
@@ -338,7 +338,7 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
         source: jenkins
     ```
 
-3. In Jenkins, submit the port you specified above as the `Log Collection Port`. You can set this using [env vars](#dogstatsd-forwarding-env), a [groovy script](#dogstatsd-forwarding-groovy-script), or the [Jenkins UI](#dogstatsd-forwarding-plugin).
+3. In Jenkins, submit the port you specified above as the `Log Collection Port`. You can set this using [environment variables](#environment-variables), a [Groovy script](#groovy-script), or the [Jenkins UI](#plugin-user-interface).
 
 4. [Restart the Agent][14].
 
