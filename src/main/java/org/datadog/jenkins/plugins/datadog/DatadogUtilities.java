@@ -954,19 +954,4 @@ public class DatadogUtilities {
     public static URL buildHttpURL(final String hostname, final Integer port, final String path) throws MalformedURLException {
         return new URL(String.format("http://%s:%d"+path, hostname, port));
     }
-
-    /**
-     * Returns a java.lang.Map of String,String based on the EnvVars object.
-     * If EnvVars object is null, returns an empty map.
-     * @param envVars
-     * @return map
-     */
-    public static Map<String, String> toMap(EnvVars envVars) {
-        if(envVars == null) {
-            return Collections.emptyMap();
-        }
-
-        return envVars.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
-
 }

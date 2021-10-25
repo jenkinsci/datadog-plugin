@@ -9,6 +9,7 @@ import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_BRAN
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_COMMIT;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_REPOSITORY_URL;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_REPOSITORY_URL_ALT;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.USER_SUPPLIED_GIT_ENVVARS;
 
 import hudson.EnvVars;
 import hudson.FilePath;
@@ -28,7 +29,6 @@ import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 import org.jenkinsci.plugins.workflow.FilePathUtils;
 
-import javax.xml.crypto.Data;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
@@ -432,5 +432,23 @@ public final class GitUtils {
         } else {
             return null;
         }
+    }
+
+    /**
+     * Check if the env vars map contains any environment variable with Git information supplied by the user manually.
+     * @param envVars the environment variables
+     * @return true if any of the env vars is not empty.
+     */
+    public static boolean isUserSuppliedGit(Map<String, String> envVars) {
+        if(envVars == null) {
+            return false;
+        }
+
+        for (final String key : USER_SUPPLIED_GIT_ENVVARS) {
+            if (StringUtils.isNotEmpty(envVars.get(key))) {
+                return true;
+            }
+        }
+        return false;
     }
 }

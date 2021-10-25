@@ -37,9 +37,9 @@ import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_C
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_REPOSITORY_URL;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_TAG;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_BRANCH;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_COMMIT;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isCommitInfoAlreadyCreated;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isRepositoryInfoAlreadyCreated;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isUserSuppliedGit;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidRepositoryURL;
 
@@ -72,7 +72,6 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -258,11 +257,10 @@ public class BuildData implements Serializable {
         setJavaHome(envVars.get("JAVA_HOME"));
         setWorkspace(envVars.get("WORKSPACE"));
         if (isGit(envVars)) {
-            final Map<String, String> envVarsMap = DatadogUtilities.toMap(envVars);
-            setBranch(GitUtils.resolveGitBranch(envVarsMap, null));
-            setGitUrl(GitUtils.resolveGitRepositoryUrl(envVarsMap, null));
-            setGitCommit(GitUtils.resolveGitCommit(envVarsMap, null));
-            setGitTag(GitUtils.resolveGitTag(envVarsMap, null));
+            setBranch(GitUtils.resolveGitBranch(envVars, null));
+            setGitUrl(GitUtils.resolveGitRepositoryUrl(envVars, null));
+            setGitCommit(GitUtils.resolveGitCommit(envVars, null));
+            setGitTag(GitUtils.resolveGitTag(envVars, null));
 
             // Git data supplied by the user has prevalence. We set them first.
             // Only the data that has not been set will be updated later.
@@ -352,31 +350,31 @@ public class BuildData implements Serializable {
             // via environment variables.
 
             if(getGitMessage("").isEmpty()){
-                this.gitMessage = gitCommitAction.getMessage();
+                setGitMessage(gitCommitAction.getMessage());
             }
 
             if(getGitAuthorName("").isEmpty()){
-                this.gitAuthorName = gitCommitAction.getAuthorName();
+                setGitAuthorName(gitCommitAction.getAuthorName());
             }
 
             if(getGitAuthorEmail("").isEmpty()) {
-                this.gitAuthorEmail = gitCommitAction.getAuthorEmail();
+                setGitAuthorEmail(gitCommitAction.getAuthorEmail());
             }
 
             if(getGitAuthorDate("").isEmpty()){
-                this.gitAuthorDate = gitCommitAction.getAuthorDate();
+                setGitAuthorDate(gitCommitAction.getAuthorDate());
             }
 
             if(getGitCommitterName("").isEmpty()){
-                this.gitCommitterName = gitCommitAction.getCommitterName();
+                setGitCommitterName(gitCommitAction.getCommitterName());
             }
 
             if(getGitCommitterEmail("").isEmpty()){
-                this.gitCommitterEmail = gitCommitAction.getCommitterEmail();
+                setGitCommitterEmail(gitCommitAction.getCommitterEmail());
             }
 
             if(getGitCommitterDate("").isEmpty()){
-                this.gitCommitterDate = gitCommitAction.getCommitterDate();
+                setGitCommitterDate(gitCommitAction.getCommitterDate());
             }
         }
     }
@@ -384,8 +382,7 @@ public class BuildData implements Serializable {
     /**
      * Return if the Run is based on Git repository checking
      * the GIT_BRANCH environment variable or the user supplied
-     * environment variables DD_GIT_REPOSITORY_URL, DD_GIT_BRANCH,
-     * DD_GIT_TAG or DD_GIT_COMMIT_SHA.
+     * environment variables.
      * @param envVars
      * @return true if GIT_BRANCH is set or the user supplied GIT information via env vars.
      */
@@ -395,18 +392,6 @@ public class BuildData implements Serializable {
         }
 
         return isUserSuppliedGit(envVars) || envVars.get(GIT_BRANCH) != null;
-    }
-
-    private boolean isUserSuppliedGit(EnvVars envVars) {
-        if(envVars == null) {
-            return false;
-        }
-
-        // These are the most common values the user will provide.
-        return envVars.get(DD_GIT_REPOSITORY_URL) != null ||
-                envVars.get(DD_GIT_BRANCH) != null ||
-                envVars.get(DD_GIT_TAG) != null ||
-                envVars.get(DD_GIT_COMMIT_SHA) != null;
     }
 
     /**
