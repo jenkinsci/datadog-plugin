@@ -31,7 +31,22 @@ import hudson.Extension;
 import hudson.model.AbstractProject;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
+import hudson.util.ListBoxModel;
+import hudson.model.Item;
+import hudson.security.ACL;
+
 import jenkins.model.GlobalConfiguration;
+import jenkins.model.Jenkins;
+
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.Credentials;
+import com.cloudbees.plugins.credentials.common.AbstractIdCredentialsListBoxModel;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.cloudbees.plugins.credentials.common.IdCredentials;
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
@@ -45,10 +60,12 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.interceptor.RequirePOST;
+import org.kohsuke.stapler.AncestorInPath;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
 import java.util.logging.Logger;
+import java.util.Collections;
 
 @Extension
 public class DatadogGlobalConfiguration extends GlobalConfiguration {
@@ -108,6 +125,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private String targetApiURL = DEFAULT_TARGET_API_URL_VALUE;
     private String targetLogIntakeURL = DEFAULT_TARGET_LOG_INTAKE_URL_VALUE;
     private Secret targetApiKey = null;
+    private Secret targetCredentialsApiKey = null;
     private String targetHost = DEFAULT_TARGET_HOST_VALUE;
     private Integer targetPort = DEFAULT_TARGET_PORT_VALUE;
     private Integer targetLogCollectionPort = DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE;
@@ -324,6 +342,63 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         }
     }
 
+    public ListBoxModel doFillTargetCredentialsApiKeyItems(
+        @AncestorInPath Item item,
+        @QueryParameter String targetCredentialsApiKey
+        ) {
+        StandardListBoxModel result = new StandardListBoxModel();
+        if (item == null) {
+            if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
+                return result.includeCurrentValue(targetCredentialsApiKey);
+            }
+        } else {
+            if (!item.hasPermission(Item.EXTENDED_READ)
+                && !item.hasPermission(CredentialsProvider.USE_ITEM)) {
+                return result.includeCurrentValue(targetCredentialsApiKey);
+            }
+        }
+        AbstractIdCredentialsListBoxModel newResult = result.includeEmptyValue()
+            .includeMatchingAs(ACL.SYSTEM,
+                               Jenkins.get(),
+                               StandardCredentials.class,
+                               Collections.emptyList(),
+                               CredentialsMatchers.instanceOf(StandardCredentials.class))
+            .includeCurrentValue(targetCredentialsApiKey);
+        return newResult;
+    }
+
+    
+    public FormValidation doCheckCredentialsId(
+        @AncestorInPath Item item,
+        @QueryParameter String targetCredentialsApiKey
+    ) {
+        if (item == null) {
+            if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
+                return FormValidation.ok();
+            }
+        } else {
+            if (!item.hasPermission(Item.EXTENDED_READ)
+                && !item.hasPermission(CredentialsProvider.USE_ITEM)) {
+                return FormValidation.ok(); 
+            }
+        }
+        if (StringUtils.isBlank(targetCredentialsApiKey)) {
+            return FormValidation.ok();
+        }
+        if (targetCredentialsApiKey.startsWith("${") && targetCredentialsApiKey.endsWith("}")) {
+            return FormValidation.warning("Cannot validate expression based credentials");
+        }
+        /*
+        if (CredentialsProvider.listCredentials(StandardCredentials.class,
+                        ACL.SYSTEM, 
+                        CredentialsMatchers.withId(targetCredentialsApiKey)).isEmpty()) {
+            return FormValidation.error("Cannot find currently selected credentials");
+        }
+        */
+        return FormValidation.ok();
+    }
+    
+
     /**
      * Tests the hostname field from the configuration screen, to determine if
      * the hostname is of a valid format, according to the RFC 1123.
@@ -495,8 +570,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             final String reportWith = formData.getString("reportWith");
             this.setReportWith(reportWith);
             this.setTargetApiURL(formData.getString("targetApiURL"));
-            this.setTargetLogIntakeURL(formData.getString("targetLogIntakeURL"));
+            this.setTargetLogIntakeURL(formData.getString("targetLogIntakeURL"));       
             this.setTargetApiKey(formData.getString("targetApiKey"));
+            if (this.targetCredentialsApiKey != null) {
+                this.setTargetApiKey(formData.getString("targetCredentialsApiKey"));
+            }
             this.setTargetHost(formData.getString("targetHost"));
             String portStr = formData.getString("targetPort");
             if (validatePort(portStr)) {
