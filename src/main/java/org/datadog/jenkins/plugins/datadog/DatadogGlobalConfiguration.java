@@ -327,15 +327,25 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @param targetApiKey - A String containing the apiKey submitted from the form on the
      *                   configuration screen, which will be used to authenticate a request to the
      *                   Datadog API.
+     * @param targetCredentialsApiKey - A String containing the API key as a credential, if it is not specified,
+                         try the connection with the targetApiKey
      * @return a FormValidation object used to display a message to the user on the configuration
      * screen.
      * @throws IOException      if there is an input/output exception.
      * @throws ServletException if there is a servlet exception.
      */
     @RequirePOST
-    public FormValidation doTestConnection(@QueryParameter("targetApiKey") final String targetApiKey, @QueryParameter("targetApiURL") final String targetApiURL)
+    public FormValidation doTestConnection(@QueryParameter("targetApiKey") final String targetApiKey, 
+            @QueryParameter("targetCredentialsApiKey") final String targetCredentialsApiKey, 
+            @QueryParameter("targetApiURL") final String targetApiURL)
             throws IOException, ServletException {
-        if (DatadogHttpClient.validateDefaultIntakeConnection(targetApiURL, Secret.fromString(targetApiKey))) {
+        Boolean validApiConnection = false;
+        if (targetCredentialsApiKey != null && !StringUtils.isBlank(targetCredentialsApiKey)) {
+            validApiConnection = DatadogHttpClient.validateDefaultIntakeConnection(targetApiURL, Secret.fromString(targetCredentialsApiKey));
+        } else {
+            validApiConnection = DatadogHttpClient.validateDefaultIntakeConnection(targetApiURL, Secret.fromString(targetApiKey));
+        }
+        if (validApiConnection) {
             return FormValidation.ok("Great! Your API key is valid.");
         } else {
             return FormValidation.error("Hmmm, your API key seems to be invalid.");
