@@ -41,11 +41,8 @@ import jenkins.model.Jenkins;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.Credentials;
-import com.cloudbees.plugins.credentials.common.AbstractIdCredentialsListBoxModel;
-import com.cloudbees.plugins.credentials.common.StandardCredentials;
-import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
-import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
@@ -352,6 +349,13 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         }
     }
 
+    /**
+     * Populates the targetCredentialsApiKey field from the configuration screen with all of the valid credentials
+     *
+     * @param item - The context within which to list available credentials
+     * @param targetCredentialsApiKey - A String containing the API key as a credential
+     * @return a ListBoxModel object used to display all of the available credentials.
+     */
     public ListBoxModel doFillTargetCredentialsApiKeyItems(
         @AncestorInPath Item item,
         @QueryParameter String targetCredentialsApiKey
@@ -367,18 +371,26 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                 return result.includeCurrentValue(targetCredentialsApiKey);
             }
         }
-        AbstractIdCredentialsListBoxModel newResult = result.includeEmptyValue()
+        return result.includeEmptyValue()
             .includeMatchingAs(ACL.SYSTEM,
                                Jenkins.get(),
-                               StandardCredentials.class,
+                               StringCredentials.class,
                                Collections.emptyList(),
-                               CredentialsMatchers.instanceOf(StandardCredentials.class))
+                               CredentialsMatchers.instanceOf(StringCredentials.class))
             .includeCurrentValue(targetCredentialsApiKey);
-        return newResult;
     }
 
-    
-    public FormValidation doCheckCredentialsId(
+
+    /**
+     * Tests the targetCredentialsApiKey field from the configuration screen, to check its' validity.
+     *
+     * @param item - The context within which to list available credentials.
+     * @param targetCredentialsApiKey - A String containing the API key as a credential
+     * @return a FormValidation object used to display a message to the user on the configuration
+     * screen.
+     */
+    @RequirePOST
+    public FormValidation doCheckCredentialsApiKey(
         @AncestorInPath Item item,
         @QueryParameter String targetCredentialsApiKey
     ) {
@@ -398,16 +410,15 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         if (targetCredentialsApiKey.startsWith("${") && targetCredentialsApiKey.endsWith("}")) {
             return FormValidation.warning("Cannot validate expression based credentials");
         }
-        /*
-        if (CredentialsProvider.listCredentials(StandardCredentials.class,
+        if (CredentialsProvider.listCredentials(StringCredentials.class,
+                        item,
                         ACL.SYSTEM, 
+                        Collections.emptyList(),
                         CredentialsMatchers.withId(targetCredentialsApiKey)).isEmpty()) {
             return FormValidation.error("Cannot find currently selected credentials");
         }
-        */
         return FormValidation.ok();
     }
-    
 
     /**
      * Tests the hostname field from the configuration screen, to determine if

@@ -44,7 +44,7 @@ To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure S
 ##### HTTP forwarding
 
 1. Select the radio button next to **Use Datadog API URL and Key to report to Datadog** (selected by default).
-2. Paste your [Datadog API key][4] in the `API Key` textbox on the Jenkins configuration screen. If you would like to store your API key with the [Credentails Manager][18], create a Credentail for the API key, and select that credential in the `Datadog API Key (Select from Credentials)` dropdown.
+2. Paste your [Datadog API key][4] in the `API Key` textbox on the Jenkins configuration screen. If you would like to store your API key with the [Credentails Manager][18], create a Credential for the API key and select that credential in the `Datadog API Key (Select from Credentials)` dropdown.
 3. Test your Datadog API key by using the `Test Key` button on the Jenkins configuration screen directly below the API key textbox.
 4. (optional) Enter the hostname of the Jenkins server in the Advanced tab to include it with the events.
 5. (optional) Enter your [Datadog Log Intake URL][15] and select "Enable Log Collection" in the Advanced tab.
