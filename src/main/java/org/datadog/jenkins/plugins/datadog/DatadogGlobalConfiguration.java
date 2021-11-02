@@ -42,6 +42,7 @@ import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 
 import net.sf.json.JSONObject;
@@ -122,7 +123,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private String targetApiURL = DEFAULT_TARGET_API_URL_VALUE;
     private String targetLogIntakeURL = DEFAULT_TARGET_LOG_INTAKE_URL_VALUE;
     private Secret targetApiKey = null;
-    private Secret targetCredentialsApiKey = null;
+    private String targetCredentialsApiKey = null;
     private String targetHost = DEFAULT_TARGET_HOST_VALUE;
     private Integer targetPort = DEFAULT_TARGET_PORT_VALUE;
     private Integer targetLogCollectionPort = DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE;
@@ -316,6 +317,17 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         return FormValidation.ok("Success!");
     }
 
+    public StringCredentials getCredentialFromId(String credentialId) {
+        return CredentialsMatchers.firstOrNull(
+                CredentialsProvider.lookupCredentials(
+                    StringCredentials.class,
+                    Jenkins.get(),
+                    ACL.SYSTEM,
+                    URIRequirementBuilder.fromUri(null).build()),
+                CredentialsMatchers.allOf(CredentialsMatchers.withId(credentialId))
+        );
+    }
+
     /**
      * Tests the apiKey field from the configuration screen, to check its' validity.
      * It is used in the config.jelly resource file. See method="testConnection"
@@ -332,13 +344,16 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @throws ServletException if there is a servlet exception.
      */
     @RequirePOST
-    public FormValidation doTestConnection(@QueryParameter("targetApiKey") final String targetApiKey, 
+    public FormValidation doTestConnection(@AncestorInPath Item item,
+            @QueryParameter("targetApiKey") final String targetApiKey,
             @QueryParameter("targetCredentialsApiKey") final String targetCredentialsApiKey, 
             @QueryParameter("targetApiURL") final String targetApiURL)
             throws IOException, ServletException {
+
         Boolean validApiConnection = false;
-        if (targetCredentialsApiKey != null && !StringUtils.isBlank(targetCredentialsApiKey)) {
-            validApiConnection = DatadogHttpClient.validateDefaultIntakeConnection(targetApiURL, Secret.fromString(targetCredentialsApiKey));
+        StringCredentials credentialsApiKey = this.getCredentialFromId(targetCredentialsApiKey);
+        if (credentialsApiKey != null && !credentialsApiKey.getSecret().getPlainText().isEmpty()) {
+            validApiConnection = DatadogHttpClient.validateDefaultIntakeConnection(targetApiURL, credentialsApiKey.getSecret());
         } else {
             validApiConnection = DatadogHttpClient.validateDefaultIntakeConnection(targetApiURL, Secret.fromString(targetApiKey));
         }
@@ -593,8 +608,12 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.setTargetApiURL(formData.getString("targetApiURL"));
             this.setTargetLogIntakeURL(formData.getString("targetLogIntakeURL"));       
             this.setTargetApiKey(formData.getString("targetApiKey"));
-            if (this.targetCredentialsApiKey != null) {
-                this.setTargetApiKey(formData.getString("targetCredentialsApiKey"));
+            this.setTargetCredentialsApiKey(formData.getString("targetCredentialsApiKey"));
+
+            StringCredentials credential = getCredentialFromId(formData.getString("targetCredentialsApiKey"));
+            if (credential != null) {
+                String secretCredential = credential.getSecret().getPlainText();
+                this.setTargetApiKey(secretCredential);
             }
             this.setTargetHost(formData.getString("targetHost"));
             String portStr = formData.getString("targetPort");
@@ -772,6 +791,26 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @DataBoundSetter
     public void setTargetApiKey(final String targetApiKey) {
         this.targetApiKey = Secret.fromString(fixEmptyAndTrim(targetApiKey));
+    }
+
+    /**
+     * Getter function for the targetCredentialsApiKey global configuration.
+     *
+     * @return a String containing the ID of the targetCredentialsApiKey global configuration.
+     */
+    public String getTargetCredentialsApiKey() {
+        return targetCredentialsApiKey;
+    }
+
+    /**
+     * Setter function for the credentials apiKey global configuration.
+     *
+     * @param targetCredentialsApiKey = A string containing the plaintext representation of a
+     *            DataDog API Key
+     */
+    @DataBoundSetter
+    public void setTargetCredentialsApiKey(final String targetCredentialsApiKey) {
+        this.targetCredentialsApiKey = targetCredentialsApiKey;
     }
 
     /**
