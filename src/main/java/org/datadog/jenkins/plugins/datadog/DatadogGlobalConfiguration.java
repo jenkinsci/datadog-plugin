@@ -317,6 +317,12 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         return FormValidation.ok("Success!");
     }
 
+     /**
+     * Gets the StringCredentials object for the given credential ID
+     *
+     * @param credentialId - The Id of the credential to get
+     * @return a StringCredentials object
+     */
     public StringCredentials getCredentialFromId(String credentialId) {
         return CredentialsMatchers.firstOrNull(
                 CredentialsProvider.lookupCredentials(
@@ -344,7 +350,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @throws ServletException if there is a servlet exception.
      */
     @RequirePOST
-    public FormValidation doTestConnection(@AncestorInPath Item item,
+    public FormValidation doTestConnection(
             @QueryParameter("targetApiKey") final String targetApiKey,
             @QueryParameter("targetCredentialsApiKey") final String targetCredentialsApiKey, 
             @QueryParameter("targetApiURL") final String targetApiURL)
