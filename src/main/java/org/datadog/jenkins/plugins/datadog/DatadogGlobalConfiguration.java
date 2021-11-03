@@ -124,6 +124,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private String targetLogIntakeURL = DEFAULT_TARGET_LOG_INTAKE_URL_VALUE;
     private Secret targetApiKey = null;
     private String targetCredentialsApiKey = null;
+    private Secret usedApiKey = null;
     private String targetHost = DEFAULT_TARGET_HOST_VALUE;
     private Integer targetPort = DEFAULT_TARGET_PORT_VALUE;
     private Integer targetLogCollectionPort = DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE;
@@ -612,15 +613,9 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             final String reportWith = formData.getString("reportWith");
             this.setReportWith(reportWith);
             this.setTargetApiURL(formData.getString("targetApiURL"));
-            this.setTargetLogIntakeURL(formData.getString("targetLogIntakeURL"));       
+            this.setTargetLogIntakeURL(formData.getString("targetLogIntakeURL"));
             this.setTargetApiKey(formData.getString("targetApiKey"));
             this.setTargetCredentialsApiKey(formData.getString("targetCredentialsApiKey"));
-
-            StringCredentials credential = getCredentialFromId(formData.getString("targetCredentialsApiKey"));
-            if (credential != null) {
-                String secretCredential = credential.getSecret().getPlainText();
-                this.setTargetApiKey(secretCredential);
-            }
             this.setTargetHost(formData.getString("targetHost"));
             String portStr = formData.getString("targetPort");
             if (validatePort(portStr)) {
@@ -694,9 +689,15 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             }
             this.setCollectBuildLogs(formData.getBoolean("collectBuildLogs"));
 
+            StringCredentials credential = getCredentialFromId(this.getTargetCredentialsApiKey());
+            if (credential != null) {
+                this.setUsedApiKey(credential.getSecret());
+            } else {
+                this.setUsedApiKey(this.getTargetApiKey());
+            }
             //When form is saved....
             DatadogClient client = ClientFactory.getClient(DatadogClient.ClientType.valueOf(this.getReportWith()),
-                    this.getTargetApiURL(), this.getTargetLogIntakeURL(), this.getTargetApiKey(), this.getTargetHost(),
+                    this.getTargetApiURL(), this.getTargetLogIntakeURL(), this.getUsedApiKey(), this.getTargetHost(),
                     this.getTargetPort(), this.getTargetLogCollectionPort(), this.getTargetTraceCollectionPort(), this.getCiInstanceName());
                 // ...reinitialize the DatadogClient
             if(client == null) {
@@ -797,6 +798,25 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @DataBoundSetter
     public void setTargetApiKey(final String targetApiKey) {
         this.targetApiKey = Secret.fromString(fixEmptyAndTrim(targetApiKey));
+    }
+
+    /**
+     * Getter function for the API key global configuration.
+     *
+     * @return a Secret containing the usedApiKey global configuration.
+     */
+    public Secret getUsedApiKey() {
+        return usedApiKey;
+    }
+
+    /**
+     * Setter function for the API key global configuration..
+     *
+     * @param usedApiKey = A Secret containing the DataDog API Key
+     */
+    @DataBoundSetter
+    public void setUsedApiKey(final Secret usedApiKey) {
+        this.usedApiKey = usedApiKey;
     }
 
     /**
