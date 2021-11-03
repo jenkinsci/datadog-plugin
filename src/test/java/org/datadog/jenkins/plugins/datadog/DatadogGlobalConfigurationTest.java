@@ -32,6 +32,7 @@ public class DatadogGlobalConfigurationTest {
         Assert.assertTrue(cfg.getCredentialFromId("string-cred-id").equals(credential1));
 
         StringCredentials credential2 = new StringCredentialsImpl(CredentialsScope.SYSTEM, "string-cred-id2", "description", Secret.fromString("api-key"));
+        credentialsStore.addCredentials(Domain.global(), credential2);
         Assert.assertTrue(cfg.getCredentialFromId("string-cred-id").equals(credential1));
         Assert.assertTrue(cfg.getCredentialFromId("string-cred-id2").equals(credential2));
     }
