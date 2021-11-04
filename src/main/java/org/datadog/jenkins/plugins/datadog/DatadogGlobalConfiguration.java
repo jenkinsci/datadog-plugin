@@ -416,12 +416,12 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         @AncestorInPath Item item,
         @QueryParameter("targetCredentialsApiKey") String targetCredentialsApiKey
     ) {
+        // Don't validate for users that do not have permission to list credentials
         if (item == null) {
             if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
                 return FormValidation.ok();
             }
         } else {
-            // Don't validate for users that do not have permission to list credentials
             if (!item.hasPermission(Item.EXTENDED_READ)
                 && !item.hasPermission(CredentialsProvider.USE_ITEM)) {
                 return FormValidation.ok(); 
