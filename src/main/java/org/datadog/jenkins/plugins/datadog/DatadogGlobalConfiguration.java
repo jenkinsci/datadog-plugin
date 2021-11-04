@@ -336,6 +336,25 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     }
 
     /**
+     * Gets the correct Secret object representing the API key used for authentication to Datadog
+     * If a Credential is provided, then use the credential, if not, default to the text submission
+     *
+     * @param targetApiKey - The text API key the user submitted
+     * @param targetCredentialsApiKey - The Id of the credential the user submitted
+     * @return a Secret object representing the API key used for authentication to Datadog
+     */
+    public Secret findSecret(String apiKey, String credentialsApiKey) {
+        Secret secret = Secret.fromString(apiKey);
+        if (credentialsApiKey != null) {
+            StringCredentials credential = this.getCredentialFromId(credentialsApiKey);
+            if (credential != null && !credential.getSecret().getPlainText().isEmpty()){
+                secret = credential.getSecret();
+            }
+        }
+        return secret;
+    }
+
+     /**
      * Tests the apiKey field from the configuration screen, to check its' validity.
      * It is used in the config.jelly resource file. See method="testConnection"
      *
@@ -357,14 +376,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             @QueryParameter("targetApiURL") final String targetApiURL)
             throws IOException, ServletException {
 
-        Boolean validApiConnection = false;
-        StringCredentials credentialsApiKey = this.getCredentialFromId(targetCredentialsApiKey);
-        if (credentialsApiKey != null && !credentialsApiKey.getSecret().getPlainText().isEmpty()) {
-            validApiConnection = DatadogHttpClient.validateDefaultIntakeConnection(targetApiURL, credentialsApiKey.getSecret());
-        } else {
-            validApiConnection = DatadogHttpClient.validateDefaultIntakeConnection(targetApiURL, Secret.fromString(targetApiKey));
-        }
-        if (validApiConnection) {
+        final Secret secret = findSecret(targetApiKey, targetCredentialsApiKey);
+        if (DatadogHttpClient.validateDefaultIntakeConnection(targetApiURL, secret)) {
             return FormValidation.ok("Great! Your API key is valid.");
         } else {
             return FormValidation.error("Hmmm, your API key seems to be invalid.");
