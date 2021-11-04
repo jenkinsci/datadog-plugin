@@ -380,9 +380,10 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      */
     public ListBoxModel doFillTargetCredentialsApiKeyItems(
         @AncestorInPath Item item,
-        @QueryParameter String targetCredentialsApiKey
+        @QueryParameter("targetCredentialsApiKey") String targetCredentialsApiKey
         ) {
         StandardListBoxModel result = new StandardListBoxModel();
+        // If the users does not have permissions to list credentials, only list the current value
         if (item == null) {
             if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
                 return result.includeCurrentValue(targetCredentialsApiKey);
