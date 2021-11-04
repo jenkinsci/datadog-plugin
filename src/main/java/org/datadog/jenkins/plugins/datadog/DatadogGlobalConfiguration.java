@@ -412,15 +412,16 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * screen.
      */
     @RequirePOST
-    public FormValidation doCheckCredentialsApiKey(
+    public FormValidation doCheckTargetCredentialsApiKey(
         @AncestorInPath Item item,
-        @QueryParameter String targetCredentialsApiKey
+        @QueryParameter("targetCredentialsApiKey") String targetCredentialsApiKey
     ) {
         if (item == null) {
             if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
                 return FormValidation.ok();
             }
         } else {
+            // Don't validate for users that do not have permission to list credentials
             if (!item.hasPermission(Item.EXTENDED_READ)
                 && !item.hasPermission(CredentialsProvider.USE_ITEM)) {
                 return FormValidation.ok(); 

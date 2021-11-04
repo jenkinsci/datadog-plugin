@@ -35,6 +35,8 @@ public class DatadogGlobalConfigurationTest {
         credentialsStore.addCredentials(Domain.global(), credential2);
         Assert.assertTrue(cfg.getCredentialFromId("string-cred-id").equals(credential1));
         Assert.assertTrue(cfg.getCredentialFromId("string-cred-id2").equals(credential2));
+
+        Assert.assertNull(cfg.getCredentialFromId("string-cred-id-fake"));
     }
 
 
