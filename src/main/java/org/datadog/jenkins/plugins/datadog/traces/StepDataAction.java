@@ -4,11 +4,8 @@ import hudson.model.InvisibleAction;
 import hudson.model.Run;
 import org.datadog.jenkins.plugins.datadog.model.StepData;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
-import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 

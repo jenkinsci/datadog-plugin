@@ -29,7 +29,6 @@ import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.junit.Assert;
 import org.junit.Test;
 
-import javax.xml.crypto.Data;
 import java.util.*;
 
 public class TagsUtilTest {

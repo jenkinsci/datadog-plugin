@@ -8,7 +8,6 @@ import hudson.tasks.BatchFile;
 import hudson.tasks.Shell;
 
 import java.util.List;
-import java.util.logging.Logger;
 import jenkins.model.Jenkins.MasterComputer;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
@@ -17,7 +16,6 @@ import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;

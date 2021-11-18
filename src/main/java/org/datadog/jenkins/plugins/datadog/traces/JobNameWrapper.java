@@ -1,10 +1,8 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
-import org.apache.http.client.utils.URLEncodedUtils;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
