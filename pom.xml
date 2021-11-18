@@ -176,6 +176,7 @@
             <goals>
               <goal>check</goal>
             </goals>
+            <phase>test</phase>
           </execution>
         </executions>
         <configuration>
