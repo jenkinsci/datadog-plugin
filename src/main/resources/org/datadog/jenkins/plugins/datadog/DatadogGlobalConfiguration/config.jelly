@@ -63,7 +63,7 @@
     <f:entry title="CI Visibility (requires Datadog Agent)">
         <f:block>
             <table>
-              <f:optionalBlock name="ciVisibilityData" field="collectBuildTraces" title="Enable CI Visibility (BETA)" default="false">
+              <f:optionalBlock name="ciVisibilityData" field="collectBuildTraces" title="Enable CI Visibility" default="false">
                 <f:entry title="CI Instance Name" field="traceServiceNameEntry">
                   <f:textbox field="traceServiceName" default="${traceServiceName}" checkMethod="post" />
                 </f:entry>
