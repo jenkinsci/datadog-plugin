@@ -403,11 +403,11 @@ public final class GitUtils {
      * @return the git repository url value.
      */
     public static String resolveGitRepositoryUrl(Map<String, String> envVars, BuildData buildData) {
-        if(isValidRepositoryURL(envVars.get(DD_GIT_REPOSITORY_URL))){
+        if(StringUtils.isNotEmpty(envVars.get(DD_GIT_REPOSITORY_URL))){
             return envVars.get(DD_GIT_REPOSITORY_URL);
-        } else if(isValidRepositoryURL(envVars.get(GIT_REPOSITORY_URL))) {
+        } else if(StringUtils.isNotEmpty(envVars.get(GIT_REPOSITORY_URL))) {
             return envVars.get(GIT_REPOSITORY_URL);
-        } else if(isValidRepositoryURL(envVars.get(GIT_REPOSITORY_URL_ALT))){
+        } else if(StringUtils.isNotEmpty(envVars.get(GIT_REPOSITORY_URL_ALT))){
             return envVars.get(GIT_REPOSITORY_URL_ALT);
         } else if(buildData != null){
             return buildData.getGitUrl("");

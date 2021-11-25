@@ -418,6 +418,36 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
     }
 
     @Test
+    public void testRawRepositoryUrl() throws Exception {
+        Jenkins jenkins = jenkinsRule.jenkins;
+        final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
+        EnvVars env = prop.getEnvVars();
+        env.put(DD_GIT_REPOSITORY_URL, "not-valid-repo");
+        env.put(DD_GIT_BRANCH, "master");
+        env.put(DD_GIT_COMMIT_SHA, "401d997a6eede777602669ccaec059755c98161f");
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationRawRepositoryUrl");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineSuccess.txt"),
+                "UTF-8"
+        );
+
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        jenkins.getGlobalNodeProperties().add(prop);
+        job.scheduleBuild2(0).get();
+
+        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(3);
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(3, spans.size());
+        final TraceSpan buildSpan = spans.get(0);
+        final Map<String, String> meta = buildSpan.getMeta();
+        assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get(CITags.GIT_COMMIT__SHA));
+        assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get(CITags.GIT_COMMIT_SHA));
+        assertEquals("master", meta.get(CITags.GIT_BRANCH));
+        assertEquals("not-valid-repo", meta.get(CITags.GIT_REPOSITORY_URL));
+    }
+
+    @Test
     public void testStageNamePropagation() throws Exception{
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationStages");
         String definition = IOUtils.toString(
