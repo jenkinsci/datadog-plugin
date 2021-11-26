@@ -14,10 +14,6 @@ import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 
-import hudson.EnvVars;
-import hudson.model.Messages;
-import hudson.model.Computer;
-import hudson.slaves.OfflineCause;
 
 public class DatadogQueuePipelinePublisherTest {
     @ClassRule

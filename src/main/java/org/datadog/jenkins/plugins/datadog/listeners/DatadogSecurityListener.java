@@ -36,7 +36,6 @@ import org.datadog.jenkins.plugins.datadog.events.UserAuthenticationEventImpl;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 import javax.annotation.Nonnull;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;

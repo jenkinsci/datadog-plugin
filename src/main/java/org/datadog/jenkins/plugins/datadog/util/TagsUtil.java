@@ -26,7 +26,6 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.util;
 
 import net.sf.json.JSONArray;
-import org.datadog.jenkins.plugins.datadog.model.BuildData;
 
 import java.util.*;
 import java.util.logging.Logger;
