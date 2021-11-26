@@ -267,6 +267,34 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
     }
 
     @Test
+    public void testRawRepositoryUrl() throws Exception {
+        Jenkins jenkins = jenkinsRule.jenkins;
+        final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
+        EnvVars env = prop.getEnvVars();
+        env.put(GIT_REPOSITORY_URL, "not-valid-repo");
+        env.put(GIT_BRANCH, "master");
+        env.put(GIT_COMMIT, "401d997a6eede777602669ccaec059755c98161f");
+        jenkins.getGlobalNodeProperties().add(prop);
+
+        final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessRawRepositoryUrl");
+
+        project.scheduleBuild2(0).get();
+
+        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(1);
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(1, spans.size());
+
+        final TraceSpan buildSpan = spans.get(0);
+        final Map<String, String> meta = buildSpan.getMeta();
+
+        assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get(CITags.GIT_COMMIT__SHA));
+        assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get(CITags.GIT_COMMIT_SHA));
+        assertEquals("master", meta.get(CITags.GIT_BRANCH));
+        assertEquals("not-valid-repo", meta.get(CITags.GIT_REPOSITORY_URL));
+    }
+
+    @Test
     public void testGitAlternativeRepoUrl() throws Exception {
         Jenkins jenkins = jenkinsRule.jenkins;
         final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
