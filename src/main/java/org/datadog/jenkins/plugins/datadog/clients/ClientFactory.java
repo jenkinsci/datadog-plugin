@@ -74,7 +74,7 @@ public class ClientFactory {
             reportWith = descriptor.getReportWith();
             targetApiURL = descriptor.getTargetApiURL();
             targetLogIntakeURL = descriptor.getTargetLogIntakeURL();
-            targetApiKey = descriptor.getTargetApiKey();
+            targetApiKey = descriptor.getUsedApiKey();
             targetHost = descriptor.getTargetHost();
             targetPort = descriptor.getTargetPort();
             targetLogCollectionPort = descriptor.getTargetLogCollectionPort();

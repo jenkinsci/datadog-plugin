@@ -31,7 +31,20 @@ import hudson.Extension;
 import hudson.model.AbstractProject;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
+import hudson.util.ListBoxModel;
+import hudson.model.Item;
+import hudson.security.ACL;
+
 import jenkins.model.GlobalConfiguration;
+import jenkins.model.Jenkins;
+
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.Credentials;
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
+
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
@@ -45,10 +58,12 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.interceptor.RequirePOST;
+import org.kohsuke.stapler.AncestorInPath;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
 import java.util.logging.Logger;
+import java.util.Collections;
 
 @Extension
 public class DatadogGlobalConfiguration extends GlobalConfiguration {
@@ -108,6 +123,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private String targetApiURL = DEFAULT_TARGET_API_URL_VALUE;
     private String targetLogIntakeURL = DEFAULT_TARGET_LOG_INTAKE_URL_VALUE;
     private Secret targetApiKey = null;
+    private String targetCredentialsApiKey = null;
+    private Secret usedApiKey = null;
     private String targetHost = DEFAULT_TARGET_HOST_VALUE;
     private Integer targetPort = DEFAULT_TARGET_PORT_VALUE;
     private Integer targetLogCollectionPort = DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE;
@@ -301,7 +318,43 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         return FormValidation.ok("Success!");
     }
 
+     /**
+     * Gets the StringCredentials object for the given credential ID
+     *
+     * @param credentialId - The Id of the credential to get
+     * @return a StringCredentials object
+     */
+    public StringCredentials getCredentialFromId(String credentialId) {
+        return CredentialsMatchers.firstOrNull(
+                CredentialsProvider.lookupCredentials(
+                    StringCredentials.class,
+                    Jenkins.get(),
+                    ACL.SYSTEM,
+                    URIRequirementBuilder.fromUri(null).build()),
+                CredentialsMatchers.allOf(CredentialsMatchers.withId(credentialId))
+        );
+    }
+
     /**
+     * Gets the correct Secret object representing the API key used for authentication to Datadog
+     * If a Credential is provided, then use the credential, if not, default to the text submission
+     *
+     * @param targetApiKey - The text API key the user submitted
+     * @param targetCredentialsApiKey - The Id of the credential the user submitted
+     * @return a Secret object representing the API key used for authentication to Datadog
+     */
+    public Secret findSecret(String apiKey, String credentialsApiKey) {
+        Secret secret = Secret.fromString(apiKey);
+        if (credentialsApiKey != null) {
+            StringCredentials credential = this.getCredentialFromId(credentialsApiKey);
+            if (credential != null && !credential.getSecret().getPlainText().isEmpty()){
+                secret = credential.getSecret();
+            }
+        }
+        return secret;
+    }
+
+     /**
      * Tests the apiKey field from the configuration screen, to check its' validity.
      * It is used in the config.jelly resource file. See method="testConnection"
      *
@@ -309,19 +362,99 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @param targetApiKey - A String containing the apiKey submitted from the form on the
      *                   configuration screen, which will be used to authenticate a request to the
      *                   Datadog API.
+     * @param targetCredentialsApiKey - A String containing the API key as a credential, if it is not specified,
+                         try the connection with the targetApiKey
      * @return a FormValidation object used to display a message to the user on the configuration
      * screen.
      * @throws IOException      if there is an input/output exception.
      * @throws ServletException if there is a servlet exception.
      */
     @RequirePOST
-    public FormValidation doTestConnection(@QueryParameter("targetApiKey") final String targetApiKey, @QueryParameter("targetApiURL") final String targetApiURL)
+    public FormValidation doTestConnection(
+            @QueryParameter("targetApiKey") final String targetApiKey,
+            @QueryParameter("targetCredentialsApiKey") final String targetCredentialsApiKey, 
+            @QueryParameter("targetApiURL") final String targetApiURL)
             throws IOException, ServletException {
-        if (DatadogHttpClient.validateDefaultIntakeConnection(targetApiURL, Secret.fromString(targetApiKey))) {
+
+        final Secret secret = findSecret(targetApiKey, targetCredentialsApiKey);
+        if (DatadogHttpClient.validateDefaultIntakeConnection(targetApiURL, secret)) {
             return FormValidation.ok("Great! Your API key is valid.");
         } else {
             return FormValidation.error("Hmmm, your API key seems to be invalid.");
         }
+    }
+
+    /**
+     * Populates the targetCredentialsApiKey field from the configuration screen with all of the valid credentials
+     *
+     * @param item - The context within which to list available credentials
+     * @param targetCredentialsApiKey - A String containing the API key as a credential
+     * @return a ListBoxModel object used to display all of the available credentials.
+     */
+    public ListBoxModel doFillTargetCredentialsApiKeyItems(
+        @AncestorInPath Item item,
+        @QueryParameter("targetCredentialsApiKey") String targetCredentialsApiKey
+        ) {
+        StandardListBoxModel result = new StandardListBoxModel();
+        // If the users does not have permissions to list credentials, only list the current value
+        if (item == null) {
+            if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
+                return result.includeCurrentValue(targetCredentialsApiKey);
+            }
+        } else {
+            if (!item.hasPermission(Item.EXTENDED_READ)
+                && !item.hasPermission(CredentialsProvider.USE_ITEM)) {
+                return result.includeCurrentValue(targetCredentialsApiKey);
+            }
+        }
+        return result.includeEmptyValue()
+            .includeMatchingAs(ACL.SYSTEM,
+                               Jenkins.get(),
+                               StringCredentials.class,
+                               Collections.emptyList(),
+                               CredentialsMatchers.instanceOf(StringCredentials.class))
+            .includeCurrentValue(targetCredentialsApiKey);
+    }
+
+
+    /**
+     * Tests the targetCredentialsApiKey field from the configuration screen, to check its' validity.
+     *
+     * @param item - The context within which to list available credentials.
+     * @param targetCredentialsApiKey - A String containing the API key as a credential
+     * @return a FormValidation object used to display a message to the user on the configuration
+     * screen.
+     */
+    @RequirePOST
+    public FormValidation doCheckTargetCredentialsApiKey(
+        @AncestorInPath Item item,
+        @QueryParameter("targetCredentialsApiKey") String targetCredentialsApiKey
+    ) {
+        // Don't validate for users that do not have permission to list credentials
+        if (item == null) {
+            if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
+                return FormValidation.ok();
+            }
+        } else {
+            if (!item.hasPermission(Item.EXTENDED_READ)
+                && !item.hasPermission(CredentialsProvider.USE_ITEM)) {
+                return FormValidation.ok(); 
+            }
+        }
+        if (StringUtils.isBlank(targetCredentialsApiKey)) {
+            return FormValidation.ok();
+        }
+        if (targetCredentialsApiKey.startsWith("${") && targetCredentialsApiKey.endsWith("}")) {
+            return FormValidation.warning("Cannot validate expression based credentials");
+        }
+        if (CredentialsProvider.listCredentials(StringCredentials.class,
+                        item,
+                        ACL.SYSTEM, 
+                        Collections.emptyList(),
+                        CredentialsMatchers.withId(targetCredentialsApiKey)).isEmpty()) {
+            return FormValidation.error("Cannot find currently selected credentials");
+        }
+        return FormValidation.ok();
     }
 
     /**
@@ -497,6 +630,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.setTargetApiURL(formData.getString("targetApiURL"));
             this.setTargetLogIntakeURL(formData.getString("targetLogIntakeURL"));
             this.setTargetApiKey(formData.getString("targetApiKey"));
+            this.setTargetCredentialsApiKey(formData.getString("targetCredentialsApiKey"));
             this.setTargetHost(formData.getString("targetHost"));
             String portStr = formData.getString("targetPort");
             if (validatePort(portStr)) {
@@ -570,9 +704,15 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             }
             this.setCollectBuildLogs(formData.getBoolean("collectBuildLogs"));
 
+            StringCredentials credential = getCredentialFromId(this.getTargetCredentialsApiKey());
+            if (credential != null) {
+                this.setUsedApiKey(credential.getSecret());
+            } else {
+                this.setUsedApiKey(this.getTargetApiKey());
+            }
             //When form is saved....
             DatadogClient client = ClientFactory.getClient(DatadogClient.ClientType.valueOf(this.getReportWith()),
-                    this.getTargetApiURL(), this.getTargetLogIntakeURL(), this.getTargetApiKey(), this.getTargetHost(),
+                    this.getTargetApiURL(), this.getTargetLogIntakeURL(), this.getUsedApiKey(), this.getTargetHost(),
                     this.getTargetPort(), this.getTargetLogCollectionPort(), this.getTargetTraceCollectionPort(), this.getCiInstanceName());
                 // ...reinitialize the DatadogClient
             if(client == null) {
@@ -673,6 +813,45 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @DataBoundSetter
     public void setTargetApiKey(final String targetApiKey) {
         this.targetApiKey = Secret.fromString(fixEmptyAndTrim(targetApiKey));
+    }
+
+    /**
+     * Getter function for the API key global configuration.
+     *
+     * @return a Secret containing the usedApiKey global configuration.
+     */
+    public Secret getUsedApiKey() {
+        return usedApiKey;
+    }
+
+    /**
+     * Setter function for the API key global configuration..
+     *
+     * @param usedApiKey = A Secret containing the DataDog API Key
+     */
+    @DataBoundSetter
+    public void setUsedApiKey(final Secret usedApiKey) {
+        this.usedApiKey = usedApiKey;
+    }
+
+    /**
+     * Getter function for the targetCredentialsApiKey global configuration.
+     *
+     * @return a String containing the ID of the targetCredentialsApiKey global configuration.
+     */
+    public String getTargetCredentialsApiKey() {
+        return targetCredentialsApiKey;
+    }
+
+    /**
+     * Setter function for the credentials apiKey global configuration.
+     *
+     * @param targetCredentialsApiKey = A string containing the plaintext representation of a
+     *            DataDog API Key
+     */
+    @DataBoundSetter
+    public void setTargetCredentialsApiKey(final String targetCredentialsApiKey) {
+        this.targetCredentialsApiKey = targetCredentialsApiKey;
     }
 
     /**
