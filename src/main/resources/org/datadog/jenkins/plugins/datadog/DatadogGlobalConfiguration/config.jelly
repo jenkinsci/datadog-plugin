@@ -108,6 +108,10 @@
             <f:checkbox title="Send Security audit events" field="emitSecurityEvents" default="true" />
         </f:entry>
 
+        <f:entry title="Retry Logs" description="Retry sending a log if sending to Datadog fails">
+            <f:checkbox title="Retry Logs" field="retryLogs" default="true" />
+        </f:entry>
+
         <f:entry title="System Events">
           <f:entry description="Send system events like Node changes of states.">
             <f:checkbox title="Send System events" field="emitSystemEvents" default="true" />

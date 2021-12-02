@@ -509,6 +509,9 @@ public class DatadogAgentClient implements DatadogClient {
         }
 
         try {
+
+            final boolean retryLogs = DatadogUtilities.getDatadogGlobalDescriptor().isRetryLogs();
+
             this.ddLogger.info(payload);
 
             // We check for errors in our custom errorManager
@@ -519,8 +522,11 @@ public class DatadogAgentClient implements DatadogClient {
                 // NOTE: After a socket timeout, the first message to be sent get lost, it is only the second message
                 // that gets reported as an error in the errorManager.
                 // For this reason, we always keep the previousPayload in order to resubmit it.
-                this.ddLogger.info(previousPayload);
+                if (retryLogs) {
+                    this.ddLogger.info(previousPayload);
+                }
                 previousPayload = payload;
+
                 // we return false so that we retry to send the current payload message that still didn't get submitted.
                 return false;
             }

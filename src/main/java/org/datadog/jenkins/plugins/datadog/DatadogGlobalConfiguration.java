@@ -103,6 +103,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static final boolean DEFAULT_EMIT_CONFIG_CHANGE_EVENTS_VALUE = false;
     private static final boolean DEFAULT_COLLECT_BUILD_LOGS_VALUE = false;
     private static final boolean DEFAULT_COLLECT_BUILD_TRACES_VALUE = false;
+    private static final boolean DEFAULT_RETRY_LOGS_VALUE = true;
 
     private String reportWith = DEFAULT_REPORT_WITH_VALUE;
     private String targetApiURL = DEFAULT_TARGET_API_URL_VALUE;
@@ -124,6 +125,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private boolean emitConfigChangeEvents = DEFAULT_EMIT_CONFIG_CHANGE_EVENTS_VALUE;
     private boolean collectBuildLogs = DEFAULT_COLLECT_BUILD_LOGS_VALUE;
     private boolean collectBuildTraces = DEFAULT_COLLECT_BUILD_TRACES_VALUE;
+    private boolean retryLogs = DEFAULT_RETRY_LOGS_VALUE;
 
     @DataBoundConstructor
     public DatadogGlobalConfiguration() {
@@ -561,6 +563,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.setGlobalTags(formData.getString("globalTags"));
             this.setGlobalJobTags(formData.getString("globalJobTags"));
             this.setEmitSecurityEvents(formData.getBoolean("emitSecurityEvents"));
+            this.setRetryLogs(formData.getBoolean("retryLogs"));
             this.setEmitSystemEvents(formData.getBoolean("emitSystemEvents"));
             this.setEmitConfigChangeEvents(formData.getBoolean("emitConfigChangeEvents"));
 
@@ -968,6 +971,23 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @DataBoundSetter
     public void setEmitSecurityEvents(boolean emitSecurityEvents) {
         this.emitSecurityEvents = emitSecurityEvents;
+    }
+
+    /**
+     * @return - A {@link Boolean} indicating if the user has configured Datadog to retry sending logs.
+     */
+    public boolean isRetryLogs() {
+        return retryLogs;
+    }
+
+    /**
+     * Set the checkbox in the UI, used for Jenkins data binding
+     *
+     * @param retryLogs - The checkbox status (checked/unchecked)
+     */
+    @DataBoundSetter
+    public void setRetryLogs(boolean retryLogs) {
+        this.retryLogs = retryLogs;
     }
 
     /**
