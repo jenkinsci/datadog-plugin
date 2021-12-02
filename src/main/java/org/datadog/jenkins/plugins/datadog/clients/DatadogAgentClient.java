@@ -494,7 +494,7 @@ public class DatadogAgentClient implements DatadogClient {
         if(this.ddLogger == null) {
             boolean status = reinitializeLogger(true);
             if(!status) {
-                logger.severe("Datadog Plugin Logger could not be initialized");
+                logger.info("Datadog Plugin Logger could not be initialized");
                 return false;
             }
         }
@@ -504,7 +504,7 @@ public class DatadogAgentClient implements DatadogClient {
         Handler[] handlers = this.ddLogger.getHandlers();
         if(handlers == null || handlers.length == 0){
             this.ddLogger = null;
-            logger.severe("Datadog Plugin Logger does not have handlers");
+            logger.info("Datadog Plugin Logger does not have handlers");
             return false;
         }
 
