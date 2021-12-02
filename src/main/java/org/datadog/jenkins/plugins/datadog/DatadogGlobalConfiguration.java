@@ -86,6 +86,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static final String EMIT_SYSTEM_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS";
     private static final String EMIT_CONFIG_CHANGE_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_CONFIG_CHANGE_EVENTS";
     private static final String COLLECT_BUILD_LOGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS";
+    private static final String RETRY_LOGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_RETRY_LOGS";
 
     private static final String ENABLE_CI_VISIBILITY_PROPERTY = "DATADOG_JENKINS_PLUGIN_ENABLE_CI_VISIBILITY";
     private static final String CI_VISIBILITY_CI_INSTANCE_NAME_PROPERTY = "DATADOG_JENKINS_PLUGIN_CI_VISIBILITY_CI_INSTANCE_NAME";
@@ -239,6 +240,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         String collectBuildLogsEnvVar = System.getenv(COLLECT_BUILD_LOGS_PROPERTY);
         if(StringUtils.isNotBlank(collectBuildLogsEnvVar)){
             this.collectBuildLogs = Boolean.valueOf(collectBuildLogsEnvVar);
+        }
+
+        String retryLogsEnvVar = System.getenv(RETRY_LOGS_PROPERTY);
+        if(StringUtils.isNotBlank(retryLogsEnvVar)){
+            this.retryLogs = Boolean.valueOf(retryLogsEnvVar);
         }
 
         String enableCiVisibilityVar = System.getenv(ENABLE_CI_VISIBILITY_PROPERTY);
