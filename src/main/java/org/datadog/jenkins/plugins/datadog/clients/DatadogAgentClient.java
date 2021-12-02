@@ -239,8 +239,11 @@ public class DatadogAgentClient implements DatadogClient {
             this.ddLogger.setUseParentHandlers(false);
             //Remove all existing Handlers
             Handler[] handlers = this.ddLogger.getHandlers();
-            for(Handler h : handlers){
-                this.ddLogger.removeHandler(h);
+
+            if (handlers != null) {
+                for(Handler h : handlers){
+                    this.ddLogger.removeHandler(h);
+                }
             }
             //Add New Handler
             SocketHandler socketHandler = new SocketHandler(this.hostname, this.logCollectionPort);
@@ -498,7 +501,8 @@ public class DatadogAgentClient implements DatadogClient {
         // Check if we have handlers in our logger. This may happen when ddLogger initialization fails
         // ddLogger may not be null but may be mis-configured.
         // Reset to null to reinitialize if needed.
-        if(this.ddLogger.getHandlers().length == 0){
+        Handler[] handlers = this.ddLogger.getHandlers();
+        if(handlers == null || handlers.length == 0){
             this.ddLogger = null;
             logger.severe("Datadog Plugin Logger does not have handlers");
             return false;
