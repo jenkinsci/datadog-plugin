@@ -61,10 +61,9 @@ public class DatadogWriter {
                 return;
             }
 
-            JSONObject payload = new JSONObject();
+            JSONObject payload = buildData.addLogAttributes();
 
             payload.put("ddtags", String.join(",", TagsUtil.convertTagsToArray(this.buildData.getTags())));
-            payload = buildData.addLogAttributes(payload);
             payload.put("message", line);
             payload.put("ddsource", "jenkins");
             payload.put("service", "jenkins");
