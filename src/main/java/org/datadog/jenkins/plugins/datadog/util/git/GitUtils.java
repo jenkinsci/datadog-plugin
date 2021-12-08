@@ -92,6 +92,7 @@ public final class GitUtils {
      * Return the RevCommit for a certain commit based on the information
      * stored in a certain workspace of a certain node.
      * @param gitCommit the Git commit SHA to search info.
+     * @param gitClient the Git client used.
      * @return revCommit
      */
     public static RevCommit searchRevCommit(final GitClient gitClient, final String gitCommit) {
@@ -311,7 +312,7 @@ public final class GitUtils {
 
     /**
      * Check if the git repository URL is a valid repository
-     * @param gitRepositoryURL
+     * @param gitRepositoryURL the current git repository
      * @return true if the git repository url is a valid repository in either http or scp form.
      */
     public static boolean isValidRepositoryURL(String gitRepositoryURL) {
@@ -330,8 +331,8 @@ public final class GitUtils {
     /**
      * Check if the GitRepositoryAction has been already created and populated.
      * Typically this method is used to avoid calculating the action multiple times.
-     * @param run
-     * @param gitRepositoryUrl
+     * @param run the current run
+     * @param gitRepositoryUrl the current git respository
      * @return true if the action has been created and populated.
      */
     public static boolean isRepositoryInfoAlreadyCreated(Run<?, ?> run, final String gitRepositoryUrl) {
@@ -342,8 +343,8 @@ public final class GitUtils {
     /**
      * Check if the GitCommitAction has been already created and populated.
      * Typically this method is used to avoid calculating the action multiple times.
-     * @param run
-     * @param gitCommit
+     * @param run the current run
+     * @param gitCommit the git commit to check for
      * @return true if the action has been created and populated.
      */
     public static boolean isCommitInfoAlreadyCreated(Run<?, ?> run, final String gitCommit) {
@@ -356,8 +357,8 @@ public final class GitUtils {
      * 1: Check user supplied env var
      * 2: Check Jenkins env var
      * 3: Check BuildData already calculated
-     * @param envVars
-     * @param buildData
+     * @param envVars the user supplied env vars
+     * @param buildData the build data
      * @return the branch value.
      */
     public static String resolveGitBranch(Map<String, String> envVars, BuildData buildData) {
@@ -377,8 +378,8 @@ public final class GitUtils {
      * 1: Check user supplied env var
      * 2: Check Jenkins env var
      * 3: Check BuildData already calculated
-     * @param envVars
-     * @param buildData
+     * @param envVars the user supplied env vars
+     * @param buildData the build data
      * @return the commit sha value.
      */
     public static String resolveGitCommit(Map<String, String> envVars, BuildData buildData) {
@@ -398,8 +399,8 @@ public final class GitUtils {
      * 1: Check user supplied env var
      * 2: Check Jenkins env var
      * 3: Check BuildData already calculated
-     * @param envVars
-     * @param buildData
+     * @param envVars the user supplied env vars
+     * @param buildData the build data
      * @return the git repository url value.
      */
     public static String resolveGitRepositoryUrl(Map<String, String> envVars, BuildData buildData) {
@@ -420,8 +421,8 @@ public final class GitUtils {
      * Resolve the value for the git tag based
      * 1: Check user supplied env var
      * 3: Check BuildData already calculated
-     * @param envVars
-     * @param buildData
+     * @param envVars the user supplied environment variables
+     * @param buildData the build data
      * @return the git tag value.
      */
     public static String resolveGitTag(Map<String, String> envVars, BuildData buildData) {
