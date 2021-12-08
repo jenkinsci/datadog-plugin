@@ -347,8 +347,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * Gets the correct Secret object representing the API key used for authentication to Datadog
      * If a Credential is provided, then use the credential, if not, default to the text submission
      *
-     * @param targetApiKey - The text API key the user submitted
-     * @param targetCredentialsApiKey - The Id of the credential the user submitted
+     * @param apiKey - The text API key the user submitted
+     * @param credentialsApiKey - The Id of the credential the user submitted
      * @return a Secret object representing the API key used for authentication to Datadog
      */
     public Secret findSecret(String apiKey, String credentialsApiKey) {
