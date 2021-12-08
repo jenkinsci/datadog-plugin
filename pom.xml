@@ -15,7 +15,7 @@
   <url>https://github.com/jenkinsci/datadog-plugin</url>
   <groupId>org.datadog.jenkins.plugins</groupId>
   <artifactId>datadog</artifactId>
-  <version>3.4.1-SNAPSHOT</version>
+  <version>3.3.1-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <properties>
