@@ -4,6 +4,7 @@ Changes
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.3.0...datadog-3.4.0
 
+### Changes
 * [Added] Provide option to use Jenkins Credentials for API key input. See [#255](https://github.com/jenkinsci/datadog-plugin/pull/255).
 * [Fixed] Add more error handling on payload creation and add option to not retry sending logs. See [#260](https://github.com/jenkinsci/datadog-plugin/pull/260).
 * [Fixed] Send raw `git.repository_url` in Jenkins pipelines. See [#259](https://github.com/jenkinsci/datadog-plugin/pull/259).
