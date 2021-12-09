@@ -1,6 +1,6 @@
 Changes
 =======
-## 3.4.0 / 2021-12-03
+## 3.4.0 / 2021-12-09
 
 * [Added] Provide option to use Jenkins Credentials for API key input. See [#255](https://github.com/jenkinsci/datadog-plugin/pull/255).
 * [Fixed] Add more error handling on payload creation and add option to not retry sending logs. See [#260](https://github.com/jenkinsci/datadog-plugin/pull/260).
