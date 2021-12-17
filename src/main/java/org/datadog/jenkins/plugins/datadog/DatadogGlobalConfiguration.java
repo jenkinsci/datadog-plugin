@@ -93,7 +93,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     //Deprecated
     private static final String BLACKLIST_PROPERTY = "DATADOG_JENKINS_PLUGIN_BLACKLIST";
     private static final String WHITELIST_PROPERTY = "DATADOG_JENKINS_PLUGIN_WHITELIST";
-    
+
     private static final String GLOBAL_TAG_FILE_PROPERTY = "DATADOG_JENKINS_PLUGIN_GLOBAL_TAG_FILE";
     private static final String GLOBAL_TAGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_GLOBAL_TAGS";
     private static final String GLOBAL_JOB_TAGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_GLOBAL_JOB_TAGS";
@@ -201,7 +201,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         if(StringUtils.isNotBlank(hostnameEnvVar)){
             this.hostname = hostnameEnvVar;
         }
-        
+
         String excludedEnvVar = System.getenv(EXCLUDED_PROPERTY);
         if(StringUtils.isBlank(excludedEnvVar)){
             // backwards compatibility
@@ -212,14 +212,14 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         } else {
             this.blacklist = excludedEnvVar;
         }
-        
+
         String includedEnvVar = System.getenv(INCLUDED_PROPERTY);
         if(StringUtils.isBlank(includedEnvVar)){
             // backwards compatibility
             includedEnvVar = System.getenv(WHITELIST_PROPERTY);
             if(StringUtils.isNotBlank(includedEnvVar)){
                 this.whitelist = includedEnvVar;
-            }    
+            }
         } else {
             this.whitelist = includedEnvVar;
         }
@@ -540,7 +540,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     }
 
     public static boolean validatePort(String targetPort) {
-        return StringUtils.isNotBlank(targetPort) && StringUtils.isNumeric(targetPort) && NumberUtils.createInteger(targetPort) != 0;
+        return StringUtils.isNotBlank(targetPort) && StringUtils.isNumeric(targetPort) && NumberUtils.createInteger(targetPort) >= 0;
     }
 
     /**
@@ -694,11 +694,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             if(StringUtils.isNotBlank(this.getHostname()) && !DatadogUtilities.isValidHostname(this.getHostname())){
                 throw new FormException("Your hostname is invalid, likely because it violates the format set in RFC 1123", "hostname");
             }
-            
+
             this.setHostname(formData.getString("hostname"));
             // These config names have to be kept for backwards compatibility reasons
             this.setExcluded(formData.getString("blacklist"));
-            this.setIncluded(formData.getString("whitelist"));          
+            this.setIncluded(formData.getString("whitelist"));
             this.setGlobalTagFile(formData.getString("globalTagFile"));
             this.setGlobalTags(formData.getString("globalTags"));
             this.setGlobalJobTags(formData.getString("globalJobTags"));
@@ -1007,7 +1007,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     public String getBlacklist() {
         return blacklist;
     }
-    
+
     /**
      * Getter function for the excluded global configuration, containing
      * a comma-separated list of jobs to exclude from monitoring.
@@ -1027,7 +1027,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     public void setBlacklist(final String jobs) {
         this.blacklist = jobs;
     }
-    
+
     /**
      * Setter function for the excluded jobs global configuration,
      * accepting a comma-separated string of jobs.
@@ -1047,7 +1047,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     public String getWhitelist() {
         return whitelist;
     }
-    
+
     /**
      * Getter function for the included global configuration, containing
      * a comma-separated list of jobs to include for monitoring.
@@ -1067,7 +1067,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     public void setWhitelist(final String jobs) {
         this.whitelist = jobs;
     }
-    
+
     /**
      * Setter function for the includedd global configuration,
      * accepting a comma-separated string of jobs.
