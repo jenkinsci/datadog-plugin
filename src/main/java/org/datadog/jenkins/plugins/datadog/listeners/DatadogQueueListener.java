@@ -14,11 +14,8 @@ import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
 import javax.annotation.CheckForNull;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
 @Extension

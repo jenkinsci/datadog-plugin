@@ -40,7 +40,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.*;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 

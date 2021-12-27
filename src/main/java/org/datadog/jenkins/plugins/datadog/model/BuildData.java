@@ -881,75 +881,84 @@ public class BuildData implements Serializable {
         this.spanId = spanId;
     }
 
-    public JSONObject addLogAttributes(JSONObject payload){
-        JSONObject build = new JSONObject();
-        build.put("number", this.buildNumber);
-        build.put("id", this.buildId);
-        build.put("url", this.buildUrl);
-        payload.put("build", build);
+    public JSONObject addLogAttributes(){
 
-        JSONObject http = new JSONObject();
-        http.put("url", this.jenkinsUrl);
-        payload.put("http", http);
+        JSONObject payload = new JSONObject();
 
-        JSONObject jenkins = new JSONObject();
-        jenkins.put("node_name", this.nodeName);
-        jenkins.put("job_name", this.jobName);
-        jenkins.put("build_tag", this.buildTag);
-        jenkins.put("executor_number", this.executorNumber);
-        jenkins.put("java_home", this.javaHome);
-        jenkins.put("workspace", this.workspace);
+        try {
 
-        JSONObject promoted = new JSONObject();
-        jenkins.put("promoted", promoted);
-        if(promotedUrl != null){
-            jenkins.put("url", this.promotedUrl);
-        }
-        if(promotedJobName != null){
-            jenkins.put("job_name", this.promotedJobName);
-        }
-        if(promotedNumber != null){
-            jenkins.put("number", this.promotedNumber);
-        }
-        if(promotedId != null){
-            jenkins.put("id", this.promotedId);
-        }
-        if(promotedTimestamp != null){
-            jenkins.put("timestamp", this.promotedTimestamp);
-        }
-        if(promotedUserName != null){
-            jenkins.put("user_name", this.promotedUserName);
-        }
-        if(promotedUserId != null){
-            jenkins.put("user_id", this.promotedUserId);
-        }
-        if(promotedJobFullName != null){
-            jenkins.put("job_full_name", this.promotedJobFullName);
-        }
-        jenkins.put("result", this.result);
+            JSONObject build = new JSONObject();
+            build.put("number", this.buildNumber);
+            build.put("id", this.buildId);
+            build.put("url", this.buildUrl);
+            payload.put("build", build);
 
-        payload.put("jenkins", jenkins);
+            JSONObject http = new JSONObject();
+            http.put("url", this.jenkinsUrl);
+            payload.put("http", http);
 
-        JSONObject scm = new JSONObject();
-        scm.put("branch", this.branch);
-        scm.put("git_url", this.gitUrl);
-        scm.put("git_commit", this.gitCommit);
-        payload.put("scm", scm);
+            JSONObject jenkins = new JSONObject();
+            jenkins.put("node_name", this.nodeName);
+            jenkins.put("job_name", this.jobName);
+            jenkins.put("build_tag", this.buildTag);
+            jenkins.put("executor_number", this.executorNumber);
+            jenkins.put("java_home", this.javaHome);
+            jenkins.put("workspace", this.workspace);
 
-        JSONObject user = new JSONObject();
-        user.put("id", this.userId);
-        payload.put("usr", user);
+            JSONObject promoted = new JSONObject();
+            jenkins.put("promoted", promoted);
+            if(promotedUrl != null){
+                jenkins.put("url", this.promotedUrl);
+            }
+            if(promotedJobName != null){
+                jenkins.put("job_name", this.promotedJobName);
+            }
+            if(promotedNumber != null){
+                jenkins.put("number", this.promotedNumber);
+            }
+            if(promotedId != null){
+                jenkins.put("id", this.promotedId);
+            }
+            if(promotedTimestamp != null){
+                jenkins.put("timestamp", this.promotedTimestamp);
+            }
+            if(promotedUserName != null){
+                jenkins.put("user_name", this.promotedUserName);
+            }
+            if(promotedUserId != null){
+                jenkins.put("user_id", this.promotedUserId);
+            }
+            if(promotedJobFullName != null){
+                jenkins.put("job_full_name", this.promotedJobFullName);
+            }
+            jenkins.put("result", this.result);
 
-        payload.put("hostname", this.hostname);
+            payload.put("jenkins", jenkins);
 
-        if(traceId != null){
-            payload.put("dd.trace_id", this.traceId);
+            JSONObject scm = new JSONObject();
+            scm.put("branch", this.branch);
+            scm.put("git_url", this.gitUrl);
+            scm.put("git_commit", this.gitCommit);
+            payload.put("scm", scm);
+
+            JSONObject user = new JSONObject();
+            user.put("id", this.userId);
+            payload.put("usr", user);
+
+            payload.put("hostname", this.hostname);
+
+            if(traceId != null){
+                payload.put("dd.trace_id", this.traceId);
+            }
+
+            if(spanId != null) {
+                payload.put("dd.span_id", this.spanId);
+            }
+            return payload;
+        } catch (Exception e){
+            DatadogUtilities.severe(LOGGER, e, "Failed to construct log attributes");
+            return new JSONObject();
         }
-
-        if(spanId != null) {
-            payload.put("dd.span_id", this.spanId);
-        }
-        return payload;
     }
 
 }

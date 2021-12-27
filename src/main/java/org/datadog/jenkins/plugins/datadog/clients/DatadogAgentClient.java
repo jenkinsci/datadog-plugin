@@ -239,8 +239,11 @@ public class DatadogAgentClient implements DatadogClient {
             this.ddLogger.setUseParentHandlers(false);
             //Remove all existing Handlers
             Handler[] handlers = this.ddLogger.getHandlers();
-            for(Handler h : handlers){
-                this.ddLogger.removeHandler(h);
+
+            if (handlers != null) {
+                for(Handler h : handlers){
+                    this.ddLogger.removeHandler(h);
+                }
             }
             //Add New Handler
             SocketHandler socketHandler = new SocketHandler(this.hostname, this.logCollectionPort);
@@ -491,18 +494,24 @@ public class DatadogAgentClient implements DatadogClient {
         if(this.ddLogger == null) {
             boolean status = reinitializeLogger(true);
             if(!status) {
+                logger.info("Datadog Plugin Logger could not be initialized");
                 return false;
             }
         }
         // Check if we have handlers in our logger. This may happen when ddLogger initialization fails
         // ddLogger may not be null but may be mis-configured.
         // Reset to null to reinitialize if needed.
-        if(this.ddLogger.getHandlers().length == 0){
+        Handler[] handlers = this.ddLogger.getHandlers();
+        if(handlers == null || handlers.length == 0){
             this.ddLogger = null;
+            logger.info("Datadog Plugin Logger does not have handlers");
             return false;
         }
 
         try {
+
+            final boolean retryLogs = DatadogUtilities.getDatadogGlobalDescriptor().isRetryLogs();
+
             this.ddLogger.info(payload);
 
             // We check for errors in our custom errorManager
@@ -513,8 +522,11 @@ public class DatadogAgentClient implements DatadogClient {
                 // NOTE: After a socket timeout, the first message to be sent get lost, it is only the second message
                 // that gets reported as an error in the errorManager.
                 // For this reason, we always keep the previousPayload in order to resubmit it.
-                this.ddLogger.info(previousPayload);
+                if (retryLogs) {
+                    this.ddLogger.info(previousPayload);
+                }
                 previousPayload = payload;
+
                 // we return false so that we retry to send the current payload message that still didn't get submitted.
                 return false;
             }

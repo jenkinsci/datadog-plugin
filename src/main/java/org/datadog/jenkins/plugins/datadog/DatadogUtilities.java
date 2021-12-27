@@ -92,7 +92,6 @@ import java.util.TimeZone;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class DatadogUtilities {
 
@@ -908,6 +907,7 @@ public class DatadogUtilities {
      * Returns an HTTP url connection given a url object. Supports jenkins configured proxy.
      *
      * @param url - a URL object containing the URL to open a connection to.
+     * @param timeoutMS - the timeout in MS
      * @return a HttpURLConnection object.
      * @throws IOException if HttpURLConnection fails to open connection
      */
@@ -949,7 +949,7 @@ public class DatadogUtilities {
      * @param port - the port to use
      * @param path - the path
      * @return the HTTP URL
-     * @throws MalformedURLException
+     * @throws MalformedURLException if the URL is not in a valid format
      */
     public static URL buildHttpURL(final String hostname, final Integer port, final String path) throws MalformedURLException {
         return new URL(String.format("http://%s:%d"+path, hostname, port));

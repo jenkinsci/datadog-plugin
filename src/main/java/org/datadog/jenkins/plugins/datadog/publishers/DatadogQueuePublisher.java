@@ -37,7 +37,6 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
-import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
 import java.util.Map;
 import java.util.Set;

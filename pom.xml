@@ -15,7 +15,7 @@
   <url>https://github.com/jenkinsci/datadog-plugin</url>
   <groupId>org.datadog.jenkins.plugins</groupId>
   <artifactId>datadog</artifactId>
-  <version>3.3.1-SNAPSHOT</version>
+  <version>3.4.1-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <properties>
@@ -99,6 +99,14 @@
       <artifactId>workflow-job</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>credentials</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>plain-credentials</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.jenkins-ci.plugins.pipeline-stage-view</groupId>
       <artifactId>pipeline-rest-api</artifactId>
       <version>2.12</version>
@@ -166,6 +174,19 @@
             </manifest>
           </archive>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.3.1</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <phase>test</phase>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
