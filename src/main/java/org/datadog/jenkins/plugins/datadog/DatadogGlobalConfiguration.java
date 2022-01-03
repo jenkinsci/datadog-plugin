@@ -353,7 +353,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      */
     public Secret findSecret(String apiKey, String credentialsApiKey) {
         Secret secret = Secret.fromString(apiKey);
-        if (credentialsApiKey != null) {
+        if (credentialsApiKey != null && !StringUtils.isBlank(credentialsApiKey)) {
             StringCredentials credential = this.getCredentialFromId(credentialsApiKey);
             if (credential != null && !credential.getSecret().getPlainText().isEmpty()){
                 secret = credential.getSecret();
@@ -713,12 +713,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             }
             this.setCollectBuildLogs(formData.getBoolean("collectBuildLogs"));
 
-            StringCredentials credential = getCredentialFromId(this.getTargetCredentialsApiKey());
-            if (credential != null) {
-                this.setUsedApiKey(credential.getSecret());
-            } else {
-                this.setUsedApiKey(this.getTargetApiKey());
-            }
+            final Secret apiKeySecret = findSecret(formData.getString("targetApiKey"), formData.getString("targetCredentialsApiKey"));
+            this.setUsedApiKey(apiKeySecret);
             //When form is saved....
             DatadogClient client = ClientFactory.getClient(DatadogClient.ClientType.valueOf(this.getReportWith()),
                     this.getTargetApiURL(), this.getTargetLogIntakeURL(), this.getUsedApiKey(), this.getTargetHost(),
