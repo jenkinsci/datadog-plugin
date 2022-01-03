@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.2</version> <!-- or whatever the newest version available is -->
+    <version>4.32</version> <!-- or whatever the newest version available is -->
     <!--Check https://mvnrepository.com/artifact/org.jenkins-ci.plugins/plugin?repo=jenkins-releases-->
     <relativePath />
   </parent>
@@ -20,7 +20,7 @@
 
   <properties>
     <java.level>8</java.level>
-    <jenkins.version>2.164.1</jenkins.version>
+    <jenkins.version>2.249.1</jenkins.version>
     <hpi.compatibleSinceVersion>1.0.0</hpi.compatibleSinceVersion>
     <dd-trace-java.version>0.71.0</dd-trace-java.version>
   </properties>
@@ -65,8 +65,8 @@
     <dependencies>
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
-        <artifactId>bom-2.164.x</artifactId>
-        <version>8</version>
+        <artifactId>bom-2.249.x</artifactId>
+        <version>984.vb5eaac999a7e</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>
@@ -74,6 +74,18 @@
   </dependencyManagement>
 
   <dependencies>
+
+   <!-- Needed due to mismatch between jenkins-core and java-dogstatsd-client -->
+    <dependency>
+      <groupId>com.github.jnr</groupId>
+      <artifactId>jnr-posix</artifactId>
+      <version>3.0.53</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.jnr</groupId>
+      <artifactId>jnr-constants</artifactId>
+      <version>0.9.15</version>
+    </dependency>
 
     <dependency>
       <groupId>com.datadoghq</groupId>
