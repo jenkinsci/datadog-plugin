@@ -1,5 +1,14 @@
 Changes
 =======
+## 3.4.1 / 2022-01-04
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.4.0...datadog-3.4.1
+
+### Changes
+* [Fixed] Ban vulnerable log4j versions. See [#270](https://github.com/jenkinsci/datadog-plugin/pull/270).
+* [Fixed] Properly validate credentials API key before using. See [#268](https://github.com/jenkinsci/datadog-plugin/pull/268).
+* [Fixed] Accept "0" as a valid port value to support UDS. See [#242](https://github.com/jenkinsci/datadog-plugin/pull/242). Thanks [sa-spag](https://github.com/sa-spag).
+
 ## 3.4.0 / 2021-12-09
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.3.0...datadog-3.4.0
