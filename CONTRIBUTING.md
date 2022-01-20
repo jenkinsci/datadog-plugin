@@ -74,7 +74,7 @@ Need help? Contact [Datadog support][3]
 
 ### Javadoc
 
-Adding good documentation comments is recommended but not required. However, any documentation comments added must be properly formatted. We test that these comments are formatted in the `mvn test` phase. Alternatively, run `mvn javadoc:jar` to determine if comments are formatted correctly.
+Adding good documentation comments is recommended but not required. However, any documentation comments added must be properly formatted. Run `mvn javadoc:jar` to determine if your comments are formatted correctly.
 
 ### Issue and Pull Request Labels
 
