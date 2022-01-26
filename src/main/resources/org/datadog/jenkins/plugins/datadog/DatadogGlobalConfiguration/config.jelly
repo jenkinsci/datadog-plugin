@@ -29,13 +29,13 @@
           <f:textbox field="targetLogCollectionPort" default="${targetLogCollectionPort}" checkMethod="post" />
         </f:entry>
 
-        <f:validateButton title="${%Test connection}" progress="${%Testing...}" method="checkAgentConnectivityLogs" with="targetHost,targetLogCollectionPort" />
+        <f:validateButton title="${%Test logs connection}" progress="${%Testing...}" method="checkAgentConnectivityLogs" with="targetHost,targetLogCollectionPort" />
 
         <f:entry title="Traces Collection Port" field="targetTraceCollectionPortEntry" description="(Optional) (Required for CI Visibility)">
             <f:textbox field="targetTraceCollectionPort" default="${targetTraceCollectionPort}" checkMethod="post" />
         </f:entry>
 
-        <f:validateButton title="${%Test connection}" progress="${%Testing...}" method="checkAgentConnectivityTraces" with="targetHost,targetTraceCollectionPort" />
+        <f:validateButton title="${%Test traces connection}" progress="${%Testing...}" method="checkAgentConnectivityTraces" with="targetHost,targetTraceCollectionPort" />
     </f:radioBlock>
 
     <f:radioBlock title="Use Datadog API URL and Key to report to Datadog (not recommended)" name="reportWith" value="HTTP"
