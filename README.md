@@ -320,7 +320,7 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 
 #### Log Collection for Agents
 
-**Note**: This configuration only applies to those using the [Datadog Agent configuration](##plugin-user-interface).
+**Note**: This configuration only applies to those using the [Datadog Agent configuration](#plugin-user-interface).
 
 1. Collecting logs is disabled by default in the Datadog Agent, enable it in your `datadog.yaml` file:
 
