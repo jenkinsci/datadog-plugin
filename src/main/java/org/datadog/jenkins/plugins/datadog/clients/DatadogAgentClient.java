@@ -217,7 +217,7 @@ public class DatadogAgentClient implements DatadogClient {
             this.statsd = new NonBlockingStatsDClient(null, this.hostname, this.port);
             this.isStoppedStatsDClient = false;
         } catch (Exception e){
-            DatadogUtilities.severe(logger, e, null);
+            DatadogUtilities.severe(logger, e, "Failed to reinitialize DogStatsD Client");
             this.stopStatsDClient();
         }
 
