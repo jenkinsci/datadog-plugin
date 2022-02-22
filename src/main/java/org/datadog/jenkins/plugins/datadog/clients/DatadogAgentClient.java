@@ -52,6 +52,7 @@ import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 import java.net.ConnectException;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -86,6 +87,7 @@ public class DatadogAgentClient implements DatadogClient {
     private String previousPayload;
 
     private String hostname = null;
+    private String resolvedIp = "";
     private Integer port = null;
     private Integer logCollectionPort = null;
     private Integer traceCollectionPort = null;
@@ -206,7 +208,8 @@ public class DatadogAgentClient implements DatadogClient {
      */
     private boolean reinitializeStatsDClient(boolean force) {
         try {
-            if(!this.isStoppedStatsDClient && this.statsd != null && !force){
+            boolean refreshClient = DatadogUtilities.getDatadogGlobalDescriptor().isRefreshDogstatsdClient();
+            if(!this.isStoppedStatsDClient && this.statsd != null && !force && (!refreshClient || !this.hasIpChanged())){
                 return true;
             }
             this.stopStatsDClient();
@@ -219,6 +222,22 @@ public class DatadogAgentClient implements DatadogClient {
         }
 
         return !isStoppedStatsDClient;
+    }
+
+    private String resolveHostnameIp() throws UnknownHostException {
+        InetAddress inet = InetAddress.getByName(this.hostname);
+        String ipAddress = inet.getHostAddress();
+        return ipAddress;
+    }
+
+    private boolean hasIpChanged() throws UnknownHostException {
+        String ipAddress = this.resolveHostnameIp();
+        if (this.resolvedIp.equals(ipAddress)) {
+            return false;
+        } else {
+            this.resolvedIp = ipAddress;
+            return true;
+        }
     }
 
     /**
