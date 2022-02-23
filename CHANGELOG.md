@@ -1,5 +1,12 @@
 Changes
 =======
+## 3.5.0 / 2022-02-23
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.4.1...datadog-3.5.0
+
+* [Added] Add option to refresh statsd client when the host's IP has changed. See [#276](https://github.com/jenkinsci/datadog-plugin/pull/276).
+* [Fixed] Update `Test Connection` button text to be more clear. See [#274](https://github.com/jenkinsci/datadog-plugin/pull/274).
+
 ## 3.4.1 / 2022-01-05
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.4.0...datadog-3.4.1
