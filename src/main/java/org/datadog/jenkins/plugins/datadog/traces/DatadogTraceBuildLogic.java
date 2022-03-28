@@ -3,6 +3,7 @@ package org.datadog.jenkins.plugins.datadog.traces;
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getNormalizedResultForTraces;
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.toJson;
 import static org.datadog.jenkins.plugins.datadog.traces.CITags.Values.ORIGIN_CIAPP_PIPELINE;
+import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.filterSensitiveInfo;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
@@ -153,7 +154,7 @@ public class DatadogTraceBuildLogic {
         // Git Info
         final String gitUrl = buildData.getGitUrl("").isEmpty() ? updatedBuildData.getGitUrl("") : buildData.getGitUrl("");
         if(StringUtils.isNotEmpty(gitUrl)){
-            buildSpan.putMeta(CITags.GIT_REPOSITORY_URL, gitUrl);
+            buildSpan.putMeta(CITags.GIT_REPOSITORY_URL, filterSensitiveInfo(gitUrl));
         }
 
         final String gitCommit = buildData.getGitCommit("").isEmpty() ? updatedBuildData.getGitCommit("") : buildData.getGitCommit("");
