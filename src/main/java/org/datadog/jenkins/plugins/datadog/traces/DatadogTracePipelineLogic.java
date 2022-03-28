@@ -5,6 +5,7 @@ import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getNormalized
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.toJson;
 import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.NodeType.PIPELINE;
 import static org.datadog.jenkins.plugins.datadog.traces.CITags.Values.ORIGIN_CIAPP_PIPELINE;
+import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.filterSensitiveInfo;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_DATE;
@@ -411,7 +412,7 @@ public class DatadogTracePipelineLogic {
 
         final String gitRepoUrl = GitUtils.resolveGitRepositoryUrl(envVars, buildData);
         if (gitRepoUrl != null && !gitRepoUrl.isEmpty()) {
-            tags.put(CITags.GIT_REPOSITORY_URL, gitRepoUrl);
+            tags.put(CITags.GIT_REPOSITORY_URL, filterSensitiveInfo(gitRepoUrl));
         }
 
         // User info

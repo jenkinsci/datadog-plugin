@@ -1,5 +1,8 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 public class GitInfoUtils {
 
     private GitInfoUtils() {}
@@ -41,5 +44,24 @@ public class GitInfoUtils {
             return gitReference.replace("refs/heads/", "");
         }
         return gitReference;
+    }
+
+    /**
+     * Filters the user info given a valid HTTP URL.
+     * @param urlStr
+     * @return URL without user info.
+     */
+    public static String filterSensitiveInfo(String urlStr) {
+        if (urlStr == null || urlStr.isEmpty()) {
+            return urlStr;
+        }
+
+        try {
+            final URI url = new URI(urlStr);
+            final String userInfo = url.getRawUserInfo();
+            return urlStr.replace(userInfo + "@", "");
+        } catch (final URISyntaxException ex) {
+            return urlStr;
+        }
     }
 }
