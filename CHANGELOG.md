@@ -1,5 +1,11 @@
 Changes
 =======
+## 3.5.1 / 2022-03-28
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.5.0...datadog-3.5.1
+
+* [Fixed] Filter sensitive information in the `git.repository_url` tag. See [#281](https://github.com/jenkinsci/datadog-plugin/pull/281).
+
 ## 3.5.0 / 2022-02-23
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.4.1...datadog-3.5.0
