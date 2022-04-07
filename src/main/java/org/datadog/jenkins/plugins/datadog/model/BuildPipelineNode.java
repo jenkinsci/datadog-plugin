@@ -484,7 +484,7 @@ public class BuildPipelineNode {
             return null;
         }
 
-        return pipelineQueueInfoAction.get(node.getId());
+        return pipelineQueueInfoAction.synchronizedGet(run, node.getId());
     }
 
     private Run<?, ?> getRun(final FlowNode node) {
