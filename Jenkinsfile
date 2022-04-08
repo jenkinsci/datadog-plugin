@@ -1,4 +1,4 @@
-def comonVersion = "2.312"
+def comonVersion = "2.303.3"
 def recentLTS = "2.303.3"
 def configurations = [
     [ platform: "linux", jdk: "8", jenkins: null ],
