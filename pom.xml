@@ -20,7 +20,7 @@
 
   <properties>
     <java.level>8</java.level>
-    <jenkins.version>2.164.1</jenkins.version>
+    <jenkins.version>2.303.3</jenkins.version>
     <hpi.compatibleSinceVersion>1.0.0</hpi.compatibleSinceVersion>
     <dd-trace-java.version>0.71.0</dd-trace-java.version>
   </properties>
@@ -75,6 +75,11 @@
 
   <dependencies>
 
+    <dependency>
+      <groupId>io.jenkins.plugins</groupId>
+      <artifactId>jnr-posix-api</artifactId>
+      <version>3.1.7-1</version>
+    </dependency>
     <dependency>
       <groupId>com.datadoghq</groupId>
       <artifactId>java-dogstatsd-client</artifactId>
