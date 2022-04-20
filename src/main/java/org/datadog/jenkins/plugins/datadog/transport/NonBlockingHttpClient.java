@@ -70,7 +70,7 @@ public class NonBlockingHttpClient implements HttpClient {
                     final List<PayloadMessage> buffer = Collections.unmodifiableList(spanSendBuffer);
                     // We assume all payload messages belong to the same message type for now.
                     final PayloadMessage.Type type = buffer.get(0).getMessageType();
-                    final HttpMessage message = this.messageFactoryByType.get(type).create(messages);
+                    final HttpMessage message = this.messageFactoryByType.get(type).create(buffer);
                     this.sender.send(message);
                     spanSendBuffer.clear();
                 }
