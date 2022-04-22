@@ -25,6 +25,7 @@ import hudson.FilePath;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Label;
+import hudson.slaves.DumbSlave;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
@@ -84,18 +85,25 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
             }
         }).start();
         Thread.sleep(5000);
-        jenkinsRule.createOnlineSlave(Label.get("testBuild"));
 
-        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
-        agentHttpClient.waitForTraces(1);
-        final List<TraceSpan> spans = agentHttpClient.getSpans();
-        assertEquals(1, spans.size());
+        DumbSlave worker = null;
+        try {
+            worker = jenkinsRule.createOnlineSlave(Label.get("testBuild"));
+            final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
+            agentHttpClient.waitForTraces(1);
+            final List<TraceSpan> spans = agentHttpClient.getSpans();
+            assertEquals(1, spans.size());
 
-        final TraceSpan buildSpan = spans.get(0);
-        double queueTime = buildSpan.getMetrics().get(CITags.QUEUE_TIME);
-        assertTrue(queueTime > 0L);
-        assertTrue(queueTime > TimeUnit.NANOSECONDS.toSeconds(buildSpan.getDurationNano()));
-        assertTrue(buildSpan.getDurationNano() > 1L);
+            final TraceSpan buildSpan = spans.get(0);
+            double queueTime = buildSpan.getMetrics().get(CITags.QUEUE_TIME);
+            assertTrue(queueTime > 0L);
+            assertTrue(queueTime > TimeUnit.NANOSECONDS.toSeconds(buildSpan.getDurationNano()));
+            assertTrue(buildSpan.getDurationNano() > 1L);
+        } finally {
+            if(worker != null) {
+                jenkinsRule.disconnectSlave(worker);
+            }
+        }
     }
 
     @Test
