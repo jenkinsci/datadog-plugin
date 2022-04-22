@@ -1,15 +1,25 @@
 Changes
 =======
+## 3.5.2 / 2022-04-22
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.5.1...datadog-3.5.2
+
+### Changes
+* [Fixed] Fix `ConcurrentModificationException` when serializing `PipelineQueueInfoAction`. See [#286](https://github.com/jenkinsci/datadog-plugin/pull/286).
+* [Fixed] Use the correct payload buffer to send data for CI Visibility. See [#289](https://github.com/jenkinsci/datadog-plugin/pull/289)
+
 ## 3.5.1 / 2022-03-28
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.5.0...datadog-3.5.1
 
+### Changes
 * [Fixed] Filter sensitive information in the `git.repository_url` tag. See [#281](https://github.com/jenkinsci/datadog-plugin/pull/281).
 
 ## 3.5.0 / 2022-02-23
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.4.1...datadog-3.5.0
 
+### Changes
 * [Added] Add option to refresh statsd client when the host's IP has changed. See [#276](https://github.com/jenkinsci/datadog-plugin/pull/276).
 * [Fixed] Update `Test Connection` button text to be more clear. See [#274](https://github.com/jenkinsci/datadog-plugin/pull/274).
 
