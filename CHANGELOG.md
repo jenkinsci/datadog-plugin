@@ -9,7 +9,13 @@ https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.5.2...datadog-4.0.
 
 ### Changes
 * [Changed] Use `jnr-posix-api` plugin. See [#287](https://github.com/jenkinsci/datadog-plugin/pull/287)
-* [Fixed] Fix `ConcurrentModificationException` when serializing `PipelineQueueInfoAction`. See [#286](https://github.com/jenkinsci/datadog-plugin/pull/286)
+
+## 3.5.2 / 2022-04-22
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.5.1...datadog-3.5.2
+
+### Changes
+* [Fixed] Fix `ConcurrentModificationException` when serializing `PipelineQueueInfoAction`. See [#286](https://github.com/jenkinsci/datadog-plugin/pull/286).
 * [Fixed] Use the correct payload buffer to send data for CI Visibility. See [#289](https://github.com/jenkinsci/datadog-plugin/pull/289)
 
 ## 3.5.1 / 2022-03-28
