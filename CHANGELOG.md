@@ -1,8 +1,8 @@
 Changes
 =======
-## 4.0.0 / 2022-04-21
+## 4.0.0 / 2022-04-25
 ### Details
-https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.5.1...datadog-4.0.0
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.5.2...datadog-4.0.0
 
 * Supported Jenkins versions:
   * Jenkins >= 2.303.3
