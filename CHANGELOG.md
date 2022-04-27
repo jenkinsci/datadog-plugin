@@ -1,6 +1,6 @@
 Changes
 =======
-## 4.0.0 / 2022-04-26
+## 4.0.0 / 2022-04-27
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.5.2...datadog-4.0.0
 
