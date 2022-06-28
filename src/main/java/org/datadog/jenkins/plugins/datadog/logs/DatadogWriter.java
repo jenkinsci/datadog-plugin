@@ -67,6 +67,7 @@ public class DatadogWriter {
             payload.put("message", line);
             payload.put("ddsource", "jenkins");
             payload.put("service", "jenkins");
+            payload.put("timestamp", System.currentTimeMillis());
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
