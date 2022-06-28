@@ -416,6 +416,7 @@ public class BuildData implements Serializable {
         }
         allTags = TagsUtil.merge(allTags, tags);
         allTags = TagsUtil.addTagToTags(allTags, "job", getJobName("unknown"));
+        allTags = TagsUtil.addTagToTags(allTags, "datadog.product", "cipipeline");
 
         if (nodeName != null) {
             allTags = TagsUtil.addTagToTags(allTags, "node", getNodeName("unknown"));
