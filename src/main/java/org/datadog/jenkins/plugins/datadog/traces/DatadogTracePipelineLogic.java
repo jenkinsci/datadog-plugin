@@ -5,6 +5,7 @@ import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getNormalized
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.toJson;
 import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.NodeType.PIPELINE;
 import static org.datadog.jenkins.plugins.datadog.traces.CITags.Values.ORIGIN_CIAPP_PIPELINE;
+import static org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic.BUILT_IN_NODE_NAME;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.filterSensitiveInfo;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
@@ -428,9 +429,9 @@ public class DatadogTracePipelineLogic {
             tags.put(CITags.NODE_LABELS, nodeLabels);
         }
 
-        // If the NodeName == "master", we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
-        // If the NodeName != "master", we set _dd.hostname to 'none' explicitly, cause we cannot calculate the worker hostname.
-        if(!"master".equalsIgnoreCase(nodeName)){
+        // If the NodeName == "built-in", we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
+        // If the NodeName != "built-in", we set _dd.hostname to 'none' explicitly, cause we cannot calculate the worker hostname.
+        if(!BUILT_IN_NODE_NAME.equalsIgnoreCase(nodeName)){
             tags.put(CITags._DD_HOSTNAME, HOSTNAME_NONE);
         }
 
