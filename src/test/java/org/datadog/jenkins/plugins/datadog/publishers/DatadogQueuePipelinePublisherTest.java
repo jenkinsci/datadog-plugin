@@ -36,7 +36,7 @@ public class DatadogQueuePipelinePublisherTest {
 
         // schedule build and wait for it to get queued
         QueueTaskFuture<WorkflowRun> task = job.scheduleBuild2(0);
-        Thread.sleep(1000);
+        Thread.sleep(10000);
 
         final String[] expectedTags = new String[2];
         expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
