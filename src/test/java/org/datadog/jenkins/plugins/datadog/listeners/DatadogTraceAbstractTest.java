@@ -19,6 +19,8 @@ import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 
 import java.util.Map;
 
+import static org.junit.Assert.*;
+
 public abstract class DatadogTraceAbstractTest {
 
     protected void assertGitVariables(TraceSpan span, String defaultBranch) {
@@ -48,5 +50,18 @@ public abstract class DatadogTraceAbstractTest {
         assertNull(run.getAction(StageBreakdownAction.class));
         assertNull(run.getAction(IsPipelineAction.class));
         assertNull(run.getAction(StepTraceDataAction.class));
+    }
+
+    protected void checkHostNameTag(Map meta) {
+        assertNotNull(meta);
+        Object nodeName = meta.get(CITags.NODE_NAME);
+        assertNotNull(nodeName);
+        // if nodeName == master, should be null, otherwise should be none
+        Object hostTagVal = meta.get(CITags._DD_HOSTNAME);
+        if ("master".equals(nodeName)) {
+            assertNull(hostTagVal);
+        } else {
+            assertEquals("none", hostTagVal);
+        }
     }
 }

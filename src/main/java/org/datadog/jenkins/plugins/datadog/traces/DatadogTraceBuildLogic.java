@@ -40,7 +40,6 @@ import java.util.logging.Logger;
 public class DatadogTraceBuildLogic {
 
     private static final String HOSTNAME_NONE = "none";
-    public static final String BUILT_IN_NODE_NAME = "built-in";
     private static final int MAX_TAG_LENGTH = 5000;
     private static final Logger logger = Logger.getLogger(DatadogTraceBuildLogic.class.getName());
 
@@ -146,9 +145,9 @@ public class DatadogTraceBuildLogic {
         if(!nodeLabelsJson.isEmpty()){
             buildSpan.putMeta(CITags.NODE_LABELS, nodeLabelsJson);
         }
-        // If the NodeName == "built-in", we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
-        // If the NodeName != "built-in", we set _dd.hostname to 'none' explicitly, cause we cannot calculate the worker hostname.
-        if(!BUILT_IN_NODE_NAME.equalsIgnoreCase(nodeName)) {
+        // If the NodeName == master, we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
+        // If the NodeName != master, we set _dd.hostname to 'none' explicitly, cause we cannot calculate the worker hostname.
+        if(!"master".equalsIgnoreCase(nodeName)) {
             buildSpan.putMeta(CITags._DD_HOSTNAME, HOSTNAME_NONE);
         }
 
