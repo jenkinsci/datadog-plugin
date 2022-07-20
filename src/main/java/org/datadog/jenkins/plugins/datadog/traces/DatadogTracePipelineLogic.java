@@ -456,8 +456,7 @@ public class DatadogTracePipelineLogic {
         }
 
         // Propagate Pipeline Name
-        final JobNameWrapper jobNameWrapper = new JobNameWrapper(buildData.getJobName(""), gitBranch != null ? gitBranch : gitTag);
-        tags.put(PIPELINE.getTagName() + CITags._NAME, jobNameWrapper.getTraceJobName());
+        tags.put(PIPELINE.getTagName() + CITags._NAME, buildData.getBaseJobName(""));
         tags.put(PIPELINE.getTagName() + CITags._ID, buildData.getBuildTag(""));
 
         // Propagate Stage Name

@@ -7,31 +7,26 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Wrapper for the JobName to extract the job name and configurations for traces.
+ * Wrapper for the JobName to extract the configurations for traces.
  *
  * Example1: (Freestyle Project)
  * - Jenkins job name: jobName
- * -- TraceJobName: jobName
  * -- Configurations: EMPTY
  *
  * Example2: (Multibranch Pipeline)
  * - Jenkins job name: jobName/master
- * -- TraceJobName: jobName
  * -- Configurations: EMPTY
  *
  * Example3: (Multiconfigurations project)
  * - Jenkins job name: jobName/KEY1=VALUE1,KEY2=VALUE2/master
- * -- TraceJobName: jobName
  * -- Configurations: map(key1=valu2, key2=value2)
  */
 public class JobNameWrapper {
 
-    private final String traceJobName;
     private final Map<String, String> configurations = new HashMap<>();
 
     public JobNameWrapper(final String jobName, final String gitBranch) {
         if(jobName == null) {
-            this.traceJobName = null;
             return;
         }
 
@@ -65,20 +60,6 @@ public class JobNameWrapper {
                 configurations.put(keyValue[0], keyValue[1]);
             }
         }
-
-        if(configurations.isEmpty()) {
-            //If there is no configurations,
-            //the jobName is the original one without branch.
-            this.traceJobName = jobNameNoBranch;
-        } else {
-            //If there are configurations,
-            //the jobName is the first part of the splited raw jobName.
-            this.traceJobName = jobNameParts[0];
-        }
-    }
-
-    public String getTraceJobName() {
-        return traceJobName;
     }
 
     public Map<String, String> getConfigurations() {
