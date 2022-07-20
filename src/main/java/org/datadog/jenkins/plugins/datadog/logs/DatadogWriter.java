@@ -31,6 +31,8 @@ import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.traces.CITags;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 import java.io.OutputStream;
@@ -68,6 +70,7 @@ public class DatadogWriter {
             payload.put("ddsource", "jenkins");
             payload.put("service", "jenkins");
             payload.put("timestamp", System.currentTimeMillis());
+            payload.put(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._NAME, this.buildData.getBaseJobName(""));
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();

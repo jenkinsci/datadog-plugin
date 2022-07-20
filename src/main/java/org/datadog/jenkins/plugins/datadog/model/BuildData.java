@@ -88,6 +88,7 @@ public class BuildData implements Serializable {
     private String charsetName;
     private String nodeName;
     private String jobName;
+    private String baseJobName;
     private String buildTag;
     private String jenkinsUrl;
     private String executorNumber;
@@ -195,13 +196,24 @@ public class BuildData implements Serializable {
         setCharset(run.getCharset());
 
         // Set Job Name
-        String jobName = null;
+        String baseJobName = null;
         try {
-            jobName = run.getParent().getFullName();
+            baseJobName = run.getParent().getParent().getFullName();
+            if (baseJobName.length() == 0) {
+                baseJobName = run.getParent().getName();
+            }
         } catch(NullPointerException e){
             //noop
         }
-        setJobName(jobName == null ? null : jobName.replaceAll("»", "/").replaceAll(" ", ""));
+        setBaseJobName(baseJobName == null ? null : baseJobName.replaceAll("»", "/").replaceAll(" ", ""));
+        String jobNameWithConfiguration = null;
+        try {
+            jobNameWithConfiguration = run.getParent().getFullName();
+        } catch(NullPointerException e){
+            //noop
+        }
+        setJobName(jobNameWithConfiguration == null ? null : jobNameWithConfiguration.replaceAll("»", "/").replaceAll(" ", ""));
+
         // Set Jenkins Url
         String jenkinsUrl = DatadogUtilities.getJenkinsUrl();
         if("unknown".equals(jenkinsUrl) && envVars != null && envVars.get("JENKINS_URL") != null
@@ -466,6 +478,14 @@ public class BuildData implements Serializable {
 
     public void setJobName(String jobName) {
         this.jobName = jobName;
+    }
+
+    public String getBaseJobName(String value) {
+        return defaultIfNull(baseJobName, value);
+    }
+
+    public void setBaseJobName(String baseJobName) {
+        this.baseJobName = baseJobName;
     }
 
     public String getResult(String value) {
