@@ -205,14 +205,14 @@ public class BuildData implements Serializable {
         } catch(NullPointerException e){
             //noop
         }
-        setBaseJobName(baseJobName == null ? null : baseJobName.replaceAll("»", "/").replaceAll(" ", ""));
+        setBaseJobName(normalizeJobName(baseJobName));
         String jobNameWithConfiguration = null;
         try {
             jobNameWithConfiguration = run.getParent().getFullName();
         } catch(NullPointerException e){
             //noop
         }
-        setJobName(jobNameWithConfiguration == null ? null : jobNameWithConfiguration.replaceAll("»", "/").replaceAll(" ", ""));
+        setJobName(normalizeJobName(jobNameWithConfiguration));
 
         // Set Jenkins Url
         String jenkinsUrl = DatadogUtilities.getJenkinsUrl();
@@ -979,6 +979,13 @@ public class BuildData implements Serializable {
             DatadogUtilities.severe(LOGGER, e, "Failed to construct log attributes");
             return new JSONObject();
         }
+    }
+
+    private static String normalizeJobName(String jobName) {
+        if (jobName == null) {
+            return null;
+        }
+        return jobName.replaceAll("»", "/").replaceAll(" ", "");
     }
 
 }
