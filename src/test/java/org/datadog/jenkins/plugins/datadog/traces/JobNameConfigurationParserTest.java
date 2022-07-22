@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RunWith(Parameterized.class)
-public class JobNameWrapperTest {
+public class JobNameConfigurationParserTest {
 
     private static final Map<String, String> EMPTY_MAP = Collections.EMPTY_MAP;
 
@@ -47,7 +47,7 @@ public class JobNameWrapperTest {
     private final String gitBranch;
     private final Map<String, String> expectedConfigs;
 
-    public JobNameWrapperTest(final String rawJobName, final String gitBranch, final Map<String, String> expectedConfigs) {
+    public JobNameConfigurationParserTest(final String rawJobName, final String gitBranch, final Map<String, String> expectedConfigs) {
         this.rawJobName = rawJobName;
         this.gitBranch = gitBranch;
         this.expectedConfigs = expectedConfigs;
@@ -55,8 +55,7 @@ public class JobNameWrapperTest {
 
     @Test
     public void shouldReturnCorrectJobName() {
-        final JobNameWrapper sut = new JobNameWrapper(this.rawJobName, this.gitBranch);
-        assertEquals(this.expectedConfigs, sut.getConfigurations());
+        assertEquals(this.expectedConfigs, JobNameConfigurationParser.getConfigurations(this.rawJobName, this.gitBranch));
     }
 
 }
