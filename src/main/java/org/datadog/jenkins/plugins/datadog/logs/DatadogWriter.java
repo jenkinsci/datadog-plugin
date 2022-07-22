@@ -37,6 +37,8 @@ import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 public class DatadogWriter {
@@ -65,7 +67,9 @@ public class DatadogWriter {
 
             JSONObject payload = buildData.addLogAttributes();
 
-            payload.put("ddtags", String.join(",", TagsUtil.convertTagsToArray(this.buildData.getTags())));
+            Map<String, Set<String>> ddtags = this.buildData.getTags();
+            TagsUtil.addTagToTags(ddtags, "datadog.product", "cipipeline");
+            payload.put("ddtags", String.join(",", TagsUtil.convertTagsToArray(ddtags)));
             payload.put("message", line);
             payload.put("ddsource", "jenkins");
             payload.put("service", "jenkins");
