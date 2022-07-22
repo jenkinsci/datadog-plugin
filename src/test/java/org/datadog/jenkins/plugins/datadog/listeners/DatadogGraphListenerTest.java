@@ -694,7 +694,6 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertNotNull(buildSpanMeta.get(buildPrefix + CITags._URL));
         assertNotNull(buildSpanMeta.get(CITags.NODE_NAME));
         assertNotNull(buildSpanMeta.get(CITags.NODE_LABELS));
-        String nodeName=buildSpanMeta.get(CITags.NODE_NAME);
         checkHostNameTag(buildSpanMeta);
         assertEquals("success", buildSpanMeta.get(CITags.JENKINS_RESULT));
         assertEquals("jenkins-pipelineIntegrationSuccess-1", buildSpanMeta.get(CITags.JENKINS_TAG));
