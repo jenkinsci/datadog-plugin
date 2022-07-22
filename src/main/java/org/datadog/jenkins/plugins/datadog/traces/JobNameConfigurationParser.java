@@ -3,37 +3,33 @@ package org.datadog.jenkins.plugins.datadog.traces;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Wrapper for the JobName to extract the job name and configurations for traces.
+ * Extract the configurations from the full JobName for traces.
  *
  * Example1: (Freestyle Project)
  * - Jenkins job name: jobName
- * -- TraceJobName: jobName
  * -- Configurations: EMPTY
  *
  * Example2: (Multibranch Pipeline)
  * - Jenkins job name: jobName/master
- * -- TraceJobName: jobName
  * -- Configurations: EMPTY
  *
  * Example3: (Multiconfigurations project)
- * - Jenkins job name: jobName/KEY1=VALUE1,KEY2=VALUE2/master
- * -- TraceJobName: jobName
+ * - Jenkins job name: jobName/KEY1=VALUE1,KEY2=VALUE2
  * -- Configurations: map(key1=valu2, key2=value2)
  */
-public class JobNameWrapper {
+public class JobNameConfigurationParser {
 
-    private final String traceJobName;
-    private final Map<String, String> configurations = new HashMap<>();
-
-    public JobNameWrapper(final String jobName, final String gitBranch) {
+    public static Map<String, String> getConfigurations(final String jobName, final String gitBranch) {
         if(jobName == null) {
-            this.traceJobName = null;
-            return;
+            return Collections.EMPTY_MAP;
         }
+
+        final Map<String, String> ret = new HashMap<>();
 
         final String rawJobName = jobName.trim();
         String jobNameNoBranch = rawJobName;
@@ -62,26 +58,11 @@ public class JobNameWrapper {
             final String[] configsKeyValue = configsStr.split(",");
             for(final String configKeyValue : configsKeyValue) {
                 final String[] keyValue = configKeyValue.trim().split("=");
-                configurations.put(keyValue[0], keyValue[1]);
+                ret.put(keyValue[0], keyValue[1]);
             }
         }
 
-        if(configurations.isEmpty()) {
-            //If there is no configurations,
-            //the jobName is the original one without branch.
-            this.traceJobName = jobNameNoBranch;
-        } else {
-            //If there are configurations,
-            //the jobName is the first part of the splited raw jobName.
-            this.traceJobName = jobNameParts[0];
-        }
+        return ret;
     }
 
-    public String getTraceJobName() {
-        return traceJobName;
-    }
-
-    public Map<String, String> getConfigurations() {
-        return configurations;
-    }
 }

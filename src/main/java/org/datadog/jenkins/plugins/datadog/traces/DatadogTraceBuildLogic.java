@@ -222,15 +222,15 @@ public class DatadogTraceBuildLogic {
             buildSpan.putMeta(CITags.GIT_TAG, gitTag);
         }
 
-        final JobNameWrapper jobNameWrapper = new JobNameWrapper(buildData.getJobName(""), gitBranch != null ? gitBranch : gitTag);
-        buildSpan.setResourceName(jobNameWrapper.getTraceJobName());
+        buildSpan.setResourceName(buildData.getBaseJobName(""));
+        buildSpan.putMeta(prefix + CITags._NAME, buildData.getBaseJobName(""));
 
-        buildSpan.putMeta(prefix + CITags._NAME, jobNameWrapper.getTraceJobName());
-
-        if(!jobNameWrapper.getConfigurations().isEmpty()){
-            for(Map.Entry<String, String> entry : jobNameWrapper.getConfigurations().entrySet()) {
+        final String fullJobName = buildData.getJobName("");
+        final String gitRef = gitBranch != null ? gitBranch : gitTag;
+        final Map<String, String> configurations = JobNameConfigurationParser.getConfigurations(fullJobName, gitRef);
+        if(!configurations.isEmpty()){
+            for(Map.Entry<String, String> entry : configurations.entrySet()) {
                 buildSpan.putMeta(prefix + CITags._CONFIGURATION + "." + entry.getKey(), entry.getValue());
-
             }
         }
 

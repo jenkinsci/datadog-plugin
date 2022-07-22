@@ -31,10 +31,14 @@ import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.traces.CITags;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 public class DatadogWriter {
@@ -63,10 +67,14 @@ public class DatadogWriter {
 
             JSONObject payload = buildData.addLogAttributes();
 
-            payload.put("ddtags", String.join(",", TagsUtil.convertTagsToArray(this.buildData.getTags())));
+            Map<String, Set<String>> ddtags = this.buildData.getTags();
+            TagsUtil.addTagToTags(ddtags, "datadog.product", "cipipeline");
+            payload.put("ddtags", String.join(",", TagsUtil.convertTagsToArray(ddtags)));
             payload.put("message", line);
             payload.put("ddsource", "jenkins");
             payload.put("service", "jenkins");
+            payload.put("timestamp", System.currentTimeMillis());
+            payload.put(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._NAME, this.buildData.getBaseJobName(""));
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
