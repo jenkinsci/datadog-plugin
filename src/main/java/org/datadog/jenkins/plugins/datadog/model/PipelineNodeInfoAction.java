@@ -10,9 +10,12 @@ public class PipelineNodeInfoAction extends InvisibleAction implements Serializa
     private final String nodeName;
     private final Set<String> nodeLabels;
 
-    public PipelineNodeInfoAction(final String nodeName, final Set<String> nodeLabels) {
+    private final String nodeHostname;
+
+    public PipelineNodeInfoAction(final String nodeName, final Set<String> nodeLabels, final String nodeHostname) {
         this.nodeName = nodeName;
         this.nodeLabels = nodeLabels;
+        this.nodeHostname = nodeHostname;
     }
 
     public String getNodeName() {
@@ -21,5 +24,9 @@ public class PipelineNodeInfoAction extends InvisibleAction implements Serializa
 
     public Set<String> getNodeLabels() {
         return nodeLabels;
+    }
+
+    public String getNodeHostname() {
+        return nodeHostname;
     }
 }

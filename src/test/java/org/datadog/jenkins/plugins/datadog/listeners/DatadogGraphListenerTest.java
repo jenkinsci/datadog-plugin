@@ -630,19 +630,19 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertTrue(buildSpan.getDurationNano() > 1L);
         assertEquals(worker.getNodeName(), buildSpan.getMeta().get(CITags.NODE_NAME));
         assertTrue(buildSpan.getMeta().get(CITags.NODE_LABELS).contains("testPipeline"));
-        assertEquals("none",buildSpan.getMeta().get(CITags._DD_HOSTNAME));
+        assertNotNull(buildSpan.getMeta().get(CITags._DD_HOSTNAME));
 
         final TraceSpan stage = spans.get(1);
         assertEquals(Double.valueOf(0), stage.getMetrics().get(CITags.QUEUE_TIME));
         assertEquals(worker.getNodeName(), stage.getMeta().get(CITags.NODE_NAME));
         assertTrue(stage.getMeta().get(CITags.NODE_LABELS).contains("testPipeline"));
-        assertEquals("none",stage.getMeta().get(CITags._DD_HOSTNAME));
+        assertNotNull(stage.getMeta().get(CITags._DD_HOSTNAME));
 
         final TraceSpan step = spans.get(2);
         assertEquals(Double.valueOf(0), step.getMetrics().get(CITags.QUEUE_TIME));
         assertEquals(worker.getNodeName(), step.getMeta().get(CITags.NODE_NAME));
         assertTrue(step.getMeta().get(CITags.NODE_LABELS).contains("testPipeline"));
-        assertEquals("none",step.getMeta().get(CITags._DD_HOSTNAME));
+        assertNotNull(stage.getMeta().get(CITags._DD_HOSTNAME));
     }
 
     @Test

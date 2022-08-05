@@ -135,6 +135,7 @@ public class BuildPipeline {
                 if(executableChildNode != null) {
                     node.setPropagatedNodeName(executableChildNode.getNodeName());
                     node.setPropagatedNodeLabels(executableChildNode.getNodeLabels());
+                    node.setPropagatedNodeHostname(executableChildNode.getNodeHostname());
                 }
             }
 
