@@ -90,18 +90,17 @@ public class StepData implements Serializable {
      * @return hostname of the remote node.
      */
     private String getNodeHostname(final StepContext stepContext, Map<String,String> envVars) {
-        String hostname = null;
-        Computer computer;
-        try {
-            computer = stepContext.get(Computer.class);
-            if(computer != null) {
-                hostname = computer.getHostName();
-            }
-        } catch (Exception e){
-            logger.fine("Unable to extract hostname from StepContext.");
-        }
+        String hostname = envVars.get(DD_CI_HOSTNAME);
         if (hostname == null) {
-            hostname = envVars.get(DD_CI_HOSTNAME);
+            Computer computer;
+            try {
+                computer = stepContext.get(Computer.class);
+                if(computer != null) {
+                    hostname = computer.getHostName();
+                }
+            } catch (Exception e){
+                logger.fine("Unable to extract hostname from StepContext.");
+            }
         }
         return hostname;
     }
