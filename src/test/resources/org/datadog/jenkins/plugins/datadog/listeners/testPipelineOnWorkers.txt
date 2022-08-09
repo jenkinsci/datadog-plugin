@@ -1,0 +1,12 @@
+pipeline {
+    agent {
+        label "testPipelineWorker"
+    }
+    stages {
+        stage('testing'){
+            steps {
+                echo "testing"
+            }
+        }
+    }
+}

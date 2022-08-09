@@ -1013,6 +1013,51 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals("error", step2Span.getMeta().get(CITags.STATUS));
     }
 
+    @Test
+    public void testCustomHostnameForWorkers() throws Exception {
+        final EnvironmentVariablesNodeProperty envProps = new EnvironmentVariablesNodeProperty();
+        EnvVars env = envProps.getEnvVars();
+        env.put("NODE_NAME", "testPipeline");
+        env.put("DD_CI_HOSTNAME", "testDDCiHostname");
+        jenkinsRule.jenkins.getGlobalNodeProperties().add(envProps);
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationCustomHostname");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineOnWorkers.txt"),
+                "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+
+        // schedule build and wait for it to get queued
+        new Thread(() -> {
+            try {
+                job.scheduleBuild2(0).get();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
+        final DumbSlave worker = jenkinsRule.createOnlineSlave(Label.get("testPipelineWorker"));
+
+        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(3);
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(3, spans.size());
+
+        final TraceSpan buildSpan = spans.get(0);
+        assertEquals(worker.getNodeName(), buildSpan.getMeta().get(CITags.NODE_NAME));
+        assertTrue(buildSpan.getMeta().get(CITags.NODE_LABELS).contains("testPipelineWorker"));
+        assertEquals("testDDCiHostname", buildSpan.getMeta().get(CITags._DD_HOSTNAME));
+
+        final TraceSpan stage = spans.get(1);
+        assertEquals(worker.getNodeName(), stage.getMeta().get(CITags.NODE_NAME));
+        assertTrue(stage.getMeta().get(CITags.NODE_LABELS).contains("testPipelineWorker"));
+        assertEquals("testDDCiHostname", stage.getMeta().get(CITags._DD_HOSTNAME));
+
+        final TraceSpan step = spans.get(2);
+        assertEquals(worker.getNodeName(), step.getMeta().get(CITags.NODE_NAME));
+        assertTrue(step.getMeta().get(CITags.NODE_LABELS).contains("testPipelineWorker"));
+        assertEquals("testDDCiHostname", step.getMeta().get(CITags._DD_HOSTNAME));
+    }
+
     private void assertNodeNameParallelBlock(TraceSpan stageSpan, DumbSlave worker01, DumbSlave worker02) {
         switch (stageSpan.getResourceName()){
             case "Prepare01":
