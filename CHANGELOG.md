@@ -1,5 +1,15 @@
 Changes
 =======
+## 4.1.0-beta-1 / 2022-08-09
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-4.0.0...datadog-4.1.0-beta-1
+
+### Changes
+* [Added] Adds the timestamp, datadog.product and ci.pipeline.name tags to logs. See [#297](https://github.com/jenkinsci/datadog-plugin/pull/297)
+* [Added] Add hostname info for events executed in Jenkins workers. See [#298](https://github.com/jenkinsci/datadog-plugin/pull/298)
+* [Fixed] The pipeline name logic does not require git information. See [#297](https://github.com/jenkinsci/datadog-plugin/pull/297)
+* [Fixed] Remove `synchronization` on `ConcurrentHashMaps` for CI Visibility traces. See [#299](https://github.com/jenkinsci/datadog-plugin/pull/299)
+
 ## 4.0.0 / 2022-04-27
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-3.5.2...datadog-4.0.0
