@@ -74,6 +74,7 @@ public class BuildPipelineNode {
     private String propagatedNodeName;
     private Set<String> propagatedNodeLabels;
     private String nodeHostname;
+    private String propagatedNodeHostname;
     private long startTime;
     private long startTimeMicros;
     private long endTime;
@@ -266,6 +267,14 @@ public class BuildPipelineNode {
 
     public String getNodeHostname() {
         return nodeHostname;
+    }
+
+    public String getPropagatedNodeHostname(){
+        return propagatedNodeHostname;
+    }
+
+    public void setPropagatedNodeHostname(final String propagatedNodeHostname) {
+        this.propagatedNodeHostname = propagatedNodeHostname;
     }
 
     public long getStartTime() {

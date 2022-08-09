@@ -429,9 +429,15 @@ public class DatadogTracePipelineLogic {
         }
 
         // If the NodeName == "master", we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
-        // If the NodeName != "master", we set _dd.hostname to 'none' explicitly, cause we cannot calculate the worker hostname.
         if(!"master".equalsIgnoreCase(nodeName)){
-            tags.put(CITags._DD_HOSTNAME, HOSTNAME_NONE);
+            final String workerHostname = getNodeHostname(run, current);
+            // If the worker hostname is equals to controller hostname but the node name is not "master"
+            // then we could not detect the worker hostname properly. We set _dd.hostname to 'none' explicitly.
+            if(buildData.getHostname("").equalsIgnoreCase(workerHostname)) {
+                tags.put(CITags._DD_HOSTNAME, HOSTNAME_NONE);
+            } else {
+                tags.put(CITags._DD_HOSTNAME, (workerHostname != null) ? workerHostname : HOSTNAME_NONE);
+            }
         }
 
         // Arguments
@@ -522,6 +528,18 @@ public class DatadogTracePipelineLogic {
         }
 
         return buildData.getNodeName("");
+    }
+
+    private String getNodeHostname(Run<?, ?> run, BuildPipelineNode current) {
+        final PipelineNodeInfoAction pipelineNodeInfoAction = run.getAction(PipelineNodeInfoAction.class);
+        if(current.getPropagatedNodeHostname() != null) {
+            return current.getPropagatedNodeHostname();
+        } else if(current.getNodeHostname() != null) {
+            return current.getNodeHostname();
+        } else if (pipelineNodeInfoAction != null) {
+            return pipelineNodeInfoAction.getNodeHostname();
+        }
+        return null;
     }
 
     private String buildOperationName(BuildPipelineNode current) {

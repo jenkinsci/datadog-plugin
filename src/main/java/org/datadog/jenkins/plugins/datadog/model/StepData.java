@@ -18,6 +18,9 @@ public class StepData implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    // Env Var key to get the hostname from the Jenkins workers.
+    private static final String DD_CI_HOSTNAME = "DD_CI_HOSTNAME";
+
     private static transient final Logger logger = Logger.getLogger(StepData.class.getName());
 
     private final Map<String, String> envVars;
@@ -31,7 +34,7 @@ public class StepData implements Serializable {
         try {
             this.envVars = getEnvVars(stepContext);
             this.nodeName = getNodeName(stepContext);
-            this.nodeHostname = getNodeHostname(stepContext);
+            this.nodeHostname = getNodeHostname(stepContext, this.envVars);
             this.workspace = getNodeWorkspace(stepContext);
             this.nodeLabels = getNodeLabels(stepContext);
         } finally {
@@ -86,18 +89,20 @@ public class StepData implements Serializable {
      * @param stepContext
      * @return hostname of the remote node.
      */
-    private String getNodeHostname(final StepContext stepContext) {
-        try {
-            Computer computer = stepContext.get(Computer.class);
-            if(computer == null) {
-                return null;
+    private String getNodeHostname(final StepContext stepContext, Map<String,String> envVars) {
+        String hostname = envVars.get(DD_CI_HOSTNAME);
+        if (hostname == null) {
+            Computer computer;
+            try {
+                computer = stepContext.get(Computer.class);
+                if(computer != null) {
+                    hostname = computer.getHostName();
+                }
+            } catch (Exception e){
+                logger.fine("Unable to extract hostname from StepContext.");
             }
-
-            return computer.getHostName();
-        } catch (Exception e){
-            logger.fine("Unable to extract hostname from StepContext.");
-            return null;
         }
+        return hostname;
     }
 
 
@@ -149,7 +154,6 @@ public class StepData implements Serializable {
         if(envVarsObj == null) {
             return Collections.emptyMap();
         }
-
         return envVarsObj.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 }

@@ -145,10 +145,17 @@ public class DatadogTraceBuildLogic {
         if(!nodeLabelsJson.isEmpty()){
             buildSpan.putMeta(CITags.NODE_LABELS, nodeLabelsJson);
         }
-        // If the NodeName == master, we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
-        // If the NodeName != master, we set _dd.hostname to 'none' explicitly, cause we cannot calculate the worker hostname.
-        if(!"master".equalsIgnoreCase(nodeName)) {
-            buildSpan.putMeta(CITags._DD_HOSTNAME, HOSTNAME_NONE);
+
+        // If the NodeName == "master", we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
+        if(!"master".equalsIgnoreCase(nodeName)){
+            final String workerHostname = getNodeHostname(run, updatedBuildData);
+            // If the worker hostname is equals to controller hostname but the node name is not "master"
+            // then we could not detect the worker hostname properly. We set _dd.hostname to 'none' explicitly.
+            if(buildData.getHostname("").equalsIgnoreCase(workerHostname)) {
+                buildSpan.putMeta(CITags._DD_HOSTNAME, HOSTNAME_NONE);
+            } else {
+                buildSpan.putMeta(CITags._DD_HOSTNAME, (workerHostname != null) ? workerHostname : HOSTNAME_NONE);
+            }
         }
 
         // Git Info
@@ -294,6 +301,16 @@ public class DatadogTraceBuildLogic {
         }
 
         return buildData.getNodeName("").isEmpty() ? updatedBuildData.getNodeName("") : buildData.getNodeName("");
+    }
+
+    private String getNodeHostname(Run<?, ?> run, BuildData updatedBuildData) {
+        final PipelineNodeInfoAction pipelineNodeInfoAction = run.getAction(PipelineNodeInfoAction.class);
+        if(pipelineNodeInfoAction != null){
+            return pipelineNodeInfoAction.getNodeHostname();
+        } else if (!updatedBuildData.getHostname("").isEmpty()) {
+            return updatedBuildData.getHostname("");
+        }
+        return null;
     }
 
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
