@@ -59,13 +59,13 @@ public class DatadogQueueListener extends QueueListener {
                 return;
             }
 
-            final FlowNodeQueueData flowNodeData = queueAction.synchronizedGet(run, flowNode.getId());
+            final FlowNodeQueueData flowNodeData = queueAction.get(run, flowNode.getId());
             if(flowNodeData != null) {
                 flowNodeData.setEnterBuildableNanos(System.nanoTime());
             } else {
                 final FlowNodeQueueData data = new FlowNodeQueueData(flowNode.getId());
                 data.setEnterBuildableNanos(System.nanoTime());
-                queueAction.synchronizedPut(run, flowNode.getId(), data);
+                queueAction.put(run, flowNode.getId(), data);
             }
 
         } catch (Exception e){
@@ -108,7 +108,7 @@ public class DatadogQueueListener extends QueueListener {
                 return;
             }
 
-            final FlowNodeQueueData flowNodeData = queueAction.synchronizedGet(run, flowNode.getId());
+            final FlowNodeQueueData flowNodeData = queueAction.get(run, flowNode.getId());
             if(flowNodeData != null) {
                 flowNodeData.setLeaveBuildableNanos(System.nanoTime());
             }

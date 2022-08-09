@@ -451,7 +451,7 @@ public class BuildPipelineNode {
             return null;
         }
 
-        return stepDataAction.synchronizedGet(run, flowNode);
+        return stepDataAction.get(run, flowNode);
     }
 
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
@@ -468,7 +468,7 @@ public class BuildPipelineNode {
             return null;
         }
 
-        return stepTraceDataAction.synchronizedGet(run, flowNode);
+        return stepTraceDataAction.get(run, flowNode);
     }
 
     private FlowNodeQueueData getQueueData(FlowNode node) {
@@ -484,7 +484,7 @@ public class BuildPipelineNode {
             return null;
         }
 
-        return pipelineQueueInfoAction.synchronizedGet(run, node.getId());
+        return pipelineQueueInfoAction.get(run, node.getId());
     }
 
     private Run<?, ?> getRun(final FlowNode node) {

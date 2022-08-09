@@ -57,10 +57,10 @@ public class TraceStepEnvironmentContributor extends StepEnvironmentContributor 
                 return;
             }
 
-            StepTraceData stepTraceData = stepTraceDataAction.synchronizedGet(run, flowNode);
+            StepTraceData stepTraceData = stepTraceDataAction.get(run, flowNode);
             if(stepTraceData == null){
                 stepTraceData = new StepTraceData(IdGenerator.generate());
-                stepTraceDataAction.synchronizedPut(run, flowNode, stepTraceData);
+                stepTraceDataAction.put(run, flowNode, stepTraceData);
             }
 
             if(envs.get(TRACE_ID_ENVVAR_KEY) == null) {

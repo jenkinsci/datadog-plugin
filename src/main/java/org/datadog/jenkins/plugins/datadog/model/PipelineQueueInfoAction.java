@@ -11,10 +11,6 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * Keeps the Queue Info related to the FlowNode scheduled to be executed.
- *
- * Note: We need to synchronize with the run instance because in parallel pipelines the WorkflowRun.save() method
- * may raise a ConcurrentModificationException if the action is being persisted and it's modified during the process.
- * We synchronize based on the run instance because the WorkflowRun.save() method synchronize on this.
  */
 public class PipelineQueueInfoAction extends InvisibleAction implements Serializable {
 
@@ -26,16 +22,12 @@ public class PipelineQueueInfoAction extends InvisibleAction implements Serializ
         this.queueDataByFlowNode = new ConcurrentHashMap<>();
     }
 
-    public FlowNodeQueueData synchronizedGet(final Run<?,?> run, String flowNodeId) {
-        synchronized (run) {
-            return this.queueDataByFlowNode.get(flowNodeId);
-        }
+    public FlowNodeQueueData get(final Run<?,?> run, String flowNodeId) {
+        return this.queueDataByFlowNode.get(flowNodeId);
     }
 
-    public void synchronizedPut(final Run<?,?> run, String flowNodeId, FlowNodeQueueData data) {
-        synchronized (run) {
-            this.queueDataByFlowNode.put(flowNodeId, data);
-        }
+    public void put(final Run<?,?> run, String flowNodeId, FlowNodeQueueData data) {
+        this.queueDataByFlowNode.put(flowNodeId, data);
     }
 
     @Override

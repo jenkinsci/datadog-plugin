@@ -15,16 +15,12 @@ public class StepTraceDataAction extends InvisibleAction implements Serializable
 
     private final ConcurrentMap<String, StepTraceData> stepTraceDataByDescriptor = new ConcurrentHashMap<>();
 
-    public StepTraceData synchronizedPut(final Run<?,?> run, final FlowNode flowNode, final StepTraceData stepTraceData) {
-        synchronized (run){
-            return stepTraceDataByDescriptor.put(flowNode.getId(), stepTraceData);
-        }
+    public StepTraceData put(final Run<?,?> run, final FlowNode flowNode, final StepTraceData stepTraceData) {
+        return stepTraceDataByDescriptor.put(flowNode.getId(), stepTraceData);
     }
 
-    public StepTraceData synchronizedGet(final Run<?,?> run, final FlowNode flowNode) {
-        synchronized (run){
-            return stepTraceDataByDescriptor.get(flowNode.getId());
-        }
+    public StepTraceData get(final Run<?,?> run, final FlowNode flowNode) {
+        return stepTraceDataByDescriptor.get(flowNode.getId());
     }
 
 }
