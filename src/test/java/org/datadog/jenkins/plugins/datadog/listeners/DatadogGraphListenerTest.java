@@ -540,13 +540,13 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
         final TraceSpan buildSpan = spans.get(0);
         assertEquals(Double.valueOf(0), buildSpan.getMetrics().get(CITags.QUEUE_TIME));
-        assertEquals("master", buildSpan.getMeta().get(CITags.NODE_NAME));
-        assertEquals("[\"master\"]", buildSpan.getMeta().get(CITags.NODE_LABELS));
+        assertEquals("built-in", buildSpan.getMeta().get(CITags.NODE_NAME));
+        assertEquals("[\"built-in\"]", buildSpan.getMeta().get(CITags.NODE_LABELS));
 
         final TraceSpan runStages = spans.get(1);
         assertEquals(Double.valueOf(0), runStages.getMetrics().get(CITags.QUEUE_TIME));
-        assertEquals("master", runStages.getMeta().get(CITags.NODE_NAME));
-        assertEquals("[\"master\"]", runStages.getMeta().get(CITags.NODE_LABELS));
+        assertEquals("built-in", runStages.getMeta().get(CITags.NODE_NAME));
+        assertEquals("[\"built-in\"]", runStages.getMeta().get(CITags.NODE_LABELS));
 
         final TraceSpan stage1 = searchSpan(spans, "Stage 1");
         final Double stage1QueueTime = stage1.getMetrics().get(CITags.QUEUE_TIME);
@@ -694,7 +694,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertNotNull(buildSpanMeta.get(buildPrefix + CITags._URL));
         assertNotNull(buildSpanMeta.get(CITags.NODE_NAME));
         assertNotNull(buildSpanMeta.get(CITags.NODE_LABELS));
-        assertNull(buildSpanMeta.get(CITags._DD_HOSTNAME));
+        checkHostNameTag(buildSpanMeta);
         assertEquals("success", buildSpanMeta.get(CITags.JENKINS_RESULT));
         assertEquals("jenkins-pipelineIntegrationSuccess-1", buildSpanMeta.get(CITags.JENKINS_TAG));
         assertEquals("false", buildSpanMeta.get(CITags._DD_CI_INTERNAL));
@@ -716,7 +716,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertNotNull(stageSpanMeta.get(stagePrefix + CITags._URL));
         assertNotNull(stageSpanMeta.get(CITags.NODE_NAME));
         assertNotNull(stageSpanMeta.get(CITags.NODE_LABELS));
-        assertNull(stageSpanMeta.get(CITags._DD_HOSTNAME));
+        checkHostNameTag(buildSpanMeta);
         assertEquals("false", stageSpanMeta.get(CITags._DD_CI_INTERNAL));
         assertEquals("4", stageSpanMeta.get(stagePrefix + CITags._NUMBER));
         assertEquals(BuildPipelineNode.NodeType.STAGE.getBuildLevel(), stageSpanMeta.get(CITags._DD_CI_BUILD_LEVEL));
@@ -740,7 +740,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertNotNull(stepSpanMeta.get(stepPrefix + CITags._URL));
         assertNotNull(stepSpanMeta.get(CITags.NODE_NAME));
         assertNotNull(stepSpanMeta.get(CITags.NODE_LABELS));
-        assertNull(stepSpanMeta.get(CITags._DD_HOSTNAME));
+        checkHostNameTag(stepSpanMeta);
         assertEquals("false", stepSpanMeta.get(CITags._DD_CI_INTERNAL));
         assertEquals("5", stepSpanMeta.get(stepPrefix + CITags._NUMBER));
         assertEquals(BuildPipelineNode.NodeType.STEP.getBuildLevel(), stepSpanMeta.get(CITags._DD_CI_BUILD_LEVEL));

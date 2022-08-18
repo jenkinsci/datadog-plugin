@@ -1,5 +1,6 @@
 package org.datadog.jenkins.plugins.datadog.publishers;
 
+import hudson.model.Queue;
 import hudson.model.queue.QueueTaskFuture;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.ClassRule;
@@ -36,7 +37,16 @@ public class DatadogQueuePipelinePublisherTest {
 
         // schedule build and wait for it to get queued
         QueueTaskFuture<WorkflowRun> task = job.scheduleBuild2(0);
-        Thread.sleep(1000);
+        Queue queue = jenkins.jenkins.getQueue();
+        for (int i = 0; i < 10; i++) {
+            if (!queue.getBuildableItems().isEmpty()) {
+                String name  = queue.getBuildableItems().get(0).task.getFullDisplayName();
+                if (name != null & name.contains("pipelineIntegrationQueue")) {
+                    break;
+                }
+            }
+            Thread.sleep(500);
+        }
 
         final String[] expectedTags = new String[2];
         expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();

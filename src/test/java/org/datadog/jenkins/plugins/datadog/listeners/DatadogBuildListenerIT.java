@@ -155,7 +155,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         assertEquals("success", meta.get(CITags.STATUS));
         assertNotNull(meta.get(CITags.NODE_NAME));
         assertNotNull(meta.get(CITags.NODE_LABELS));
-        assertNull(meta.get(CITags._DD_HOSTNAME));
+        checkHostNameTag(meta);
         assertEquals("success", meta.get(CITags.JENKINS_RESULT));
         assertEquals("jenkins-buildIntegrationSuccess-1", meta.get(CITags.JENKINS_TAG));
         assertNotNull(meta.get(CITags._DD_CI_STAGES));

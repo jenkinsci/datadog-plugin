@@ -63,6 +63,14 @@ public class DatadogTaskListenerDecorator extends TaskListenerDecorator {
     public static final class Factory implements TaskListenerDecorator.Factory {
 
         @Override
+        /*
+          Data stream is passed to this decorator first (it actually sees data in the last)
+         */
+        public boolean isAppliedBeforeMainDecorator() {
+            return true;
+        }
+
+        @Override
         @Nullable
         public TaskListenerDecorator of(@Nonnull FlowExecutionOwner owner) {
             if (!DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs()) {

@@ -34,7 +34,7 @@ public class DatadogComputerPublisherTest {
         
         String[] expectedTags = new String[3];
         expectedTags[0] = "node_name:master";
-        expectedTags[1] = "node_label:master";
+        expectedTags[1] = "node_label:built-in";
         expectedTags[2] = "jenkins_url:" + url;
         
         // The CI sets a hostname but we cannot set a hostname locally: https://javadoc.jenkins-ci.org/hudson/model/Computer.html#getHostName--
