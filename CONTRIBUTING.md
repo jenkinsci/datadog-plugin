@@ -72,6 +72,12 @@ Need help? Contact [Datadog support][3]
 
 ## Additional Notes
 
+### Code formatting
+
+This plugin uses the [spotless plugin][6] for code style. It will only verify the code format of files you have changed. This check is run in the test phase.
+
+If you encounter any style errors while running tests, run `mvn spotless:apply` to update the style of the file you are working on.
+
 ### Javadoc
 
 Adding good documentation comments is recommended but not required. However, any documentation comments added must be properly formatted. Run `mvn javadoc:jar` to determine if your comments are formatted correctly.
@@ -113,3 +119,4 @@ This section lists the labels we use to help us track and manage issues and pull
 [3]: https://docs.datadoghq.com/help
 [4]: https://keepachangelog.com/en/1.0.0
 [5]: https://datadoghq.slack.com
+[6]: https://github.com/diffplug/spotless/tree/main/plugin-maven
