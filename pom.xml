@@ -190,29 +190,6 @@
           </archive>
         </configuration>
       </plugin>
-      <!-- CVE-2021-44228- we can remove once parent pom is updated to 4.32 -->
-      <plugin>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>display-info</id>
-            <phase>validate</phase>
-            <goals>
-              <goal>display-info</goal>
-              <goal>enforce</goal>
-            </goals>
-            <configuration>
-              <rules>
-                <bannedDependencies>
-                  <excludes>
-                    <exclude>org.apache.logging.log4j:*:(,2.17.0]</exclude>
-                  </excludes>
-                </bannedDependencies>
-              </rules>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
       <!-- This is needed until we bump to java 11: https://stackoverflow.com/questions/69929229/mockito-shipped-within-spring-boot-fails-to-attach-to-jvm-openjdk-11/72912290#72912290 -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
