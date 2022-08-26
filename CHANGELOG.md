@@ -1,5 +1,16 @@
 Changes
 =======
+
+## 5.0.0 / 2022-08-29
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-4.1.0-beta-1...datadog-5.0.0
+
+### Changes
+* [Changed] Make the plugin see data stream last by adjusting decorator order, to avoid logging unmasked data. See [#296](https://github.com/jenkinsci/datadog-plugin/pull/296). Thanks [fengxx](https://github.com/fengxx).
+
+* Supported Jenkins versions:
+  * Jenkins >= 2.346.1
+
 ## 4.1.0-beta-1 / 2022-08-09
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-4.0.0...datadog-4.1.0-beta-1
