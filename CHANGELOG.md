@@ -3,10 +3,14 @@ Changes
 
 ## 5.0.0 / 2022-08-29
 ### Details
-https://github.com/jenkinsci/datadog-plugin/compare/datadog-4.1.0-beta-1...datadog-5.0.0
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-4.0.0...datadog-5.0.0
 
 ### Changes
 * [Changed] Make the plugin see data stream last by adjusting decorator order, to avoid logging unmasked data. See [#296](https://github.com/jenkinsci/datadog-plugin/pull/296). Thanks [fengxx](https://github.com/fengxx).
+* [Added] Adds the timestamp, datadog.product and ci.pipeline.name tags to logs. See [#297](https://github.com/jenkinsci/datadog-plugin/pull/297)
+* [Added] Add hostname info for events executed in Jenkins workers. See [#298](https://github.com/jenkinsci/datadog-plugin/pull/298)
+* [Fixed] The pipeline name logic does not require git information. See [#297](https://github.com/jenkinsci/datadog-plugin/pull/297)
+* [Fixed] Remove `synchronization` on `ConcurrentHashMaps` for CI Visibility traces. See [#299](https://github.com/jenkinsci/datadog-plugin/pull/299)
 
 * Supported Jenkins versions:
   * Jenkins >= 2.346.1
