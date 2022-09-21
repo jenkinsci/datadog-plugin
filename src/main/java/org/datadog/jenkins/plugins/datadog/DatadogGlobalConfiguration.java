@@ -84,6 +84,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static final String REPORT_WITH_PROPERTY = "DATADOG_JENKINS_PLUGIN_REPORT_WITH";
     private static final String TARGET_API_URL_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_API_URL";
     private static final String TARGET_LOG_INTAKE_URL_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_LOG_INTAKE_URL";
+    private static final String TARGET_WEBHOOK_INTAKE_URL_PROPERTY = "TARGET_WEBHOOK_INTAKE_URL_PROPERTY";
     private static final String TARGET_API_KEY_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_API_KEY";
     private static final String TARGET_LOG_COLLECTION_PORT_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT";
     private static final String TARGET_TRACE_SERVICE_NAME_PROPERTY = "DATADOG_JENKINS_PLUGIN_TRACE_SERVICE_NAME";
@@ -110,6 +111,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static final String DEFAULT_REPORT_WITH_VALUE = DatadogClient.ClientType.HTTP.name();
     private static final String DEFAULT_TARGET_API_URL_VALUE = "https://api.datadoghq.com/api/";
     private static final String DEFAULT_TARGET_LOG_INTAKE_URL_VALUE = "https://http-intake.logs.datadoghq.com/v1/input/";
+    private static final String DEFAULT_TARGET_WEBHOOK_INTAKE_URL_VALUE = "https://webhook-intake.datadoghq.com/api/v2/webhook/";
     private static final String DEFAULT_TARGET_HOST_VALUE = "localhost";
     private static final Integer DEFAULT_TARGET_PORT_VALUE = 8125;
     private static final Integer DEFAULT_TRACE_COLLECTION_PORT_VALUE = null;
@@ -126,6 +128,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private String reportWith = DEFAULT_REPORT_WITH_VALUE;
     private String targetApiURL = DEFAULT_TARGET_API_URL_VALUE;
     private String targetLogIntakeURL = DEFAULT_TARGET_LOG_INTAKE_URL_VALUE;
+    private String targetWebhookIntakeURL = DEFAULT_TARGET_WEBHOOK_INTAKE_URL_VALUE;
     private Secret targetApiKey = null;
     private String targetCredentialsApiKey = null;
     private Secret usedApiKey = null;
@@ -168,8 +171,13 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         }
 
         String targetLogIntakeURLEnvVar = System.getenv(TARGET_LOG_INTAKE_URL_PROPERTY);
-        if(StringUtils.isNotBlank(targetApiURLEnvVar)){
+        if(StringUtils.isNotBlank(targetLogIntakeURLEnvVar)){
             this.targetLogIntakeURL = targetLogIntakeURLEnvVar;
+        }
+
+        String targetWebhookIntakeURLEnvVar = System.getenv(TARGET_WEBHOOK_INTAKE_URL_PROPERTY);
+        if(StringUtils.isNotBlank(targetWebhookIntakeURLEnvVar)){
+            this.targetWebhookIntakeURL = targetWebhookIntakeURLEnvVar;
         }
 
         String targetApiKeyEnvVar = System.getenv(TARGET_API_KEY_PROPERTY);
@@ -521,6 +529,20 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         return FormValidation.ok();
     }
 
+    /**
+     * @param targetWebhookIntakeURL - The Webhook Intake URL which the plugin will report to.
+     * @return a FormValidation object used to display a message to the user on the configuration
+     * screen.
+     */
+    @RequirePOST
+    public FormValidation doCheckTargetWebhookIntakeURL(@QueryParameter("targetWebhookIntakeURL") final String targetWebhookIntakeURL) {
+        if (!validateURL(targetWebhookIntakeURL) && collectBuildTraces) {
+            return FormValidation.error("The field must be configured in the form <http|https>://<url>/");
+        }
+
+        return FormValidation.ok();
+    }
+
     private boolean validateTargetHost(String targetHost) {
         if(!DatadogClient.ClientType.DSD.name().equals(reportWith)) {
             return true;
@@ -645,6 +667,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.setReportWith(reportWith);
             this.setTargetApiURL(formData.getString("targetApiURL"));
             this.setTargetLogIntakeURL(formData.getString("targetLogIntakeURL"));
+            this.setTargetWebhookIntakeURL(formData.getString("targetWebhookIntakeURL"));
             this.setTargetApiKey(formData.getString("targetApiKey"));
             this.setTargetCredentialsApiKey(formData.getString("targetCredentialsApiKey"));
             this.setTargetHost(formData.getString("targetHost"));
@@ -725,15 +748,16 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             final Secret apiKeySecret = findSecret(formData.getString("targetApiKey"), formData.getString("targetCredentialsApiKey"));
             this.setUsedApiKey(apiKeySecret);
             //When form is saved....
-            DatadogClient client = ClientFactory.getClient(DatadogClient.ClientType.valueOf(this.getReportWith()),
-                    this.getTargetApiURL(), this.getTargetLogIntakeURL(), this.getUsedApiKey(), this.getTargetHost(),
-                    this.getTargetPort(), this.getTargetLogCollectionPort(), this.getTargetTraceCollectionPort(), this.getCiInstanceName());
+            DatadogClient client = ClientFactory.getClient(DatadogClient.ClientType.valueOf(this.getReportWith()), this.getTargetApiURL(),
+                this.getTargetLogIntakeURL(), this.getTargetWebhookIntakeURL(), this.getUsedApiKey(), this.getTargetHost(),
+                this.getTargetPort(), this.getTargetLogCollectionPort(), this.getTargetTraceCollectionPort(), this.getCiInstanceName());
                 // ...reinitialize the DatadogClient
             if(client == null) {
                 return false;
             }
             client.setDefaultIntakeConnectionBroken(false);
             client.setLogIntakeConnectionBroken(false);
+            client.setWebhookIntakeConnectionBroken(false);
             // Persist global configuration information
             save();
             return true;
@@ -807,6 +831,25 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      */
     public String getTargetLogIntakeURL() {
         return targetLogIntakeURL;
+    }
+
+    /**
+     * Setter function for the targetWebhookIntakeURL global configuration.
+     *
+     * @param targetWebhookIntakeURL = A string containing the DataDog Webhook Intake URL
+     */
+    @DataBoundSetter
+    public void setTargetWebhookIntakeURL(String targetWebhookIntakeURL) {
+        this.targetWebhookIntakeURL = targetWebhookIntakeURL;
+    }
+
+    /**
+     * Getter function for the targetWebhookIntakeURL global configuration.
+     *
+     * @return a String containing the targetWebhookIntakeURL global configuration.
+     */
+    public String getTargetWebhookIntakeURL() {
+        return targetWebhookIntakeURL;
     }
 
     /**

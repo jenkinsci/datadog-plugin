@@ -78,6 +78,11 @@ public class DatadogClientStub implements DatadogClient {
     }
 
     @Override
+    public void setWebhookIntakeUrl(String webhookIntakeUrl) {
+        // noop
+    }
+
+    @Override
     public void setApiKey(Secret apiKey) {
         // noop
     }
@@ -114,6 +119,16 @@ public class DatadogClientStub implements DatadogClient {
 
     @Override
     public void setLogIntakeConnectionBroken(boolean logIntakeConnectionBroken) {
+        // noop
+    }
+
+    @Override
+    public boolean isWebhookIntakeConnectionBroken() {
+        return false;
+    }
+
+    @Override
+    public void setWebhookIntakeConnectionBroken(boolean webhookIntakeConnectionBroken) {
         // noop
     }
 

@@ -68,6 +68,8 @@ public interface DatadogClient {
 
     public void setLogIntakeUrl(String logIntakeUrl);
 
+    public void setWebhookIntakeUrl(String webhookIntakeUrl);
+
     public void setApiKey(Secret apiKey);
 
     public void setHostname(String hostname);
@@ -82,7 +84,11 @@ public interface DatadogClient {
 
     public boolean isLogIntakeConnectionBroken();
 
+    public boolean isWebhookIntakeConnectionBroken();
+
     public void setLogIntakeConnectionBroken(boolean logIntakeConnectionBroken);
+
+    public void setWebhookIntakeConnectionBroken(boolean webhookIntakeConnectionBroken);
 
     /**
      * Sends an event to the Datadog API, including the event payload.
