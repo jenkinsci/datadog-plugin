@@ -782,6 +782,26 @@ public class DatadogUtilities {
         }
     }
 
+    /**
+     * Returns a normalize result for traces.
+     * @param result (success, failure, error, aborted, not_build, canceled, skipped, unknown)
+     * @return the normalized result for the traces based on the jenkins result
+     */
+    public static String statusFromResult(@Nonnull String result) {
+        switch (result.toLowerCase()){
+            case "failure":
+                return "error";
+            case "aborted":
+                return "canceled";
+            case "not_built":
+                return "skipped";
+            case "unstable": // has non-fatal errors
+                return "success";
+            default:
+                return result.toLowerCase();
+        }
+    }
+
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH")
     public static void severe(Logger logger, Throwable e, String message){
         if(message == null){
@@ -793,7 +813,7 @@ public class DatadogUtilities {
         if(e != null) {
             StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
-            logger.finer(message + ": " + sw.toString());
+            logger.warning(message + ": " + sw.toString());
         }
     }
 

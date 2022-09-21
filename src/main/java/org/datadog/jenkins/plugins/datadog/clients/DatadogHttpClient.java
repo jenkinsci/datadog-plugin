@@ -38,8 +38,8 @@ import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookTraceBuildLogic;
-import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookTracePipelineLogic;
+import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookBuildLogic;
+import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookPipelineLogic;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
@@ -97,8 +97,8 @@ public class DatadogHttpClient implements DatadogClient {
     private boolean defaultIntakeConnectionBroken = false;
     private boolean logIntakeConnectionBroken = false;
     private boolean webhookIntakeConnectionBroken = false;
-    private DatadogWebhookTraceBuildLogic webhookTraceBuildLogic;
-    private DatadogWebhookTracePipelineLogic webhookTracePipelineLogic;
+    private DatadogWebhookBuildLogic webhookBuildLogic;
+    private DatadogWebhookPipelineLogic webhookPipelineLogic;
 
     /**
      * NOTE: Use ClientFactory.getClient method to instantiate the client in the Jenkins Plugin
@@ -141,8 +141,8 @@ public class DatadogHttpClient implements DatadogClient {
         this.apiKey = apiKey;
         this.logIntakeUrl = logIntakeUrl;
         this.webhookIntakeUrl = webhookIntakeUrl;
-        this.webhookTraceBuildLogic = new DatadogWebhookTraceBuildLogic(this);
-        this.webhookTracePipelineLogic = new DatadogWebhookTracePipelineLogic(this);
+        this.webhookBuildLogic = new DatadogWebhookBuildLogic(this);
+        this.webhookPipelineLogic = new DatadogWebhookPipelineLogic(this);
     }
 
     public void validateConfiguration() throws IllegalArgumentException {
@@ -776,7 +776,7 @@ public class DatadogHttpClient implements DatadogClient {
         }
         try {
             logger.fine("Started build trace");
-            this.webhookTraceBuildLogic.startBuildTrace(buildData, run);
+            this.webhookBuildLogic.startBuildTrace(buildData, run);
             return true;
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to start build trace");
@@ -792,7 +792,7 @@ public class DatadogHttpClient implements DatadogClient {
         }
         try {
             logger.fine("Finished build trace");
-            this.webhookTraceBuildLogic.finishBuildTrace(buildData, run);
+            this.webhookBuildLogic.finishBuildTrace(buildData, run);
             return true;
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to finish build trace");
@@ -808,7 +808,7 @@ public class DatadogHttpClient implements DatadogClient {
         }
         try {
             logger.fine("Send pipeline traces.");
-            this.webhookTracePipelineLogic.execute(run, flowNode);
+            this.webhookPipelineLogic.execute(run, flowNode);
             return true;
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to send pipeline trace");
