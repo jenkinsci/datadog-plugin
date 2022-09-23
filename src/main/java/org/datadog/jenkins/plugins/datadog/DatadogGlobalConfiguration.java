@@ -281,13 +281,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         }
 
         String enableCiVisibilityVar = System.getenv(ENABLE_CI_VISIBILITY_PROPERTY);
-        if(StringUtils.isNotBlank(enableCiVisibilityVar)){
-            final boolean enableCiVisibility = Boolean.valueOf(enableCiVisibilityVar);
-            if(enableCiVisibility && DatadogClient.ClientType.HTTP.name().equals(this.reportWith)) {
-                logger.warning("CI Visibility can only be enabled using Datadog Agent mode.");
-            } else {
-                this.collectBuildTraces = enableCiVisibility;
-            }
+        if(StringUtils.isNotBlank(enableCiVisibilityVar)) {
+            this.collectBuildTraces = Boolean.valueOf(enableCiVisibilityVar);
         }
 
         String ciVisibilityCiInstanceNameVar = System.getenv(CI_VISIBILITY_CI_INSTANCE_NAME_PROPERTY);
@@ -695,11 +690,13 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                 final JSONObject ciVisibilityData = formData.getJSONObject("ciVisibilityData");
                 if (ciVisibilityData != null && !ciVisibilityData.isNullObject()) {
                     if (!"DSD".equalsIgnoreCase(reportWith)) {
-                        throw new FormException("CI Visibility can only be enabled using Datadog Agent mode.", "collectBuildTraces");
-                    }
-
-                    if(!validatePort(traceCollectionPortStr)) {
-                        throw new FormException("CI Visibility requires a valid Trace Collection port", "collectBuildTraces");
+                        if (!validateURL(formData.getString("targetWebhookIntakeURL"))) {
+                            throw new FormException("CI Visibility requires a Webhook Intake URL", "targetWebhookIntakeURL");
+                        }
+                    } else {
+                        if(!validatePort(traceCollectionPortStr)) {
+                            throw new FormException("CI Visibility requires a valid Trace Collection port", "collectBuildTraces");
+                        }
                     }
 
                     final String ciInstanceName = ciVisibilityData.getString("traceServiceName");

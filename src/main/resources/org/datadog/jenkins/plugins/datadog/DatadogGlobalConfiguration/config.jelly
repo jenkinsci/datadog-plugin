@@ -49,6 +49,10 @@
           <f:textbox field="targetLogIntakeURL" default="${targetLogIntakeURL}" checkMethod="post" />
         </f:entry>
 
+        <f:entry title="Datadog Webhook Intake URL" field="targetWebhookIntakeURLEntry" description="URL which the plugin reports CI Visibility events to." >
+          <f:textbox field="targetWebhookIntakeURL" default="${targetWebhookIntakeURL}" checkMethod="post" />
+        </f:entry>
+
         <f:entry title="Datadog API Key" field="targetApiKeyEntry">
           <f:password field="targetApiKey" default="${targetApiKey}" checkMethod="post" />
         </f:entry>

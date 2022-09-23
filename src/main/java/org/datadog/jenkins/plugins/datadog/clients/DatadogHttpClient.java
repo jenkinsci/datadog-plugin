@@ -157,7 +157,7 @@ public class DatadogHttpClient implements DatadogClient {
                 throw new IllegalArgumentException("Datadog Log Intake URL is not set properly");
             }
             try {
-                boolean logConnection = validateLogIntakeConnection(url, apiKey);
+                boolean logConnection = validateLogIntakeConnection(logIntakeUrl, apiKey);
                 if (!logConnection) {
                     instance.setLogIntakeConnectionBroken(true);
                     logger.warning("Connection broken, please double check both your Log Intake URL and Key");
@@ -173,7 +173,7 @@ public class DatadogHttpClient implements DatadogClient {
                 throw new IllegalArgumentException("Datadog Webhook Intake URL is not set properly");
             }
             try {
-                boolean webhookConnection = validateWebhookIntakeConnection(url, apiKey);
+                boolean webhookConnection = validateWebhookIntakeConnection(webhookIntakeUrl, apiKey);
                 if (!webhookConnection) {
                     instance.setWebhookIntakeConnectionBroken(true);
                     logger.warning("Connection broken, please double check both your Webhook Intake URL and Key");
@@ -242,7 +242,7 @@ public class DatadogHttpClient implements DatadogClient {
     }
 
     public String getWebhookIntakeUrl() {
-        return logIntakeUrl;
+        return webhookIntakeUrl;
     }
 
     @Override
@@ -612,6 +612,7 @@ public class DatadogHttpClient implements DatadogClient {
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("DD-API-KEY", Secret.toString(apiKey));
+            conn.setRequestProperty("DD-CI-PROVIDER-NAME", "jenkins");
             conn.setRequestProperty("User-Agent", String.format("Datadog/%s/jenkins Java/%s Jenkins/%s",
                     getDatadogPluginVersion(),
                     getJavaRuntimeVersion(),
@@ -714,6 +715,8 @@ public class DatadogHttpClient implements DatadogClient {
             conn = getHttpURLConnection(new URL(url), HTTP_TIMEOUT_MS);
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("DD-API-KEY", Secret.toString(apiKey));
+            conn.setDoOutput(true);
             OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream(), "utf-8");
             wr.write("{}");
             wr.close();
