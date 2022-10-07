@@ -7,9 +7,11 @@ import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeB
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
 
-import hudson.model.Run;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
+import java.util.Date;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
@@ -17,26 +19,19 @@ import org.datadog.jenkins.plugins.datadog.clients.DatadogHttpClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
-import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
-import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.logging.Logger;
+import hudson.model.Run;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 
 /**
  * Keeps the logic to send webhooks related to Jenkins Build.
  * This gets called once per job (datadog level: pipeline)
  */
-public class DatadogWebhookBuildLogic {
+public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
 
-    private static final String HOSTNAME_NONE = "none";
     private static final Logger logger = Logger.getLogger(DatadogWebhookBuildLogic.class.getName());
 
     private final DatadogHttpClient client;
@@ -268,70 +263,6 @@ public class DatadogWebhookBuildLogic {
         }
 
         client.postWebhook(payload.toString());
-    }
-
-    private String getNodeName(Run<?, ?> run, BuildData buildData, BuildData updatedBuildData) {
-        final PipelineNodeInfoAction pipelineNodeInfoAction = run.getAction(PipelineNodeInfoAction.class);
-        if(pipelineNodeInfoAction != null){
-            return pipelineNodeInfoAction.getNodeName();
-        }
-
-        return buildData.getNodeName("").isEmpty() ? updatedBuildData.getNodeName("") : buildData.getNodeName("");
-    }
-
-    private String getNodeHostname(Run<?, ?> run, BuildData updatedBuildData) {
-        final PipelineNodeInfoAction pipelineNodeInfoAction = run.getAction(PipelineNodeInfoAction.class);
-        if(pipelineNodeInfoAction != null){
-            return pipelineNodeInfoAction.getNodeHostname();
-        } else if (!updatedBuildData.getHostname("").isEmpty()) {
-            return updatedBuildData.getHostname("");
-        }
-        return null;
-    }
-
-    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
-    private Set<String> getNodeLabels(Run<?,?> run, final String nodeName) {
-        try {
-            if(run == null){
-                return Collections.emptySet();
-            }
-
-            final PipelineNodeInfoAction pipelineNodeInfoAction = run.getAction(PipelineNodeInfoAction.class);
-            if(pipelineNodeInfoAction != null) {
-                return pipelineNodeInfoAction.getNodeLabels();
-            }
-
-            if(run.getExecutor() != null && run.getExecutor().getOwner() != null) {
-                Set<String> nodeLabels = DatadogUtilities.getNodeLabels(run.getExecutor().getOwner());
-                if(nodeLabels != null && !nodeLabels.isEmpty()) {
-                    return nodeLabels;
-                }
-            }
-
-            // If there is no labels and the node name is master,
-            // we force the label "master".
-            if("master".equalsIgnoreCase(nodeName)){
-                final Set<String> masterLabels = new HashSet<>();
-                masterLabels.add("master");
-                return masterLabels;
-            }
-
-            return Collections.emptySet();
-        } catch (Exception ex) {
-            logger.fine("Unable to find node labels: " + ex.getMessage());
-            return Collections.emptySet();
-        }
-    }
-
-    private long getMillisInQueue(BuildData buildData) {
-        // Reported by the Jenkins Queue API.
-        // It's not included in the root duration.
-        final long millisInQueue = buildData.getMillisInQueue(-1L);
-
-        // Reported by a child.
-        // It's included in the root duration.
-        final long propagatedMillisInQueue = buildData.getPropagatedMillisInQueue(-1L);
-        return Math.max(Math.max(millisInQueue, propagatedMillisInQueue), 0);
     }
 
 }
