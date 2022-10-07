@@ -1,14 +1,20 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
+import org.datadog.jenkins.plugins.datadog.model.StageData;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
+import org.datadog.jenkins.plugins.datadog.util.json.JsonUtils;
 
 import hudson.model.Run;
 
@@ -18,6 +24,7 @@ import hudson.model.Run;
 public class DatadogBaseBuildLogic {
 
     protected static final String HOSTNAME_NONE = "none";
+    private static final int MAX_TAG_LENGTH = 5000;
     private static final Logger logger = Logger.getLogger(DatadogBaseBuildLogic.class.getName());
 
 
@@ -83,6 +90,25 @@ public class DatadogBaseBuildLogic {
         // It's included in the root span duration.
         final long propagatedMillisInQueue = buildData.getPropagatedMillisInQueue(-1L);
         return Math.max(Math.max(millisInQueue, propagatedMillisInQueue), 0);
+    }
+
+    protected String getStageBreakdown(Run run) {
+        final StageBreakdownAction stageBreakdownAction = run.getAction(StageBreakdownAction.class);
+        if(stageBreakdownAction == null) {
+            return null;
+        }
+
+        final Map<String, StageData> stageDataByName = stageBreakdownAction.getStageDataByName();
+        final List<StageData> stages = new ArrayList<>(stageDataByName.values());
+        Collections.sort(stages);
+
+        final String stagesJson = JsonUtils.toJson(new ArrayList<>(stages));
+        if (stagesJson.length() > MAX_TAG_LENGTH) {
+            logger.warning("Stage breakdown is too big so it won't be sent to Datadog");
+            return null;
+        }
+
+        return stagesJson;
     }
 
 }

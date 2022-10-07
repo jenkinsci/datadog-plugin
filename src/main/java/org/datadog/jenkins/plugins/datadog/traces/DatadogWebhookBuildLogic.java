@@ -20,6 +20,7 @@ import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 
 import hudson.model.Run;
@@ -54,6 +55,9 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
 
         final StepTraceDataAction stepTraceDataAction = new StepTraceDataAction();
         run.addAction(stepTraceDataAction);
+
+        final StageBreakdownAction stageBreakdownAction = new StageBreakdownAction();
+        run.addAction(stageBreakdownAction);
 
         final PipelineQueueInfoAction pipelineQueueInfoAction = new PipelineQueueInfoAction();
         run.addAction(pipelineQueueInfoAction);
@@ -158,6 +162,12 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
                 for(Map.Entry<String, String> entry : configurations.entrySet()) {
                     tagsPayload.add(prefix + CITags._CONFIGURATION + "." + entry.getKey() + ":" + entry.getValue());
                 }
+            }
+
+            // Stage breakdown
+            final String stagesJson = getStageBreakdown(run);
+            if (stagesJson != null) {
+                tagsPayload.add(CITags._DD_CI_STAGES + ":" + stagesJson);
             }
 
             payload.put("tags", tagsPayload);

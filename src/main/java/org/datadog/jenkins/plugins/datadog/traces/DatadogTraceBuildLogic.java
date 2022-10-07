@@ -8,9 +8,7 @@ import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeB
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -23,10 +21,8 @@ import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
-import org.datadog.jenkins.plugins.datadog.model.StageData;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.transport.HttpClient;
-import org.datadog.jenkins.plugins.datadog.util.json.JsonUtils;
 
 import hudson.model.Result;
 import hudson.model.Run;
@@ -36,7 +32,6 @@ import hudson.model.Run;
  */
 public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
 
-    private static final int MAX_TAG_LENGTH = 5000;
     private static final Logger logger = Logger.getLogger(DatadogTraceBuildLogic.class.getName());
 
     private final HttpClient agentHttpClient;
@@ -238,18 +233,9 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
         }
 
         // Stage breakdown
-        final StageBreakdownAction stageBreakdownAction = run.getAction(StageBreakdownAction.class);
-        if(stageBreakdownAction != null){
-            final Map<String, StageData> stageDataByName = stageBreakdownAction.getStageDataByName();
-            final List<StageData> stages = new ArrayList<>(stageDataByName.values());
-            Collections.sort(stages);
-
-            final String stagesJson = JsonUtils.toJson(new ArrayList<>(stages));
-            if (stagesJson.length() <= MAX_TAG_LENGTH) {
-                buildSpan.putMeta(CITags._DD_CI_STAGES, stagesJson);
-            } else {
-                logger.warning("Stage breakdown is too big so it won't be sent to Datadog");
-            }
+        final String stagesJson = getStageBreakdown(run);
+        if (stagesJson != null) {
+            buildSpan.putMeta(CITags._DD_CI_STAGES, stagesJson);
         }
 
         // Jenkins specific
