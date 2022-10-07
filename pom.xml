@@ -19,6 +19,7 @@
   <packaging>hpi</packaging>
 
   <properties>
+    <java.level>8</java.level>
     <jenkins.version>2.346.1</jenkins.version>
     <hpi.compatibleSinceVersion>1.0.0</hpi.compatibleSinceVersion>
     <dd-trace-java.version>0.71.0</dd-trace-java.version>
