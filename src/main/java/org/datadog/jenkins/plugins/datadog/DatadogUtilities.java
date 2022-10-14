@@ -784,7 +784,9 @@ public class DatadogUtilities {
     }
 
     /**
-     * Returns a normalize result for traces.
+     * Returns a normalized result for traces.
+     * NOTE: This is very similar to the above "getNormalizedResultForTraces", but with the difference
+     * that this will not return "unstable", which isn't a valid status on the Webhooks API.
      * @param result (success, failure, error, aborted, not_build, canceled, skipped, unknown)
      * @return the normalized result for the traces based on the jenkins result
      */
@@ -814,7 +816,7 @@ public class DatadogUtilities {
         if(e != null) {
             StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
-            logger.warning(message + ": " + sw.toString());
+            logger.info(message + ": " + sw.toString());
         }
     }
 

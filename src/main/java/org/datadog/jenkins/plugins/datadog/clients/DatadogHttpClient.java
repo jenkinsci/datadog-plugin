@@ -771,7 +771,7 @@ public class DatadogHttpClient implements DatadogClient {
     @Override
     public boolean startBuildTrace(BuildData buildData, Run run) {
         if(this.isWebhookIntakeConnectionBroken()){
-            logger.severe("Your client is not initialized properly");
+            logger.severe("Unable to start build trace; your client is not initialized properly.");
             return false;
         }
         try {
@@ -787,7 +787,7 @@ public class DatadogHttpClient implements DatadogClient {
     @Override
     public boolean finishBuildTrace(BuildData buildData, Run<?, ?> run) {
         if(this.isWebhookIntakeConnectionBroken()){
-            logger.severe("Your client is not initialized properly");
+            logger.severe("Unable to finish build trace; your client is not initialized properly.");
             return false;
         }
         try {
@@ -803,7 +803,7 @@ public class DatadogHttpClient implements DatadogClient {
     @Override
     public boolean sendPipelineTrace(Run<?, ?> run, FlowNode flowNode) {
         if(this.isWebhookIntakeConnectionBroken()){
-            logger.severe("Your client is not initialized properly");
+            logger.severe("Unable to send pipeline trace; your client is not initialized properly");
             return false;
         }
         try {

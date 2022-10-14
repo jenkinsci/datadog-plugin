@@ -104,7 +104,7 @@ public class DatadogBaseBuildLogic {
 
         final String stagesJson = JsonUtils.toJson(new ArrayList<>(stages));
         if (stagesJson.length() > MAX_TAG_LENGTH) {
-            logger.warning("Stage breakdown is too big so it won't be sent to Datadog");
+            logger.warning("Skipping sending stage to Datadog; stage breakdown is too large");
             return null;
         }
 

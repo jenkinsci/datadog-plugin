@@ -6,7 +6,7 @@ import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import java.io.Serializable;
 
 /**
- * Keeps build bebhook propagation
+ * Keeps build webhook propagation
  */
 public class BuildWebhookAction extends InvisibleAction implements Serializable {
 
