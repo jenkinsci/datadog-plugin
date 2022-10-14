@@ -112,7 +112,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static final String DEFAULT_TARGET_LOG_INTAKE_URL_VALUE = "https://http-intake.logs.datadoghq.com/v1/input/";
     private static final String DEFAULT_TARGET_HOST_VALUE = "localhost";
     private static final Integer DEFAULT_TARGET_PORT_VALUE = 8125;
-    private static final Integer DEFAULT_TRACE_COLLECTION_PORT_VALUE = null;
+    private static final Integer DEFAULT_TRACE_COLLECTION_PORT_VALUE = 8126;
     private static final String DEFAULT_CI_INSTANCE_NAME = "jenkins";
     private static final Integer DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE = null;
     private static final boolean DEFAULT_EMIT_SECURITY_EVENTS_VALUE = true;
