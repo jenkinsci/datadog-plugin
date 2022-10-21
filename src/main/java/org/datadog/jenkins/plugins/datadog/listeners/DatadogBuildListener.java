@@ -474,7 +474,7 @@ public class DatadogBuildListener extends RunListener<Run> {
     }
 
     public RunExt getRunExtForRun(WorkflowRun run) {
-        return RunExt.create(run);
+        return RunExt.createNew(run);
     }
 
     public Queue getQueue() {
