@@ -119,6 +119,11 @@
             <f:checkbox title="Refresh Dogstatsd Client" field="refreshDogstatsdClient" default="false" />
         </f:entry>
 
+
+        <f:entry title="Cache Build Runs" description="Cache Build Runs when calculating pause duration">
+            <f:checkbox title="Cache Build Runs" field="cacheBuildRuns" default="true" />
+        </f:entry>
+
         <f:entry title="System Events">
           <f:entry description="Send system events like Node changes of states.">
             <f:checkbox title="Send System events" field="emitSystemEvents" default="true" />
