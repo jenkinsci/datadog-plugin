@@ -120,7 +120,7 @@
         </f:entry>
 
 
-        <f:entry title="Cache Build Runs" description="Cache Build Runs when calculating pause duration">
+        <f:entry title="Cache Build Runs" description="Cache build runs when calculating pause duration">
             <f:checkbox title="Cache Build Runs" field="cacheBuildRuns" default="true" />
         </f:entry>
 

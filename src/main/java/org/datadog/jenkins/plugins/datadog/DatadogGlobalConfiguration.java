@@ -1209,7 +1209,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     /**
      * @return - A {@link Boolean} indicating if the user has configured Datadog to cache build runs
      */
-    public boolean doCacheBuildRuns() {
+    public boolean isCacheBuildRuns() {
         return cacheBuildRuns;
     }
 

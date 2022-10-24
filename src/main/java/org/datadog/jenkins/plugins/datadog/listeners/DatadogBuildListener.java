@@ -44,6 +44,7 @@ import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
+import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.events.BuildAbortedEventImpl;
@@ -474,7 +475,12 @@ public class DatadogBuildListener extends RunListener<Run> {
     }
 
     public RunExt getRunExtForRun(WorkflowRun run) {
-        return RunExt.createNew(run);
+        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+        if (cfg.isCacheBuildRuns()) {
+            return RunExt.create(run);
+        } else {
+            return RunExt.createNew(run);
+        }
     }
 
     public Queue getQueue() {
