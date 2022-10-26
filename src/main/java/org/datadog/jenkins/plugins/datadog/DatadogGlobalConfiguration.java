@@ -103,6 +103,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static final String COLLECT_BUILD_LOGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS";
     private static final String RETRY_LOGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_RETRY_LOGS";
     private static final String REFRESH_DOGSTATSD_CLIENT_PROPERTY = "DATADOG_REFRESH_STATSD_CLIENT";
+    private static final String CACHE_BUILD_RUNS_PROPERTY = "DATADOG_CACHE_BUILD_RUNS";
 
     private static final String ENABLE_CI_VISIBILITY_PROPERTY = "DATADOG_JENKINS_PLUGIN_ENABLE_CI_VISIBILITY";
     private static final String CI_VISIBILITY_CI_INSTANCE_NAME_PROPERTY = "DATADOG_JENKINS_PLUGIN_CI_VISIBILITY_CI_INSTANCE_NAME";
@@ -122,6 +123,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static final boolean DEFAULT_COLLECT_BUILD_TRACES_VALUE = false;
     private static final boolean DEFAULT_RETRY_LOGS_VALUE = true;
     private static final boolean DEFAULT_REFRESH_DOGSTATSD_CLIENT_VALUE = false;
+    private static final boolean DEFAULT_CACHE_BUILD_RUNS_VALUE = true;
 
     private String reportWith = DEFAULT_REPORT_WITH_VALUE;
     private String targetApiURL = DEFAULT_TARGET_API_URL_VALUE;
@@ -147,6 +149,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private boolean collectBuildTraces = DEFAULT_COLLECT_BUILD_TRACES_VALUE;
     private boolean retryLogs = DEFAULT_RETRY_LOGS_VALUE;
     private boolean refreshDogstatsdClient = DEFAULT_REFRESH_DOGSTATSD_CLIENT_VALUE;
+    private boolean cacheBuildRuns = DEFAULT_CACHE_BUILD_RUNS_VALUE;
 
     @DataBoundConstructor
     public DatadogGlobalConfiguration() {
@@ -270,6 +273,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         String refreshDogstatsdClientEnvVar = System.getenv(REFRESH_DOGSTATSD_CLIENT_PROPERTY);
         if(StringUtils.isNotBlank(refreshDogstatsdClientEnvVar)){
             this.refreshDogstatsdClient = Boolean.valueOf(refreshDogstatsdClientEnvVar);
+        }
+
+        String cacheBuildRunsEnvVar = System.getenv(CACHE_BUILD_RUNS_PROPERTY);
+        if(StringUtils.isNotBlank(cacheBuildRunsEnvVar)){
+            this.cacheBuildRuns = Boolean.valueOf(cacheBuildRunsEnvVar);
         }
 
         String enableCiVisibilityVar = System.getenv(ENABLE_CI_VISIBILITY_PROPERTY);
@@ -713,6 +721,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.setEmitSecurityEvents(formData.getBoolean("emitSecurityEvents"));
             this.setRetryLogs(formData.getBoolean("retryLogs"));
             this.setRefreshDogstatsdClient(formData.getBoolean("refreshDogstatsdClient"));
+            this.setCacheBuildRuns(formData.getBoolean("cacheBuildRuns"));
             this.setEmitSystemEvents(formData.getBoolean("emitSystemEvents"));
             this.setEmitConfigChangeEvents(formData.getBoolean("emitConfigChangeEvents"));
 
@@ -1195,6 +1204,23 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @DataBoundSetter
     public void setRefreshDogstatsdClient(boolean refreshDogstatsdClient) {
         this.refreshDogstatsdClient = refreshDogstatsdClient;
+    }
+
+    /**
+     * @return - A {@link Boolean} indicating if the user has configured Datadog to cache build runs
+     */
+    public boolean isCacheBuildRuns() {
+        return cacheBuildRuns;
+    }
+
+    /**
+     * Set the checkbox in the UI, used for Jenkins data binding
+     *
+     * @param cacheBuildRuns - The checkbox status (checked/unchecked)
+     */
+    @DataBoundSetter
+    public void setCacheBuildRuns(boolean cacheBuildRuns) {
+        this.cacheBuildRuns = cacheBuildRuns;
     }
 
     /**
