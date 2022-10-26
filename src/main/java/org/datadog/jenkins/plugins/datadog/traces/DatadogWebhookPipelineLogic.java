@@ -66,18 +66,18 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
 
 
         final BuildPipelineNode root = buildPipelineTree((FlowEndNode) flowNode);
-        collectTraces(run, buildData, root);
+        collectTraces(run, buildData, root, null);
 
         // Explicit removal of InvisibleActions used to collect Traces when the Run finishes.
         cleanUpTraceActions(run);
     }
 
-    private void collectTraces(final Run run, final BuildData buildData, final BuildPipelineNode current) {
+    private void collectTraces(final Run run, final BuildData buildData, final BuildPipelineNode current, final BuildPipelineNode parent) {
 
         if(!isTraceable(current)) {
             // If the current node is not traceable, we continue with its children
             for(final BuildPipelineNode child : current.getChildren()) {
-                collectTraces(run, buildData, child);
+                collectTraces(run, buildData, child, parent);
             }
             return;
         }
@@ -111,7 +111,12 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
 
         payload.put("pipeline_unique_id", buildData.getBuildTag(""));
         payload.put("pipeline_name", buildData.getBaseJobName(""));
-        if (buildLevel.equals("job")) {
+        if (buildLevel.equals("stage")) {
+            if (parent != null && parent.getType().getBuildLevel() == "stage") {
+                // Stage is a parent of another stage
+                payload.put("parent_stage_id", parent.getStageId());
+            }
+        } else if (buildLevel.equals("job")) {
              payload.put("stage_id", current.getStageId());
              payload.put("stage_name", current.getStageName());
         }
@@ -290,7 +295,7 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
         }
 
         for(final BuildPipelineNode child : current.getChildren()) {
-            collectTraces(run, buildData, child);
+            collectTraces(run, buildData, child, current);
         }
 
         client.postWebhook(payload.toString());
