@@ -61,6 +61,7 @@ public class BuildPipelineNode {
     private final List<BuildPipelineNode> children;
     private final String id;
     private final String name;
+    private String stageId;
     private String stageName;
 
     private NodeType type;
@@ -211,6 +212,14 @@ public class BuildPipelineNode {
 
     public String getName() {
         return name;
+    }
+
+    public String getStageId() {
+        return stageId;
+    }
+
+    public void setStageId(String stageId) {
+        this.stageId = stageId;
     }
 
     public String getStageName() {
@@ -369,6 +378,7 @@ public class BuildPipelineNode {
     // Used during the tree is being built in BuildPipeline class.
     public void updateData(final BuildPipelineNode buildNode) {
         this.stageName = buildNode.stageName;
+        this.stageId = buildNode.stageId;
         this.type = buildNode.type;
         this.internal = buildNode.internal;
         this.initial = buildNode.initial;

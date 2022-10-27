@@ -31,6 +31,9 @@ import org.jenkinsci.plugins.workflow.FilePathUtils;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -40,6 +43,8 @@ public final class GitUtils {
     private static transient final Logger LOGGER = Logger.getLogger(GitUtils.class.getName());
     private static transient final Pattern SHA1_PATTERN = Pattern.compile("\\b[a-f0-9]{40}\\b");
     private static transient final Pattern SCP_REPO_URI_REGEX = Pattern.compile("^([\\w.~-]+@)?(?<host>[\\w.-]+):(?<path>[\\w./-]+)(?:\\?|$)(.*)$");
+
+    public static final Collection<String> WEBHOOK_REQUIRED_GIT_KEYS = Collections.unmodifiableList(Arrays.asList("repository_url", "message","sha","commit_time","author_time","committer_name","author_name","committer_email","author_email"));
 
     private GitUtils(){}
 

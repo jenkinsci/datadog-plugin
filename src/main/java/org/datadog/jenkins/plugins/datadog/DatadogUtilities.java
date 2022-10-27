@@ -45,6 +45,7 @@ import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.steps.DatadogPipelineAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
+import org.datadog.jenkins.plugins.datadog.traces.BuildWebhookAction;
 import org.datadog.jenkins.plugins.datadog.traces.IsPipelineAction;
 import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
 import org.datadog.jenkins.plugins.datadog.traces.StepTraceDataAction;
@@ -782,6 +783,28 @@ public class DatadogUtilities {
         }
     }
 
+    /**
+     * Returns a normalized result for traces.
+     * NOTE: This is very similar to the above "getNormalizedResultForTraces", but with the difference
+     * that this will not return "unstable", which isn't a valid status on the Webhooks API.
+     * @param result (success, failure, error, aborted, not_build, canceled, skipped, unknown)
+     * @return the normalized result for the traces based on the jenkins result
+     */
+    public static String statusFromResult(@Nonnull String result) {
+        switch (result.toLowerCase()){
+            case "failure":
+                return "error";
+            case "aborted":
+                return "canceled";
+            case "not_built":
+                return "skipped";
+            case "unstable": // has non-fatal errors
+                return "success";
+            default:
+                return result.toLowerCase();
+        }
+    }
+
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH")
     public static void severe(Logger logger, Throwable e, String message){
         if(message == null){
@@ -793,7 +816,7 @@ public class DatadogUtilities {
         if(e != null) {
             StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
-            logger.finer(message + ": " + sw.toString());
+            logger.info(message + ": " + sw.toString());
         }
     }
 
@@ -881,6 +904,7 @@ public class DatadogUtilities {
     public static void cleanUpTraceActions(final Run<?, ?> run) {
         if(run != null) {
             run.removeActions(BuildSpanAction.class);
+            run.removeActions(BuildWebhookAction.class);
             run.removeActions(StepDataAction.class);
             run.removeActions(CIGlobalTagsAction.class);
             run.removeActions(GitCommitAction.class);

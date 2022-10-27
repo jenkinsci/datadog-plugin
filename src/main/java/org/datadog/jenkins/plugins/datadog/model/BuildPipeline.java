@@ -110,8 +110,10 @@ public class BuildPipeline {
             if(!BuildPipelineNode.NodeType.STAGE.equals(node.getType())) {
                 if(BuildPipelineNode.NodeType.STAGE.equals(parent.getType())) {
                     node.setStageName(parent.getName());
+                    node.setStageId(parent.getId());
                 } else if(parent.getStageName() != null){
                     node.setStageName(parent.getStageName());
+                    node.setStageId(parent.getStageId());
                 }
             }
 

@@ -39,15 +39,15 @@ public class ClientFactory {
     }
 
     public static DatadogClient getClient(DatadogClient.ClientType type, String apiUrl, String logIntakeUrl,
-                                          Secret apiKey, String host, Integer port, Integer logCollectionPort,
-                                          Integer traceCollectionPort, String traceServiceName){
+                                          String webhookIntakeUrl, Secret apiKey, String host, Integer port,
+                                          Integer logCollectionPort, Integer traceCollectionPort, String traceServiceName) {
         if(testClient != null){
             // Only used for tests
             return testClient;
         }
         switch(type){
             case HTTP:
-                return DatadogHttpClient.getInstance(apiUrl, logIntakeUrl, apiKey);
+                return DatadogHttpClient.getInstance(apiUrl, logIntakeUrl, webhookIntakeUrl, apiKey);
             case DSD:
                 return DatadogAgentClient.getInstance(host, port, logCollectionPort, traceCollectionPort);
             default:
@@ -64,6 +64,7 @@ public class ClientFactory {
         String reportWith = null;
         String targetApiURL = null;
         String targetLogIntakeURL = null;
+        String targetWebhookIntakeURL = null;
         Secret targetApiKey = null;
         String targetHost = null;
         Integer targetPort = null;
@@ -74,6 +75,7 @@ public class ClientFactory {
             reportWith = descriptor.getReportWith();
             targetApiURL = descriptor.getTargetApiURL();
             targetLogIntakeURL = descriptor.getTargetLogIntakeURL();
+            targetWebhookIntakeURL = descriptor.getTargetWebhookIntakeURL();
             targetApiKey = descriptor.getUsedApiKey();
             targetHost = descriptor.getTargetHost();
             targetPort = descriptor.getTargetPort();
@@ -81,7 +83,7 @@ public class ClientFactory {
             targetTraceCollectionPort = descriptor.getTargetTraceCollectionPort();
             ciInstanceName = descriptor.getCiInstanceName();
         }
-        return ClientFactory.getClient(DatadogClient.ClientType.valueOf(reportWith), targetApiURL, targetLogIntakeURL,
+        return ClientFactory.getClient(DatadogClient.ClientType.valueOf(reportWith), targetApiURL, targetLogIntakeURL, targetWebhookIntakeURL,
                 targetApiKey, targetHost, targetPort, targetLogCollectionPort, targetTraceCollectionPort, ciInstanceName);
     }
 }
