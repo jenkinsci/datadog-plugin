@@ -157,7 +157,7 @@ public class DatadogHttpClient implements DatadogClient {
                 throw new IllegalArgumentException("Datadog Log Intake URL is not set properly");
             }
             try {
-                boolean logConnection = validateLogIntakeConnection(logIntakeUrl, apiKey);
+                boolean logConnection = validateLogIntakeConnection();
                 if (!logConnection) {
                     instance.setLogIntakeConnectionBroken(true);
                     logger.warning("Connection broken, please double check both your Log Intake URL and Key");
@@ -173,7 +173,7 @@ public class DatadogHttpClient implements DatadogClient {
                 throw new IllegalArgumentException("Datadog Webhook Intake URL is not set properly");
             }
             try {
-                boolean webhookConnection = validateWebhookIntakeConnection(webhookIntakeUrl, apiKey);
+                boolean webhookConnection = validateWebhookIntakeConnection();
                 if (!webhookConnection) {
                     instance.setWebhookIntakeConnectionBroken(true);
                     logger.warning("Connection broken, please double check both your Webhook Intake URL and Key");
@@ -437,6 +437,26 @@ public class DatadogHttpClient implements DatadogClient {
     }
 
     /**
+     * Configures a HttpURLConnection to send a json POST request to the given Datadog API url.
+     *
+     * @param url - A Datadog API endpoint
+     */
+    HttpURLConnection createApiPostConnection(URL url) throws IOException {
+        HttpURLConnection conn = getHttpURLConnection(url, HTTP_TIMEOUT_MS);
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setRequestProperty("DD-API-KEY", Secret.toString(apiKey));
+        conn.setRequestProperty("User-Agent", String.format("Datadog/%s/jenkins Java/%s Jenkins/%s",
+                getDatadogPluginVersion(),
+                getJavaRuntimeVersion(),
+                getJenkinsVersion()));
+        conn.setUseCaches(false);
+        conn.setDoInput(true);
+        conn.setDoOutput(true);
+        return conn;
+    }
+
+    /**
      * Posts a given {@link JSONObject} payload to the Datadog API, using the
      * user configured apiKey.
      *
@@ -451,18 +471,12 @@ public class DatadogHttpClient implements DatadogClient {
             return false;
         }
 
-        String urlParameters = "?api_key=" + Secret.toString(this.getApiKey());
         HttpURLConnection conn = null;
         boolean status = true;
 
         try {
             logger.fine("Setting up HttpURLConnection...");
-            conn = getHttpURLConnection(new URL(this.getUrl() + type + urlParameters), HTTP_TIMEOUT_MS);
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setUseCaches(false);
-            conn.setDoInput(true);
-            conn.setDoOutput(true);
+            conn = createApiPostConnection(new URL(this.getUrl() + type));
 
             OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream(), "utf-8");
             logger.fine("Writing to OutputStreamWriter...");
@@ -523,11 +537,11 @@ public class DatadogHttpClient implements DatadogClient {
             throw new RuntimeException("Datadog Log Collection Port not set properly");
         }
 
-        return postLogs(this.getLogIntakeUrl(), getApiKey(), payload);
+        return postLogs(payload);
     }
 
     @SuppressFBWarnings("REC_CATCH_EXCEPTION")
-    private boolean postLogs(String url, Secret apiKey, String payload) {
+    private boolean postLogs(String payload) {
         if(payload == null){
             logger.fine("No payload to post");
             return true;
@@ -535,19 +549,8 @@ public class DatadogHttpClient implements DatadogClient {
 
         HttpURLConnection conn = null;
         try {
-            URL logsEndpointURL = new URL(url);
             logger.fine("Setting up HttpURLConnection...");
-            conn = getHttpURLConnection(logsEndpointURL, HTTP_TIMEOUT_MS);
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("DD-API-KEY", Secret.toString(apiKey));
-            conn.setRequestProperty("User-Agent", String.format("Datadog/%s/jenkins Java/%s Jenkins/%s",
-                    getDatadogPluginVersion(),
-                    getJavaRuntimeVersion(),
-                    getJenkinsVersion()));
-            conn.setUseCaches(false);
-            conn.setDoInput(true);
-            conn.setDoOutput(true);
+            conn = createApiPostConnection(new URL(this.getLogIntakeUrl()));
 
             OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream(), "utf-8");
             logger.fine("Writing to OutputStreamWriter...");
@@ -608,18 +611,8 @@ public class DatadogHttpClient implements DatadogClient {
         try {
             logger.fine("Setting up HttpURLConnection...");
             String urlParameters = "?service=" + DatadogUtilities.getDatadogGlobalDescriptor().getCiInstanceName();
-            conn = getHttpURLConnection(new URL(this.getWebhookIntakeUrl() + urlParameters), HTTP_TIMEOUT_MS);
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("DD-API-KEY", Secret.toString(apiKey));
+            conn = createApiPostConnection(new URL(this.getWebhookIntakeUrl() + urlParameters));
             conn.setRequestProperty("DD-CI-PROVIDER-NAME", "jenkins");
-            conn.setRequestProperty("User-Agent", String.format("Datadog/%s/jenkins Java/%s Jenkins/%s",
-                    getDatadogPluginVersion(),
-                    getJavaRuntimeVersion(),
-                    getJenkinsVersion()));
-            conn.setUseCaches(false);
-            conn.setDoInput(true);
-            conn.setDoOutput(true);
 
             OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream(), "utf-8");
             logger.fine("Writing to OutputStreamWriter...");
@@ -700,23 +693,19 @@ public class DatadogHttpClient implements DatadogClient {
         return status;
     }
 
-    public static boolean validateLogIntakeConnection(String url, Secret apiKey) throws IOException {
-        DatadogHttpClient client = new DatadogHttpClient(null, url, null, apiKey);
-        return client.postLogs(url, apiKey, "{\"message\":\"[datadog-plugin] Check connection\", " +
+    public boolean validateLogIntakeConnection() throws IOException {
+        return postLogs("{\"message\":\"[datadog-plugin] Check connection\", " +
                 "\"ddsource\":\"Jenkins\", \"service\":\"Jenkins\", " +
                 "\"hostname\":\""+DatadogUtilities.getHostname(null)+"\"}");
     }
 
-    public static boolean validateWebhookIntakeConnection(String url, Secret apiKey) throws IOException {
+    public boolean validateWebhookIntakeConnection() throws IOException {
         HttpURLConnection conn = null;
         boolean status = true;
         try {
             // Make request
-            conn = getHttpURLConnection(new URL(url), HTTP_TIMEOUT_MS);
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("DD-API-KEY", Secret.toString(apiKey));
-            conn.setDoOutput(true);
+            conn = createApiPostConnection(new URL(this.getWebhookIntakeUrl()));
+
             OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream(), "utf-8");
             wr.write("{}");
             wr.close();
