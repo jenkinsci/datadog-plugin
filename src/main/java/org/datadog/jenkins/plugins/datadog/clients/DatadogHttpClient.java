@@ -164,7 +164,7 @@ public class DatadogHttpClient implements DatadogClient {
                 }
             } catch (IOException e) {
                 instance.setLogIntakeConnectionBroken(true);
-                logger.warning("Connection broken, please double check both your Log Intake URL and Key");
+                logger.warning("Connection broken, please double check both your Log Intake URL and Key: " + e);
             }
         }
 
@@ -180,7 +180,7 @@ public class DatadogHttpClient implements DatadogClient {
                 }
             } catch (IOException e) {
                 instance.setWebhookIntakeConnectionBroken(true);
-                logger.warning("Connection broken, please double check both your Webhook Intake URL and Key");
+                logger.warning("Connection broken, please double check both your Webhook Intake URL and Key: " + e);
             }
         }
 
@@ -600,7 +600,7 @@ public class DatadogHttpClient implements DatadogClient {
     public boolean postWebhook(String payload) {
         logger.fine("Sending webhook");
         if(this.isWebhookIntakeConnectionBroken()){
-            logger.severe("Your client is not initialized properly");
+            logger.severe("Your client is not initialized properly; webhook intake connection is broken.");
             return false;
         }
 
