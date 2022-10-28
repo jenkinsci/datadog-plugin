@@ -1,3 +1,6 @@
+Changes
+=======
+
 ## 5.1.0-beta-1 / 2022-10-28
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.0.0...datadog-5.1.0-rc.1
