@@ -600,6 +600,7 @@ public class DatadogHttpClient implements DatadogClient {
      * @return a boolean to signify the success or failure of the HTTP POST request.
      */
     @SuppressFBWarnings("REC_CATCH_EXCEPTION")
+    @Override
     public boolean postWebhook(String payload) {
         logger.fine("Sending webhook");
         if(this.isWebhookIntakeConnectionBroken()){

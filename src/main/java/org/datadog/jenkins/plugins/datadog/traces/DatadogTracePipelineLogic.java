@@ -48,6 +48,7 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
         this.agentHttpClient = agentHttpClient;
     }
 
+    @Override
     public void execute(Run run, FlowNode flowNode) {
 
         if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {

@@ -177,6 +177,13 @@ public class DatadogClientStub implements DatadogClient {
     }
 
     @Override
+    public boolean postWebhook(String webhook) {
+        JSONObject payload = JSONObject.fromObject(webhook);
+        this.logLines.add(payload);
+        return true;
+    }
+
+    @Override
     public boolean startBuildTrace(BuildData buildData, Run<?, ?> run) {
         this.traceBuildLogic.startBuildTrace(buildData, run);
         return true;

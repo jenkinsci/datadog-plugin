@@ -47,11 +47,13 @@ import hudson.model.TaskListener;
 /**
  * Base class with shared code for DatadogTracePipelineLogic and DatadogWebhookPipelineLogic
  */
-public class DatadogBasePipelineLogic {
+public abstract class DatadogBasePipelineLogic {
 
     protected static final String CI_PROVIDER = "jenkins";
     protected static final String HOSTNAME_NONE = "none";
     private static final Logger logger = Logger.getLogger(DatadogBasePipelineLogic.class.getName());
+
+    public abstract void execute(Run run, FlowNode flowNode);
 
     protected BuildPipelineNode buildPipelineTree(FlowEndNode flowEndNode) {
 

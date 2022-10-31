@@ -40,6 +40,7 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
         this.agentHttpClient = agentHttpClient;
     }
 
+    @Override
     public void startBuildTrace(final BuildData buildData, Run run) {
         if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
             logger.fine("CI Visibility is disabled");
@@ -80,6 +81,7 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
         run.addAction(ciGlobalTags);
     }
 
+    @Override
     public void finishBuildTrace(final BuildData buildData, final Run<?,?> run) {
         if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
             return;
