@@ -21,12 +21,14 @@ import hudson.model.Run;
 /**
  * Base class for DatadogTraceBuildLogic and DatadogPipelineBuildLogic
  */
-public class DatadogBaseBuildLogic {
+public abstract class DatadogBaseBuildLogic {
 
     protected static final String HOSTNAME_NONE = "none";
     private static final int MAX_TAG_LENGTH = 5000;
     private static final Logger logger = Logger.getLogger(DatadogBaseBuildLogic.class.getName());
 
+    public abstract void finishBuildTrace(final BuildData buildData, final Run<?,?> run);
+    public abstract void startBuildTrace(final BuildData buildData, Run run);
 
     protected String getNodeName(Run<?, ?> run, BuildData buildData, BuildData updatedBuildData) {
         final PipelineNodeInfoAction pipelineNodeInfoAction = run.getAction(PipelineNodeInfoAction.class);

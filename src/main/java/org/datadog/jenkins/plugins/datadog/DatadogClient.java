@@ -144,6 +144,14 @@ public interface DatadogClient {
     public boolean sendLogs(String payload);
 
     /**
+     * Send a webhook payload to the webhooks intake.
+     *
+     * @param payload - A webhooks payload.
+     * @return a boolean to signify the success or failure of the HTTP POST request.
+     */
+    public boolean postWebhook(String payload);
+
+    /**
      * Start the trace of a certain Jenkins build.
      * @param buildData build data to use in the pipeline trace
      * @param run a particular execution of a Jenkins build

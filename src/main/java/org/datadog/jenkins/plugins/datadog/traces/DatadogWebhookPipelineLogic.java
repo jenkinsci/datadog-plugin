@@ -15,8 +15,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
+import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.DatadogHttpClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
@@ -34,12 +34,13 @@ import net.sf.json.JSONObject;
  */
 public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
 
-    private final DatadogHttpClient client;
+    private final DatadogClient client;
 
-    public DatadogWebhookPipelineLogic(final DatadogHttpClient client) {
+    public DatadogWebhookPipelineLogic(final DatadogClient client) {
         this.client = client;
     }
 
+    @Override
     public void execute(Run run, FlowNode flowNode) {
 
         if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {

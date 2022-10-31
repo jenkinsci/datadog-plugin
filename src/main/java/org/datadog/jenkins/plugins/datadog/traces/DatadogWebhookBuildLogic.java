@@ -14,8 +14,8 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
+import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.DatadogHttpClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
@@ -35,12 +35,13 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
 
     private static final Logger logger = Logger.getLogger(DatadogWebhookBuildLogic.class.getName());
 
-    private final DatadogHttpClient client;
+    private final DatadogClient client;
 
-    public DatadogWebhookBuildLogic(final DatadogHttpClient client) {
+    public DatadogWebhookBuildLogic(final DatadogClient client) {
         this.client = client;
     }
 
+    @Override
     public void startBuildTrace(final BuildData buildData, Run run) {
         if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
             logger.fine("CI Visibility is disabled");
@@ -66,6 +67,7 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
         run.addAction(ciGlobalTags);
     }
 
+    @Override
     public void finishBuildTrace(final BuildData buildData, final Run<?,?> run) {
         if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
             return;
