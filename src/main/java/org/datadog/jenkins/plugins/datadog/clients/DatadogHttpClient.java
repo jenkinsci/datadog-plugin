@@ -567,10 +567,10 @@ public class DatadogHttpClient implements DatadogClient {
             rd.close();
 
             if ("{}".equals(result.toString())) {
-                logger.fine(String.format("Logs API call was sent successfully!"));
+                logger.fine(String.format("Webhook API call was sent successfully!"));
                 logger.fine(String.format("Payload: %s", payload));
             } else {
-                logger.severe(String.format("Logs API call failed!"));
+                logger.severe(String.format("Webhook API call failed!"));
                 logger.fine(String.format("Payload: %s", payload));
                 return false;
             }
