@@ -26,16 +26,23 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.clients;
 
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
+import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
+
+import static org.mockito.Mockito.when;
 
 public class DatadogClientTest {
 
@@ -99,6 +106,30 @@ public class DatadogClientTest {
         DatadogAgentClient.enableValidations = true;
         DatadogClient client = DatadogAgentClient.getInstance("https", null, null, null);
         Assert.assertEquals(client, null);
+    }
+
+    @Test
+    public void testEvpProxyEnabled() {
+        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+        cfg.setEnableCiVisibility(true);
+        DatadogAgentClient client = Mockito.spy(DatadogAgentClient.class);
+        client.setHostname("test");
+        client.setPort(8126);
+        when(client.fetchAgentSupportedEndpoints()).thenReturn(new HashSet<String>(Arrays.asList("/evp_proxy/v1/")));
+        client.startBuildTrace(null, null); // calls reinitializeAgentHttpClient
+        Assert.assertTrue(client.isEvpProxySupported());
+    }
+
+    @Test
+    public void testEvpProxyDisabled() {
+        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+        cfg.setEnableCiVisibility(true);
+        DatadogAgentClient client = Mockito.spy(DatadogAgentClient.class);
+        client.setHostname("test");
+        client.setPort(8126);
+        when(client.fetchAgentSupportedEndpoints()).thenReturn(new HashSet<String>());
+        client.startBuildTrace(null, null); // calls reinitializeAgentHttpClient
+        Assert.assertFalse(client.isEvpProxySupported());
     }
 
     @Test

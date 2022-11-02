@@ -110,7 +110,7 @@ public class DatadogAgentClient implements DatadogClient {
     private Integer traceCollectionPort = null;
     private boolean isStoppedStatsDClient = true;
     private boolean isStoppedAgentHttpClient = true;
-    private boolean isEvpProxySupported = true;
+    private boolean evpProxySupported = true;
 
     /* Timeout of 10 seconds for reading the local Agent /info endpoint.
      */
@@ -374,7 +374,7 @@ public class DatadogAgentClient implements DatadogClient {
     public boolean postWebhook(String payload) {
         logger.fine("Sending webhook");
 
-        if(!this.isEvpProxySupported){
+        if(!this.evpProxySupported){
             logger.severe("Trying to send a webhook but the Agent doesn't support it.");
             return false;
         }
@@ -465,11 +465,11 @@ public class DatadogAgentClient implements DatadogClient {
                     .build();
 
             Set<String> supportedAgentEndpoints = fetchAgentSupportedEndpoints();
-            this.isEvpProxySupported = supportedAgentEndpoints.contains("/evp_proxy/v1/");
+            this.evpProxySupported = supportedAgentEndpoints.contains("/evp_proxy/v1/");
 
-            logger.fine("isEvpProxySupported: " + this.isEvpProxySupported);
+            logger.fine("isEvpProxySupported: " + this.evpProxySupported);
 
-            if (this.isEvpProxySupported) {
+            if (this.evpProxySupported) {
                 traceBuildLogic = new DatadogWebhookBuildLogic(this);
                 tracePipelineLogic = new DatadogWebhookPipelineLogic(this);
             } else {
@@ -595,6 +595,10 @@ public class DatadogAgentClient implements DatadogClient {
     @Override
     public void setWebhookIntakeConnectionBroken(boolean webhookIntakeConnectionBroken) {
         // noop
+    }
+
+    public boolean isEvpProxySupported() {
+        return evpProxySupported;
     }
 
     @Override
