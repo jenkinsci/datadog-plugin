@@ -110,7 +110,7 @@ public class DatadogAgentClient implements DatadogClient {
     private Integer traceCollectionPort = null;
     private boolean isStoppedStatsDClient = true;
     private boolean isStoppedAgentHttpClient = true;
-    private boolean isEvpProxySupported = true;
+    private boolean evpProxySupported = false;
 
     /* Timeout of 10 seconds for reading the local Agent /info endpoint.
      */
@@ -374,7 +374,7 @@ public class DatadogAgentClient implements DatadogClient {
     public boolean postWebhook(String payload) {
         logger.fine("Sending webhook");
 
-        if(!this.isEvpProxySupported){
+        if(!this.evpProxySupported){
             logger.severe("Trying to send a webhook but the Agent doesn't support it.");
             return false;
         }
@@ -440,12 +440,12 @@ public class DatadogAgentClient implements DatadogClient {
      * @param force - force to reinitialize
      * @return true if reinitialized properly otherwise false
      */
-    private boolean reinitializeAgentHttpClient(boolean force) {
+    protected boolean reinitializeAgentHttpClient(boolean force) {
         if(!this.isStoppedAgentHttpClient && this.traceBuildLogic != null && this.tracePipelineLogic != null && !force) {
             return true;
         }
 
-        if(!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility() || this.hostname == null || this.traceCollectionPort == null) {
+        if(!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility() || this.getHostname() == null || this.getTraceCollectionPort() == null) {
             return false;
         }
 
@@ -454,7 +454,7 @@ public class DatadogAgentClient implements DatadogClient {
             logger.info("Re/Initialize Datadog-Plugin Agent Http Client");
 
             // Build
-            final URL tracesURL = buildHttpURL(this.hostname, this.traceCollectionPort, "/v0.3/traces");
+            final URL tracesURL = buildHttpURL(this.getHostname(), this.getTraceCollectionPort(), "/v0.3/traces");
             this.agentHttpClient = NonBlockingHttpClient.builder()
                     .errorHandler(LOGGER_HTTP_ERROR_HANDLER)
                     .messageRoute(PayloadMessage.Type.TRACE, HttpMessageFactory.builder()
@@ -465,11 +465,11 @@ public class DatadogAgentClient implements DatadogClient {
                     .build();
 
             Set<String> supportedAgentEndpoints = fetchAgentSupportedEndpoints();
-            this.isEvpProxySupported = supportedAgentEndpoints.contains("/evp_proxy/v1/");
+            this.evpProxySupported = supportedAgentEndpoints.contains("/evp_proxy/v1/");
 
-            logger.fine("isEvpProxySupported: " + this.isEvpProxySupported);
+            logger.fine("isEvpProxySupported: " + this.evpProxySupported);
 
-            if (this.isEvpProxySupported) {
+            if (this.evpProxySupported) {
                 traceBuildLogic = new DatadogWebhookBuildLogic(this);
                 tracePipelineLogic = new DatadogWebhookPipelineLogic(this);
             } else {
@@ -595,6 +595,10 @@ public class DatadogAgentClient implements DatadogClient {
     @Override
     public void setWebhookIntakeConnectionBroken(boolean webhookIntakeConnectionBroken) {
         // noop
+    }
+
+    public boolean isEvpProxySupported() {
+        return evpProxySupported;
     }
 
     @Override
