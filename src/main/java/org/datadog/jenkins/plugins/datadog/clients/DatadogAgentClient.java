@@ -316,7 +316,7 @@ public class DatadogAgentClient implements DatadogClient {
      * @return a list of endpoints (if /info wasn't available, it will be empty)
      */
     @SuppressFBWarnings("REC_CATCH_EXCEPTION")
-    public Set<String> fetchAgentSupportedEndpoints() {
+    public Set<String> fetchAgentSupportedEndpoints(int retries) {
         logger.fine("Fetching Agent info");
 
         HashSet<String> endpoints = new HashSet<>();
@@ -344,6 +344,16 @@ public class DatadogAgentClient implements DatadogClient {
             // Iterate jsonArray using for loop
             for (int i = 0; i < jsonEndpoints.length(); i++) {
                 endpoints.add(jsonEndpoints.getString(i));
+            }
+        } catch (java.net.ConnectException e) {
+            if (retries > 0) {
+                logger.warning("Datadog Agent not reachable, waiting 10 seconds and retrying...");
+                try {
+                    Thread.sleep(10000);
+                } catch (InterruptedException ie) { }
+                return fetchAgentSupportedEndpoints(retries-1);
+            } else {
+                logger.warning("Datadog Agent not reachable, giving up.");
             }
         } catch (Exception e) {
             try {
@@ -464,7 +474,7 @@ public class DatadogAgentClient implements DatadogClient {
                             .build())
                     .build();
 
-            Set<String> supportedAgentEndpoints = fetchAgentSupportedEndpoints();
+            Set<String> supportedAgentEndpoints = fetchAgentSupportedEndpoints(3);
             this.evpProxySupported = supportedAgentEndpoints.contains("/evp_proxy/v1/");
 
             logger.fine("isEvpProxySupported: " + this.evpProxySupported);
