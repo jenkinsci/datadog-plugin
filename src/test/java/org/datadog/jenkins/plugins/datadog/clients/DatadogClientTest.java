@@ -115,7 +115,7 @@ public class DatadogClientTest {
         DatadogAgentClient client = Mockito.mock(DatadogAgentClient.class);
         when(client.getHostname()).thenReturn("test");
         when(client.getTraceCollectionPort()).thenReturn(1234);
-        when(client.fetchAgentSupportedEndpoints(Mockito.anyInt())).thenReturn(new HashSet<String>(Arrays.asList("/evp_proxy/v1/")));
+        when(client.fetchAgentSupportedEndpoints(Mockito.anyInt())).thenReturn(new HashSet<String>(Arrays.asList("/evp_proxy/v3/")));
         when(client.reinitializeAgentHttpClient(Mockito.anyBoolean())).thenCallRealMethod();
         when(client.isEvpProxySupported()).thenCallRealMethod();
         client.reinitializeAgentHttpClient(true);

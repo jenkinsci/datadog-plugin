@@ -475,7 +475,7 @@ public class DatadogAgentClient implements DatadogClient {
                     .build();
 
             Set<String> supportedAgentEndpoints = fetchAgentSupportedEndpoints(3);
-            this.evpProxySupported = supportedAgentEndpoints.contains("/evp_proxy/v1/");
+            this.evpProxySupported = supportedAgentEndpoints.contains("/evp_proxy/v3/");
 
             logger.fine("isEvpProxySupported: " + this.evpProxySupported);
 
@@ -483,7 +483,7 @@ public class DatadogAgentClient implements DatadogClient {
                 traceBuildLogic = new DatadogWebhookBuildLogic(this);
                 tracePipelineLogic = new DatadogWebhookPipelineLogic(this);
             } else {
-                Log.warn("The Agent doesn't support EVP Proxy, falling back to APM for CI Visibility. Probably the Agent is older than 6.38/7.38.");
+                Log.info("The Agent doesn't support EVP Proxy, falling back to APM for CI Visibility. Probably the Agent is older than 6.42/7.42.");
                 traceBuildLogic = new DatadogTraceBuildLogic(this.agentHttpClient);
                 tracePipelineLogic = new DatadogTracePipelineLogic(this.agentHttpClient);
             }
