@@ -112,11 +112,19 @@ public class DatadogAgentClient implements DatadogClient {
     private boolean isStoppedAgentHttpClient = true;
     private boolean evpProxySupported = false;
 
-    /* Timeout of 10 seconds for reading the local Agent /info endpoint.
+    /**
+     * Number of retries and delay between them when trying to fetch the Agent's /info endpoint.
+     */
+    private static final int INFO_NUM_RETRIES = 5;
+    private static final int INFO_RETRY_WAIT_TIME_MS = 5 * 1000;
+
+    /**
+     * Timeout waiting for a reply after a connection to the /info endpoint was established.
      */
     private static final int HTTP_TIMEOUT_INFO_MS = 10 * 1000;
 
-    /* Timeout of 1 minutes for connecting and reading via the synchronous Agent EVP Proxy.
+    /**
+     * Timeout of 1 minutes for connecting and reading via the synchronous Agent EVP Proxy.
      * this prevents this plugin from causing jobs to hang in case of
      * flaky network or Datadog being down. Left intentionally long.
      */
@@ -311,7 +319,7 @@ public class DatadogAgentClient implements DatadogClient {
     }
 
     /**
-     * Fetches the supported endpoints form the Trace Agent /info API
+     * Fetches the supported endpoints from the Trace Agent /info API
      *
      * @return a list of endpoints (if /info wasn't available, it will be empty)
      */
@@ -347,9 +355,9 @@ public class DatadogAgentClient implements DatadogClient {
             }
         } catch (java.net.ConnectException e) {
             if (retries > 0) {
-                logger.warning("Datadog Agent not reachable, waiting 10 seconds and retrying...");
+                logger.warning("Datadog Agent not reachable, waiting 5 seconds and retrying...");
                 try {
-                    Thread.sleep(10000);
+                    Thread.sleep(INFO_RETRY_WAIT_TIME_MS);
                 } catch (InterruptedException ie) { }
                 return fetchAgentSupportedEndpoints(retries-1);
             } else {
@@ -358,7 +366,7 @@ public class DatadogAgentClient implements DatadogClient {
         } catch (Exception e) {
             try {
                 if (conn != null && conn.getResponseCode() == NOT_FOUND) {
-                    logger.info("Agent /info returned 404. Probably the Agent is older than 6.27/7.27");
+                    logger.info("Agent /info returned 404. Requires Agent v6.27+ or v7.27+.");
                 } else {
                     DatadogUtilities.severe(logger, e, "Unknown client error, please check your config");
                 }
@@ -474,7 +482,7 @@ public class DatadogAgentClient implements DatadogClient {
                             .build())
                     .build();
 
-            Set<String> supportedAgentEndpoints = fetchAgentSupportedEndpoints(3);
+            Set<String> supportedAgentEndpoints = fetchAgentSupportedEndpoints(INFO_NUM_RETRIES);
             this.evpProxySupported = supportedAgentEndpoints.contains("/evp_proxy/v3/");
 
             logger.fine("isEvpProxySupported: " + this.evpProxySupported);
@@ -483,7 +491,7 @@ public class DatadogAgentClient implements DatadogClient {
                 traceBuildLogic = new DatadogWebhookBuildLogic(this);
                 tracePipelineLogic = new DatadogWebhookPipelineLogic(this);
             } else {
-                Log.info("The Agent doesn't support EVP Proxy, falling back to APM for CI Visibility. Probably the Agent is older than 6.42/7.42.");
+                Log.info("The Agent doesn't support EVP Proxy, falling back to APM for CI Visibility. Requires Agent v6.42+ or 7.42+.");
                 traceBuildLogic = new DatadogTraceBuildLogic(this.agentHttpClient);
                 tracePipelineLogic = new DatadogTracePipelineLogic(this.agentHttpClient);
             }

@@ -137,6 +137,17 @@ public class DatadogClientTest {
     }
 
     @Test
+    public void testEmptyAgentSupportedEndpointsWithNoAgent() {
+        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+        cfg.setEnableCiVisibility(true);
+        DatadogAgentClient client = Mockito.mock(DatadogAgentClient.class);
+        when(client.getHostname()).thenReturn("test");
+        when(client.getTraceCollectionPort()).thenReturn(1234);
+        when(client.fetchAgentSupportedEndpoints(Mockito.anyInt())).thenCallRealMethod();
+        Assert.assertTrue(client.fetchAgentSupportedEndpoints(0).isEmpty());
+    }
+
+    @Test
     public void testIncrementCountAndFlush() throws IOException, InterruptedException {
         DatadogHttpClient.enableValidations = false;
         DatadogClient client = DatadogHttpClient.getInstance("test", null, null, null);
