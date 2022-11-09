@@ -126,6 +126,9 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
         payload.put("queue_time", getMillisInQueue(updatedBuildData));
         payload.put("status", status);
 
+        payload.put("trace_id", buildSpan.context().getTraceId());
+        payload.put("span_id", buildSpan.context().getSpanId());
+
         payload.put("pipeline_id", buildData.getBuildTag(""));
         payload.put("unique_id", buildData.getBuildTag(""));
         payload.put("name", buildData.getBaseJobName(""));
