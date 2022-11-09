@@ -45,7 +45,6 @@ import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.steps.DatadogPipelineAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
-import org.datadog.jenkins.plugins.datadog.traces.BuildWebhookAction;
 import org.datadog.jenkins.plugins.datadog.traces.IsPipelineAction;
 import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
 import org.datadog.jenkins.plugins.datadog.traces.StepTraceDataAction;
@@ -904,7 +903,6 @@ public class DatadogUtilities {
     public static void cleanUpTraceActions(final Run<?, ?> run) {
         if(run != null) {
             run.removeActions(BuildSpanAction.class);
-            run.removeActions(BuildWebhookAction.class);
             run.removeActions(StepDataAction.class);
             run.removeActions(CIGlobalTagsAction.class);
             run.removeActions(GitCommitAction.class);

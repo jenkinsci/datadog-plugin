@@ -299,8 +299,4 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
         return tags;
     }
 
-    private String buildOperationName(BuildPipelineNode current) {
-        return CI_PROVIDER + "." + current.getType().name().toLowerCase() + ((current.isInternal()) ? ".internal" : "");
-    }
-
 }

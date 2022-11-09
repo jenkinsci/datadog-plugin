@@ -430,4 +430,8 @@ public abstract class DatadogBasePipelineLogic {
         }
     }
 
+    protected String buildOperationName(BuildPipelineNode current) {
+        return CI_PROVIDER + "." + current.getType().name().toLowerCase() + ((current.isInternal()) ? ".internal" : "");
+    }
+
 }
