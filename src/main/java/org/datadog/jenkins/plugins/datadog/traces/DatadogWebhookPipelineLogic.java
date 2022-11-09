@@ -61,6 +61,7 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
         final BuildData buildData = buildSpanAction.getBuildData();
         if(!isLastNode(flowNode)){
             final BuildPipelineNode pipelineNode = buildPipelineNode(flowNode);
+            updateStageBreakdown(run, pipelineNode);
             updateBuildData(buildData, run, pipelineNode, flowNode);
             updateCIGlobalTags(run);
             return;

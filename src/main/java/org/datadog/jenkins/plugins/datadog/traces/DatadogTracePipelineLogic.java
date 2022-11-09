@@ -153,35 +153,6 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
         spanBuffer.add(span);
     }
 
-    private void updateStageBreakdown(final Run<?,?> run, BuildPipelineNode pipelineNode) {
-        long start = System.currentTimeMillis();
-        try {
-            final StageBreakdownAction stageBreakdownAction = run.getAction(StageBreakdownAction.class);
-            if(stageBreakdownAction == null){
-                return;
-            }
-
-            if(pipelineNode == null){
-                return;
-            }
-
-            if(!BuildPipelineNode.NodeType.STAGE.equals(pipelineNode.getType())){
-                return;
-            }
-
-            final StageData stageData = StageData.builder()
-                    .withName(pipelineNode.getName())
-                    .withStartTimeInMicros(pipelineNode.getStartTimeMicros())
-                    .withEndTimeInMicros(pipelineNode.getEndTimeMicros())
-                    .build();
-
-            stageBreakdownAction.put(stageData.getName(), stageData);
-        } finally {
-            long end = System.currentTimeMillis();
-            DatadogAudit.log("DatadogTracePipelineLogic.updateStageBreakdown", start, end);
-        }
-    }
-
     private Map<String, Long> buildTraceMetrics(BuildPipelineNode current) {
         final Map<String, Long> metrics = new HashMap<>();
         metrics.put(CITags.QUEUE_TIME, TimeUnit.NANOSECONDS.toSeconds(getNanosInQueue(current)));
