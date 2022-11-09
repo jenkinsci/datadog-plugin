@@ -108,6 +108,8 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
         payload.put("partial_retry", false);
         payload.put("queue_time", TimeUnit.NANOSECONDS.toMillis(getNanosInQueue(current)));
         payload.put("status", status);
+        payload.put("trace_id", spanContext.getTraceId());
+        payload.put("span_id", spanContext.getSpanId());
 
         payload.put("id", current.getId());
         payload.put("name", current.getName());
