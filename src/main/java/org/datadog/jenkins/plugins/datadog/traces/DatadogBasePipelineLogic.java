@@ -362,6 +362,10 @@ public class DatadogBasePipelineLogic {
         }
     }
 
+    protected String buildOperationName(BuildPipelineNode current) {
+        return CI_PROVIDER + "." + current.getType().name().toLowerCase() + ((current.isInternal()) ? ".internal" : "");
+    }
+
     /**
      * Creates a new Git client only if there is a Git information pending to calculate.
      * This method tries to avoid creating Git clients as much as possible cause it's a very expensive operation.
