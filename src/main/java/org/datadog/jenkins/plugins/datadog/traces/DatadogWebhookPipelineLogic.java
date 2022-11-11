@@ -122,10 +122,14 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
             if (parent != null && parent.getType().getBuildLevel() == "stage") {
                 // Stage is a parent of another stage
                 payload.put("parent_stage_id", parent.getStageId());
+                payload.put("parent_span_id", parent.getSpanId());
             }
         } else if (buildLevel.equals("job")) {
-             payload.put("stage_id", current.getStageId());
-             payload.put("stage_name", current.getStageName());
+            payload.put("stage_id", current.getStageId());
+            payload.put("stage_name", current.getStageName());
+            if (parent != null) {
+                payload.put("parent_span_id", parent.getSpanId());
+            }
         }
 
         // Errors
