@@ -163,8 +163,14 @@ Logging is done by utilizing the `java.util.Logger`, which follows the [best log
 
 ### Pipeline customization
 
-The Datadog plugin adds a "datadog" step that provides some configuration option for your pipeline-based jobs.
-In declarative pipelines, add the step to a top-level option block like so:
+The Datadog plugin adds a `datadog` step that provides some configuration option for your pipeline-based jobs.
+
+| Option (type)              | Description                                                                 |
+|----------------------------|-----------------------------------------------------------------------------|
+| `collectLogs` (`boolean`)  | When log collection is disabled globally, this enables it for the pipeline. |
+| `tags` (`String[]`)        | A list of tags to attach to all the data collected about the pipeline.      |
+
+In declarative pipelines, add the step to a top-level `options` block like so:
 
 ```groovy
 pipeline {
@@ -185,7 +191,7 @@ pipeline {
 In scripted pipeline, wrap the relevant section with the datadog step like so:
 
 ```groovy
-datadog(collectLogs: true, tags: ["foo:bar", "bar:baz"]){
+datadog(collectLogs: true, tags: ["foo:bar", "bar:baz"]) {
   node {
     stage('Example') {
       echo "Hello world."
