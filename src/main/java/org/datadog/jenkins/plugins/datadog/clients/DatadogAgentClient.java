@@ -485,7 +485,7 @@ public class DatadogAgentClient implements DatadogClient {
             Set<String> supportedAgentEndpoints = fetchAgentSupportedEndpoints(INFO_NUM_RETRIES);
             this.evpProxySupported = supportedAgentEndpoints.contains("/evp_proxy/v3/");
 
-            logger.fine("isEvpProxySupported: " + this.evpProxySupported);
+            logger.info("EVP Proxy Supported: " + this.evpProxySupported);
 
             if (this.evpProxySupported) {
                 traceBuildLogic = new DatadogWebhookBuildLogic(this);
