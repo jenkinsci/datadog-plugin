@@ -14,7 +14,7 @@
   -->
   <f:section title="Datadog Plugin">
 
-    <f:radioBlock title="Use the Datadog Agent to report to Datadog" name="reportWith" value="DSD"
+    <f:radioBlock title="Use the Datadog Agent to report to Datadog (recommended)" name="reportWith" value="DSD"
         checked="${instance.reportWithEquals('DSD')}" inline="true">
 
         <f:entry title="Agent Host" field="targetHostEntry">
