@@ -28,7 +28,7 @@ This plugin can be installed from the [Update Center][3] (found at `Manage Jenki
 
 There are two ways to configure your plugin to submit data to Datadog:
 
-* **RECOMMENDED**: Using a Datadog Agent that acts as a forwarder between Jenkins and Datadog.
+* Using a Datadog Agent that acts as a forwarder between Jenkins and Datadog (recommended).
   - When using a DogStatsD server instead of a full Datadog Agent, only metrics and events are supported.
   - For data submitted from an external host, the Datadog Agent requires the following configuration: `dogstatsd_non_local_traffic: true` and `apm_non_local_traffic: true`. This can be configured using the `datadog.yaml` [configuration file][17].
 * Sending data directly to Datadog through HTTP.
