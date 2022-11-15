@@ -111,12 +111,12 @@ public class DatadogAgentClient implements DatadogClient {
     private boolean isStoppedStatsDClient = true;
     private boolean isStoppedAgentHttpClient = true;
     private boolean evpProxySupported = false;
+    private long lastEvpProxyCheckTimeMs = 0L;
 
     /**
-     * Number of retries and delay between them when trying to fetch the Agent's /info endpoint.
+     * How often to check the /info endpoint in case the Agent got updated.
      */
-    private static final int INFO_NUM_RETRIES = 5;
-    private static final int INFO_RETRY_WAIT_TIME_MS = 5 * 1000;
+    private static final int EVP_PROXY_SUPPORT_TIME_BETWEEN_CHECKS_MS = 1*60*60*1000;
 
     /**
      * Timeout waiting for a reply after a connection to the /info endpoint was established.
@@ -173,7 +173,7 @@ public class DatadogAgentClient implements DatadogClient {
         return instance;
     }
 
-    private DatadogAgentClient(String hostname, Integer port, Integer logCollectionPort, Integer traceCollectionPort) {
+    protected DatadogAgentClient(String hostname, Integer port, Integer logCollectionPort, Integer traceCollectionPort) {
         this.hostname = hostname;
         this.port = port;
         this.logCollectionPort = logCollectionPort;
@@ -324,7 +324,7 @@ public class DatadogAgentClient implements DatadogClient {
      * @return a list of endpoints (if /info wasn't available, it will be empty)
      */
     @SuppressFBWarnings("REC_CATCH_EXCEPTION")
-    public Set<String> fetchAgentSupportedEndpoints(int retries) {
+    public Set<String> fetchAgentSupportedEndpoints() {
         logger.fine("Fetching Agent info");
 
         HashSet<String> endpoints = new HashSet<>();
@@ -352,16 +352,6 @@ public class DatadogAgentClient implements DatadogClient {
             // Iterate jsonArray using for loop
             for (int i = 0; i < jsonEndpoints.length(); i++) {
                 endpoints.add(jsonEndpoints.getString(i));
-            }
-        } catch (java.net.ConnectException e) {
-            if (retries > 0) {
-                logger.warning("Datadog Agent not reachable, waiting 5 seconds and retrying...");
-                try {
-                    Thread.sleep(INFO_RETRY_WAIT_TIME_MS);
-                } catch (InterruptedException ie) { }
-                return fetchAgentSupportedEndpoints(retries-1);
-            } else {
-                logger.warning("Datadog Agent not reachable, giving up.");
             }
         } catch (Exception e) {
             try {
@@ -392,7 +382,7 @@ public class DatadogAgentClient implements DatadogClient {
     public boolean postWebhook(String payload) {
         logger.fine("Sending webhook");
 
-        if(!this.evpProxySupported){
+        if(!evpProxySupported){
             logger.severe("Trying to send a webhook but the Agent doesn't support it.");
             return false;
         }
@@ -482,20 +472,6 @@ public class DatadogAgentClient implements DatadogClient {
                             .build())
                     .build();
 
-            Set<String> supportedAgentEndpoints = fetchAgentSupportedEndpoints(INFO_NUM_RETRIES);
-            this.evpProxySupported = supportedAgentEndpoints.contains("/evp_proxy/v3/");
-
-            logger.info("EVP Proxy Supported: " + this.evpProxySupported);
-
-            if (this.evpProxySupported) {
-                traceBuildLogic = new DatadogWebhookBuildLogic(this);
-                tracePipelineLogic = new DatadogWebhookPipelineLogic(this);
-            } else {
-                Log.info("The Agent doesn't support EVP Proxy, falling back to APM for CI Visibility. Requires Agent v6.42+ or 7.42+.");
-                traceBuildLogic = new DatadogTraceBuildLogic(this.agentHttpClient);
-                tracePipelineLogic = new DatadogTracePipelineLogic(this.agentHttpClient);
-            }
-
             this.isStoppedAgentHttpClient = false;
             return true;
         } catch (Throwable e){
@@ -503,6 +479,31 @@ public class DatadogAgentClient implements DatadogClient {
             this.stopAgentHttpClient();
             return false;
         }
+    }
+
+    protected boolean checkEvpProxySupportAndUpdateLogic() {
+        if (evpProxySupported) {
+            return true; // Once we have seen an Agent that supports EVP Proxy, we never check again.
+        }
+        if (System.currentTimeMillis() < (lastEvpProxyCheckTimeMs + EVP_PROXY_SUPPORT_TIME_BETWEEN_CHECKS_MS)) {
+            return evpProxySupported; // Wait at least 1 hour between checks, return the cached value
+        }
+        synchronized (DatadogAgentClient.class) {
+            if (!evpProxySupported) {
+                Set<String> supportedAgentEndpoints = fetchAgentSupportedEndpoints();
+                evpProxySupported = supportedAgentEndpoints.contains("/evp_proxy/v3/");
+                lastEvpProxyCheckTimeMs = System.currentTimeMillis();
+                if (evpProxySupported) {
+                    traceBuildLogic = new DatadogWebhookBuildLogic(this);
+                    tracePipelineLogic = new DatadogWebhookPipelineLogic(this);
+                } else {
+                    Log.info("The Agent doesn't support EVP Proxy, falling back to APM for CI Visibility. Requires Agent v6.42+ or 7.42+.");
+                    traceBuildLogic = new DatadogTraceBuildLogic(this.agentHttpClient);
+                    tracePipelineLogic = new DatadogTracePipelineLogic(this.agentHttpClient);
+                }
+            }
+        }
+        return evpProxySupported;
     }
 
     private boolean stopAgentHttpClient() {
@@ -771,6 +772,8 @@ public class DatadogAgentClient implements DatadogClient {
                 return false;
             }
 
+            checkEvpProxySupportAndUpdateLogic();
+
             logger.fine("Started build trace");
             this.traceBuildLogic.startBuildTrace(buildData, run);
             return true;
@@ -789,6 +792,9 @@ public class DatadogAgentClient implements DatadogClient {
             if(!status) {
                 return false;
             }
+
+            checkEvpProxySupportAndUpdateLogic();
+
             logger.fine("Finished build trace");
             this.traceBuildLogic.finishBuildTrace(buildData, run);
             return true;
@@ -806,6 +812,8 @@ public class DatadogAgentClient implements DatadogClient {
             if(!status) {
                 return false;
             }
+
+            checkEvpProxySupportAndUpdateLogic();
 
             logger.fine("Send pipeline traces.");
             this.tracePipelineLogic.execute(run, flowNode);
