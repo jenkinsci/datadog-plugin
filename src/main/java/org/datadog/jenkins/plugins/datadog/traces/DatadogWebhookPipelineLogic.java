@@ -20,6 +20,7 @@ import org.datadog.jenkins.plugins.datadog.clients.DatadogHttpClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
+import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
@@ -51,12 +52,12 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
             run.addAction(new IsPipelineAction());
         }
 
-        final BuildWebhookAction buildWebhookAction = run.getAction(BuildWebhookAction.class);
-        if(buildWebhookAction == null) {
+        final BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
+        if(buildSpanAction == null) {
             return;
         }
 
-        final BuildData buildData = buildWebhookAction.getBuildData();
+        final BuildData buildData = buildSpanAction.getBuildData();
         if(!isLastNode(flowNode)){
             final BuildPipelineNode pipelineNode = buildPipelineNode(flowNode);
             updateBuildData(buildData, run, pipelineNode, flowNode);
@@ -64,24 +65,23 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
             return;
         }
 
-
+        final TraceSpan.TraceSpanContext traceSpanContext = buildSpanAction.getBuildSpanContext();
         final BuildPipelineNode root = buildPipelineTree((FlowEndNode) flowNode);
-        collectTraces(run, buildData, root, null);
+        collectTraces(run, buildData, root, null, traceSpanContext);
 
         // Explicit removal of InvisibleActions used to collect Traces when the Run finishes.
         cleanUpTraceActions(run);
     }
 
-    private void collectTraces(final Run run, final BuildData buildData, final BuildPipelineNode current, final BuildPipelineNode parent) {
+    private void collectTraces(final Run run, final BuildData buildData, final BuildPipelineNode current, final BuildPipelineNode parent, final TraceSpan.TraceSpanContext parentSpanContext) {
 
         if(!isTraceable(current)) {
             // If the current node is not traceable, we continue with its children
             for(final BuildPipelineNode child : current.getChildren()) {
-                collectTraces(run, buildData, child, parent);
+                collectTraces(run, buildData, child, parent, parentSpanContext);
             }
             return;
         }
-
         // If the root has propagated queue time, we need to adjust all startTime and endTime from Jenkins pipelines
         // because this time will be subtracted in the root. See DatadogTraceBuildLogic#finishBuildTrace method.
         final long propagatedMillisInQueue = Math.max(buildData.getPropagatedMillisInQueue(-1L), 0);
@@ -91,6 +91,9 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
         final String status = statusFromResult(jenkinsResult);
         final String prefix = current.getType().getTagName();
         final String buildLevel = current.getType().getBuildLevel();
+
+        final TraceSpan.TraceSpanContext spanContext = new TraceSpan.TraceSpanContext(parentSpanContext.getTraceId(), parentSpanContext.getSpanId(), current.getSpanId());
+        final TraceSpan span = new TraceSpan(buildOperationName(current), TimeUnit.MILLISECONDS.toNanos(fixedStartTimeMillis + propagatedMillisInQueue), spanContext);
 
         final Map<String, String> envVars = current.getEnvVars();
 
@@ -105,6 +108,8 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
         payload.put("partial_retry", false);
         payload.put("queue_time", TimeUnit.NANOSECONDS.toMillis(getNanosInQueue(current)));
         payload.put("status", status);
+        payload.put("trace_id", spanContext.getTraceId());
+        payload.put("span_id", spanContext.getSpanId());
 
         payload.put("id", current.getId());
         payload.put("name", current.getName());
@@ -115,10 +120,14 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
             if (parent != null && parent.getType().getBuildLevel() == "stage") {
                 // Stage is a parent of another stage
                 payload.put("parent_stage_id", parent.getStageId());
+                payload.put("parent_span_id", parent.getSpanId());
             }
         } else if (buildLevel.equals("job")) {
-             payload.put("stage_id", current.getStageId());
-             payload.put("stage_name", current.getStageName());
+            payload.put("stage_id", current.getStageId());
+            payload.put("stage_name", current.getStageName());
+            if (parent != null) {
+                payload.put("parent_span_id", parent.getSpanId());
+            }
         }
 
         // Errors
@@ -294,8 +303,9 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
             payload.put("tags", tagsPayload);
         }
 
+
         for(final BuildPipelineNode child : current.getChildren()) {
-            collectTraces(run, buildData, child, current);
+            collectTraces(run, buildData, child, current, span.context());
         }
 
         client.postWebhook(payload.toString());

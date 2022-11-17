@@ -11,6 +11,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
@@ -21,6 +22,7 @@ import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
+import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 
 import hudson.model.Run;
@@ -47,8 +49,11 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
             return;
         }
 
-        final BuildWebhookAction buildWebhookAction = new BuildWebhookAction(buildData);
-        run.addAction(buildWebhookAction);
+        final TraceSpan buildSpan = new TraceSpan("jenkins.build", TimeUnit.MILLISECONDS.toNanos(buildData.getStartTime(0L)));
+        BuildSpanManager.get().put(buildData.getBuildTag(""), buildSpan);
+
+        final BuildSpanAction buildSpanAction = new BuildSpanAction(buildData, buildSpan.context());
+        run.addAction(buildSpanAction);
 
         final StepDataAction stepDataAction = new StepDataAction();
         run.addAction(stepDataAction);
@@ -71,16 +76,21 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
             return;
         }
 
-        final BuildWebhookAction buildWebhookAction = run.getAction(BuildWebhookAction.class);
-        if(buildWebhookAction == null) {
+        final TraceSpan buildSpan = BuildSpanManager.get().remove(buildData.getBuildTag(""));
+        if(buildSpan == null) {
+            return;
+        }
+
+        final BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
+        if(buildSpanAction == null) {
             return;
         }
 
         // In this point of the execution, the BuildData stored within
-        // BuildWebhookAction has been updated by the information available
+        // BuildSpanAction has been updated by the information available
         // inside the Pipeline steps by DatadogWebhookPipelineLogic.
         // (Only applicable if the build is based on Jenkins Pipelines).
-        final BuildData updatedBuildData = buildWebhookAction.getBuildData();
+        final BuildData updatedBuildData = buildSpanAction.getBuildData();
 
         final long startTimeMillis = buildData.getStartTime(0L);
         // If the build is a Jenkins Pipeline, the queue time is included in the root duration.
@@ -113,6 +123,9 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
         payload.put("partial_retry", false);
         payload.put("queue_time", getMillisInQueue(updatedBuildData));
         payload.put("status", status);
+
+        payload.put("trace_id", buildSpan.context().getTraceId());
+        payload.put("span_id", buildSpan.context().getSpanId());
 
         payload.put("pipeline_id", buildData.getBuildTag(""));
         payload.put("unique_id", buildData.getBuildTag(""));
