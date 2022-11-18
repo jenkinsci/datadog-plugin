@@ -494,6 +494,7 @@ public class DatadogAgentClient implements DatadogClient {
                 evpProxySupported = supportedAgentEndpoints.contains("/evp_proxy/v3/");
                 lastEvpProxyCheckTimeMs = System.currentTimeMillis();
                 if (evpProxySupported) {
+                    Log.debug("EVP Proxy is supported by the Agent.");
                     traceBuildLogic = new DatadogWebhookBuildLogic(this);
                     tracePipelineLogic = new DatadogWebhookPipelineLogic(this);
                 } else {
