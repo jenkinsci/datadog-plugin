@@ -284,6 +284,8 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
 
             if (gitPayload.keySet().containsAll(GitUtils.WEBHOOK_REQUIRED_GIT_KEYS)) {
                 payload.put("git", gitPayload);
+            } else {
+                logger.warning("Couldn't fetch all git metadata");
             }
         }
 

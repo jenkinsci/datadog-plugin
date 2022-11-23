@@ -28,6 +28,7 @@ import hudson.model.labels.LabelAtom;
 import hudson.slaves.DumbSlave;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
@@ -217,7 +218,41 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(3, spans.size());
         final TraceSpan buildSpan = spans.get(0);
-        assertGitVariables(buildSpan, "master");
+        assertGitVariablesOnSpan(buildSpan, "master");
+    }
+
+    @Test
+    public void testIntegrationGitInfoWebhooks() throws Exception {
+        clientStub.configureForWebhooks();
+
+        Jenkins jenkins = jenkinsRule.jenkins;
+        final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
+        EnvVars env = prop.getEnvVars();
+        env.put("GIT_BRANCH", "master");
+        env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
+        env.put("GIT_URL", "https://github.com/johndoe/foobar.git");
+
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationSingleCommitWebhooks");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineSuccess.txt"),
+                "UTF-8"
+        );
+
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        final FilePath ws = jenkins.getWorkspaceFor(job);
+        env.put("NODE_NAME", "master");
+        env.put("WORKSPACE", ws.getRemote());
+        InputStream gitZip = getClass().getClassLoader().getResourceAsStream("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
+        if(gitZip != null) {
+            ws.unzipFrom(gitZip);
+        }
+        jenkins.getGlobalNodeProperties().add(prop);
+        job.scheduleBuild2(0).get();
+
+        clientStub.waitForWebhooks(3);
+        final List<JSONObject> webhook = clientStub.getWebhooks();
+        assertEquals(3, webhook.size());
+        assertGitVariablesOnWebhook(webhook.get(0), "master");
     }
 
     @Test
@@ -253,7 +288,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(3, spans.size());
         final TraceSpan buildSpan = spans.get(0);
-        assertGitVariables(buildSpan, "hardcoded-master");
+        assertGitVariablesOnSpan(buildSpan, "hardcoded-master");
     }
 
     @Test
@@ -358,9 +393,46 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(3, spans.size());
         final TraceSpan buildSpan = spans.get(0);
-        assertGitVariables(buildSpan, "master");
+        assertGitVariablesOnSpan(buildSpan, "master");
         final Map<String, String> meta = buildSpan.getMeta();
         assertEquals("0.1.0", meta.get(CITags.GIT_TAG));
+    }
+
+    @Test
+    public void testUserSuppliedGitWithoutCommitInfoWebhooks() throws Exception {
+        clientStub.configureForWebhooks();
+
+        Jenkins jenkins = jenkinsRule.jenkins;
+        final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
+        EnvVars env = prop.getEnvVars();
+        env.put(DD_GIT_REPOSITORY_URL, "https://github.com/johndoe/foobar.git");
+        env.put(DD_GIT_BRANCH, "master");
+        env.put(DD_GIT_COMMIT_SHA, "401d997a6eede777602669ccaec059755c98161f");
+        env.put(DD_GIT_TAG, "0.1.0");
+
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationUserSuppliedGitWithoutCommitInfoWebhooks");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineSuccess.txt"),
+                "UTF-8"
+        );
+
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        final FilePath ws = jenkins.getWorkspaceFor(job);
+        env.put("NODE_NAME", "master");
+        env.put("WORKSPACE", ws.getRemote());
+        InputStream gitZip = getClass().getClassLoader().getResourceAsStream("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
+        if(gitZip != null) {
+            ws.unzipFrom(gitZip);
+        }
+        jenkins.getGlobalNodeProperties().add(prop);
+        job.scheduleBuild2(0).get();
+
+        clientStub.waitForWebhooks(3);
+        final List<JSONObject> webhooks = clientStub.getWebhooks();
+        assertEquals(3, webhooks.size());
+        final JSONObject webhook = webhooks.get(0);
+        assertGitVariablesOnWebhook(webhook, "master");
+        assertEquals("0.1.0", webhook.getJSONObject("git").get("tag"));
     }
 
     @Test
@@ -515,6 +587,51 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
     }
 
     @Test
+    public void testStageNamePropagationWebhook() throws Exception{
+        clientStub.configureForWebhooks();
+
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationStagesWebhook");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineStagesWebhook.txt"),
+                "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        new Thread(() -> {
+            try {
+                job.scheduleBuild2(0).get();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
+        jenkinsRule.createOnlineSlave(Label.get("testStageNameWebhook"));
+
+        clientStub.waitForWebhooks(6);
+        final List<JSONObject> webhooks = clientStub.getWebhooks();
+        assertEquals(6, webhooks.size());
+
+        final JSONObject pipeline = searchWebhook(webhooks, "pipelineIntegrationStagesWebhook");
+        assertEquals("pipeline", pipeline.getString("level"));
+
+        final JSONObject stage1 = searchWebhook(webhooks, "Stage 1");
+        assertEquals("stage", stage1.getString("level"));
+        assertEquals("pipelineIntegrationStagesWebhook", stage1.getString("pipeline_name"));
+
+        final JSONObject stepStage1 = searchFirstChild(webhooks, stage1);
+        assertEquals("job", stepStage1.getString("level"));
+        assertEquals("Stage 1", stepStage1.getString("stage_name"));
+        assertEquals("pipelineIntegrationStagesWebhook", stepStage1.getString("pipeline_name"));
+
+        final JSONObject stage2 = searchWebhook(webhooks, "Stage 2");
+        assertEquals("stage", stage2.getString("level"));
+        assertEquals("pipelineIntegrationStagesWebhook", stage2.getString("pipeline_name"));
+
+        final JSONObject stepStage2 = searchFirstChild(webhooks, stage2);
+        assertEquals("job", stepStage2.getString("level"));
+        assertEquals("Stage 2", stepStage2.getString("stage_name"));
+        assertEquals("pipelineIntegrationStagesWebhook", stepStage2.getString("pipeline_name"));
+    }
+
+    @Test
     public void testIntegrationPipelineQueueTimeOnStages() throws Exception {
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationQueueTimeOnStages");
         String definition = IOUtils.toString(
@@ -584,6 +701,15 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         return null;
     }
 
+    private JSONObject searchFirstChild(List<JSONObject> webhooks, JSONObject parentWebhook) {
+        for(JSONObject webhook : webhooks) {
+            if(webhook.has("parent_span_id") && webhook.get("parent_span_id").equals(parentWebhook.get("span_id"))) {
+                return webhook;
+            }
+        }
+        return null;
+    }
+
     private TraceSpan searchSpan(List<TraceSpan> spans, String resourceName) {
         for(TraceSpan span : spans) {
             if(resourceName.equalsIgnoreCase(span.getResourceName())) {
@@ -593,6 +719,14 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         return null;
     }
 
+    private JSONObject searchWebhook(List<JSONObject> webhooks, String resourceName) {
+        for(JSONObject webhook : webhooks) {
+            if (resourceName.equalsIgnoreCase(webhook.getString("name"))) {
+                return webhook;
+            }
+        }
+        return null;
+    }
 
     @Test
     public void testIntegrationPipelineQueueTimeOnPipeline() throws Exception {
@@ -773,6 +907,26 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals("skipped", stage.getMeta().get(CITags.STATUS));
     }
 
+    @Test
+    public void testIntegrationPipelineSkippedLogicWebhook() throws Exception {
+        clientStub.configureForWebhooks();
+
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration-SkippedLogicWebhook");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineSkippedLogic.txt"),
+                "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        job.scheduleBuild2(0).get();
+
+        clientStub.waitForWebhooks(2);
+        final List<JSONObject> webhooks = clientStub.getWebhooks();
+        assertEquals(2, webhooks.size());
+
+        final JSONObject webhook = webhooks.get(1);
+        assertEquals("Stage", webhook.getString("name"));
+        assertEquals("skipped", webhook.getString("status"));
+    }
 
     @Test
     public void testIntegrationTracesDisabled() throws Exception{
@@ -1056,6 +1210,62 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals(worker.getNodeName(), step.getMeta().get(CITags.NODE_NAME));
         assertTrue(step.getMeta().get(CITags.NODE_LABELS).contains("testPipelineWorker"));
         assertEquals("testDDCiHostname", step.getMeta().get(CITags._DD_HOSTNAME));
+
+        jenkinsRule.jenkins.removeNode(worker);
+        job.delete();
+    }
+
+    @Test
+    public void testCustomHostnameForWorkersWebhook() throws Exception {
+        clientStub.configureForWebhooks();
+
+        final EnvironmentVariablesNodeProperty envProps = new EnvironmentVariablesNodeProperty();
+        EnvVars env = envProps.getEnvVars();
+        env.put("NODE_NAME", "testPipeline");
+        env.put("DD_CI_HOSTNAME", "testDDCiHostname");
+        jenkinsRule.jenkins.getGlobalNodeProperties().add(envProps);
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationCustomHostnameWebhook");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineOnWorkersWebhook.txt"),
+                "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+
+        // schedule build and wait for it to get queued
+        new Thread(() -> {
+            try {
+                job.scheduleBuild2(0).get();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
+        final DumbSlave worker = jenkinsRule.createOnlineSlave(Label.get("testPipelineWorkerWebhook"));
+
+        clientStub.waitForWebhooks(3);
+        final List<JSONObject> webhooks = clientStub.getWebhooks();
+        assertEquals(3, webhooks.size());
+
+        final JSONObject pipeline = webhooks.get(0);
+        final JSONObject pipelineNode = pipeline.getJSONObject("node");
+        assertEquals(worker.getNodeName(), pipelineNode.getString("name"));
+        assertEquals("testDDCiHostname", pipelineNode.getString("hostname"));
+        assertTrue(pipelineNode.getJSONArray("labels").contains("testPipelineWorkerWebhook"));
+
+        final JSONObject stage = webhooks.get(1);
+        final JSONObject stageNode = stage.getJSONObject("node");
+        assertEquals(worker.getNodeName(), stageNode.getString("name"));
+        assertEquals("testDDCiHostname", stageNode.getString("hostname"));
+        assertTrue(stageNode.getJSONArray("labels").contains("testPipelineWorkerWebhook"));
+
+
+        final JSONObject step = webhooks.get(2);
+        final JSONObject stepNode = step.getJSONObject("node");
+        assertEquals(worker.getNodeName(), stepNode.getString("name"));
+        assertEquals("testDDCiHostname", stepNode.getString("hostname"));
+        assertTrue(stepNode.getJSONArray("labels").contains("testPipelineWorkerWebhook"));
+
+        jenkinsRule.jenkins.removeNode(worker);
+        job.delete();
     }
 
     private void assertNodeNameParallelBlock(TraceSpan stageSpan, DumbSlave worker01, DumbSlave worker02) {

@@ -28,6 +28,8 @@ import hudson.model.Label;
 import hudson.slaves.DumbSlave;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import jenkins.model.Jenkins;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
@@ -133,7 +135,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         assertEquals(1, spans.size());
 
         final TraceSpan buildSpan = spans.get(0);
-        assertGitVariables(buildSpan, "master");
+        assertGitVariablesOnSpan(buildSpan, "master");
         final Map<String, String> meta = buildSpan.getMeta();
         final Map<String, Double> metrics = buildSpan.getMetrics();
         assertEquals(BuildPipelineNode.NodeType.PIPELINE.getBuildLevel(), meta.get(CITags._DD_CI_BUILD_LEVEL));
@@ -189,7 +191,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         assertEquals(1, spans.size());
 
         final TraceSpan buildSpan = spans.get(0);
-        assertGitVariables(buildSpan, "hardcoded-master");
+        assertGitVariablesOnSpan(buildSpan, "hardcoded-master");
     }
 
     @Test
@@ -221,7 +223,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         assertEquals(1, spans.size());
 
         final TraceSpan buildSpan = spans.get(0);
-        assertGitVariables(buildSpan, "hardcoded-master");
+        assertGitVariablesOnSpan(buildSpan, "hardcoded-master");
     }
 
     @Test
@@ -272,6 +274,56 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         assertEquals("master", meta.get(CITags.GIT_BRANCH));
         assertEquals("https://github.com/johndoe/foobar.git", meta.get(CITags.GIT_REPOSITORY_URL));
         assertEquals("hardcoded-master", meta.get(CITags.GIT_DEFAULT_BRANCH));
+    }
+
+    @Test
+    public void testUserSuppliedGitWithCommitInfoWebhook() throws Exception {
+        clientStub.configureForWebhooks();
+
+        Jenkins jenkins = jenkinsRule.jenkins;
+        final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
+        EnvVars env = prop.getEnvVars();
+        env.put(GIT_REPOSITORY_URL, "not-valid-repo");
+        env.put(GIT_BRANCH, "not-valid-branch");
+        env.put(GIT_COMMIT, "not-valid-commit");
+        env.put(DD_GIT_REPOSITORY_URL, "https://github.com/johndoe/foobar.git");
+        env.put(DD_GIT_BRANCH, "master");
+        env.put(DD_GIT_COMMIT_SHA, "401d997a6eede777602669ccaec059755c98161f");
+        env.put(DD_GIT_COMMIT_MESSAGE, "hardcoded-message");
+        env.put(DD_GIT_COMMIT_AUTHOR_NAME, "hardcoded-author-name");
+        env.put(DD_GIT_COMMIT_AUTHOR_EMAIL, "hardcoded-author-email");
+        env.put(DD_GIT_COMMIT_AUTHOR_DATE, "hardcoded-author-date");
+        env.put(DD_GIT_COMMIT_COMMITTER_NAME, "hardcoded-committer-name");
+        env.put(DD_GIT_COMMIT_COMMITTER_EMAIL, "hardcoded-committer-email");
+        env.put(DD_GIT_COMMIT_COMMITTER_DATE, "hardcoded-committer-date");
+        final String defaultBranch = "refs/heads/hardcoded-master";
+        env.put(DD_GIT_DEFAULT_BRANCH, defaultBranch);
+        jenkins.getGlobalNodeProperties().add(prop);
+
+        final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessUserSuppliedGitWithCommitInfoWebhook");
+        final URL gitZip = getClass().getClassLoader().getResource("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
+        if(gitZip != null) {
+            project.setScm(new ExtractResourceSCM(gitZip));
+        }
+        project.scheduleBuild2(0).get();
+
+        clientStub.waitForWebhooks(1);
+        final List<JSONObject> webhooks = clientStub.getWebhooks();
+        assertEquals(1, webhooks.size());
+
+        final JSONObject buildSpan = webhooks.get(0);
+        final JSONObject meta = buildSpan.getJSONObject("git");
+        assertEquals("hardcoded-message", meta.getString("message"));
+        assertEquals("hardcoded-author-name", meta.getString("author_name"));
+        assertEquals("hardcoded-author-email", meta.getString("author_email"));
+        assertEquals("hardcoded-author-date", meta.getString("author_time"));
+        assertEquals("hardcoded-committer-name", meta.getString("committer_name"));
+        assertEquals("hardcoded-committer-email", meta.getString("committer_email"));
+        assertEquals("hardcoded-committer-date", meta.getString("commit_time"));
+        assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.getString("sha"));
+        assertEquals("master", meta.getString("branch"));
+        assertEquals("https://github.com/johndoe/foobar.git", meta.getString("repository_url"));
+        assertEquals("hardcoded-master", meta.getString("default_branch"));
     }
 
     @Test
@@ -331,7 +383,9 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
     }
 
     @Test
-    public void testGitAlternativeRepoUrl() throws Exception {
+    public void testGitAlternativeRepoUrlWebhook() throws Exception {
+        clientStub.configureForWebhooks();
+
         Jenkins jenkins = jenkinsRule.jenkins;
         final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
         EnvVars env = prop.getEnvVars();
@@ -340,7 +394,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         env.put("GIT_URL_1", "https://github.com/johndoe/foobar.git");
         jenkins.getGlobalNodeProperties().add(prop);
 
-        final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessAltRepoUrl");
+        final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessAltRepoUrlWebhook");
         final FilePath ws = jenkins.getWorkspaceFor(project);
         env.put("NODE_NAME", "master");
         env.put("WORKSPACE", ws.getRemote());
@@ -351,13 +405,12 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
         project.scheduleBuild2(0).get();
 
-        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
-        agentHttpClient.waitForTraces(1);
-        final List<TraceSpan> spans = agentHttpClient.getSpans();
-        assertEquals(1, spans.size());
+        clientStub.waitForWebhooks(1);
+        final List<JSONObject> webhooks = clientStub.getWebhooks();
+        assertEquals(1, webhooks.size());
 
-        final TraceSpan buildSpan = spans.get(0);
-        assertGitVariables(buildSpan, "master");
+        final JSONObject webhook = webhooks.get(0);
+        assertGitVariablesOnWebhook(webhook, "master");
     }
 
     @Test
@@ -372,6 +425,20 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         agentHttpClient.waitForTraces(0);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
         assertEquals(0, spans.size());
+    }
+
+    @Test
+    public void testTracesDisabledWebhooks() throws Exception {
+        clientStub.configureForWebhooks();
+
+        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+        cfg.setEnableCiVisibility(false);
+
+        final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessWebhooks-notraces");
+        project.scheduleBuild2(0).get();
+
+        clientStub.waitForWebhooks(0);
+        assertEquals(0, clientStub.getWebhooks().size());
     }
 
     @Test
@@ -393,6 +460,28 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         final Map<String, String> meta = buildSpan.getMeta();
         assertEquals("value", meta.get("global_job_tag"));
         assertEquals("value", meta.get("global_tag"));
+    }
+
+    @Test
+    public void testCITagsOnWebhooks() throws Exception {
+        clientStub.configureForWebhooks();
+
+        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+        cfg.setGlobalJobTags("(.*?)_job, global_job_tag:$ENV_VAR");
+        cfg.setGlobalTags("global_tag:$ENV_VAR");
+        EnvVars.masterEnvVars.put("ENV_VAR", "value");
+
+        final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessTagsWebhooks_job");
+        project.scheduleBuild2(0).get();
+
+        clientStub.waitForWebhooks(1);
+        final List<JSONObject> webhooks = clientStub.getWebhooks();
+        assertEquals(1, webhooks.size());
+
+        final JSONObject webhook = webhooks.get(0);
+        final JSONArray tags = webhook.getJSONArray("tags");
+        assertTrue(tags.contains("global_job_tag:value"));
+        assertTrue(tags.contains("global_tag:value"));
     }
 
     @Test

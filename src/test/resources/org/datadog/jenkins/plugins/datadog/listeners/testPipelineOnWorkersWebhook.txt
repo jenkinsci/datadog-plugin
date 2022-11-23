@@ -1,0 +1,12 @@
+pipeline {
+    agent {
+        label "testPipelineWorkerWebhook"
+    }
+    stages {
+        stage('testing'){
+            steps {
+                echo "testing"
+            }
+        }
+    }
+}
