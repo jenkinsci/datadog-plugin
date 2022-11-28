@@ -490,11 +490,12 @@ public class DatadogAgentClient implements DatadogClient {
         }
         synchronized (DatadogAgentClient.class) {
             if (!evpProxySupported) {
+                logger.info("Checking for EVP Proxy support in the Agent.");
                 Set<String> supportedAgentEndpoints = fetchAgentSupportedEndpoints();
                 evpProxySupported = supportedAgentEndpoints.contains("/evp_proxy/v3/");
                 lastEvpProxyCheckTimeMs = System.currentTimeMillis();
                 if (evpProxySupported) {
-                    logger.fine("EVP Proxy is supported by the Agent.");
+                    logger.info("EVP Proxy is supported by the Agent. We will not check again until the next boot.");
                     traceBuildLogic = new DatadogWebhookBuildLogic(this);
                     tracePipelineLogic = new DatadogWebhookPipelineLogic(this);
                 } else {
