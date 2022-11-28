@@ -26,6 +26,7 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.clients;
 
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.buildHttpURL;
+import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getHttpURLConnection;
 import static org.datadog.jenkins.plugins.datadog.transport.LoggerHttpErrorHandler.LOGGER_HTTP_ERROR_HANDLER;
 
 import com.timgroup.statsd.Event;
@@ -38,24 +39,37 @@ import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.transport.HttpMessage;
-import org.datadog.jenkins.plugins.datadog.transport.HttpClient;
-import org.datadog.jenkins.plugins.datadog.transport.HttpMessageFactory;
-import org.datadog.jenkins.plugins.datadog.transport.NonBlockingHttpClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.traces.DatadogBaseBuildLogic;
+import org.datadog.jenkins.plugins.datadog.traces.DatadogBasePipelineLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTracePipelineLogic;
+import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookBuildLogic;
+import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookPipelineLogic;
 import org.datadog.jenkins.plugins.datadog.traces.mapper.JsonTraceSpanMapper;
+import org.datadog.jenkins.plugins.datadog.transport.HttpClient;
+import org.datadog.jenkins.plugins.datadog.transport.HttpMessage;
+import org.datadog.jenkins.plugins.datadog.transport.HttpMessageFactory;
+import org.datadog.jenkins.plugins.datadog.transport.NonBlockingHttpClient;
 import org.datadog.jenkins.plugins.datadog.transport.PayloadMessage;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jfree.util.Log;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.ConnectException;
+import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Handler;
@@ -75,12 +89,15 @@ public class DatadogAgentClient implements DatadogClient {
 
     private static final Logger logger = Logger.getLogger(DatadogAgentClient.class.getName());
 
+    private static final Integer BAD_REQUEST = 400;
+    private static final Integer NOT_FOUND = 404;
+
     @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL")
     public static boolean enableValidations = true;
 
     private HttpClient agentHttpClient;
-    private DatadogTraceBuildLogic traceBuildLogic;
-    private DatadogTracePipelineLogic tracePipelineLogic;
+    private DatadogBaseBuildLogic traceBuildLogic;
+    private DatadogBasePipelineLogic tracePipelineLogic;
 
     private StatsDClient statsd;
     private Logger ddLogger;
@@ -93,6 +110,25 @@ public class DatadogAgentClient implements DatadogClient {
     private Integer traceCollectionPort = null;
     private boolean isStoppedStatsDClient = true;
     private boolean isStoppedAgentHttpClient = true;
+    private boolean evpProxySupported = false;
+    private long lastEvpProxyCheckTimeMs = 0L;
+
+    /**
+     * How often to check the /info endpoint in case the Agent got updated.
+     */
+    private static final int EVP_PROXY_SUPPORT_TIME_BETWEEN_CHECKS_MS = 1*60*60*1000;
+
+    /**
+     * Timeout waiting for a reply after a connection to the /info endpoint was established.
+     */
+    private static final int HTTP_TIMEOUT_INFO_MS = 10 * 1000;
+
+    /**
+     * Timeout of 1 minutes for connecting and reading via the synchronous Agent EVP Proxy.
+     * this prevents this plugin from causing jobs to hang in case of
+     * flaky network or Datadog being down. Left intentionally long.
+     */
+    private static final int HTTP_TIMEOUT_EVP_PROXY_MS = 60 * 1000;
 
     /**
      * NOTE: Use ClientFactory.getClient method to instantiate the client in the Jenkins Plugin
@@ -137,7 +173,7 @@ public class DatadogAgentClient implements DatadogClient {
         return instance;
     }
 
-    private DatadogAgentClient(String hostname, Integer port, Integer logCollectionPort, Integer traceCollectionPort) {
+    protected DatadogAgentClient(String hostname, Integer port, Integer logCollectionPort, Integer traceCollectionPort) {
         this.hostname = hostname;
         this.port = port;
         this.logCollectionPort = logCollectionPort;
@@ -283,23 +319,150 @@ public class DatadogAgentClient implements DatadogClient {
     }
 
     /**
+     * Fetches the supported endpoints from the Trace Agent /info API
+     *
+     * @return a list of endpoints (if /info wasn't available, it will be empty)
+     */
+    @SuppressFBWarnings("REC_CATCH_EXCEPTION")
+    public Set<String> fetchAgentSupportedEndpoints() {
+        logger.fine("Fetching Agent info");
+
+        HashSet<String> endpoints = new HashSet<>();
+
+        HttpURLConnection conn = null;
+        try {
+            logger.fine("Setting up HttpURLConnection...");
+            final URL traceAgentUrl = buildHttpURL(this.hostname, this.traceCollectionPort, "/info");
+            conn = getHttpURLConnection(traceAgentUrl, HTTP_TIMEOUT_INFO_MS);
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setUseCaches(false);
+
+            // Get response
+            BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"));
+            StringBuilder result = new StringBuilder();
+            String line;
+            while ((line = rd.readLine()) != null) {
+                result.append(line);
+            }
+            rd.close();
+
+            JSONObject jsonResponse = new JSONObject(result.toString());
+            JSONArray jsonEndpoints = jsonResponse.getJSONArray("endpoints");
+
+            // Iterate jsonArray using for loop
+            for (int i = 0; i < jsonEndpoints.length(); i++) {
+                endpoints.add(jsonEndpoints.getString(i));
+            }
+        } catch (Exception e) {
+            try {
+                if (conn != null && conn.getResponseCode() == NOT_FOUND) {
+                    logger.info("Agent /info returned 404. Requires Agent v6.27+ or v7.27+.");
+                } else {
+                    DatadogUtilities.severe(logger, e, "Unknown client error, please check your config");
+                }
+            } catch (IOException ex) {
+                DatadogUtilities.severe(logger, ex, "Failed to inspect HTTP response");
+            }
+        } finally {
+            if (conn != null) {
+                conn.disconnect();
+            }
+        }
+        return endpoints;
+    }
+
+    /**
+     * Posts a given payload to the Agent EVP Proxy so it is forwarded to the Webhook Intake.
+     *
+     * @param payload - A webhooks payload.
+     * @return a boolean to signify the success or failure of the HTTP POST request.
+     */
+    @SuppressFBWarnings("REC_CATCH_EXCEPTION")
+    @Override
+    public boolean postWebhook(String payload) {
+        logger.fine("Sending webhook");
+
+        if(!evpProxySupported){
+            logger.severe("Trying to send a webhook but the Agent doesn't support it.");
+            return false;
+        }
+
+        HttpURLConnection conn = null;
+        try {
+            logger.fine("Setting up HttpURLConnection...");
+            String urlParameters = "?service=" + DatadogUtilities.getDatadogGlobalDescriptor().getCiInstanceName();
+            final URL traceAgentUrl = buildHttpURL(this.hostname, this.traceCollectionPort, "/evp_proxy/v1/api/v2/webhook/"+urlParameters);
+            conn = getHttpURLConnection(traceAgentUrl, HTTP_TIMEOUT_EVP_PROXY_MS);
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("X-Datadog-EVP-Subdomain", "webhook-intake");
+            conn.setRequestProperty("DD-CI-PROVIDER-NAME", "jenkins");
+            conn.setUseCaches(false);
+            conn.setDoInput(true);
+            conn.setDoOutput(true);
+
+            OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream(), "utf-8");
+            logger.fine("Writing to OutputStreamWriter...");
+            wr.write(payload);
+            wr.close();
+
+            // Get response
+            BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"));
+            StringBuilder result = new StringBuilder();
+            String line;
+            while ((line = rd.readLine()) != null) {
+                result.append(line);
+            }
+            rd.close();
+
+            if ("{}".equals(result.toString())) {
+                logger.fine(String.format("Webhook API call through Agent proxy was sent successfully!"));
+                logger.fine(String.format("Payload: %s", payload));
+            } else {
+                logger.severe(String.format("Webhook API call through Agent proxy failed!"));
+                logger.fine(String.format("Payload: %s", payload));
+                logger.fine(String.format("Response: %s", result));
+                return false;
+            }
+        } catch (Exception e) {
+            try {
+                if (conn != null && conn.getResponseCode() == BAD_REQUEST) {
+                    logger.severe("We received a 400 from the Agent EVP Proxy.");
+                } else {
+                    DatadogUtilities.severe(logger, e, "Unknown client error, please check your config");
+                }
+            } catch (IOException ex) {
+                DatadogUtilities.severe(logger, ex, "Failed to inspect HTTP response");
+            }
+            return false;
+        } finally {
+            if (conn != null) {
+                conn.disconnect();
+            }
+        }
+        return true;
+    }
+
+    /**
      * reinitialize the Tracer Client
      * @param force - force to reinitialize
      * @return true if reinitialized properly otherwise false
      */
-    private boolean reinitializeAgentHttpClient(boolean force) {
+    protected boolean reinitializeAgentHttpClient(boolean force) {
         if(!this.isStoppedAgentHttpClient && this.traceBuildLogic != null && this.tracePipelineLogic != null && !force) {
             return true;
         }
 
-        if(!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility() || this.hostname == null || this.traceCollectionPort == null) {
+        if(!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility() || this.getHostname() == null || this.getTraceCollectionPort() == null) {
             return false;
         }
 
         this.stopAgentHttpClient();
         try {
             logger.info("Re/Initialize Datadog-Plugin Agent Http Client");
-            final URL tracesURL = buildHttpURL(this.hostname, this.traceCollectionPort, "/v0.3/traces");
+
+            // Build
+            final URL tracesURL = buildHttpURL(this.getHostname(), this.getTraceCollectionPort(), "/v0.3/traces");
             this.agentHttpClient = NonBlockingHttpClient.builder()
                     .errorHandler(LOGGER_HTTP_ERROR_HANDLER)
                     .messageRoute(PayloadMessage.Type.TRACE, HttpMessageFactory.builder()
@@ -309,8 +472,6 @@ public class DatadogAgentClient implements DatadogClient {
                             .build())
                     .build();
 
-            traceBuildLogic = new DatadogTraceBuildLogic(agentHttpClient);
-            tracePipelineLogic = new DatadogTracePipelineLogic(agentHttpClient);
             this.isStoppedAgentHttpClient = false;
             return true;
         } catch (Throwable e){
@@ -318,6 +479,33 @@ public class DatadogAgentClient implements DatadogClient {
             this.stopAgentHttpClient();
             return false;
         }
+    }
+
+    protected boolean checkEvpProxySupportAndUpdateLogic() {
+        if (evpProxySupported) {
+            return true; // Once we have seen an Agent that supports EVP Proxy, we never check again.
+        }
+        if (System.currentTimeMillis() < (lastEvpProxyCheckTimeMs + EVP_PROXY_SUPPORT_TIME_BETWEEN_CHECKS_MS)) {
+            return evpProxySupported; // Wait at least 1 hour between checks, return the cached value
+        }
+        synchronized (DatadogAgentClient.class) {
+            if (!evpProxySupported) {
+                logger.info("Checking for EVP Proxy support in the Agent.");
+                Set<String> supportedAgentEndpoints = fetchAgentSupportedEndpoints();
+                evpProxySupported = supportedAgentEndpoints.contains("/evp_proxy/v3/");
+                lastEvpProxyCheckTimeMs = System.currentTimeMillis();
+                if (evpProxySupported) {
+                    logger.info("EVP Proxy is supported by the Agent. We will not check again until the next boot.");
+                    traceBuildLogic = new DatadogWebhookBuildLogic(this);
+                    tracePipelineLogic = new DatadogWebhookPipelineLogic(this);
+                } else {
+                    logger.info("The Agent doesn't support EVP Proxy, falling back to APM for CI Visibility. Requires Agent v6.42+ or 7.42+.");
+                    traceBuildLogic = new DatadogTraceBuildLogic(this.agentHttpClient);
+                    tracePipelineLogic = new DatadogTracePipelineLogic(this.agentHttpClient);
+                }
+            }
+        }
+        return evpProxySupported;
     }
 
     private boolean stopAgentHttpClient() {
@@ -428,6 +616,10 @@ public class DatadogAgentClient implements DatadogClient {
     @Override
     public void setWebhookIntakeConnectionBroken(boolean webhookIntakeConnectionBroken) {
         // noop
+    }
+
+    public boolean isEvpProxySupported() {
+        return evpProxySupported;
     }
 
     @Override
@@ -582,6 +774,8 @@ public class DatadogAgentClient implements DatadogClient {
                 return false;
             }
 
+            checkEvpProxySupportAndUpdateLogic();
+
             logger.fine("Started build trace");
             this.traceBuildLogic.startBuildTrace(buildData, run);
             return true;
@@ -600,6 +794,9 @@ public class DatadogAgentClient implements DatadogClient {
             if(!status) {
                 return false;
             }
+
+            checkEvpProxySupportAndUpdateLogic();
+
             logger.fine("Finished build trace");
             this.traceBuildLogic.finishBuildTrace(buildData, run);
             return true;
@@ -617,6 +814,8 @@ public class DatadogAgentClient implements DatadogClient {
             if(!status) {
                 return false;
             }
+
+            checkEvpProxySupportAndUpdateLogic();
 
             logger.fine("Send pipeline traces.");
             this.tracePipelineLogic.execute(run, flowNode);

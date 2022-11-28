@@ -30,6 +30,8 @@ import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
+import org.datadog.jenkins.plugins.datadog.model.StageData;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
@@ -47,11 +49,13 @@ import hudson.model.TaskListener;
 /**
  * Base class with shared code for DatadogTracePipelineLogic and DatadogWebhookPipelineLogic
  */
-public class DatadogBasePipelineLogic {
+public abstract class DatadogBasePipelineLogic {
 
     protected static final String CI_PROVIDER = "jenkins";
     protected static final String HOSTNAME_NONE = "none";
     private static final Logger logger = Logger.getLogger(DatadogBasePipelineLogic.class.getName());
+
+    public abstract void execute(Run run, FlowNode flowNode);
 
     protected BuildPipelineNode buildPipelineTree(FlowEndNode flowEndNode) {
 
@@ -400,4 +404,34 @@ public class DatadogBasePipelineLogic {
         }
         return gitClient;
     }
+
+    protected void updateStageBreakdown(final Run<?,?> run, BuildPipelineNode pipelineNode) {
+        long start = System.currentTimeMillis();
+        try {
+            final StageBreakdownAction stageBreakdownAction = run.getAction(StageBreakdownAction.class);
+            if(stageBreakdownAction == null){
+                return;
+            }
+
+            if(pipelineNode == null){
+                return;
+            }
+
+            if(!BuildPipelineNode.NodeType.STAGE.equals(pipelineNode.getType())){
+                return;
+            }
+
+            final StageData stageData = StageData.builder()
+                    .withName(pipelineNode.getName())
+                    .withStartTimeInMicros(pipelineNode.getStartTimeMicros())
+                    .withEndTimeInMicros(pipelineNode.getEndTimeMicros())
+                    .build();
+
+            stageBreakdownAction.put(stageData.getName(), stageData);
+        } finally {
+            long end = System.currentTimeMillis();
+            DatadogAudit.log("DatadogTracePipelineLogic.updateStageBreakdown", start, end);
+        }
+    }
+
 }

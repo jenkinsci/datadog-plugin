@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 import hudson.model.Run;
+import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
@@ -23,7 +24,7 @@ import static org.junit.Assert.*;
 
 public abstract class DatadogTraceAbstractTest {
 
-    protected void assertGitVariables(TraceSpan span, String defaultBranch) {
+    protected void assertGitVariablesOnSpan(TraceSpan span, String defaultBranch) {
         final Map<String, String> meta = span.getMeta();
         assertEquals("Initial commit\n", meta.get(CITags.GIT_COMMIT_MESSAGE));
         assertEquals("John Doe", meta.get(CITags.GIT_COMMIT_AUTHOR_NAME));
@@ -37,6 +38,21 @@ public abstract class DatadogTraceAbstractTest {
         assertEquals("master", meta.get(CITags.GIT_BRANCH));
         assertEquals("https://github.com/johndoe/foobar.git", meta.get(CITags.GIT_REPOSITORY_URL));
         assertEquals(defaultBranch, meta.get(CITags.GIT_DEFAULT_BRANCH));
+    }
+
+    protected void assertGitVariablesOnWebhook(JSONObject webhook, String defaultBranch) {
+        JSONObject meta = webhook.getJSONObject("git");
+        assertEquals("Initial commit\n", meta.get("message"));
+        assertEquals("John Doe", meta.get("author_name"));
+        assertEquals("john@doe.com", meta.get("author_email"));
+        assertEquals("2020-10-08T07:49:32.000Z", meta.get("author_time"));
+        assertEquals("John Doe", meta.get("committer_name"));
+        assertEquals("john@doe.com", meta.get("committer_email"));
+        assertEquals("2020-10-08T07:49:32.000Z", meta.get("commit_time"));
+        assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get("sha"));
+        assertEquals("master", meta.get("branch"));
+        assertEquals("https://github.com/johndoe/foobar.git", meta.get("repository_url"));
+        assertEquals(defaultBranch, meta.get("default_branch"));
     }
 
     protected void assertCleanupActions(Run<?,?> run) {

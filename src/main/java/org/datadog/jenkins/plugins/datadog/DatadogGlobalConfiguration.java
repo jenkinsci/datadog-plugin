@@ -1346,7 +1346,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * Set the checkbox in the UI, used for Jenkins data binding to enable CI Visibility
      *
      * @param enableCiVisibility - The checkbox status (checked/unchecked)
-     * @deprecated Use setEnableCiVisibility
      */
     @DataBoundSetter
     public void setEnableCiVisibility(boolean enableCiVisibility) {

@@ -26,13 +26,18 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.clients;
 
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
+import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -99,6 +104,32 @@ public class DatadogClientTest {
         DatadogAgentClient.enableValidations = true;
         DatadogClient client = DatadogAgentClient.getInstance("https", null, null, null);
         Assert.assertEquals(client, null);
+    }
+
+    @Test
+    public void testEvpProxyEnabled() {
+        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+        cfg.setEnableCiVisibility(true);
+        DatadogAgentClient client = Mockito.spy(new DatadogAgentClient("test",1234, 1235, 1236));
+        Mockito.doReturn(new HashSet<String>(Arrays.asList("/evp_proxy/v3/"))).when(client).fetchAgentSupportedEndpoints();
+        Assert.assertTrue(client.checkEvpProxySupportAndUpdateLogic());
+    }
+
+    @Test
+    public void testEvpProxyDisabled() {
+        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+        cfg.setEnableCiVisibility(true);
+        DatadogAgentClient client = Mockito.spy(new DatadogAgentClient("test",1234, 1235, 1236));
+        Mockito.doReturn(new HashSet<String>()).when(client).fetchAgentSupportedEndpoints();
+        Assert.assertFalse(client.checkEvpProxySupportAndUpdateLogic());
+    }
+
+    @Test
+    public void testEmptyAgentSupportedEndpointsWithNoAgent() {
+        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+        cfg.setEnableCiVisibility(true);
+        DatadogAgentClient client = new DatadogAgentClient("test", 1234, 1235, 1236);
+        Assert.assertTrue(client.fetchAgentSupportedEndpoints().isEmpty());
     }
 
     @Test

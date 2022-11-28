@@ -15,8 +15,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
+import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.DatadogHttpClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
@@ -35,12 +35,13 @@ import net.sf.json.JSONObject;
  */
 public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
 
-    private final DatadogHttpClient client;
+    private final DatadogClient client;
 
-    public DatadogWebhookPipelineLogic(final DatadogHttpClient client) {
+    public DatadogWebhookPipelineLogic(final DatadogClient client) {
         this.client = client;
     }
 
+    @Override
     public void execute(Run run, FlowNode flowNode) {
 
         if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
@@ -60,6 +61,7 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
         final BuildData buildData = buildSpanAction.getBuildData();
         if(!isLastNode(flowNode)){
             final BuildPipelineNode pipelineNode = buildPipelineNode(flowNode);
+            updateStageBreakdown(run, pipelineNode);
             updateBuildData(buildData, run, pipelineNode, flowNode);
             updateCIGlobalTags(run);
             return;
@@ -108,8 +110,10 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
         payload.put("partial_retry", false);
         payload.put("queue_time", TimeUnit.NANOSECONDS.toMillis(getNanosInQueue(current)));
         payload.put("status", status);
+
         payload.put("trace_id", spanContext.getTraceId());
         payload.put("span_id", spanContext.getSpanId());
+        payload.put("parent_span_id", spanContext.getParentId());
 
         payload.put("id", current.getId());
         payload.put("name", current.getName());
@@ -118,16 +122,12 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
         payload.put("pipeline_name", buildData.getBaseJobName(""));
         if (buildLevel.equals("stage")) {
             if (parent != null && parent.getType().getBuildLevel() == "stage") {
-                // Stage is a parent of another stage
+                // Stage is a child of another stage
                 payload.put("parent_stage_id", parent.getStageId());
-                payload.put("parent_span_id", parent.getSpanId());
             }
         } else if (buildLevel.equals("job")) {
             payload.put("stage_id", current.getStageId());
             payload.put("stage_name", current.getStageName());
-            if (parent != null) {
-                payload.put("parent_span_id", parent.getSpanId());
-            }
         }
 
         // Errors

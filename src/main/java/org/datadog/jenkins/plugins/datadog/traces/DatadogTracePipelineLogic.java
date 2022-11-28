@@ -48,6 +48,7 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
         this.agentHttpClient = agentHttpClient;
     }
 
+    @Override
     public void execute(Run run, FlowNode flowNode) {
 
         if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
@@ -150,35 +151,6 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
         span.setEndNano(fixedEndTimeNanos);
 
         spanBuffer.add(span);
-    }
-
-    private void updateStageBreakdown(final Run<?,?> run, BuildPipelineNode pipelineNode) {
-        long start = System.currentTimeMillis();
-        try {
-            final StageBreakdownAction stageBreakdownAction = run.getAction(StageBreakdownAction.class);
-            if(stageBreakdownAction == null){
-                return;
-            }
-
-            if(pipelineNode == null){
-                return;
-            }
-
-            if(!BuildPipelineNode.NodeType.STAGE.equals(pipelineNode.getType())){
-                return;
-            }
-
-            final StageData stageData = StageData.builder()
-                    .withName(pipelineNode.getName())
-                    .withStartTimeInMicros(pipelineNode.getStartTimeMicros())
-                    .withEndTimeInMicros(pipelineNode.getEndTimeMicros())
-                    .build();
-
-            stageBreakdownAction.put(stageData.getName(), stageData);
-        } finally {
-            long end = System.currentTimeMillis();
-            DatadogAudit.log("DatadogTracePipelineLogic.updateStageBreakdown", start, end);
-        }
     }
 
     private Map<String, Long> buildTraceMetrics(BuildPipelineNode current) {

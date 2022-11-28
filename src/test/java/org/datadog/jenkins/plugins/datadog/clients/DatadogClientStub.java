@@ -31,8 +31,12 @@ import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.traces.DatadogBaseBuildLogic;
+import org.datadog.jenkins.plugins.datadog.traces.DatadogBasePipelineLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTracePipelineLogic;
+import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookBuildLogic;
+import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookPipelineLogic;
 import org.datadog.jenkins.plugins.datadog.transport.FakeTracesHttpClient;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.junit.Assert;
@@ -44,6 +48,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class DatadogClientStub implements DatadogClient {
 
@@ -51,17 +57,23 @@ public class DatadogClientStub implements DatadogClient {
     public List<DatadogMetric> serviceChecks;
     public List<DatadogEventStub> events;
     public List<JSONObject> logLines;
+    public List<JSONObject> webhooks;
+
+    private List<CountDownLatch> webhookLatches;
 
     public FakeTracesHttpClient agentHttpClient;
 
-    public DatadogTraceBuildLogic traceBuildLogic;
-    public DatadogTracePipelineLogic tracePipelineLogic;
+    public DatadogBaseBuildLogic traceBuildLogic;
+    public DatadogBasePipelineLogic tracePipelineLogic;
+
 
     public DatadogClientStub() {
         this.metrics = new ArrayList<>();
         this.serviceChecks = new ArrayList<>();
         this.events = new ArrayList<>();
         this.logLines = new ArrayList<>();
+        this.webhooks = new ArrayList<>();
+        this.webhookLatches = new ArrayList<>();
         this.agentHttpClient = new FakeTracesHttpClient();
         this.traceBuildLogic = new DatadogTraceBuildLogic(this.agentHttpClient);
         this.tracePipelineLogic = new DatadogTracePipelineLogic(this.agentHttpClient);
@@ -173,6 +185,22 @@ public class DatadogClientStub implements DatadogClient {
     public boolean sendLogs(String payloadLogs) {
         JSONObject payload = JSONObject.fromObject(payloadLogs);
         this.logLines.add(payload);
+        return true;
+    }
+
+    @Override
+    public boolean postWebhook(String webhook) {
+        synchronized (webhookLatches) {
+            JSONObject payload = JSONObject.fromObject(webhook);
+            webhooks.add(payload);
+            for(final CountDownLatch latch : webhookLatches) {
+                if(webhooks.size() >= latch.getCount()) {
+                    while (latch.getCount() > 0) {
+                        latch.countDown();
+                    }
+                }
+            }
+        }
         return true;
     }
 
@@ -332,6 +360,26 @@ public class DatadogClientStub implements DatadogClient {
         v.add(value);
         tags.put(name, v);
         return tags;
+    }
+
+    public void configureForWebhooks() {
+        traceBuildLogic = new DatadogWebhookBuildLogic(this);
+        tracePipelineLogic = new DatadogWebhookPipelineLogic(this);
+    }
+
+    public boolean waitForWebhooks(final int number) throws InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(number);
+        synchronized (webhookLatches) {
+            if (webhooks.size() >= number) {
+                return true;
+            }
+            webhookLatches.add(latch);
+        }
+        return latch.await(10, TimeUnit.SECONDS);
+    }
+
+    public List<JSONObject> getWebhooks() {
+        return this.webhooks;
     }
 
 }
