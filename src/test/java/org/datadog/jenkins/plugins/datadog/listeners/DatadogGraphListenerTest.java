@@ -362,6 +362,42 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
     }
 
     @Test
+    public void testIntegrationGitAlternativeRepoUrlWebhooks() throws Exception {
+        clientStub.configureForWebhooks();
+
+        Jenkins jenkins = jenkinsRule.jenkins;
+        final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
+        EnvVars env = prop.getEnvVars();
+        env.put("GIT_BRANCH", "master");
+        env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
+        env.put("GIT_URL_1", "https://github.com/johndoe/foobar.git");
+
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationAltRepoUrlWebhooks");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelinesOverrideGitCommit.txt"),
+                "UTF-8"
+        );
+
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        final FilePath ws = jenkins.getWorkspaceFor(job);
+        env.put("NODE_NAME", "master");
+        env.put("WORKSPACE", ws.getRemote());
+        InputStream gitZip = getClass().getClassLoader().getResourceAsStream("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
+        if(gitZip != null) {
+            ws.unzipFrom(gitZip);
+        }
+        jenkins.getGlobalNodeProperties().add(prop);
+        job.scheduleBuild2(0).get();
+
+        clientStub.waitForWebhooks(5);
+        final List<JSONObject> webhooks = clientStub.getWebhooks();
+        assertEquals(5, webhooks.size());
+        for(JSONObject webhook : webhooks) {
+            assertEquals("https://github.com/johndoe/foobar.git", webhook.getJSONObject("git").get("repository_url"));
+        }
+    }
+
+    @Test
     public void testUserSuppliedGitWithoutCommitInfo() throws Exception {
         Jenkins jenkins = jenkinsRule.jenkins;
         final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
