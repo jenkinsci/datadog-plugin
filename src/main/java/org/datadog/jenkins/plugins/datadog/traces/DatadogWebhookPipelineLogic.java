@@ -254,9 +254,7 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
                 gitPayload.put("default_branch", gitDefaultBranch);
             }
 
-            if (gitPayload.keySet().containsAll(GitUtils.WEBHOOK_REQUIRED_GIT_KEYS)) {
-                payload.put("git", gitPayload);
-            }
+            payload.put("git", gitPayload);
         }
 
         // Tags
