@@ -39,13 +39,13 @@ public class DatadogQueuePipelinePublisherTest {
         QueueTaskFuture<WorkflowRun> task = job.scheduleBuild2(0);
         Queue queue = jenkins.jenkins.getQueue();
         for (int i = 0; i < 10; i++) {
+            Thread.sleep(500);
             if (!queue.getBuildableItems().isEmpty()) {
                 String name  = queue.getBuildableItems().get(0).task.getFullDisplayName();
                 if (name != null & name.contains("pipelineIntegrationQueue")) {
                     break;
                 }
             }
-            Thread.sleep(500);
         }
 
         final String[] expectedTags = new String[2];
