@@ -292,7 +292,7 @@ public class DatadogClientTest {
     private static void stop(ExecutorService executor) {
         try {
             executor.shutdown();
-            executor.awaitTermination(3, TimeUnit.SECONDS);
+            executor.awaitTermination(5, TimeUnit.SECONDS);
         }
         catch (InterruptedException e) {
             System.err.println("termination interrupted");
