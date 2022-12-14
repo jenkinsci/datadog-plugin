@@ -5,8 +5,8 @@ Changes
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.1.0-beta-1...datadog-5.2.0
 
 * [Added] Send webhooks via the Agent EVP Proxy when supported. See [#316](https://github.com/jenkinsci/datadog-plugin/pull/316).
-* [Added] Create spans for webhooks. See [#317](https://github.com/jenkinsci/datadog-plugin/pull/317).
-* [Fixed] Do not drop partial git info. See [#319](https://github.com/jenkinsci/datadog-plugin/pull/319).
+* [Fixed] Set span and trace IDs when sending webhooks. See [#317](https://github.com/jenkinsci/datadog-plugin/pull/317).
+* [Fixed] Do not drop partial git info when sending webhooks. See [#319](https://github.com/jenkinsci/datadog-plugin/pull/319).
 
 ## 5.1.0-beta-1 / 2022-10-28
 ### Details
