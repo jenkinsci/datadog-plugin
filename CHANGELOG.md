@@ -2,13 +2,13 @@ Changes
 =======
 ## 5.2.0 / 2022-12-14
 ### Details
-https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.1.0-rc.1...datadog-5.2.0
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.1.0-beta-1...datadog-5.2.0
 
 * [Added] Send webhooks via the Agent EVP Proxy when supported. See [#316](https://github.com/jenkinsci/datadog-plugin/pull/316).
 
 ## 5.1.0-beta-1 / 2022-10-28
 ### Details
-https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.0.0...datadog-5.1.0-rc.1
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.0.0...datadog-5.1.0-beta-1
 
 ### Changes
 * [Added] Add CI Visibility support in Agentless mode. See [#309](https://github.com/jenkinsci/datadog-plugin/pull/309).
