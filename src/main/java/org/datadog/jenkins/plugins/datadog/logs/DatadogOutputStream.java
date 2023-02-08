@@ -31,36 +31,20 @@ import hudson.console.LineTransformationOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
-public class DatadogOutputStream extends LineTransformationOutputStream {
-    private OutputStream delegate;
+public class DatadogOutputStream extends LineTransformationOutputStream.Delegating {
     private DatadogWriter writer;
 
-
     public DatadogOutputStream(OutputStream delegate, DatadogWriter writer) {
-        super();
-        this.delegate = delegate;
+        super(delegate);
         this.writer = writer;
     }
 
     @Override
     protected void eol(byte[] b, int len) throws IOException {
-        delegate.write(b, 0, len);
-        this.flush();
-
+        out.write(b, 0, len);
         String line = new String(b, 0, len, writer.getCharset());
         line = ConsoleNote.removeNotes(line).trim();
         writer.write(line);
     }
 
-    @Override
-    public void flush() throws IOException {
-        delegate.flush();
-        super.flush();
-    }
-
-    @Override
-    public void close() throws IOException {
-        delegate.close();
-        super.close();
-    }
 }
