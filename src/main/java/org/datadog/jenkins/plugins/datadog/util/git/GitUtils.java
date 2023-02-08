@@ -59,7 +59,7 @@ public final class GitUtils {
         }
 
         try {
-            return "master".equals(nodeName) ? new FilePath(FilePath.localChannel, workspace):  FilePathUtils.find(nodeName, workspace);
+            return ("master".equals(nodeName) || "built-in".equals(nodeName)) ? new FilePath(FilePath.localChannel, workspace):  FilePathUtils.find(nodeName, workspace);
         } catch (Exception e) {
             LOGGER.fine("Unable to build FilePath. Error: " + e);
             return null;

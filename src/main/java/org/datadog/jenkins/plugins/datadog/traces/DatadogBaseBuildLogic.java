@@ -70,7 +70,7 @@ public abstract class DatadogBaseBuildLogic {
 
             // If there is no labels and the node name is master,
             // we force the label "master".
-            if("master".equalsIgnoreCase(nodeName)){
+            if("master".equalsIgnoreCase(nodeName) || "built-in".equalsIgnoreCase(nodeName)) {
                 final Set<String> masterLabels = new HashSet<>();
                 masterLabels.add("master");
                 return masterLabels;
