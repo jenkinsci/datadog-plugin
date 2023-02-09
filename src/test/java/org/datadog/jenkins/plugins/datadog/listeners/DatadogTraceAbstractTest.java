@@ -74,7 +74,7 @@ public abstract class DatadogTraceAbstractTest {
         assertNotNull(nodeName);
         // if nodeName == master, should be null, otherwise should be none
         Object hostTagVal = meta.get(CITags._DD_HOSTNAME);
-        if ("master".equals(nodeName)) {
+        if ("master".equals(nodeName) || "built-in".equals(nodeName)) {
             assertNull(hostTagVal);
         } else {
             assertEquals("none", hostTagVal);
