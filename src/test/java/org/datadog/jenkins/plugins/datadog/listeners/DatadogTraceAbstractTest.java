@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNull;
 
 import hudson.model.Run;
 import net.sf.json.JSONObject;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
@@ -74,7 +75,7 @@ public abstract class DatadogTraceAbstractTest {
         assertNotNull(nodeName);
         // if nodeName == master, should be null, otherwise should be none
         Object hostTagVal = meta.get(CITags._DD_HOSTNAME);
-        if ("master".equals(nodeName) || "built-in".equals(nodeName)) {
+        if (DatadogUtilities.isMainNode((String)nodeName)) {
             assertNull(hostTagVal);
         } else {
             assertEquals("none", hostTagVal);
