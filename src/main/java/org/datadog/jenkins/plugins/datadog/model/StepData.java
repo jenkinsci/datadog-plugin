@@ -19,7 +19,7 @@ public class StepData implements Serializable {
     private static final long serialVersionUID = 1L;
 
     // Env Var key to get the hostname from the Jenkins workers.
-    private static final String DD_CI_HOSTNAME = "DD_CI_HOSTNAME";
+    public static final String DD_CI_HOSTNAME = "DD_CI_HOSTNAME";
 
     private static transient final Logger logger = Logger.getLogger(StepData.class.getName());
 

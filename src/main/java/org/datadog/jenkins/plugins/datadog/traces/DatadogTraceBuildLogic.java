@@ -8,10 +8,12 @@ import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeB
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
@@ -21,11 +23,13 @@ import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
+import org.datadog.jenkins.plugins.datadog.model.StepData;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.transport.HttpClient;
 
 import hudson.model.Result;
 import hudson.model.Run;
+import hudson.util.LogTaskListener;
 
 /**
  * Keeps the logic to send traces related to Jenkins Build.
@@ -142,10 +146,18 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
         // If the NodeName == "master", we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
         if(!"master".equalsIgnoreCase(nodeName)){
             final String workerHostname = getNodeHostname(run, updatedBuildData);
-            // If the worker hostname is equals to controller hostname but the node name is not "master"
-            // then we could not detect the worker hostname properly. We set _dd.hostname to 'none' explicitly.
+            // If the worker hostname is equals to controller hostname but the node name is not master/built-in then we
+            // could not detect the worker hostname properly. Check if it's set in the environment, otherwise set to none.
             if(buildData.getHostname("").equalsIgnoreCase(workerHostname)) {
-                buildSpan.putMeta(CITags._DD_HOSTNAME, HOSTNAME_NONE);
+                String envHostnameOrNone = HOSTNAME_NONE;
+                try {
+                    Map<String, String> env = run.getEnvironment(new LogTaskListener(logger, Level.INFO));
+                    String envHostname = env.get(StepData.DD_CI_HOSTNAME);
+                    if (StringUtils.isNotEmpty(envHostname)) {
+                        envHostnameOrNone = envHostname;
+                    }
+                } catch (IOException | InterruptedException e) { }
+                buildSpan.putMeta(CITags._DD_HOSTNAME, envHostnameOrNone);
             } else {
                 buildSpan.putMeta(CITags._DD_HOSTNAME, (workerHostname != null) ? workerHostname : HOSTNAME_NONE);
             }
