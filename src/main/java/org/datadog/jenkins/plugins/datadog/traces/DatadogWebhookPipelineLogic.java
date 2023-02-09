@@ -282,7 +282,7 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
 
             // User
             final String user = envVars.get("USER") != null ? envVars.get("USER") : buildData.getUserId();
-            tagsPayload.add("username" + ":" + user);
+            tagsPayload.add(CITags.USER_NAME + ":" + user);
 
             // Pipeline Parameters
             if(!buildData.getBuildParameters().isEmpty()) {
