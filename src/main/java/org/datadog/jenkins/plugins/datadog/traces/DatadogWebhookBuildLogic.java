@@ -194,7 +194,7 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
 
             final String nodeName = getNodeName(run, buildData, updatedBuildData);
             nodePayload.put("name", nodeName);
-            if(!"master".equalsIgnoreCase(nodeName) && !"built-in".equalsIgnoreCase(nodeName)) {
+            if(!DatadogUtilities.isMainNode(nodeName)) {
 
                 final String workerHostname = getNodeHostname(run, updatedBuildData);
                 // If the worker hostname is equals to controller hostname but the node name is not "master"
