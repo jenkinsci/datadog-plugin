@@ -35,8 +35,10 @@ import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.User;
 import hudson.model.labels.LabelAtom;
+import hudson.util.LogTaskListener;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
@@ -87,8 +89,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -550,6 +554,24 @@ public class DatadogUtilities {
         }
 
         return null;
+    }
+
+    /**
+     * Fetches the environment variables from the worker and returns the value
+     * of DD_CI_HOSTNAME if set.
+     *
+     * @param run  - Current build
+     * @return the specified hostname or an empty Optional if not set
+     */
+    public static Optional<String> getHostnameFromWorkerEnv(Run run) {
+        try {
+            Map<String, String> env = run.getEnvironment(new LogTaskListener(logger, Level.INFO));
+            String envHostname = env.get(DatadogGlobalConfiguration.DD_CI_HOSTNAME);
+            if (StringUtils.isNotEmpty(envHostname)) {
+                return Optional.of(envHostname);
+            }
+        } catch (IOException | InterruptedException e) { }
+        return Optional.empty();
     }
 
     /**

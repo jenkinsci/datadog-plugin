@@ -3,6 +3,7 @@ package org.datadog.jenkins.plugins.datadog.model;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.Computer;
+import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
@@ -17,9 +18,6 @@ import java.util.stream.Collectors;
 public class StepData implements Serializable {
 
     private static final long serialVersionUID = 1L;
-
-    // Env Var key to get the hostname from the Jenkins workers.
-    private static final String DD_CI_HOSTNAME = "DD_CI_HOSTNAME";
 
     private static transient final Logger logger = Logger.getLogger(StepData.class.getName());
 
@@ -90,7 +88,7 @@ public class StepData implements Serializable {
      * @return hostname of the remote node.
      */
     private String getNodeHostname(final StepContext stepContext, Map<String,String> envVars) {
-        String hostname = envVars.get(DD_CI_HOSTNAME);
+        String hostname = envVars.get(DatadogGlobalConfiguration.DD_CI_HOSTNAME);
         if (hostname == null) {
             Computer computer;
             try {

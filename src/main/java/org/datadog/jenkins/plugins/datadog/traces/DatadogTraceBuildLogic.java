@@ -142,10 +142,11 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
         // If the NodeName == "master", we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
         if(!DatadogUtilities.isMainNode(nodeName)) {
             final String workerHostname = getNodeHostname(run, updatedBuildData);
-            // If the worker hostname is equals to controller hostname but the node name is not "master"
-            // then we could not detect the worker hostname properly. We set _dd.hostname to 'none' explicitly.
+            // If the worker hostname is equals to controller hostname but the node name is not master/built-in then we
+            // could not detect the worker hostname properly. Check if it's set in the environment, otherwise set to none.
             if(buildData.getHostname("").equalsIgnoreCase(workerHostname)) {
-                buildSpan.putMeta(CITags._DD_HOSTNAME, HOSTNAME_NONE);
+                String envHostnameOrNone = DatadogUtilities.getHostnameFromWorkerEnv(run).orElse(HOSTNAME_NONE);
+                buildSpan.putMeta(CITags._DD_HOSTNAME, envHostnameOrNone);
             } else {
                 buildSpan.putMeta(CITags._DD_HOSTNAME, (workerHostname != null) ? workerHostname : HOSTNAME_NONE);
             }

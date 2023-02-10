@@ -23,7 +23,6 @@ import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
-import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 
 import hudson.model.Run;
 import net.sf.json.JSONArray;
@@ -197,10 +196,12 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
             if(!DatadogUtilities.isMainNode(nodeName)) {
 
                 final String workerHostname = getNodeHostname(run, updatedBuildData);
-                // If the worker hostname is equals to controller hostname but the node name is not "master"
-                // then we could not detect the worker hostname properly. We set _dd.hostname to 'none' explicitly.
+
+                // If the worker hostname is equals to controller hostname but the node name is not master/built-in then we
+                // could not detect the worker hostname properly. Check if it's set in the environment, otherwise set to none.
                 if(buildData.getHostname("").equalsIgnoreCase(workerHostname)) {
-                    nodePayload.put("hostname", HOSTNAME_NONE);
+                    String envHostnameOrNone = DatadogUtilities.getHostnameFromWorkerEnv(run).orElse(HOSTNAME_NONE);
+                    nodePayload.put("hostname", envHostnameOrNone);
                 } else {
                     nodePayload.put("hostname", (workerHostname != null) ? workerHostname : HOSTNAME_NONE);
                 }
