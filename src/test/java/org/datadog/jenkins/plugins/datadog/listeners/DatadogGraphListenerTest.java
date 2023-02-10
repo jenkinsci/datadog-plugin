@@ -15,7 +15,6 @@ import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_R
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_TAG;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -23,6 +22,7 @@ import static org.mockito.Mockito.when;
 
 import hudson.EnvVars;
 import hudson.FilePath;
+import hudson.model.FreeStyleProject;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
 import hudson.slaves.DumbSlave;
@@ -1302,6 +1302,80 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
         jenkinsRule.jenkins.removeNode(worker);
         job.delete();
+    }
+
+    @Test
+    public void testCustomHostnameForWorkersInFreestyleJob() throws Exception {
+        final EnvironmentVariablesNodeProperty envProps = new EnvironmentVariablesNodeProperty();
+        EnvVars env = envProps.getEnvVars();
+        env.put("NODE_NAME", "testPipeline");
+        env.put("DD_CI_HOSTNAME", "testDDCiHostname");
+        jenkinsRule.jenkins.getGlobalNodeProperties().add(envProps);
+        FreeStyleProject job = jenkinsRule.createFreeStyleProject("freestylah");
+        job.setAssignedLabel(Label.get("freestylah"));
+
+        final DumbSlave worker = jenkinsRule.createOnlineSlave(Label.get("freestylah"));
+
+        // schedule build and wait for it to get queued
+        new Thread(() -> {
+            try {
+                job.scheduleBuild2(0).get();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
+
+        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(1);
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(1, spans.size());
+
+        final TraceSpan buildSpan = spans.get(0);
+        assertEquals(worker.getNodeName(), buildSpan.getMeta().get(CITags.NODE_NAME));
+        assertTrue(buildSpan.getMeta().get(CITags.NODE_LABELS).contains("freestylah"));
+        assertEquals("testDDCiHostname", buildSpan.getMeta().get(CITags._DD_HOSTNAME));
+
+        jenkinsRule.jenkins.removeNode(worker);
+        job.delete();
+
+    }
+
+    @Test
+    public void testCustomHostnameForWorkersInFreestyleJobWebhook() throws Exception {
+        clientStub.configureForWebhooks();
+
+        final EnvironmentVariablesNodeProperty envProps = new EnvironmentVariablesNodeProperty();
+        EnvVars env = envProps.getEnvVars();
+        env.put("NODE_NAME", "testPipelineWorkerWebhook");
+        env.put("DD_CI_HOSTNAME", "testDDCiHostname");
+        jenkinsRule.jenkins.getGlobalNodeProperties().add(envProps);
+        FreeStyleProject job = jenkinsRule.createFreeStyleProject("freestylahWebhook");
+        job.setAssignedLabel(Label.get("freestylahWebhook"));
+
+        final DumbSlave worker = jenkinsRule.createOnlineSlave(Label.get("freestylahWebhook"));
+
+        // schedule build and wait for it to get queued
+        new Thread(() -> {
+            try {
+                job.scheduleBuild2(0).get();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
+
+        clientStub.waitForWebhooks(1);
+        final List<JSONObject> webhooks = clientStub.getWebhooks();
+        assertEquals(1, webhooks.size());
+
+        final JSONObject pipeline = webhooks.get(0);
+        final JSONObject pipelineNode = pipeline.getJSONObject("node");
+        assertEquals(worker.getNodeName(), pipelineNode.getString("name"));
+        assertEquals("testDDCiHostname", pipelineNode.getString("hostname"));
+        assertTrue(pipelineNode.getJSONArray("labels").contains("freestylahWebhook"));
+
+        jenkinsRule.jenkins.removeNode(worker);
+        job.delete();
+
     }
 
     private void assertNodeNameParallelBlock(TraceSpan stageSpan, DumbSlave worker01, DumbSlave worker02) {
