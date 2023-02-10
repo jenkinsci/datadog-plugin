@@ -76,6 +76,10 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     public static final String DD_AGENT_PORT = "DD_AGENT_PORT";
     public static final String DD_TRACE_AGENT_PORT = "DD_TRACE_AGENT_PORT";
     public static final String DD_TRACE_AGENT_URL = "DD_TRACE_AGENT_URL";
+
+    // Env Var key to get the hostname from the Jenkins workers.
+    public static final String DD_CI_HOSTNAME = "DD_CI_HOSTNAME";
+
     // Jenkins Agent EnvVars
     public static final String TARGET_HOST_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_HOST";
     public static final String TARGET_PORT_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_PORT";
