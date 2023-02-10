@@ -246,7 +246,7 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
         }
 
         // If the NodeName == "master", we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
-        if(!"master".equalsIgnoreCase(nodeName)){
+        if(!DatadogUtilities.isMainNode(nodeName)) {
             final String workerHostname = getNodeHostname(run, current);
             // If the worker hostname is equals to controller hostname but the node name is not "master"
             // then we could not detect the worker hostname properly. We set _dd.hostname to 'none' explicitly.

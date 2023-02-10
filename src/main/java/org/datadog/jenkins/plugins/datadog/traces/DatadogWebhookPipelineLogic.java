@@ -153,7 +153,7 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
             final String nodeName = getNodeName(run, current, buildData);
             nodePayload.put("name", nodeName);
 
-            if(!"master".equalsIgnoreCase(nodeName)){
+            if(!DatadogUtilities.isMainNode(nodeName)) {
                 final String workerHostname = getNodeHostname(run, current);
                 // If the worker hostname is equals to controller hostname but the node name is not "master"
                 // then we could not detect the worker hostname properly. We set _dd.hostname to 'none' explicitly.

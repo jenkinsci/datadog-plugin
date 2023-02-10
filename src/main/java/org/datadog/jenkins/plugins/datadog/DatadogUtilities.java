@@ -638,6 +638,10 @@ public class DatadogUtilities {
         }
     }
 
+    public static boolean isMainNode(String nodeName){
+        return "master".equalsIgnoreCase(nodeName) || "built-in".equalsIgnoreCase(nodeName);
+    }
+
 
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
     public static Set<String> getNodeLabels(Computer computer) {
