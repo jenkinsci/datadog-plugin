@@ -132,6 +132,25 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
         payload.put("unique_id", buildData.getBuildTag(""));
         payload.put("name", buildData.getBaseJobName(""));
 
+        // User
+        {
+            JSONObject userPayload = new JSONObject();
+            userPayload.put("name", buildData.getUserId());
+            if(StringUtils.isNotEmpty(buildData.getUserEmail(""))){
+                userPayload.put("email", buildData.getUserEmail(""));
+            }
+            payload.put("user", userPayload);
+        }
+
+        // Pipeline Parameters
+        if (!buildData.getBuildParameters().isEmpty()) {
+            JSONObject parametersPayload = new JSONObject();
+            for (Map.Entry<String, String> parameter : buildData.getBuildParameters().entrySet()) {
+                parametersPayload.put(parameter.getKey(), parameter.getValue());
+            }
+            payload.put("parameters", parametersPayload);
+        }
+
         // Tags
         // Here we include both global tags and fields that are not supported as regular fields by the webhooks intake
         {
@@ -156,17 +175,6 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
 
             // For backwards compat
             tagsPayload.add(prefix + CITags._RESULT + ":" + status);
-
-            // User
-            tagsPayload.add(CITags.USER_NAME + ":" + buildData.getUserId());
-            if(StringUtils.isNotEmpty(buildData.getUserEmail(""))){
-                tagsPayload.add(CITags.USER_EMAIL + ":" + buildData.getUserEmail(""));
-            }
-
-            // Pipeline Parameters
-            if(!buildData.getBuildParameters().isEmpty()) {
-                tagsPayload.add(CITags.CI_PARAMETERS + ":" + toJson(buildData.getBuildParameters()));
-            }
 
             // Configurations
             final String fullJobName = buildData.getJobName("");

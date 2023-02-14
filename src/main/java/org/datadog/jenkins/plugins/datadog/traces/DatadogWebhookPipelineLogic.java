@@ -257,6 +257,27 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
             payload.put("git", gitPayload);
         }
 
+        // User
+        {
+            // User
+            JSONObject userPayload = new JSONObject();
+            final String user = envVars.get("USER") != null ? envVars.get("USER") : buildData.getUserId();
+            userPayload.put("name", user);
+            if (StringUtils.isNotEmpty(buildData.getUserEmail(""))) {
+                userPayload.put("email", buildData.getUserEmail(""));
+            }
+            payload.put("user", userPayload);
+        }
+
+        // Pipeline Parameters
+        if (!buildData.getBuildParameters().isEmpty()) {
+            JSONObject parametersPayload = new JSONObject();
+            for (Map.Entry<String, String> parameter : buildData.getBuildParameters().entrySet()) {
+                parametersPayload.put(parameter.getKey(), parameter.getValue());
+            }
+            payload.put("parameters", parametersPayload);
+        }
+
         // Tags
         // Here we include both global tags and fields that are not supported as regular fields by the webhooks intake
         {
@@ -268,7 +289,6 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
                 for(Map.Entry<String, String> globalTagEntry : globalTags.entrySet()) {
                     tagsPayload.add(globalTagEntry.getKey() + ":" + globalTagEntry.getValue());
                 }
-
             }
 
             // Jenkins specific
@@ -279,15 +299,6 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
 
             // For backwards compat
             tagsPayload.add(prefix + CITags._RESULT + ":" + status);
-
-            // User
-            final String user = envVars.get("USER") != null ? envVars.get("USER") : buildData.getUserId();
-            tagsPayload.add(CITags.USER_NAME + ":" + user);
-
-            // Pipeline Parameters
-            if(!buildData.getBuildParameters().isEmpty()) {
-                tagsPayload.add("parameters" + ":" + toJson(buildData.getBuildParameters()));
-            }
 
             // Arguments
             final String nodePrefix = current.getType().name().toLowerCase();
@@ -300,7 +311,6 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
 
             payload.put("tags", tagsPayload);
         }
-
 
         for(final BuildPipelineNode child : current.getChildren()) {
             collectTraces(run, buildData, child, current, span.context());
