@@ -1,5 +1,15 @@
 Changes
 =======
+## 5.3.0 / 2023-02-14
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.2.0...datadog-5.3.0
+
+* [Fixed] Logs: Fix logs not showing in Jenkins when log collection was enabled. See [#327](https://github.com/jenkinsci/datadog-plugin/pull/327).
+* [Fixed] CI Visibility: Fix hostname not being set for worker nodes in freestyle jobs. See [#328](https://github.com/jenkinsci/datadog-plugin/pull/328).
+* [Fixed] CI Visibility: Fix hostname resolution in recent Jenkins versions. See [#326](https://github.com/jenkinsci/datadog-plugin/pull/326).
+* [Fixed] CI Visibility: Fix typo in username tag. See [#325](https://github.com/jenkinsci/datadog-plugin/pull/325).
+* [Changed] CI Visibility: Move user and parameters to the top level for webhooks. See [#329](https://github.com/jenkinsci/datadog-plugin/pull/329).
+
 ## 5.2.0 / 2022-12-15
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.1.0-beta-1...datadog-5.2.0
