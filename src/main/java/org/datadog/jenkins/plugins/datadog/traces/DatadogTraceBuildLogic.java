@@ -1,6 +1,6 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
-import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getNormalizedResultForTraces;
+import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.statusFromResult;
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.toJson;
 import static org.datadog.jenkins.plugins.datadog.traces.CITags.Values.ORIGIN_CIAPP_PIPELINE;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.filterSensitiveInfo;
@@ -246,7 +246,7 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
         buildSpan.putMeta(CITags.JENKINS_EXECUTOR_NUMBER, buildData.getExecutorNumber(""));
 
         final String jenkinsResult = buildData.getResult("");
-        final String pipelineResult = getNormalizedResultForTraces(jenkinsResult);
+        final String pipelineResult = statusFromResult(jenkinsResult);
         buildSpan.putMeta(prefix + CITags._RESULT, pipelineResult);
         buildSpan.putMeta(CITags.STATUS, pipelineResult);
         buildSpan.putMeta(CITags.JENKINS_RESULT, jenkinsResult.toLowerCase());

@@ -130,8 +130,6 @@ public class BuildData implements Serializable {
     private Long startTime;
     private Long endTime;
     private Long duration;
-    private Long secondsInQueue;
-    private Long propagatedSecondsInQueue;
     private Long millisInQueue;
     private Long propagatedMillisInQueue;
 

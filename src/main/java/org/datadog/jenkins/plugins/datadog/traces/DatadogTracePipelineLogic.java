@@ -1,7 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.cleanUpTraceActions;
-import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getNormalizedResultForTraces;
+import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.statusFromResult;
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.toJson;
 import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.NodeType.PIPELINE;
 import static org.datadog.jenkins.plugins.datadog.traces.CITags.Values.ORIGIN_CIAPP_PIPELINE;
@@ -20,12 +20,9 @@ import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
-import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
-import org.datadog.jenkins.plugins.datadog.model.StageData;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.transport.HttpClient;
 import org.datadog.jenkins.plugins.datadog.transport.PayloadMessage;
@@ -169,7 +166,7 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
         tags.put(CITags._DD_ORIGIN, ORIGIN_CIAPP_PIPELINE);
         tags.put(prefix + CITags._NAME, current.getName());
         tags.put(prefix + CITags._NUMBER, current.getId());
-        final String status = getNormalizedResultForTraces(getResult(current));
+        final String status = statusFromResult(getResult(current));
         tags.put(prefix + CITags._RESULT, status);
         tags.put(CITags.STATUS, status);
 
