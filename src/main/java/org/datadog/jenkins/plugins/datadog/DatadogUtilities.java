@@ -797,7 +797,7 @@ public class DatadogUtilities {
      * @return the normalized result for the traces based on the jenkins result
      */
     public static String statusFromResult(String result) {
-        String resultLowercase = result == null ? "" : result.toLowerCase();
+        String resultLowercase = result == null ? "error" : result.toLowerCase();
         switch (resultLowercase) {
             case "failure":
                 return "error";
