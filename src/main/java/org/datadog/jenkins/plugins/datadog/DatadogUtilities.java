@@ -792,41 +792,21 @@ public class DatadogUtilities {
     }
 
     /**
-     * Returns a normalize result for traces.
-     * @param result (success, failure, error, aborted, not_build, canceled, skipped, unknown)
-     * @return the normalized result for the traces based on the jenkins result
-     */
-    public static String getNormalizedResultForTraces(@Nonnull String result) {
-        switch (result.toLowerCase()){
-            case "failure":
-                return "error";
-            case "aborted":
-            case "not_built":
-                return "canceled";
-            default:
-                return result.toLowerCase();
-        }
-    }
-
-    /**
      * Returns a normalized result for traces.
-     * NOTE: This is very similar to the above "getNormalizedResultForTraces", but with the difference
-     * that this will not return "unstable", which isn't a valid status on the Webhooks API.
      * @param result (success, failure, error, aborted, not_build, canceled, skipped, unknown)
      * @return the normalized result for the traces based on the jenkins result
      */
-    public static String statusFromResult(@Nonnull String result) {
-        switch (result.toLowerCase()){
+    public static String statusFromResult(String result) {
+        String resultLowercase = result == null ? "error" : result.toLowerCase();
+        switch (resultLowercase) {
             case "failure":
                 return "error";
             case "aborted":
                 return "canceled";
             case "not_built":
                 return "skipped";
-            case "unstable": // has non-fatal errors
-                return "success";
             default:
-                return result.toLowerCase();
+                return resultLowercase;
         }
     }
 
