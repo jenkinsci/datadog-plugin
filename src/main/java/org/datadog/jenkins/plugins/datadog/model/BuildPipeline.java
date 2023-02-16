@@ -135,15 +135,15 @@ public class BuildPipeline {
             if(BuildPipelineNode.NodeType.STAGE.equals(node.getType())) {
                 final BuildPipelineNode executableChildNode = searchExecutableChildNode(node);
                 if(executableChildNode != null) {
-                    node.setPropagatedNodeName(executableChildNode.getNodeName());
-                    node.setPropagatedNodeLabels(executableChildNode.getNodeLabels());
-                    node.setPropagatedNodeHostname(executableChildNode.getNodeHostname());
+                    node.setNodeName(executableChildNode.getNodeName());
+                    node.setNodeLabels(executableChildNode.getNodeLabels());
+                    node.setNodeHostname(executableChildNode.getNodeHostname());
                 }
             }
 
             // Propagate error to all parent stages
             if(node.isError() && !parent.isError()) {
-                propagateErrorToAllParents(node);
+                propagateResultToAllParents(node, "error");
             }
 
             // Notice we cannot propagate the worker node info
@@ -156,12 +156,11 @@ public class BuildPipeline {
         }
     }
 
-    private void propagateErrorToAllParents(BuildPipelineNode node) {
+    private void propagateResultToAllParents(BuildPipelineNode node, String result) {
         for(BuildPipelineNode parent : node.getParents()) {
-            propagateErrorToAllParents(parent);
+            propagateResultToAllParents(parent, result);
         }
-        node.setError(true);
-        node.setPropagatedResult("error");
+        node.setResult(result);
     }
 
     private BuildPipelineNode searchExecutableChildNode(BuildPipelineNode node) {
