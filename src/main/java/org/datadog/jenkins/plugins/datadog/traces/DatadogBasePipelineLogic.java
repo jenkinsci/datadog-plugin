@@ -221,9 +221,7 @@ public abstract class DatadogBasePipelineLogic {
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
     protected Set<String> getNodeLabels(Run run, BuildPipelineNode current, String nodeName) {
         final PipelineNodeInfoAction pipelineNodeInfoAction = run.getAction(PipelineNodeInfoAction.class);
-        if (current.getPropagatedNodeLabels() != null && !current.getPropagatedNodeLabels().isEmpty()) {
-            return current.getPropagatedNodeLabels();
-        } else if (current.getNodeLabels() != null && !current.getNodeLabels().isEmpty()) {
+        if (current.getNodeLabels() != null && !current.getNodeLabels().isEmpty()) {
             return current.getNodeLabels();
         } else if (pipelineNodeInfoAction != null && !pipelineNodeInfoAction.getNodeLabels().isEmpty()) {
             return pipelineNodeInfoAction.getNodeLabels();
@@ -247,16 +245,10 @@ public abstract class DatadogBasePipelineLogic {
         return Collections.emptySet();
     }
 
-    protected String getResult(BuildPipelineNode current) {
-        return (current.getPropagatedResult() != null) ? current.getPropagatedResult() : current.getResult();
-    }
-
     protected String getNodeName(Run<?, ?> run, BuildPipelineNode current, BuildData buildData) {
         final PipelineNodeInfoAction pipelineNodeInfoAction = run.getAction(PipelineNodeInfoAction.class);
 
-        if(current.getPropagatedNodeName() != null) {
-            return current.getPropagatedNodeName();
-        } else if(current.getNodeName() != null) {
+        if(current.getNodeName() != null) {
             return current.getNodeName();
         } else if (pipelineNodeInfoAction != null) {
             return pipelineNodeInfoAction.getNodeName();
@@ -267,9 +259,7 @@ public abstract class DatadogBasePipelineLogic {
 
     protected String getNodeHostname(Run<?, ?> run, BuildPipelineNode current) {
         final PipelineNodeInfoAction pipelineNodeInfoAction = run.getAction(PipelineNodeInfoAction.class);
-        if(current.getPropagatedNodeHostname() != null) {
-            return current.getPropagatedNodeHostname();
-        } else if(current.getNodeHostname() != null) {
+        if(current.getNodeHostname() != null) {
             return current.getNodeHostname();
         } else if (pipelineNodeInfoAction != null) {
             return pipelineNodeInfoAction.getNodeHostname();

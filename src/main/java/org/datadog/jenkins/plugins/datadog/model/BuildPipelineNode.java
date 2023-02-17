@@ -72,10 +72,7 @@ public class BuildPipelineNode {
     private String workspace;
     private String nodeName;
     private Set<String> nodeLabels;
-    private String propagatedNodeName;
-    private Set<String> propagatedNodeLabels;
     private String nodeHostname;
-    private String propagatedNodeHostname;
     private long startTime;
     private long startTimeMicros;
     private long endTime;
@@ -83,7 +80,6 @@ public class BuildPipelineNode {
     private long nanosInQueue = -1L;
     private long propagatedNanosInQueue = -1L;
     private String result;
-    private String propagatedResult;
 
     // Flag that indicates if the node must be marked as error.
     private boolean error;
@@ -156,9 +152,6 @@ public class BuildPipelineNode {
         this.endTimeMicros = this.endTime * 1000;
         this.result = DatadogUtilities.getResultTag(startNode);
         this.errorObj = getErrorObj(endNode);
-        if("error".equalsIgnoreCase(this.result)){
-            this.error = true;
-        }
     }
 
     public BuildPipelineNode(final StepAtomNode stepNode) {
@@ -196,9 +189,6 @@ public class BuildPipelineNode {
         this.endTimeMicros = this.endTime * 1000;
         this.result = DatadogUtilities.getResultTag(stepNode);
         this.errorObj = getErrorObj(stepNode);
-        if("error".equalsIgnoreCase(this.result)){
-            this.error = true;
-        }
     }
 
 
@@ -258,32 +248,20 @@ public class BuildPipelineNode {
         return nodeLabels;
     }
 
-    public String getPropagatedNodeName() {
-        return propagatedNodeName;
+    public void setNodeName(String propagatedNodeName) {
+        this.nodeName = propagatedNodeName;
     }
 
-    public void setPropagatedNodeName(String propagatedNodeName) {
-        this.propagatedNodeName = propagatedNodeName;
-    }
-
-    public Set<String> getPropagatedNodeLabels() {
-        return propagatedNodeLabels;
-    }
-
-    public void setPropagatedNodeLabels(final Set<String> propagatedNodeLabels) {
-        this.propagatedNodeLabels = propagatedNodeLabels;
+    public void setNodeLabels(final Set<String> propagatedNodeLabels) {
+        this.nodeLabels = propagatedNodeLabels;
     }
 
     public String getNodeHostname() {
         return nodeHostname;
     }
 
-    public String getPropagatedNodeHostname(){
-        return propagatedNodeHostname;
-    }
-
-    public void setPropagatedNodeHostname(final String propagatedNodeHostname) {
-        this.propagatedNodeHostname = propagatedNodeHostname;
+    public void setNodeHostname(final String propagatedNodeHostname) {
+        this.nodeHostname = propagatedNodeHostname;
     }
 
     public long getStartTime() {
@@ -327,12 +305,8 @@ public class BuildPipelineNode {
         return result;
     }
 
-    public String getPropagatedResult() {
-        return this.propagatedResult;
-    }
-
-    public void setPropagatedResult(final String propagatedResult) {
-        this.propagatedResult = propagatedResult;
+    public void setResult(final String propagatedResult) {
+        this.result = propagatedResult;
     }
 
     public Throwable getErrorObj() {
@@ -340,11 +314,7 @@ public class BuildPipelineNode {
     }
 
     public boolean isError() {
-        return error;
-    }
-
-    public void setError(boolean error) {
-        this.error = error;
+        return "error".equalsIgnoreCase(this.result);
     }
 
     public long getSpanId() {
@@ -444,7 +414,6 @@ public class BuildPipelineNode {
         }
         return null;
     }
-
 
     /**
      * Returns the {@code Throwable} of a certain {@code FlowNode}, if it has errors.

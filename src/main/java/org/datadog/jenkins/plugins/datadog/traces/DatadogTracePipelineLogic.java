@@ -166,7 +166,7 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
         tags.put(CITags._DD_ORIGIN, ORIGIN_CIAPP_PIPELINE);
         tags.put(prefix + CITags._NAME, current.getName());
         tags.put(prefix + CITags._NUMBER, current.getId());
-        final String status = statusFromResult(getResult(current));
+        final String status = statusFromResult(current.getResult());
         tags.put(prefix + CITags._RESULT, status);
         tags.put(CITags.STATUS, status);
 

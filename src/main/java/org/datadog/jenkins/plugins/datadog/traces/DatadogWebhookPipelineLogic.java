@@ -88,7 +88,7 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
         final long propagatedMillisInQueue = Math.max(buildData.getPropagatedMillisInQueue(-1L), 0);
         final long fixedStartTimeMillis = TimeUnit.MICROSECONDS.toMillis(current.getStartTimeMicros() - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue));
         final long fixedEndTimeMillis = TimeUnit.MICROSECONDS.toMillis(current.getEndTimeMicros() - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue));
-        final String jenkinsResult = getResult(current);
+        final String jenkinsResult = current.getResult();
         final String status = statusFromResult(jenkinsResult);
         final String prefix = current.getType().getTagName();
         final String buildLevel = current.getType().getBuildLevel();
