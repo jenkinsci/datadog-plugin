@@ -116,7 +116,7 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
         span.setResourceName(current.getName());
         span.setType("ci");
         span.putMeta(CITags.LANGUAGE_TAG_KEY, "");
-        span.setError(current.isError());
+        span.setError(current.isError() || current.isUnstable());
 
         final Map<String, Object> traceTags = buildTraceTags(run, current, buildData);
         // Set tags
@@ -189,7 +189,7 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
             tags.put(CITags._DD_CI_LEVEL, buildLevel);
         }
         tags.put(CITags.JENKINS_RESULT, current.getResult().toLowerCase());
-        tags.put(CITags.ERROR, String.valueOf(current.isError()));
+        tags.put(CITags.ERROR, String.valueOf(current.isError() || current.isUnstable()));
 
         //Git Info
         final String rawGitBranch = GitUtils.resolveGitBranch(envVars, buildData);
@@ -273,6 +273,9 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
             final StringWriter errorString = new StringWriter();
             error.printStackTrace(new PrintWriter(errorString));
             tags.put(CITags.ERROR_STACK, errorString.toString());
+        } else if(current.isUnstable() && current.getUnstableMessage() != null){
+            tags.put(CITags.ERROR_MSG, current.getUnstableMessage());
+            tags.put(CITags.ERROR_TYPE, "unstable");
         }
 
         // Propagate Pipeline Name

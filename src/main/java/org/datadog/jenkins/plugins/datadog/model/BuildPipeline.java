@@ -144,6 +144,8 @@ public class BuildPipeline {
             // Propagate error to all parent stages
             if(node.isError() && !parent.isError()) {
                 propagateResultToAllParents(node, "error");
+            } else if(node.isUnstable() && !parent.isUnstable()) {
+                propagateResultToAllParents(node, "unstable");
             }
 
             // Notice we cannot propagate the worker node info
