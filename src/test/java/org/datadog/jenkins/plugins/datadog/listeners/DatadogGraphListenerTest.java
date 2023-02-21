@@ -764,6 +764,14 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         return null;
     }
 
+    private JSONObject searchWebhookByLevel(List<JSONObject> webhooks, String level) {
+        for(JSONObject webhook : webhooks) {
+            if (level.equalsIgnoreCase(webhook.getString("level"))) {
+                return webhook;
+            }
+        }
+        return null;
+    }
     @Test
     public void testIntegrationPipelineQueueTimeOnPipeline() throws Exception {
         final EnvironmentVariablesNodeProperty envProps = new EnvironmentVariablesNodeProperty();
@@ -1186,21 +1194,107 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         job.scheduleBuild2(0).get();
 
         final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
-        agentHttpClient.waitForTraces(4);
+        agentHttpClient.waitForTraces(3);
         final List<TraceSpan> spans = agentHttpClient.getSpans();
-        assertEquals(4, spans.size());
-
-        final TraceSpan buildSpan = spans.get(0);
-        assertEquals("error", buildSpan.getMeta().get(CITags.STATUS));
-
-        final TraceSpan stageSpan = spans.get(1);
-        assertEquals("error", stageSpan.getMeta().get(CITags.STATUS));
+        assertEquals(3, spans.size());
 
         final TraceSpan stepSpan = spans.get(2);
+        assertEquals(true, stepSpan.isError());
         assertEquals("error", stepSpan.getMeta().get(CITags.STATUS));
+        assertEquals("hudson.AbortException", stepSpan.getMeta().get(CITags.ERROR_TYPE));
 
-        final TraceSpan step2Span = spans.get(3);
-        assertEquals("error", step2Span.getMeta().get(CITags.STATUS));
+        final TraceSpan stageSpan = spans.get(1);
+        assertEquals(true, stageSpan.isError());
+        assertEquals("error", stageSpan.getMeta().get(CITags.STATUS));
+
+        final TraceSpan buildSpan = spans.get(0);
+        assertEquals(true, buildSpan.isError());
+        assertEquals("error", buildSpan.getMeta().get(CITags.STATUS));
+    }
+
+    @Test
+    public void testErrorPropagationOnStagesWebhook() throws Exception {
+        clientStub.configureForWebhooks();
+
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration-errorPropagationStagesWebhook");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineErrorOnStages.txt"),
+                "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        job.scheduleBuild2(0).get();
+
+        clientStub.waitForWebhooks(3);
+        final List<JSONObject> webhooks = clientStub.getWebhooks();
+        assertEquals(3, webhooks.size());
+
+        final JSONObject step = searchWebhookByLevel(webhooks, "job");
+        assertEquals("error", step.getString("status"));
+        final JSONObject stepError = step.getJSONObject("error");
+        assertEquals("hudson.AbortException", stepError.getString("type"));
+
+        final JSONObject stage = searchWebhookByLevel(webhooks, "stage");
+        assertEquals("error", stage.getString("status"));
+
+        final JSONObject pipeline = searchWebhookByLevel(webhooks, "pipeline");
+        assertEquals("error", pipeline.getString("status"));
+    }
+
+    @Test
+    public void testUnstablePropagationOnStages() throws Exception {
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration-unstablePropagationStages");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineUnstableOnStages.txt"),
+                "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        job.scheduleBuild2(0).get();
+
+        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(3);
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(3, spans.size());
+
+        final TraceSpan stepSpan = spans.get(2);
+        assertEquals(true, stepSpan.isError());
+        assertEquals("unstable", stepSpan.getMeta().get(CITags.STATUS));
+        assertEquals("unstable", stepSpan.getMeta().get(CITags.ERROR_TYPE));
+
+        final TraceSpan stageSpan = spans.get(1);
+        assertEquals(true, stageSpan.isError());
+        assertEquals("unstable", stageSpan.getMeta().get(CITags.STATUS));
+
+        final TraceSpan buildSpan = spans.get(0);
+        assertEquals(true, buildSpan.isError());
+        assertEquals("unstable", buildSpan.getMeta().get(CITags.STATUS));
+    }
+
+    @Test
+    public void testUnstablePropagationOnStagesWebhook() throws Exception {
+        clientStub.configureForWebhooks();
+
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration-unstablePropagationStagesWebhook");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineUnstableOnStages.txt"),
+                "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        job.scheduleBuild2(0).get();
+
+        clientStub.waitForWebhooks(3);
+        final List<JSONObject> webhooks = clientStub.getWebhooks();
+        assertEquals(3, webhooks.size());
+
+        final JSONObject step = searchWebhookByLevel(webhooks, "job");
+        assertEquals("unstable", step.getString("status"));
+        final JSONObject stepError = step.getJSONObject("error");
+        assertEquals("unstable", stepError.getString("type"));
+
+        final JSONObject stage = searchWebhookByLevel(webhooks, "stage");
+        assertEquals("unstable", stage.getString("status"));
+
+        final JSONObject pipeline = searchWebhookByLevel(webhooks, "pipeline");
+        assertEquals("unstable", pipeline.getString("status"));
     }
 
     @Test
