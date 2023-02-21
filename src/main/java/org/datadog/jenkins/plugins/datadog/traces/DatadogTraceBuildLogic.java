@@ -251,7 +251,7 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
         buildSpan.putMeta(CITags.STATUS, pipelineResult);
         buildSpan.putMeta(CITags.JENKINS_RESULT, jenkinsResult.toLowerCase());
 
-        if(Result.FAILURE.toString().equals(jenkinsResult)) {
+        if(Result.FAILURE.toString().equals(jenkinsResult) || Result.UNSTABLE.toString().equals(jenkinsResult)) {
             buildSpan.setError(true);
         }
 
