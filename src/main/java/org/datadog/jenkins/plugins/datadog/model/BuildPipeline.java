@@ -2,6 +2,7 @@ package org.datadog.jenkins.plugins.datadog.model;
 
 import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.BuildPipelineNodeKey;
 
+import org.datadog.jenkins.plugins.datadog.traces.CITags;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
@@ -143,9 +144,9 @@ public class BuildPipeline {
 
             // Propagate error to all parent stages
             if(node.isError() && !parent.isError()) {
-                propagateResultToAllParents(node, "error");
+                propagateResultToAllParents(node, CITags.STATUS_ERROR);
             } else if(node.isUnstable() && !parent.isUnstable()) {
-                propagateResultToAllParents(node, "unstable");
+                propagateResultToAllParents(node, CITags.STATUS_UNSTABLE);
             }
 
             // Notice we cannot propagate the worker node info

@@ -1200,16 +1200,16 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
         final TraceSpan stepSpan = spans.get(2);
         assertEquals(true, stepSpan.isError());
-        assertEquals("error", stepSpan.getMeta().get(CITags.STATUS));
+        assertEquals(CITags.STATUS_ERROR, stepSpan.getMeta().get(CITags.STATUS));
         assertEquals("hudson.AbortException", stepSpan.getMeta().get(CITags.ERROR_TYPE));
 
         final TraceSpan stageSpan = spans.get(1);
         assertEquals(true, stageSpan.isError());
-        assertEquals("error", stageSpan.getMeta().get(CITags.STATUS));
+        assertEquals(CITags.STATUS_ERROR, stageSpan.getMeta().get(CITags.STATUS));
 
         final TraceSpan buildSpan = spans.get(0);
         assertEquals(true, buildSpan.isError());
-        assertEquals("error", buildSpan.getMeta().get(CITags.STATUS));
+        assertEquals(CITags.STATUS_ERROR, buildSpan.getMeta().get(CITags.STATUS));
     }
 
     @Test
@@ -1229,15 +1229,15 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals(3, webhooks.size());
 
         final JSONObject step = searchWebhookByLevel(webhooks, "job");
-        assertEquals("error", step.getString("status"));
+        assertEquals(CITags.STATUS_ERROR, step.getString("status"));
         final JSONObject stepError = step.getJSONObject("error");
         assertEquals("hudson.AbortException", stepError.getString("type"));
 
         final JSONObject stage = searchWebhookByLevel(webhooks, "stage");
-        assertEquals("error", stage.getString("status"));
+        assertEquals(CITags.STATUS_ERROR, stage.getString("status"));
 
         final JSONObject pipeline = searchWebhookByLevel(webhooks, "pipeline");
-        assertEquals("error", pipeline.getString("status"));
+        assertEquals(CITags.STATUS_ERROR, pipeline.getString("status"));
     }
 
     @Test
@@ -1257,16 +1257,16 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
         final TraceSpan stepSpan = spans.get(2);
         assertEquals(true, stepSpan.isError());
-        assertEquals("unstable", stepSpan.getMeta().get(CITags.STATUS));
+        assertEquals(CITags.STATUS_UNSTABLE, stepSpan.getMeta().get(CITags.STATUS));
         assertEquals("unstable", stepSpan.getMeta().get(CITags.ERROR_TYPE));
 
         final TraceSpan stageSpan = spans.get(1);
         assertEquals(true, stageSpan.isError());
-        assertEquals("unstable", stageSpan.getMeta().get(CITags.STATUS));
+        assertEquals(CITags.STATUS_UNSTABLE, stageSpan.getMeta().get(CITags.STATUS));
 
         final TraceSpan buildSpan = spans.get(0);
         assertEquals(true, buildSpan.isError());
-        assertEquals("unstable", buildSpan.getMeta().get(CITags.STATUS));
+        assertEquals(CITags.STATUS_UNSTABLE, buildSpan.getMeta().get(CITags.STATUS));
     }
 
     @Test
@@ -1286,15 +1286,15 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals(3, webhooks.size());
 
         final JSONObject step = searchWebhookByLevel(webhooks, "job");
-        assertEquals("unstable", step.getString("status"));
+        assertEquals(CITags.STATUS_UNSTABLE, step.getString("status"));
         final JSONObject stepError = step.getJSONObject("error");
         assertEquals("unstable", stepError.getString("type"));
 
         final JSONObject stage = searchWebhookByLevel(webhooks, "stage");
-        assertEquals("unstable", stage.getString("status"));
+        assertEquals(CITags.STATUS_UNSTABLE, stage.getString("status"));
 
         final JSONObject pipeline = searchWebhookByLevel(webhooks, "pipeline");
-        assertEquals("unstable", pipeline.getString("status"));
+        assertEquals(CITags.STATUS_UNSTABLE, pipeline.getString("status"));
     }
 
     @Test

@@ -3,6 +3,7 @@ package org.datadog.jenkins.plugins.datadog.traces;
 public class CITags {
 
     public static final String LANGUAGE_TAG_KEY = "language";
+    public static final String ERROR = "error";
     public static final String ERROR_MSG = "error.message";
     public static final String ERROR_TYPE = "error.type";
     public static final String ERROR_STACK = "error.stack";
@@ -53,7 +54,8 @@ public class CITags {
     public static final String JENKINS_EXECUTOR_NUMBER = "jenkins.executor.number";
     public static final String JENKINS_RESULT = "jenkins.result";
 
-    public static final String ERROR = "error";
+    public static final String STATUS_ERROR = "error";
+    public static final String STATUS_UNSTABLE = "unstable";
 
     public static class Values {
         public static final String ORIGIN_CIAPP_PIPELINE = "ciapp-pipeline";

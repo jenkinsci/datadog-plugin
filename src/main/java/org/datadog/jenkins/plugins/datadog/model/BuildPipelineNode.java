@@ -3,6 +3,7 @@ package org.datadog.jenkins.plugins.datadog.model;
 import hudson.console.AnnotatedLargeText;
 import hudson.model.Run;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.traces.CITags;
 import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
 import org.datadog.jenkins.plugins.datadog.traces.StepTraceDataAction;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
@@ -322,11 +323,11 @@ public class BuildPipelineNode {
     }
 
     public boolean isError() {
-        return "error".equalsIgnoreCase(this.result);
+        return CITags.STATUS_ERROR.equalsIgnoreCase(this.result);
     }
 
     public boolean isUnstable() {
-        return "unstable".equalsIgnoreCase(this.result);
+        return CITags.STATUS_UNSTABLE.equalsIgnoreCase(this.result);
     }
 
     public long getSpanId() {
