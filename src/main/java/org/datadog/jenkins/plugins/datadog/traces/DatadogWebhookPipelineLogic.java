@@ -143,6 +143,12 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
             errPayload.put("stack", errorString.toString());
 
             payload.put("error", errPayload);
+        } else if(current.isUnstable() && current.getUnstableMessage() != null){
+            JSONObject errPayload = new JSONObject();
+            errPayload.put("message", current.getUnstableMessage());
+            errPayload.put("type", "unstable");
+            errPayload.put("domain", "unknown");
+            payload.put("error", errPayload);
         }
 
         // Node

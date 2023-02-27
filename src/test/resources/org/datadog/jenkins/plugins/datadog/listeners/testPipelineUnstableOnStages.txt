@@ -3,7 +3,7 @@ pipeline {
     stages {
         stage('test'){
             steps {
-               sh "this-does-not-exist"
+               unstable("This is unstable")
             }
         }
     }

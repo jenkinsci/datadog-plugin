@@ -3,6 +3,7 @@ package org.datadog.jenkins.plugins.datadog.model;
 import hudson.console.AnnotatedLargeText;
 import hudson.model.Run;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.traces.CITags;
 import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
 import org.datadog.jenkins.plugins.datadog.traces.StepTraceDataAction;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
@@ -10,6 +11,7 @@ import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.actions.LogAction;
 import org.jenkinsci.plugins.workflow.actions.TimingAction;
+import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
@@ -86,6 +88,7 @@ public class BuildPipelineNode {
     // Throwable of the node.
     // Although the error flag was true, this can be null.
     private Throwable errorObj;
+    private String unstableMessage;
 
     //Tracing
     private long spanId = -1L;
@@ -152,6 +155,7 @@ public class BuildPipelineNode {
         this.endTimeMicros = this.endTime * 1000;
         this.result = DatadogUtilities.getResultTag(startNode);
         this.errorObj = getErrorObj(endNode);
+        this.unstableMessage = getUnstableMessage(startNode);
     }
 
     public BuildPipelineNode(final StepAtomNode stepNode) {
@@ -189,6 +193,7 @@ public class BuildPipelineNode {
         this.endTimeMicros = this.endTime * 1000;
         this.result = DatadogUtilities.getResultTag(stepNode);
         this.errorObj = getErrorObj(stepNode);
+        this.unstableMessage = getUnstableMessage(stepNode);
     }
 
 
@@ -313,8 +318,16 @@ public class BuildPipelineNode {
         return errorObj;
     }
 
+    public String getUnstableMessage() {
+        return unstableMessage;
+    }
+
     public boolean isError() {
-        return "error".equalsIgnoreCase(this.result);
+        return CITags.STATUS_ERROR.equalsIgnoreCase(this.result);
+    }
+
+    public boolean isUnstable() {
+        return CITags.STATUS_UNSTABLE.equalsIgnoreCase(this.result);
     }
 
     public long getSpanId() {
@@ -366,6 +379,7 @@ public class BuildPipelineNode {
         this.result = buildNode.result;
         this.error = buildNode.error;
         this.errorObj = buildNode.errorObj;
+        this.unstableMessage = buildNode.unstableMessage;
         this.parents.addAll(buildNode.parents);
         this.spanId = buildNode.spanId;
     }
@@ -423,6 +437,16 @@ public class BuildPipelineNode {
     private static Throwable getErrorObj(FlowNode flowNode) {
         final ErrorAction errorAction = flowNode.getAction(ErrorAction.class);
         return (errorAction != null) ? errorAction.getError() : null;
+    }
+
+    /**
+     * Returns the error message for unstable pipelines
+     * @param flowNode
+     * @return error message
+     */
+    private static String getUnstableMessage(FlowNode flowNode) {
+        final WarningAction warningAction = flowNode.getAction(WarningAction.class);
+        return (warningAction != null) ? warningAction.getMessage() : null;
     }
 
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
