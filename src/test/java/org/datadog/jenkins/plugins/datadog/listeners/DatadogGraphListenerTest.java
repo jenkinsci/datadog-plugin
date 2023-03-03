@@ -14,6 +14,7 @@ import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_D
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_REPOSITORY_URL;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_TAG;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -22,11 +23,15 @@ import static org.mockito.Mockito.when;
 
 import hudson.EnvVars;
 import hudson.FilePath;
+import hudson.model.CauseAction;
 import hudson.model.FreeStyleProject;
 import hudson.model.Label;
+import hudson.model.Cause.UserIdCause;
 import hudson.model.labels.LabelAtom;
 import hudson.slaves.DumbSlave;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
+import hudson.triggers.SCMTrigger.SCMTriggerCause;
+import hudson.triggers.TimerTrigger.TimerTriggerCause;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
@@ -1498,4 +1503,89 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
             fail("Unknown parent stage");
         }
     }
+
+    @Test
+    public void testIsManualTrue() throws Exception {
+        Jenkins jenkins = jenkinsRule.jenkins;
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationIsManualTrue");
+        String definition = IOUtils.toString(
+            this.getClass().getResourceAsStream("testPipelineSuccess.txt"),
+            "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        CauseAction causeAction = new CauseAction(new TimerTriggerCause(), new UserIdCause("johanna"));
+        job.scheduleBuild2(0, causeAction).get();
+
+        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(3);
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(3, spans.size());
+        final TraceSpan buildSpan = spans.get(0);
+        final String isManual = buildSpan.getMeta().get(CITags.IS_MANUAL);
+        assertEquals("true", isManual);
+    }
+
+
+    @Test
+    public void testIsManualTrueWebhooks() throws Exception {
+        clientStub.configureForWebhooks();
+        Jenkins jenkins = jenkinsRule.jenkins;
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationIsManualTrueWebhook");
+        String definition = IOUtils.toString(
+            this.getClass().getResourceAsStream("testPipelineSuccess.txt"),
+            "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        CauseAction causeAction = new CauseAction(new TimerTriggerCause(), new UserIdCause("johanna"));
+        job.scheduleBuild2(0, causeAction).get();
+
+        clientStub.waitForWebhooks(3);
+        final List<JSONObject> webhooks = clientStub.getWebhooks();
+        assertEquals(3, webhooks.size());
+        final JSONObject webhook = webhooks.get(0);
+        assertTrue(webhook.getBoolean("is_manual"));
+    }
+
+    @Test
+    public void testIsManualFalse() throws Exception {
+        Jenkins jenkins = jenkinsRule.jenkins;
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationIsManualFalse");
+        String definition = IOUtils.toString(
+            this.getClass().getResourceAsStream("testPipelineSuccess.txt"),
+            "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        CauseAction causeAction = new CauseAction(new TimerTriggerCause(), new SCMTriggerCause("scm"));
+        job.scheduleBuild2(0, causeAction).get();
+
+        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(3);
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(3, spans.size());
+        final TraceSpan buildSpan = spans.get(0);
+        final String isManual = buildSpan.getMeta().get(CITags.IS_MANUAL);
+        assertEquals("false", isManual);
+    }
+
+
+    @Test
+    public void testIsManualFalseWebhooks() throws Exception {
+        clientStub.configureForWebhooks();
+        Jenkins jenkins = jenkinsRule.jenkins;
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationIsManualFalseWebhook");
+        String definition = IOUtils.toString(
+            this.getClass().getResourceAsStream("testPipelineSuccess.txt"),
+            "UTF-8"
+        );
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        CauseAction causeAction = new CauseAction(new TimerTriggerCause(), new SCMTriggerCause("scm"));
+        job.scheduleBuild2(0, causeAction).get();
+
+        clientStub.waitForWebhooks(3);
+        final List<JSONObject> webhooks = clientStub.getWebhooks();
+        assertEquals(3, webhooks.size());
+        final JSONObject webhook = webhooks.get(0);
+        assertFalse(webhook.getBoolean("is_manual"));
+    }
+
 }
