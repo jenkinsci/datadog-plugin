@@ -29,6 +29,7 @@ import hudson.model.Run;
 
 /**
  * Keeps the logic to send traces related to Jenkins Build.
+ * This gets called once per job (datadog level: pipeline)
  */
 public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
 

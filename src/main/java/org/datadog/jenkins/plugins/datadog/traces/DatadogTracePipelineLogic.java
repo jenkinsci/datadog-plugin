@@ -32,8 +32,10 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 import hudson.model.Run;
 
+
 /**
- * Keeps the logic to send traces related to Jenkins Pipelines.
+ * Keeps the logic to send traces related to inner jobs of Jenkins Pipelines (datadog levels: stage and job).
+ * The top-level job (datadog level: pipeline) is handled by DatadogTraceBuildLogic
  */
 public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
 
