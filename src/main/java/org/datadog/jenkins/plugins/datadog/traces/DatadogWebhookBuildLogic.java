@@ -123,6 +123,7 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
         payload.put("partial_retry", false);
         payload.put("queue_time", getMillisInQueue(updatedBuildData));
         payload.put("status", status);
+        payload.put("is_manual", isTriggeredManually(run));
 
         payload.put("trace_id", buildSpan.context().getTraceId());
         payload.put("span_id", buildSpan.context().getSpanId());

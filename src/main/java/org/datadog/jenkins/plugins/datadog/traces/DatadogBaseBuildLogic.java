@@ -15,7 +15,7 @@ import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.json.JsonUtils;
-
+import hudson.model.Cause;
 import hudson.model.Run;
 
 /**
@@ -39,7 +39,7 @@ public abstract class DatadogBaseBuildLogic {
         return buildData.getNodeName("").isEmpty() ? updatedBuildData.getNodeName("") : buildData.getNodeName("");
     }
 
-    protected String getNodeHostname(Run<?, ?> run, BuildData updatedBuildData) {
+    static protected String getNodeHostname(Run<?, ?> run, BuildData updatedBuildData) {
         final PipelineNodeInfoAction pipelineNodeInfoAction = run.getAction(PipelineNodeInfoAction.class);
         if(pipelineNodeInfoAction != null){
             return pipelineNodeInfoAction.getNodeHostname();
@@ -50,7 +50,7 @@ public abstract class DatadogBaseBuildLogic {
     }
 
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
-    protected Set<String> getNodeLabels(Run<?,?> run, final String nodeName) {
+    static protected Set<String> getNodeLabels(Run<?,?> run, final String nodeName) {
         try {
             if(run == null){
                 return Collections.emptySet();
@@ -83,7 +83,7 @@ public abstract class DatadogBaseBuildLogic {
         }
     }
 
-    protected long getMillisInQueue(BuildData buildData) {
+    static protected long getMillisInQueue(BuildData buildData) {
         // Reported by the Jenkins Queue API.
         // It's not included in the root span duration.
         final long millisInQueue = buildData.getMillisInQueue(-1L);
@@ -94,7 +94,7 @@ public abstract class DatadogBaseBuildLogic {
         return Math.max(Math.max(millisInQueue, propagatedMillisInQueue), 0);
     }
 
-    protected String getStageBreakdown(Run run) {
+    static protected String getStageBreakdown(Run run) {
         final StageBreakdownAction stageBreakdownAction = run.getAction(StageBreakdownAction.class);
         if(stageBreakdownAction == null) {
             return null;
@@ -111,6 +111,17 @@ public abstract class DatadogBaseBuildLogic {
         }
 
         return stagesJson;
+    }
+
+    // Returns true if the run causes contains a Cause.UserIdCause
+    static public boolean isTriggeredManually(Run run) {
+        final List<Cause> causes = run.getCauses();
+        for (Cause cause : causes) {
+            if (cause instanceof Cause.UserIdCause) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

@@ -9,6 +9,7 @@ public class CITags {
     public static final String ERROR_STACK = "error.stack";
 
     public static final String STATUS = "ci.status";
+    public static final String IS_MANUAL = "ci.is_manual";
     public static final String CI_PARAMETERS = "ci.parameters";
     public static final String WORKSPACE_PATH = "ci.workspace_path";
     public static final String NODE_NAME = "ci.node.name";

@@ -113,6 +113,7 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
         buildSpan.putMeta(CITags._DD_CI_INTERNAL, "false");
         buildSpan.putMeta(CITags._DD_CI_BUILD_LEVEL, buildLevel);
         buildSpan.putMeta(CITags._DD_CI_LEVEL, buildLevel);
+        buildSpan.putMeta(CITags.IS_MANUAL, isTriggeredManually(run));
         buildSpan.putMeta(CITags._DD_ORIGIN, ORIGIN_CIAPP_PIPELINE);
         buildSpan.putMeta(CITags.USER_NAME, buildData.getUserId());
         if(StringUtils.isNotEmpty(buildData.getUserEmail(""))){
