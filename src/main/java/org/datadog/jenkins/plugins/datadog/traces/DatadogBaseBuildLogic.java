@@ -15,7 +15,7 @@ import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.json.JsonUtils;
-
+import hudson.model.Cause;
 import hudson.model.Run;
 
 /**
@@ -111,6 +111,17 @@ public abstract class DatadogBaseBuildLogic {
         }
 
         return stagesJson;
+    }
+
+    // Returns true if the run causes contains a Cause.UserIdCause
+    public boolean isTriggeredManually(Run run) {
+        final List<Cause> causes = run.getCauses();
+        for (Cause cause : causes) {
+            if (cause instanceof Cause.UserIdCause) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }
