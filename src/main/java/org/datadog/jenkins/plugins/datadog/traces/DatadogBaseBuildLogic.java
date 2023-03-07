@@ -39,7 +39,7 @@ public abstract class DatadogBaseBuildLogic {
         return buildData.getNodeName("").isEmpty() ? updatedBuildData.getNodeName("") : buildData.getNodeName("");
     }
 
-    static protected String getNodeHostname(Run<?, ?> run, BuildData updatedBuildData) {
+    protected String getNodeHostname(Run<?, ?> run, BuildData updatedBuildData) {
         final PipelineNodeInfoAction pipelineNodeInfoAction = run.getAction(PipelineNodeInfoAction.class);
         if(pipelineNodeInfoAction != null){
             return pipelineNodeInfoAction.getNodeHostname();
@@ -50,7 +50,7 @@ public abstract class DatadogBaseBuildLogic {
     }
 
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
-    static protected Set<String> getNodeLabels(Run<?,?> run, final String nodeName) {
+    protected Set<String> getNodeLabels(Run<?,?> run, final String nodeName) {
         try {
             if(run == null){
                 return Collections.emptySet();
@@ -83,7 +83,7 @@ public abstract class DatadogBaseBuildLogic {
         }
     }
 
-    static protected long getMillisInQueue(BuildData buildData) {
+    protected long getMillisInQueue(BuildData buildData) {
         // Reported by the Jenkins Queue API.
         // It's not included in the root span duration.
         final long millisInQueue = buildData.getMillisInQueue(-1L);
@@ -94,7 +94,7 @@ public abstract class DatadogBaseBuildLogic {
         return Math.max(Math.max(millisInQueue, propagatedMillisInQueue), 0);
     }
 
-    static protected String getStageBreakdown(Run run) {
+    protected String getStageBreakdown(Run run) {
         final StageBreakdownAction stageBreakdownAction = run.getAction(StageBreakdownAction.class);
         if(stageBreakdownAction == null) {
             return null;
@@ -114,7 +114,7 @@ public abstract class DatadogBaseBuildLogic {
     }
 
     // Returns true if the run causes contains a Cause.UserIdCause
-    static public boolean isTriggeredManually(Run run) {
+    public boolean isTriggeredManually(Run run) {
         final List<Cause> causes = run.getCauses();
         for (Cause cause : causes) {
             if (cause instanceof Cause.UserIdCause) {
