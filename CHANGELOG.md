@@ -1,6 +1,6 @@
 Changes
 =======
-## 5.4.0 / 2023-03-27
+## 5.4.0 / 2023-03-29
 
 * [Added] Add is_manual field to pipelines. See [#336](https://github.com/jenkinsci/datadog-plugin/pull/336).
 * [Added] Report errors from unstable jobs. See [#333](https://github.com/jenkinsci/datadog-plugin/pull/333).
