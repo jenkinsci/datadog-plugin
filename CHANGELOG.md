@@ -1,5 +1,11 @@
 Changes
 =======
+## 5.4.0 / 2023-03-29
+
+* [Added] Add is_manual field to pipelines. See [#336](https://github.com/jenkinsci/datadog-plugin/pull/336).
+* [Added] Report errors from unstable jobs. See [#333](https://github.com/jenkinsci/datadog-plugin/pull/333).
+* [Changed] Do not map "unstable" status to "success". See [#331](https://github.com/jenkinsci/datadog-plugin/pull/331).
+
 ## 5.3.0 / 2023-02-15
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.2.0...datadog-5.3.0
