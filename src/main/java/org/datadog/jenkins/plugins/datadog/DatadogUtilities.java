@@ -499,9 +499,14 @@ public class DatadogUtilities {
         // Check hostname using jenkins env variables
         if (envVars != null) {
             hostname = envVars.get("HOSTNAME");
+            if (isValidHostname(hostname)) {
+                logger.fine("Using hostname found in $HOSTNAME agent environment variable. Hostname: " + hostname);
+                return hostname;
+            }
         }
+        hostname = System.getenv("HOSTNAME");
         if (isValidHostname(hostname)) {
-            logger.fine("Using hostname found in $HOSTNAME host environment variable. Hostname: " + hostname);
+            logger.fine("Using hostname found in $HOSTNAME controller environment variable. Hostname: " + hostname);
             return hostname;
         }
 
