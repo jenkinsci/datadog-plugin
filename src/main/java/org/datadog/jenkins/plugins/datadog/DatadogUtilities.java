@@ -523,7 +523,7 @@ public class DatadogUtilities {
 
                 hostname = out.toString();
             } catch (Exception e) {
-                severe(logger, e, "Failed to obtain UNIX hostname");
+                logger.fine(String.format("Could not obtain UNIX hostname via /bin/hostname -f. Error: %s", e));
             }
 
             // Check hostname
