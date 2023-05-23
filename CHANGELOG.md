@@ -1,6 +1,14 @@
 Changes
 =======
+## 5.4.1 / 2023-05-24
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.4.0...datadog-5.4.1
+
+* [Fixed] Don't log SEVERE exception if `/bin/hostname` is missing. See [#339](https://github.com/jenkinsci/datadog-plugin/pull/339). Thanks [Vlatombe](https://github.com/Vlatombe).
+
 ## 5.4.0 / 2023-03-29
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.3.0...datadog-5.4.0
 
 * [Added] Add is_manual field to pipelines. See [#336](https://github.com/jenkinsci/datadog-plugin/pull/336).
 * [Added] Report errors from unstable jobs. See [#333](https://github.com/jenkinsci/datadog-plugin/pull/333).
