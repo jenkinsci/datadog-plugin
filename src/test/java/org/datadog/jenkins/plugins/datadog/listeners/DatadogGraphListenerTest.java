@@ -1213,7 +1213,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final TraceSpan stepSpan = spans.get(2);
         assertEquals(true, stepSpan.isError());
         assertEquals(CITags.STATUS_ERROR, stepSpan.getMeta().get(CITags.STATUS));
-        assertEquals("hudson.AbortException", stepSpan.getMeta().get(CITags.ERROR_TYPE));
+        assertEquals(stepSpan.getMeta().get("error.stack"), "hudson.AbortException", stepSpan.getMeta().get(CITags.ERROR_TYPE));
 
         final TraceSpan stageSpan = spans.get(1);
         assertEquals(true, stageSpan.isError());
