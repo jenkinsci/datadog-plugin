@@ -65,7 +65,6 @@ import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 
@@ -1199,7 +1198,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
     public void testErrorPropagationOnStages() throws Exception {
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration-errorPropagationStages");
         String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineErrorOnStages.txt"),
+                this.getClass().getResourceAsStream(getFailingPipelineDefinitionName()),
                 "UTF-8"
         );
         job.setDefinition(new CpsFlowDefinition(definition, true));
@@ -1230,7 +1229,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration-errorPropagationStagesWebhook");
         String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineErrorOnStages.txt"),
+                this.getClass().getResourceAsStream(getFailingPipelineDefinitionName()),
                 "UTF-8"
         );
         job.setDefinition(new CpsFlowDefinition(definition, true));
@@ -1250,6 +1249,16 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
         final JSONObject pipeline = searchWebhookByLevel(webhooks, "pipeline");
         assertEquals(CITags.STATUS_ERROR, pipeline.getString("status"));
+    }
+
+    // need to use a different pipeline on Windows, since "sh" command is not supported there,
+    // and when trying to run a shell script the error is different from the one that we're modelling in our tests
+    private String getFailingPipelineDefinitionName() {
+        return isRunningOnWindows() ? "testPipelineErrorOnStagesOnWindows.txt" : "testPipelineErrorOnStages.txt";
+    }
+
+    private boolean isRunningOnWindows() {
+        return System.getProperty("os.name").toLowerCase().contains("win");
     }
 
     @Test
