@@ -1,0 +1,17 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Outer Stage') {
+            stages {
+                stage('Inner Stage') {
+                    steps {
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            sh 'exit 1'
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

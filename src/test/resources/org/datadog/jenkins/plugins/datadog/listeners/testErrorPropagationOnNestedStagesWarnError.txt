@@ -1,0 +1,17 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Outer Stage') {
+            stages {
+                stage('Inner Stage') {
+                    steps {
+                        warnError(message: 'warning message') {
+                            sh 'exit 1'
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

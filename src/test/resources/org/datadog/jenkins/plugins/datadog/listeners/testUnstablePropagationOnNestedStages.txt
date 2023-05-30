@@ -1,0 +1,15 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Outer Stage') {
+            stages {
+                stage('Inner Stage') {
+                    steps {
+                        unstable('this stage is unstable')
+                    }
+                }
+            }
+        }
+    }
+}
