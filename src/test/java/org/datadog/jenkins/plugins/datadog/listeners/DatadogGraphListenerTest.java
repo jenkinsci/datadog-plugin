@@ -23,15 +23,24 @@ import static org.mockito.Mockito.when;
 
 import hudson.EnvVars;
 import hudson.FilePath;
+import hudson.model.Cause.UserIdCause;
 import hudson.model.CauseAction;
 import hudson.model.FreeStyleProject;
 import hudson.model.Label;
-import hudson.model.Cause.UserIdCause;
 import hudson.model.labels.LabelAtom;
 import hudson.slaves.DumbSlave;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.triggers.SCMTrigger.SCMTriggerCause;
 import hudson.triggers.TimerTrigger.TimerTriggerCause;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
@@ -59,21 +68,18 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
     private static final String SAMPLE_SERVICE_NAME = "sampleServiceName";
 
     @ClassRule
-    public static JenkinsRule jenkinsRule = new JenkinsRule();
+    public static JenkinsRule jenkinsRule;
+
+    static {
+        jenkinsRule = new JenkinsRule();
+        jenkinsRule.timeout = 300; // default value of 180 is too small for all the test cases in this class
+    }
+
     private DatadogGraphListener listener;
     private DatadogClientStub clientStub;
 
@@ -1192,7 +1198,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
     public void testErrorPropagationOnStages() throws Exception {
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration-errorPropagationStages");
         String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineErrorOnStages.txt"),
+                this.getClass().getResourceAsStream(getFailingPipelineDefinitionName()),
                 "UTF-8"
         );
         job.setDefinition(new CpsFlowDefinition(definition, true));
@@ -1206,7 +1212,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final TraceSpan stepSpan = spans.get(2);
         assertEquals(true, stepSpan.isError());
         assertEquals(CITags.STATUS_ERROR, stepSpan.getMeta().get(CITags.STATUS));
-        assertEquals("hudson.AbortException", stepSpan.getMeta().get(CITags.ERROR_TYPE));
+        assertEquals(stepSpan.getMeta().get("error.stack"), "hudson.AbortException", stepSpan.getMeta().get(CITags.ERROR_TYPE));
 
         final TraceSpan stageSpan = spans.get(1);
         assertEquals(true, stageSpan.isError());
@@ -1223,7 +1229,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration-errorPropagationStagesWebhook");
         String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineErrorOnStages.txt"),
+                this.getClass().getResourceAsStream(getFailingPipelineDefinitionName()),
                 "UTF-8"
         );
         job.setDefinition(new CpsFlowDefinition(definition, true));
@@ -1243,6 +1249,16 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
         final JSONObject pipeline = searchWebhookByLevel(webhooks, "pipeline");
         assertEquals(CITags.STATUS_ERROR, pipeline.getString("status"));
+    }
+
+    // need to use a different pipeline on Windows, since "sh" command is not supported there,
+    // and when trying to run a shell script the error is different from the one that we're modelling in our tests
+    private String getFailingPipelineDefinitionName() {
+        return isRunningOnWindows() ? "testPipelineErrorOnStagesOnWindows.txt" : "testPipelineErrorOnStages.txt";
+    }
+
+    private boolean isRunningOnWindows() {
+        return System.getProperty("os.name").toLowerCase().contains("win");
     }
 
     @Test
@@ -1586,6 +1602,133 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals(3, webhooks.size());
         final JSONObject webhook = webhooks.get(0);
         assertFalse(webhook.getBoolean("is_manual"));
+    }
+
+
+    @Test
+    public void testErrorPropagationOnNestedStages() throws Exception {
+        givenPipeline("testErrorPropagationOnNestedStages", "testErrorPropagationOnNestedStages.txt");
+        final List<TraceSpan> spans = whenExecuting(4);
+        assertSpan(spans, "testErrorPropagationOnNestedStages", true, CITags.STATUS_ERROR);
+        assertSpan(spans, "Outer Stage", true, CITags.STATUS_ERROR);
+        assertSpan(spans, "Inner Stage", true, CITags.STATUS_ERROR);
+        assertSpan(spans, "Shell Script", true, CITags.STATUS_ERROR);
+    }
+
+    @Test
+    public void testErrorPropagationOnNestedStagesCatchFailureFailure() throws Exception {
+        givenPipeline("testErrorPropagationOnNestedStagesCatchFailureFailure", "testErrorPropagationOnNestedStagesCatchFailureFailure.txt");
+        final List<TraceSpan> spans = whenExecuting(4);
+        assertSpan(spans, "testErrorPropagationOnNestedStagesCatchFailureFailure", true, CITags.STATUS_ERROR);
+        assertSpan(spans, "Outer Stage", false, CITags.STATUS_SUCCESS);
+        assertSpan(spans, "Inner Stage", true, CITags.STATUS_ERROR);
+        assertSpan(spans, "Shell Script", true, CITags.STATUS_ERROR);
+    }
+
+    @Test
+    public void testErrorPropagationOnNestedStagesCatchUnstableFailure() throws Exception {
+        givenPipeline("testErrorPropagationOnNestedStagesCatchUnstableFailure", "testErrorPropagationOnNestedStagesCatchUnstableFailure.txt");
+        final List<TraceSpan> spans = whenExecuting(4);
+        assertSpan(spans, "testErrorPropagationOnNestedStagesCatchUnstableFailure", true, CITags.STATUS_UNSTABLE);
+        assertSpan(spans, "Outer Stage", false, CITags.STATUS_SUCCESS);
+        assertSpan(spans, "Inner Stage", true, CITags.STATUS_ERROR);
+        assertSpan(spans, "Shell Script", true, CITags.STATUS_ERROR);
+    }
+
+    @Test
+    public void testErrorPropagationOnNestedStagesCatchSuccessFailure() throws Exception {
+        givenPipeline("testErrorPropagationOnNestedStagesCatchSuccessFailure", "testErrorPropagationOnNestedStagesCatchSuccessFailure.txt");
+        final List<TraceSpan> spans = whenExecuting(4);
+        assertSpan(spans, "testErrorPropagationOnNestedStagesCatchSuccessFailure", false, CITags.STATUS_SUCCESS);
+        assertSpan(spans, "Outer Stage", false, CITags.STATUS_SUCCESS);
+        assertSpan(spans, "Inner Stage", true, CITags.STATUS_ERROR);
+        assertSpan(spans, "Shell Script", true, CITags.STATUS_ERROR);
+    }
+
+    @Test
+    public void testErrorPropagationOnNestedStagesCatchSuccessUnstable() throws Exception {
+        givenPipeline("testErrorPropagationOnNestedStagesCatchSuccessUnstable", "testErrorPropagationOnNestedStagesCatchSuccessUnstable.txt");
+        final List<TraceSpan> spans = whenExecuting(4);
+        assertSpan(spans, "testErrorPropagationOnNestedStagesCatchSuccessUnstable", false, CITags.STATUS_SUCCESS);
+        assertSpan(spans, "Outer Stage", false, CITags.STATUS_SUCCESS);
+        assertSpan(spans, "Inner Stage", true, CITags.STATUS_UNSTABLE);
+        assertSpan(spans, "Shell Script", true, CITags.STATUS_ERROR);
+    }
+
+    @Test
+    public void testErrorPropagationOnNestedStagesCatchSuccessSuccess() throws Exception {
+        givenPipeline("testErrorPropagationOnNestedStagesCatchSuccessSuccess", "testErrorPropagationOnNestedStagesCatchSuccessSuccess.txt");
+        final List<TraceSpan> spans = whenExecuting(4);
+        assertSpan(spans, "testErrorPropagationOnNestedStagesCatchSuccessSuccess", false, CITags.STATUS_SUCCESS);
+        assertSpan(spans, "Outer Stage", false, CITags.STATUS_SUCCESS);
+        assertSpan(spans, "Inner Stage", false, CITags.STATUS_SUCCESS);
+        assertSpan(spans, "Shell Script", true, CITags.STATUS_ERROR);
+    }
+
+    @Test
+    public void testErrorPropagationOnNestedStagesScriptedCatchSuppress() throws Exception {
+        givenPipeline("testErrorPropagationOnNestedStagesScriptedCatchSuppress", "testErrorPropagationOnNestedStagesScriptedCatchSuppress.txt");
+        final List<TraceSpan> spans = whenExecuting(4);
+        assertSpan(spans, "testErrorPropagationOnNestedStagesScriptedCatchSuppress", false, CITags.STATUS_SUCCESS);
+        assertSpan(spans, "Outer Stage", false, CITags.STATUS_SUCCESS);
+        assertSpan(spans, "Inner Stage", false, CITags.STATUS_SUCCESS);
+        assertSpan(spans, "Shell Script", true, CITags.STATUS_ERROR);
+    }
+
+    @Test
+    public void testErrorPropagationOnNestedStagesScriptedCatchRethrow() throws Exception {
+        givenPipeline("testErrorPropagationOnNestedStagesScriptedCatchRethrow", "testErrorPropagationOnNestedStagesScriptedCatchRethrow.txt");
+        final List<TraceSpan> spans = whenExecuting(4);
+        assertSpan(spans, "testErrorPropagationOnNestedStagesScriptedCatchRethrow", true, CITags.STATUS_ERROR);
+        assertSpan(spans, "Outer Stage", true, CITags.STATUS_ERROR);
+        assertSpan(spans, "Inner Stage", true, CITags.STATUS_ERROR);
+        assertSpan(spans, "Shell Script", true, CITags.STATUS_ERROR);
+    }
+
+    @Test
+    public void testErrorPropagationOnNestedStagesWarnError() throws Exception {
+        givenPipeline("testErrorPropagationOnNestedStagesWarnError", "testErrorPropagationOnNestedStagesWarnError.txt");
+        final List<TraceSpan> spans = whenExecuting(4);
+        assertSpan(spans, "testErrorPropagationOnNestedStagesWarnError", true, CITags.STATUS_UNSTABLE);
+        assertSpan(spans, "Outer Stage", false, CITags.STATUS_SUCCESS);
+        assertSpan(spans, "Inner Stage", true, CITags.STATUS_UNSTABLE);
+        assertSpan(spans, "Shell Script", true, CITags.STATUS_ERROR);
+    }
+
+    @Test
+    public void testUnstablePropagationOnNestedStages() throws Exception {
+        givenPipeline("testUnstablePropagationOnNestedStages", "testUnstablePropagationOnNestedStages.txt");
+        final List<TraceSpan> spans = whenExecuting(4);
+        assertSpan(spans, "testUnstablePropagationOnNestedStages", true, CITags.STATUS_UNSTABLE);
+        assertSpan(spans, "Outer Stage", true, CITags.STATUS_UNSTABLE);
+        assertSpan(spans, "Inner Stage", true, CITags.STATUS_UNSTABLE);
+        assertSpan(spans, "Set stage result to unstable", true, CITags.STATUS_UNSTABLE);
+    }
+
+    private void givenPipeline(String name, String definitionPath) throws Exception {
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, name);
+        String definition = IOUtils.toString(this.getClass().getResourceAsStream(definitionPath), "UTF-8");
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        job.scheduleBuild2(0).get();
+    }
+
+    private List<TraceSpan> whenExecuting(int expectedSpanCount) throws InterruptedException, TimeoutException {
+        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
+        agentHttpClient.waitForTraces(expectedSpanCount);
+        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        assertEquals(expectedSpanCount, spans.size());
+        return spans;
+    }
+
+    private void assertSpan(List<TraceSpan> spans, String resourceName, boolean isError, String status) {
+        for (TraceSpan span : spans) {
+            if (resourceName.equals(span.getResourceName())) {
+                assertEquals(isError, span.isError());
+                assertEquals(status, span.getMeta().get(CITags.STATUS));
+                return;
+            }
+        }
+        fail("Span with resource name " + resourceName + " is not found in trace: " + spans);
     }
 
 }

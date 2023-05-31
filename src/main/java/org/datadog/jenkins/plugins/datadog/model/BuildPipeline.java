@@ -144,9 +144,9 @@ public class BuildPipeline {
 
             // Propagate error to all parent stages
             if(node.isError() && !parent.isError()) {
-                propagateResultToAllParents(node, CITags.STATUS_ERROR);
+                propagateResultToAllParents(node, CITags.STATUS_ERROR, false);
             } else if(node.isUnstable() && !parent.isUnstable()) {
-                propagateResultToAllParents(node, CITags.STATUS_UNSTABLE);
+                propagateResultToAllParents(node, CITags.STATUS_UNSTABLE, false);
             }
 
             // Notice we cannot propagate the worker node info
@@ -159,11 +159,30 @@ public class BuildPipeline {
         }
     }
 
-    private void propagateResultToAllParents(BuildPipelineNode node, String result) {
-        for(BuildPipelineNode parent : node.getParents()) {
-            propagateResultToAllParents(parent, result);
+    private void propagateResultToAllParents(BuildPipelineNode node, String result, boolean stopAtFirstNonInternalNode) {
+        // propagating "error" status is different from propagating "unstable",
+        // since error can be caught and suppressed
+        if (CITags.STATUS_ERROR.equals(result)) {
+            if (node.getCatchErrorResult() != null) {
+                // encountered a "catchError" or a "warnError" block;
+                // will propagate the updated result to the first visible (non-internal) node, and then stop
+                result = node.getCatchErrorResult();
+                stopAtFirstNonInternalNode = true;
+            } else if (node.getErrorObj() == null && !stopAtFirstNonInternalNode) {
+                // most likely a "catch" block in a scripted pipeline
+                return;
+            }
         }
+
         node.setResult(result);
+
+        if (!node.isInternal() && stopAtFirstNonInternalNode) {
+            return;
+        }
+
+        for(BuildPipelineNode parent : node.getParents()) {
+            propagateResultToAllParents(parent, result, stopAtFirstNonInternalNode);
+        }
     }
 
     private BuildPipelineNode searchExecutableChildNode(BuildPipelineNode node) {

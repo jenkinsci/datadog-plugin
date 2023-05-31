@@ -83,8 +83,8 @@ public class BuildPipelineNode {
     private long propagatedNanosInQueue = -1L;
     private String result;
 
-    // Flag that indicates if the node must be marked as error.
-    private boolean error;
+    // If the node is a `catchError` block, this field will contain the `stageResult` parameter
+    private String catchErrorResult;
     // Throwable of the node.
     // Although the error flag was true, this can be null.
     private Throwable errorObj;
@@ -131,6 +131,7 @@ public class BuildPipelineNode {
             this.internal = true;
         }
 
+        this.catchErrorResult = DatadogUtilities.getCatchErrorResult(startNode);
         this.args = ArgumentsAction.getFilteredArguments(startNode);
 
         if(endNode instanceof StepNode){
@@ -358,6 +359,10 @@ public class BuildPipelineNode {
         return type;
     }
 
+    public String getCatchErrorResult() {
+        return catchErrorResult;
+    }
+
     // Used during the tree is being built in BuildPipeline class.
     public void updateData(final BuildPipelineNode buildNode) {
         this.stageName = buildNode.stageName;
@@ -377,7 +382,7 @@ public class BuildPipelineNode {
         this.endTimeMicros = buildNode.endTimeMicros;
         this.nanosInQueue = buildNode.nanosInQueue;
         this.result = buildNode.result;
-        this.error = buildNode.error;
+        this.catchErrorResult = buildNode.catchErrorResult;
         this.errorObj = buildNode.errorObj;
         this.unstableMessage = buildNode.unstableMessage;
         this.parents.addAll(buildNode.parents);

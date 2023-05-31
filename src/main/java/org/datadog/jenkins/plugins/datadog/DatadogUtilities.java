@@ -47,12 +47,14 @@ import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.steps.DatadogPipelineAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
+import org.datadog.jenkins.plugins.datadog.traces.CITags;
 import org.datadog.jenkins.plugins.datadog.traces.IsPipelineAction;
 import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
 import org.datadog.jenkins.plugins.datadog.traces.StepTraceDataAction;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.pipeline.StageStatus;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
 import org.jenkinsci.plugins.workflow.actions.NotExecutedNodeAction;
@@ -986,5 +988,23 @@ public class DatadogUtilities {
      */
     public static URL buildHttpURL(final String hostname, final Integer port, final String path) throws MalformedURLException {
         return new URL(String.format("http://%s:%d"+path, hostname, port));
+    }
+
+    public static String getCatchErrorResult(BlockStartNode startNode) {
+        String displayFunctionName = startNode.getDisplayFunctionName();
+        if ("warnError".equals(displayFunctionName)) {
+            return CITags.STATUS_UNSTABLE;
+        }
+        if ("catchError".equals(displayFunctionName)) {
+            ArgumentsAction argumentsAction = startNode.getAction(ArgumentsAction.class);
+            if (argumentsAction != null) {
+                Map<String, Object> arguments = argumentsAction.getArguments();
+                Object stageResult = arguments.get("stageResult");
+                return stageResult != null
+                        ? statusFromResult(stageResult.toString())
+                        : CITags.STATUS_SUCCESS;
+            }
+        }
+        return null;
     }
 }
