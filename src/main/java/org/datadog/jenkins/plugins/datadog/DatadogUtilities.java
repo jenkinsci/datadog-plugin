@@ -470,7 +470,7 @@ public class DatadogUtilities {
     public static String getAwsInstanceID() throws IOException {
         String metadataUrl = "http://169.254.169.254/latest/meta-data/instance-id";
         HttpURLConnection conn = null;
-        String instance_id = "";
+        String instance_id = null;
         // Make request
         conn = getHttpURLConnection(new URL(metadataUrl), 300);
         conn.setRequestMethod("GET");
@@ -543,7 +543,7 @@ public class DatadogUtilities {
 
         final DatadogGlobalConfiguration datadogGlobalConfig = getDatadogGlobalDescriptor();
         if (datadogGlobalConfig != null){
-            if (datadogGlobalConfig.doUseAwsInstanceHostname()) {
+            if (datadogGlobalConfig.isUseAwsInstanceHostname()) {
                 try {
                     hostname = getAwsInstanceID();
                 } catch (IOException e) {

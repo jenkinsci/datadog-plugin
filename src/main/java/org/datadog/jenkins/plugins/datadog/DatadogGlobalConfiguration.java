@@ -1279,7 +1279,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     /**
      * @return - A {@link Boolean} indicating if the user has configured Datadog to use AWS instance as hostname
      */
-    public boolean doUseAwsInstanceHostname() {
+    public boolean isUseAwsInstanceHostname() {
         return useAwsInstanceHostname;
     }
 
