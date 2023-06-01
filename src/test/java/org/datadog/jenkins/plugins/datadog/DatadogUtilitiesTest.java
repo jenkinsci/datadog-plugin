@@ -26,7 +26,11 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+
 
 import hudson.model.Result;
 import org.apache.commons.math3.exception.NullArgumentException;
@@ -38,12 +42,28 @@ import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jvnet.hudson.test.JenkinsRule;
+
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.Before;
+import org.junit.ClassRule;
 
 import java.util.*;
+import java.io.IOException;
+import java.net.HttpURLConnection;
 
 public class DatadogUtilitiesTest {
+
+    public DatadogGlobalConfiguration cfg;
+
+    @ClassRule
+    public static JenkinsRule jenkinsRule = new JenkinsRule();
+
+    @Before
+    public void setUpMocks() {
+        cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+    }
 
     @Test
     public void testCstrToList(){
@@ -168,6 +188,29 @@ public class DatadogUtilitiesTest {
         multipleItems.put("itemKey2", "itemValue2");
         multipleItems.put("itemKey3", "itemValue3");
         Assert.assertEquals("{\"itemKey1\":\"itemValue1\",\"itemKey2\":\"itemValue2\",\"itemKey3\":\"itemValue3\"}", DatadogUtilities.toJson(multipleItems));
+    }
+
+    @Test
+    public void testGetHostname() throws IOException {
+        try (MockedStatic datadogUtilities = Mockito.mockStatic(DatadogUtilities.class)) {
+            datadogUtilities.when(() -> DatadogUtilities.getDatadogGlobalDescriptor()).thenReturn(cfg);
+            HttpURLConnection mockHTTP = mock(HttpURLConnection.class);
+
+            datadogUtilities.when(() -> DatadogUtilities.getAwsInstanceID()).thenReturn("test");
+            datadogUtilities.when(() -> DatadogUtilities.getHostname(null)).thenCallRealMethod();
+
+            String hostname = DatadogUtilities.getHostname(null);
+            Assert.assertNotEquals("test", hostname);
+
+            cfg.setUseAwsInstanceHostname(true);
+
+            hostname = DatadogUtilities.getHostname(null);
+            Assert.assertEquals("test", hostname);
+
+            cfg.setUseAwsInstanceHostname(false);
+            hostname = DatadogUtilities.getHostname(null);
+            Assert.assertNotEquals("test", hostname);
+        }
     }
 
 }

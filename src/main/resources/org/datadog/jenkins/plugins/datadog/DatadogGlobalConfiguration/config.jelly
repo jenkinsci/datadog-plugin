@@ -128,6 +128,10 @@
             <f:checkbox title="Cache Build Runs" field="cacheBuildRuns" default="true" />
         </f:entry>
 
+        <f:entry title="Use AWS Instance ID" description="Attempt to use AWS instance ID when resolving hostname">
+            <f:checkbox title="Use AWS Instance ID" field="useAwsInstanceHostname" default="false" />
+        </f:entry>
+
         <f:entry title="System Events">
           <f:entry description="Send system events like Node changes of states.">
             <f:checkbox title="Send System events" field="emitSystemEvents" default="true" />
