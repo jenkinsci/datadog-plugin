@@ -162,6 +162,11 @@
       <version>2.13.3-285.vc03c0256d517</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <version>9.4.51.v20230217</version>
+    </dependency>
   </dependencies>
 
   <build>
