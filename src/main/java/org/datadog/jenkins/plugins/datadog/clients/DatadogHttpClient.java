@@ -573,6 +573,7 @@ public class DatadogHttpClient implements DatadogClient {
                 "\"hostname\":\""+DatadogUtilities.getHostname(null)+"\"}");
     }
 
+    @SuppressFBWarnings("DLS_DEAD_LOCAL_STORE")
     public boolean validateWebhookIntakeConnection() throws IOException {
         String url = getWebhookIntakeUrl();
 
