@@ -108,8 +108,12 @@ public class HttpRetryPolicy {
 
   public long backoff() {
     long currentDelay = delay;
-    delay = (long) (delay * delayFactor * ThreadLocalRandom.current().nextDouble(0.85, 1.15));
+    delay = (long) (delay * delayFactor * randomJitter(0.15));
     return currentDelay;
+  }
+
+  private static double randomJitter(double percentage) {
+    return ThreadLocalRandom.current().nextDouble(1 - percentage, 1 + percentage);
   }
 
   public static final class Factory {
