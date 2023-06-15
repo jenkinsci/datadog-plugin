@@ -469,6 +469,40 @@ public class DatadogUtilities {
         return result;
     }
 
+    public static String getAwsInstanceID() throws IOException {
+        String metadataUrl = "http://169.254.169.254/latest/meta-data/instance-id";
+        HttpURLConnection conn = null;
+        String instance_id = null;
+        // Make request
+        conn = getHttpURLConnection(new URL(metadataUrl), 300);
+        conn.setRequestMethod("GET");
+
+        // Get response
+        BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"));
+        StringBuilder result = new StringBuilder();
+        String line;
+        while ((line = rd.readLine()) != null) {
+            result.append(line);
+        }
+        rd.close();
+
+        // Validate
+        instance_id = result.toString();
+        try {
+            if (conn.getResponseCode() == 404) {
+                logger.fine("Could not retrieve AWS instance ID");
+            }
+            conn.disconnect();
+        } catch (IOException e) {
+            logger.info("Failed to inspect HTTP response when getting AWS Instance ID");
+        }
+
+        if (instance_id.equals("")) {
+            return null;
+        }
+        return instance_id;
+    }
+
     /**
      * Getter function to return either the saved hostname global configuration,
      * or the hostname that is set in the Jenkins host itself. Returns null if no
@@ -477,6 +511,8 @@ public class DatadogUtilities {
      * Tries, in order:
      * Jenkins configuration
      * Jenkins hostname environment variable
+     * AWS instance ID, if enabled
+     * System hostname environment variable
      * Unix hostname via `/bin/hostname -f`
      * Localhost hostname
      *
@@ -506,6 +542,27 @@ public class DatadogUtilities {
                 return hostname;
             }
         }
+
+        final DatadogGlobalConfiguration datadogGlobalConfig = getDatadogGlobalDescriptor();
+        if (datadogGlobalConfig != null){
+            if (datadogGlobalConfig.isUseAwsInstanceHostname()) {
+                try {
+                    hostname = getAwsInstanceID();
+                } catch (IOException e) {
+                    logger.fine("Error retrieving AWS hostname: " + e);
+                }
+                if (hostname != null) {
+                    logger.fine("Using AWS instance ID as hostname. Hostname: " + hostname);
+                    return hostname;
+                }
+            }
+        }
+
+        if (isValidHostname(hostname)) {
+            logger.fine("Using hostname found in $HOSTNAME controller environment variable. Hostname: " + hostname);
+            return hostname;
+        }
+
         hostname = System.getenv("HOSTNAME");
         if (isValidHostname(hostname)) {
             logger.fine("Using hostname found in $HOSTNAME controller environment variable. Hostname: " + hostname);

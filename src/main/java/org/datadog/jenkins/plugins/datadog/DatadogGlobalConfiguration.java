@@ -109,6 +109,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static final String RETRY_LOGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_RETRY_LOGS";
     private static final String REFRESH_DOGSTATSD_CLIENT_PROPERTY = "DATADOG_REFRESH_STATSD_CLIENT";
     private static final String CACHE_BUILD_RUNS_PROPERTY = "DATADOG_CACHE_BUILD_RUNS";
+    private static final String USE_AWS_INSTANCE_HOSTNAME_PROPERTY = "DATADOG_USE_AWS_INSTANCE_HOSTNAME";
 
     private static final String ENABLE_CI_VISIBILITY_PROPERTY = "DATADOG_JENKINS_PLUGIN_ENABLE_CI_VISIBILITY";
     private static final String CI_VISIBILITY_CI_INSTANCE_NAME_PROPERTY = "DATADOG_JENKINS_PLUGIN_CI_VISIBILITY_CI_INSTANCE_NAME";
@@ -130,6 +131,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static final boolean DEFAULT_RETRY_LOGS_VALUE = true;
     private static final boolean DEFAULT_REFRESH_DOGSTATSD_CLIENT_VALUE = false;
     private static final boolean DEFAULT_CACHE_BUILD_RUNS_VALUE = true;
+    private static final boolean DEFAULT_USE_AWS_INSTANCE_HOSTNAME_VALUE = false;
 
     private String reportWith = DEFAULT_REPORT_WITH_VALUE;
     private String targetApiURL = DEFAULT_TARGET_API_URL_VALUE;
@@ -157,6 +159,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private boolean retryLogs = DEFAULT_RETRY_LOGS_VALUE;
     private boolean refreshDogstatsdClient = DEFAULT_REFRESH_DOGSTATSD_CLIENT_VALUE;
     private boolean cacheBuildRuns = DEFAULT_CACHE_BUILD_RUNS_VALUE;
+    private boolean useAwsInstanceHostname = DEFAULT_USE_AWS_INSTANCE_HOSTNAME_VALUE;
 
     @DataBoundConstructor
     public DatadogGlobalConfiguration() {
@@ -290,6 +293,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         String cacheBuildRunsEnvVar = System.getenv(CACHE_BUILD_RUNS_PROPERTY);
         if(StringUtils.isNotBlank(cacheBuildRunsEnvVar)){
             this.cacheBuildRuns = Boolean.valueOf(cacheBuildRunsEnvVar);
+        }
+
+        String useAwsInstanceHostnameEnvVar = System.getenv(USE_AWS_INSTANCE_HOSTNAME_PROPERTY);
+        if(StringUtils.isNotBlank(useAwsInstanceHostnameEnvVar)){
+            this.useAwsInstanceHostname = Boolean.valueOf(useAwsInstanceHostnameEnvVar);
         }
 
         String enableCiVisibilityVar = System.getenv(ENABLE_CI_VISIBILITY_PROPERTY);
@@ -746,6 +754,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.setRetryLogs(formData.getBoolean("retryLogs"));
             this.setRefreshDogstatsdClient(formData.getBoolean("refreshDogstatsdClient"));
             this.setCacheBuildRuns(formData.getBoolean("cacheBuildRuns"));
+            this.setUseAwsInstanceHostname(formData.getBoolean("useAwsInstanceHostname"));
             this.setEmitSystemEvents(formData.getBoolean("emitSystemEvents"));
             this.setEmitConfigChangeEvents(formData.getBoolean("emitConfigChangeEvents"));
 
@@ -1265,6 +1274,24 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @DataBoundSetter
     public void setCacheBuildRuns(boolean cacheBuildRuns) {
         this.cacheBuildRuns = cacheBuildRuns;
+    }
+
+    /**
+     * @return - A {@link Boolean} indicating if the user has configured Datadog to use AWS instance as hostname
+     */
+    public boolean isUseAwsInstanceHostname() {
+        return useAwsInstanceHostname;
+    }
+
+
+    /**
+     * Set the checkbox in the UI, used for Jenkins data binding
+     *
+     * @param useAwsInstanceHostname - The checkbox status (checked/unchecked)
+     */
+    @DataBoundSetter
+    public void setUseAwsInstanceHostname(boolean useAwsInstanceHostname) {
+        this.useAwsInstanceHostname = useAwsInstanceHostname;
     }
 
     /**

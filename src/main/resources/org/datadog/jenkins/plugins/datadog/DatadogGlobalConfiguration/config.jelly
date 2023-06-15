@@ -124,9 +124,15 @@
         </f:entry>
 
 
+        <f:entry title="Use AWS Instance ID" description="Attempt to use AWS instance ID when resolving hostname">
+            <f:checkbox title="Use AWS Instance ID" field="useAwsInstanceHostname" default="false" />
+        </f:entry>
+
+
         <f:entry title="Cache Build Runs" description="Cache build runs when calculating pause duration">
             <f:checkbox title="Cache Build Runs" field="cacheBuildRuns" default="true" />
         </f:entry>
+
 
         <f:entry title="System Events">
           <f:entry description="Send system events like Node changes of states.">
