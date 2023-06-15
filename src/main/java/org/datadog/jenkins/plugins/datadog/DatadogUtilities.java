@@ -27,7 +27,6 @@ package org.datadog.jenkins.plugins.datadog;
 
 import hudson.EnvVars;
 import hudson.ExtensionList;
-import hudson.ProxyConfiguration;
 import hudson.XmlFile;
 import hudson.model.Computer;
 import hudson.model.Item;
@@ -35,6 +34,32 @@ import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.User;
 import hudson.model.labels.LabelAtom;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.net.Inet4Address;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.UnknownHostException;
+import java.nio.charset.Charset;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
@@ -63,35 +88,6 @@ import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
-
-import javax.annotation.Nonnull;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.net.HttpURLConnection;
-import java.net.Inet4Address;
-import java.net.MalformedURLException;
-import java.net.Proxy;
-import java.net.URL;
-import java.net.UnknownHostException;
-import java.nio.charset.Charset;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class DatadogUtilities {
 
@@ -901,46 +897,6 @@ public class DatadogUtilities {
      */
     public static boolean isPipeline(final Run<?, ?> run) {
         return run != null && run.getAction(IsPipelineAction.class) != null;
-    }
-
-    /**
-     * Returns an HTTP url connection given a url object. Supports jenkins configured proxy.
-     *
-     * @param url - a URL object containing the URL to open a connection to.
-     * @param timeoutMS - the timeout in MS
-     * @return a HttpURLConnection object.
-     * @throws IOException if HttpURLConnection fails to open connection
-     */
-    public static HttpURLConnection getHttpURLConnection(final URL url, final int timeoutMS) throws IOException {
-        HttpURLConnection conn = null;
-        ProxyConfiguration proxyConfig = null;
-
-        Jenkins jenkins = Jenkins.getInstance();
-        if(jenkins != null){
-            proxyConfig = jenkins.proxy;
-        }
-
-        /* Attempt to use proxy */
-        if (proxyConfig != null) {
-            Proxy proxy = proxyConfig.createProxy(url.getHost());
-            if (proxy != null && proxy.type() == Proxy.Type.HTTP) {
-                logger.fine("Attempting to use the Jenkins proxy configuration");
-                conn = (HttpURLConnection) url.openConnection(proxy);
-            }
-        } else {
-            logger.fine("Jenkins proxy configuration not found");
-        }
-
-        /* If proxy fails, use HttpURLConnection */
-        if (conn == null) {
-            conn = (HttpURLConnection) url.openConnection();
-            logger.fine("Using HttpURLConnection, without proxy");
-        }
-
-        conn.setConnectTimeout(timeoutMS);
-        conn.setReadTimeout(timeoutMS);
-
-        return conn;
     }
 
     /**

@@ -68,7 +68,7 @@ import java.util.logging.SocketHandler;
  */
 public class DatadogAgentClient implements DatadogClient {
 
-    private static DatadogAgentClient instance = null;
+    private static volatile DatadogAgentClient instance = null;
     // Used to determine if the instance failed last validation last time, so
     // we do not keep retrying to create the instance and logging the same error
     private static boolean failedLastValidation = false;
