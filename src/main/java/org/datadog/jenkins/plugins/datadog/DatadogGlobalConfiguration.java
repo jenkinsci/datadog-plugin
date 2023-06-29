@@ -406,7 +406,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             @QueryParameter("targetCredentialsApiKey") final String targetCredentialsApiKey, 
             @QueryParameter("targetApiURL") final String targetApiURL)
             throws IOException, ServletException {
-
+        Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
         final Secret secret = findSecret(targetApiKey, targetCredentialsApiKey);
         if (DatadogHttpClient.validateDefaultIntakeConnection(targetApiURL, secret)) {
             return FormValidation.ok("Great! Your API key is valid.");
