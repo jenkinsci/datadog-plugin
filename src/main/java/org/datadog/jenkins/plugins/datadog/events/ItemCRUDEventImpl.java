@@ -37,6 +37,8 @@ public class ItemCRUDEventImpl extends AbstractDatadogSimpleEvent {
     public final static String UPDATED = "Updated";
     public final static String DELETED = "Deleted";
 
+    private String action;
+
     public ItemCRUDEventImpl(Item item, String action, Map<String, Set<String>> tags) {
         super(tags);
 
@@ -57,5 +59,12 @@ public class ItemCRUDEventImpl extends AbstractDatadogSimpleEvent {
 
         setPriority(Priority.NORMAL);
         setAlertType(AlertType.INFO);
+
+        this.action = action;
+        this.eventName = "Item " + this.action;
+    }
+
+    public String getAction() {
+        return this.action;
     }
 }

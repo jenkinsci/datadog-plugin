@@ -34,6 +34,8 @@ import java.util.Set;
 
 public class ComputerOfflineEventImpl extends AbstractDatadogSimpleEvent {
 
+    private boolean isTemporarily;
+
     public ComputerOfflineEventImpl(Computer computer, OfflineCause cause, Map<String, Set<String>> tags, boolean isTemporarily) {
         super(tags);
         String nodeName = DatadogUtilities.getNodeName(computer);
@@ -49,5 +51,12 @@ public class ComputerOfflineEventImpl extends AbstractDatadogSimpleEvent {
 
         setPriority(Priority.NORMAL);
         setAlertType(AlertType.WARNING);
+
+        this.isTemporarily = isTemporarily;
+        this.eventName = "Computer " + (isTemporarily ? "Temporarily" : "") + "Offline";
+    }
+
+    public boolean isTemporarily() {
+        return this.isTemporarily;
     }
 }

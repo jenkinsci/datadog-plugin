@@ -52,12 +52,16 @@ public class DatadogSaveableListener  extends SaveableListener {
     @Override
     public void onChange(Saveable config, XmlFile file) {
         try {
-            final boolean emitSystemEvents = DatadogUtilities.getDatadogGlobalDescriptor().isEmitSystemEvents();
-            if (!emitSystemEvents) {
-                return;
-            }
-            final boolean emitConfigChangeEvents = DatadogUtilities.getDatadogGlobalDescriptor().isEmitConfigChangeEvents();
-            if (!emitConfigChangeEvents) {
+            // Get the list of global tags to apply
+            Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
+            // Add userId and JenkinsUrl Tags
+            tags = TagsUtil.addTagToTags(tags, "user_id", DatadogUtilities.getUserId());
+            tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
+
+            DatadogEvent event = new ConfigChangedEventImpl(config, file, tags);
+
+            final boolean canSendEvent = DatadogUtilities.canSendEventToClient(event);
+            if (!canSendEvent) {
                 return;
             }
 
@@ -68,15 +72,8 @@ public class DatadogSaveableListener  extends SaveableListener {
             if(client == null){
                 return;
             }
-
-            // Get the list of global tags to apply
-            Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
-            // Add userId and JenkinsUrl Tags
-            tags = TagsUtil.addTagToTags(tags, "user_id", DatadogUtilities.getUserId());
-            tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
-
+            
             // Send event
-            DatadogEvent event = new ConfigChangedEventImpl(config, file, tags);
             client.event(event);
 
             // Submit counter

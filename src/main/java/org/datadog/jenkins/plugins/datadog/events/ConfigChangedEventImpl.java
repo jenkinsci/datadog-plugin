@@ -49,6 +49,8 @@ public class ConfigChangedEventImpl extends AbstractDatadogSimpleEvent {
         setText(text);
 
         setEnums(userId);
+
+        this.eventName = "Config Changed";
     }
 
     public void setEnums(String userId){

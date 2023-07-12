@@ -63,13 +63,24 @@ import org.kohsuke.stapler.AncestorInPath;
 import javax.servlet.ServletException;
 import java.io.IOException;
 import java.util.logging.Logger;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 @Extension
 public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
     private static final Logger logger = Logger.getLogger(DatadogGlobalConfiguration.class.getName());
     private static final String DISPLAY_NAME = "Datadog Plugin";
+
+    // Event String constants
+    public static final String SYSTEM_EVENTS = "Item Location Changed,"
+            + "Computer Online,Computer Offline,Computer TemporarilyOnline,Computer TemporarilyOffline,"
+            + "Computer LaunchFailure,Item Created,Item Deleted,Item Updated,Item Copied";
+    public static final String SECURITY_EVENTS = "User Authenticated,User failed To Authenticate,User loggedOut";
+    public static final String CONFIG_CHANGED_EVENT = "Config Changed"; 
+    public static final String DEFAULT_EVENTS = "Build started,Build aborted,Build completed,SCM checkout";
 
     // Standard Agent EnvVars
     public static final String DD_AGENT_HOST = "DD_AGENT_HOST";
@@ -105,6 +116,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static final String EMIT_SECURITY_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_SECURITY_EVENTS";
     private static final String EMIT_SYSTEM_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS";
     private static final String EMIT_CONFIG_CHANGE_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_CONFIG_CHANGE_EVENTS";
+    private static final String INCLUDE_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_INCLUDE_EVENTS";
+    private static final String EXCLUDE_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EXCLUDE_EVENTS";
     private static final String COLLECT_BUILD_LOGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS";
     private static final String RETRY_LOGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_RETRY_LOGS";
     private static final String REFRESH_DOGSTATSD_CLIENT_PROPERTY = "DATADOG_REFRESH_STATSD_CLIENT";
@@ -122,6 +135,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static final Integer DEFAULT_TARGET_PORT_VALUE = 8125;
     private static final Integer DEFAULT_TRACE_COLLECTION_PORT_VALUE = 8126;
     private static final String DEFAULT_CI_INSTANCE_NAME = "jenkins";
+
     private static final Integer DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE = null;
     private static final boolean DEFAULT_EMIT_SECURITY_EVENTS_VALUE = true;
     private static final boolean DEFAULT_EMIT_SYSTEM_EVENTS_VALUE = true;
@@ -151,6 +165,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private String globalTagFile = null;
     private String globalTags = null;
     private String globalJobTags = null;
+    private String includeEvents = "";
+    private String excludeEvents = "";
     private boolean emitSecurityEvents = DEFAULT_EMIT_SECURITY_EVENTS_VALUE;
     private boolean emitSystemEvents = DEFAULT_EMIT_SYSTEM_EVENTS_VALUE;
     private boolean emitConfigChangeEvents = DEFAULT_EMIT_CONFIG_CHANGE_EVENTS_VALUE;
@@ -161,7 +177,9 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private boolean cacheBuildRuns = DEFAULT_CACHE_BUILD_RUNS_VALUE;
     private boolean useAwsInstanceHostname = DEFAULT_USE_AWS_INSTANCE_HOSTNAME_VALUE;
 
-    @DataBoundConstructor
+    private List<String> includedEvents = new ArrayList<String>();
+    private List<String> excludedEvents = new ArrayList<String>();
+
     public DatadogGlobalConfiguration() {
         load(); // Load the persisted global configuration
         loadEnvVariables(); // Load environment variables after as they should take precedence.
@@ -273,6 +291,16 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         String emitConfigChangeEventsEnvVar = System.getenv(EMIT_CONFIG_CHANGE_EVENTS_PROPERTY);
         if(StringUtils.isNotBlank(emitConfigChangeEventsEnvVar)){
             this.emitConfigChangeEvents = Boolean.valueOf(emitConfigChangeEventsEnvVar);
+        }
+
+        String includeEventsEnvVar = System.getenv(INCLUDE_EVENTS_PROPERTY);
+        if(StringUtils.isNotBlank(includeEventsEnvVar)){
+            this.includeEvents = includeEventsEnvVar;
+        }
+
+        String excludeEventsEnvVar = System.getenv(EXCLUDE_EVENTS_PROPERTY);
+        if(StringUtils.isNotBlank(excludeEventsEnvVar)){
+            this.excludeEvents = excludeEventsEnvVar;
         }
 
         String collectBuildLogsEnvVar = System.getenv(COLLECT_BUILD_LOGS_PROPERTY);
@@ -1223,6 +1251,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @DataBoundSetter
     public void setEmitSecurityEvents(boolean emitSecurityEvents) {
         this.emitSecurityEvents = emitSecurityEvents;
+        this.createIncludeExcludeLists();
     }
 
     /**
@@ -1309,6 +1338,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @DataBoundSetter
     public void setEmitSystemEvents(boolean emitSystemEvents) {
         this.emitSystemEvents = emitSystemEvents;
+        this.createIncludeExcludeLists();
     }
 
     /**
@@ -1326,6 +1356,71 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @DataBoundSetter
     public void setEmitConfigChangeEvents(boolean emitConfigChangeEvents) {
         this.emitConfigChangeEvents = emitConfigChangeEvents;
+        this.createIncludeExcludeLists();
+    }
+
+    /**
+     * Setter function for the included global configuration,
+     * accepting a comma-separated string of events.
+     *
+     * @param events - a comma-separated list of events to include for sending to agent.
+     */
+    @DataBoundSetter
+    public void setIncludedEvents(String events) {
+        this.includeEvents = events;
+        this.createIncludeExcludeLists();
+    }
+
+    /**
+     * Getter function for the included global configuration, containing
+     * a comma-separated list of events to send to agent.
+     *
+     * @return a String array containing the events included global configuration.
+     */
+    public String getIncludedEvents() {
+        return includeEvents;
+    }
+
+    /**
+     * Getter function for the included global configuration, containing
+     * a list of events to send to agent.
+     *
+     * @return a String ArrayList containing the events included global configuration.
+     */
+    public List<String> getListOfIncludedEvents() {
+        return includedEvents;
+    }
+
+    /**
+     * Setter function for the included global configuration,
+     * accepting a comma-separated string of events.
+     *
+     * @param events - a comma-separated list of events to excl=kyde for sending to agent.
+     */
+    @DataBoundSetter
+    public void setExcludedEvents(String events) {
+        this.excludeEvents = events;
+        this.createIncludeExcludeLists();
+    }
+
+    /**
+     * Getter function for the included global configuration, containing
+     * a comma-separated list of events not to send to agent.
+     *
+     * @return a String array containing the events included global configuration.
+     */
+    public String getExcludedEvents() {
+        return excludeEvents;
+    }
+
+    /**
+     * Getter function for the included global configuration, containing
+     * a list of events not to send to agent.
+     *
+     * @return a String ArrayList containing the events included global configuration.
+     */
+    public List<String> getListOfExcludedEvents() {
+        return excludedEvents;
     }
 
     /**
@@ -1381,5 +1476,34 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @DataBoundSetter
     public void setEnableCiVisibility(boolean enableCiVisibility) {
         this.collectBuildTraces = enableCiVisibility;
+    }
+
+    private void createIncludeExcludeLists() {
+        if (!this.includeEvents.isEmpty()) {
+            this.includedEvents = new ArrayList<String>(Arrays.asList(this.includeEvents.split(",")));
+        } else {
+            this.includedEvents.clear();
+        }
+
+        if (!this.excludeEvents.isEmpty()) {
+            this.excludedEvents = new ArrayList<String>(Arrays.asList(this.excludeEvents.split(",")));
+        } else {
+            this.excludedEvents.clear();
+        }
+
+        this.addToggleEventsToArray(this.emitSystemEvents, SYSTEM_EVENTS);
+        if (!this.emitSystemEvents && !this.includedEvents.contains(CONFIG_CHANGED_EVENT)) this.excludedEvents.add(CONFIG_CHANGED_EVENT);
+
+        this.addToggleEventsToArray(this.emitSecurityEvents, SECURITY_EVENTS);
+        this.addToggleEventsToArray(this.emitConfigChangeEvents, CONFIG_CHANGED_EVENT);
+    }
+
+    private void addToggleEventsToArray(boolean toggle, String events) {
+        for (String event : events.split(",")) {
+            List<String> listToAddTo = (toggle) ? this.includedEvents : this.excludedEvents;
+            List<String> listToCompareTo = (toggle) ? this.excludedEvents : this.includedEvents;
+
+            if (!listToCompareTo.contains(event)) listToAddTo.add(event);
+        }
     }
 }

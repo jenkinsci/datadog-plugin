@@ -83,4 +83,6 @@ public interface DatadogEvent {
 
     public Map<String, Set<String>> getTags();
 
+    public String getEventName();
+
 }

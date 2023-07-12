@@ -28,7 +28,7 @@ package org.datadog.jenkins.plugins.datadog.events;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 
 public class BuildAbortedEventImpl extends AbstractDatadogBuildEvent {
-
+    
     public BuildAbortedEventImpl(BuildData buildData) {
         super(buildData);
 
@@ -51,5 +51,6 @@ public class BuildAbortedEventImpl extends AbstractDatadogBuildEvent {
 
         setPriority(Priority.LOW);
         setAlertType(AlertType.INFO);
+        this.eventName = "Build aborted";
     }
 }

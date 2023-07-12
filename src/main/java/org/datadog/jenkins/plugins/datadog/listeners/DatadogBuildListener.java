@@ -182,7 +182,7 @@ public class DatadogBuildListener extends RunListener<Run> {
 
             // Send an event
             DatadogEvent event = new BuildStartedEventImpl(buildData);
-            client.event(event);
+            if (DatadogUtilities.canSendEventToClient(event)) client.event(event);
 
             // Send a metric
             // item.getInQueueSince() may raise a NPE if a worker node is spinning up to run the job.
@@ -248,7 +248,7 @@ public class DatadogBuildListener extends RunListener<Run> {
 
             // Send an event
             DatadogEvent event = new BuildFinishedEventImpl(buildData);
-            client.event(event);
+            if (DatadogUtilities.canSendEventToClient(event)) client.event(event);
 
             // Send a metric
             Map<String, Set<String>> tags = buildData.getTags();
@@ -415,7 +415,7 @@ public class DatadogBuildListener extends RunListener<Run> {
 
             // Send an event
             DatadogEvent event = new BuildAbortedEventImpl(buildData);
-            client.event(event);
+            if (DatadogUtilities.canSendEventToClient(event)) client.event(event);
 
             // Submit counter
             Map<String, Set<String>> tags = buildData.getTags();
