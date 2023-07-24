@@ -61,7 +61,7 @@ public class ItemCRUDEventImpl extends AbstractDatadogSimpleEvent {
         setAlertType(AlertType.INFO);
 
         this.action = action;
-        this.eventName = "Item " + this.action;
+        this.eventName = "Item" + this.action;
     }
 
     public String getAction() {

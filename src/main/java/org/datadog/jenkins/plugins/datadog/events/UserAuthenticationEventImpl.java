@@ -66,13 +66,13 @@ public class UserAuthenticationEventImpl extends AbstractDatadogSimpleEvent {
         }
 
         this.action = action;
-        this.eventName = "User ";
+        this.eventName = "User";
         if (action.equals(LOGIN)) {
             this.eventName += "Authenticated";
         } else if (action.equals(ACCESS_DENIED)) {
-            this.eventName += "failed To Authenticate";
+            this.eventName += "FailedToAuthenticate";
         } else if (action.equals(LOGOUT)) {
-            this.eventName += "loggedOut";
+            this.eventName += "LoggedOut";
         }
     }
 

@@ -5,6 +5,9 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.JenkinsRule.WebClient;
+import org.xml.sax.SAXException;
+
 import hudson.util.Secret;
 import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
@@ -13,9 +16,16 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.CredentialsStore;
 import com.cloudbees.plugins.credentials.domains.Domain;
+import com.gargoylesoftware.htmlunit.html.HtmlButton;
+import com.gargoylesoftware.htmlunit.html.HtmlForm;
+import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 import org.junit.Assert;
+
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
+import java.net.URL;
 
 public class DatadogGlobalConfigurationTest {
 
@@ -61,7 +71,6 @@ public class DatadogGlobalConfigurationTest {
         Assert.assertTrue(cfg.findSecret(null, "").getPlainText().equals(""));
 
     }
-
 
 }
 

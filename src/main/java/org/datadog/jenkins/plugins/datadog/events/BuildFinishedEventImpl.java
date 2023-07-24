@@ -61,6 +61,6 @@ public class BuildFinishedEventImpl extends AbstractDatadogBuildEvent {
             setAlertType(AlertType.WARNING);
         }
 
-        this.eventName = "Build completed";
+        this.eventName = "BuildCompleted";
     }
 }

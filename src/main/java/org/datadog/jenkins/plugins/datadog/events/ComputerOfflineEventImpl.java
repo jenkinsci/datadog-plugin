@@ -53,7 +53,7 @@ public class ComputerOfflineEventImpl extends AbstractDatadogSimpleEvent {
         setAlertType(AlertType.WARNING);
 
         this.isTemporarily = isTemporarily;
-        this.eventName = "Computer " + (isTemporarily ? "Temporarily" : "") + "Offline";
+        this.eventName = "Computer" + (isTemporarily ? "Temporarily" : "") + "Offline";
     }
 
     public boolean isTemporarily() {

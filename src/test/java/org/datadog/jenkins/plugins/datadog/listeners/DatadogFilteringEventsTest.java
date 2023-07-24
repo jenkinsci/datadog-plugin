@@ -5,6 +5,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
+import java.io.IOException;
+
 import org.acegisecurity.userdetails.UserDetails;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
@@ -20,9 +22,15 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.JenkinsRule.WebClient;
+import org.xml.sax.SAXException;
 
+import com.gargoylesoftware.htmlunit.html.HtmlPage;
+
+import hudson.EnvVars;
 import hudson.model.Result;
 import hudson.model.TaskListener;
+import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.slaves.OfflineCause;
 import hudson.slaves.SlaveComputer;
 
@@ -62,8 +70,8 @@ public class DatadogFilteringEventsTest {
         cfg.setEmitSecurityEvents(true);
         cfg.setEmitSystemEvents(true);
         cfg.setEmitConfigChangeEvents(false);
-        cfg.setIncludedEvents("");
-        cfg.setExcludedEvents("");
+        cfg.setIncludeEvents("");
+        cfg.setExcludeEvents("");
     }
 
     @Test
@@ -81,7 +89,7 @@ public class DatadogFilteringEventsTest {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEmitSecurityEvents(false);
         cfg.setEmitSystemEvents(false);
-        cfg.setIncludedEvents(String.format("%s,%s,%s", DatadogGlobalConfiguration.SYSTEM_EVENTS, 
+        cfg.setIncludeEvents(String.format("%s,%s,%s", DatadogGlobalConfiguration.SYSTEM_EVENTS, 
             DatadogGlobalConfiguration.SECURITY_EVENTS, DatadogGlobalConfiguration.CONFIG_CHANGED_EVENT));
 
         this.assertAllIncludedEvents();
@@ -93,7 +101,7 @@ public class DatadogFilteringEventsTest {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEmitSecurityEvents(false);
         cfg.setEmitSystemEvents(false);
-        cfg.setExcludedEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
+        cfg.setExcludeEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
 
         this.runAllEvents();
         assertTrue(this.client.events.size() == 0);
@@ -107,7 +115,7 @@ public class DatadogFilteringEventsTest {
         String allEvents = String.format("%s,%s,%s,%s", DatadogGlobalConfiguration.DEFAULT_EVENTS,
             DatadogGlobalConfiguration.SYSTEM_EVENTS, DatadogGlobalConfiguration.SECURITY_EVENTS, DatadogGlobalConfiguration.CONFIG_CHANGED_EVENT);
 
-        cfg.setExcludedEvents(allEvents);
+        cfg.setExcludeEvents(allEvents);
 
         this.runAllEvents();
         assertTrue(this.client.events.size() == 0);
@@ -117,7 +125,7 @@ public class DatadogFilteringEventsTest {
     public void includeOnlySecurityEventsViaToggle() throws Exception {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEmitSystemEvents(false);
-        cfg.setExcludedEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
+        cfg.setExcludeEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
 
         this.runAllEvents();
         this.assertSecurityEvents();
@@ -129,8 +137,8 @@ public class DatadogFilteringEventsTest {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEmitSystemEvents(false);
         cfg.setEmitSecurityEvents(false);
-        cfg.setExcludedEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
-        cfg.setIncludedEvents(DatadogGlobalConfiguration.SECURITY_EVENTS);
+        cfg.setExcludeEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
+        cfg.setIncludeEvents(DatadogGlobalConfiguration.SECURITY_EVENTS);
 
         this.runAllEvents();
         this.assertSecurityEvents();
@@ -142,7 +150,7 @@ public class DatadogFilteringEventsTest {
     public void includeOnlySystemEventsViaToggle() throws Exception {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEmitSecurityEvents(false);
-        cfg.setExcludedEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
+        cfg.setExcludeEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
 
         this.runAllEvents();
         this.assertSystemEvents();
@@ -154,8 +162,8 @@ public class DatadogFilteringEventsTest {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEmitSystemEvents(false);
         cfg.setEmitSecurityEvents(false);
-        cfg.setExcludedEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
-        cfg.setIncludedEvents(DatadogGlobalConfiguration.SYSTEM_EVENTS);
+        cfg.setExcludeEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
+        cfg.setIncludeEvents(DatadogGlobalConfiguration.SYSTEM_EVENTS);
 
         this.runAllEvents();
         this.assertSystemEvents();
@@ -198,7 +206,7 @@ public class DatadogFilteringEventsTest {
     public void excludeOnlySecurityEventsViaStringInput() throws Exception {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEmitConfigChangeEvents(true);
-        cfg.setExcludedEvents(DatadogGlobalConfiguration.SECURITY_EVENTS);
+        cfg.setExcludeEvents(DatadogGlobalConfiguration.SECURITY_EVENTS);
 
         this.runDefaultEvents();
         this.assertDefaultEvents();
@@ -235,7 +243,7 @@ public class DatadogFilteringEventsTest {
     public void excludeOnlySystemEventsViaStringInput() throws Exception {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEmitConfigChangeEvents(true);
-        cfg.setExcludedEvents(DatadogGlobalConfiguration.SYSTEM_EVENTS + "," + DatadogGlobalConfiguration.CONFIG_CHANGED_EVENT);
+        cfg.setExcludeEvents(DatadogGlobalConfiguration.SYSTEM_EVENTS + "," + DatadogGlobalConfiguration.CONFIG_CHANGED_EVENT);
 
         this.runDefaultEvents();
         this.assertDefaultEvents();
@@ -253,7 +261,7 @@ public class DatadogFilteringEventsTest {
     public void excludeOnlyDefaultEventsViaStringInput() throws Exception {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEmitConfigChangeEvents(true);
-        cfg.setExcludedEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
+        cfg.setExcludeEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
 
         this.runDefaultEvents();
         this.runSystemEvents();
@@ -271,8 +279,8 @@ public class DatadogFilteringEventsTest {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEmitSystemEvents(false);
         cfg.setEmitSecurityEvents(false);
-        cfg.setExcludedEvents("Build aborted,Build completed,SCM checkout");
-        cfg.setIncludedEvents("Computer Online,User Authenticated");
+        cfg.setExcludeEvents("BuildAborted,BuildCompleted,SCMCheckout");
+        cfg.setIncludeEvents("ComputerOnline,UserAuthenticated");
         
         this.runAllEvents();
         assertTrue(this.client.events.get(0).getEvent() instanceof BuildStartedEventImpl);
@@ -292,7 +300,7 @@ public class DatadogFilteringEventsTest {
     public void includeAllOneEventTypeExcludeOneByName() throws Exception {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEmitSystemEvents(false);
-        cfg.setExcludedEvents("User Authenticated," + DatadogGlobalConfiguration.DEFAULT_EVENTS);
+        cfg.setExcludeEvents("UserAuthenticated," + DatadogGlobalConfiguration.DEFAULT_EVENTS);
 
         this.runAllEvents();
         DatadogEvent authEvent = this.client.events.get(0).getEvent();
@@ -311,8 +319,8 @@ public class DatadogFilteringEventsTest {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEmitSystemEvents(false);
         cfg.setEmitSecurityEvents(false);
-        cfg.setExcludedEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
-        cfg.setIncludedEvents("Computer Online");
+        cfg.setExcludeEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
+        cfg.setIncludeEvents("ComputerOnline");
 
         this.runAllEvents();
         DatadogEvent computerEvent = this.client.events.get(0).getEvent();
@@ -328,7 +336,7 @@ public class DatadogFilteringEventsTest {
         cfg.setEmitSystemEvents(false);
         cfg.setEmitSecurityEvents(false);
         cfg.setEmitConfigChangeEvents(true);
-        cfg.setExcludedEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
+        cfg.setExcludeEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
 
         this.runAllEvents();
         assertTrue(this.client.events.isEmpty());
@@ -339,7 +347,7 @@ public class DatadogFilteringEventsTest {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEmitSecurityEvents(false);
         cfg.setEmitConfigChangeEvents(true);
-        cfg.setExcludedEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
+        cfg.setExcludeEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
 
         this.runDefaultEvents();
         this.runSystemEvents();
@@ -355,7 +363,7 @@ public class DatadogFilteringEventsTest {
     public void configOffSystemOn() throws Exception {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEmitSecurityEvents(false);
-        cfg.setExcludedEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
+        cfg.setExcludeEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
 
         this.runAllEvents();
         this.assertSystemEvents();
@@ -368,12 +376,39 @@ public class DatadogFilteringEventsTest {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEmitSecurityEvents(false);
         cfg.setEmitSystemEvents(false);
-        cfg.setExcludedEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
+        cfg.setExcludeEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
 
         this.runAllEvents();
 
         assert(this.client.events.isEmpty());
     }
+
+    // @Test
+    // public void testWithEnvVars() throws Exception {
+    //     EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
+    //     EnvVars envVars = prop.getEnvVars();
+    //     envVars.put("DATADOG_JENKINS_PLUGIN_EMIT_SECURITY_EVENTS", "false");
+    //     envVars.put("DATADOG_JENKINS_PLUGIN_EMIT_CONFIG_CHANGE_EVENTS", "false");
+    //     envVars.put("DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS", "true");
+    //     envVars.put("DATADOG_JENKINS_PLUGIN_EXCLUDE_EVENTS", DatadogGlobalConfiguration.DEFAULT_EVENTS);
+    //     jenkinsRule.jenkins.getGlobalNodeProperties().add(prop);
+        
+    //     this.runAllEvents();
+    //     this.assertSystemEvents();
+    // }
+
+    // @Test
+    // public void testFilteringEventPage() throws IOException, SAXException {
+    //     WebClient webClient = jenkinsRule.createWebClient();
+    //     System.out.println(webClient.goToXml("configure").asNormalizedText());
+    //     HtmlPage configPage = webClient.goTo("configure");
+    //     //HtmlForm form = configPage.getFormByName("datadogPlugin");
+    //     //form.submit(form.getButtonByName("button"));
+
+    //     DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+    //     System.out.println(cfg.getListOfIncludedEvents());
+    //     assertTrue(false);
+    // }
 
     private void assertAllIncludedEvents() throws Exception {
         this.runDefaultEvents();

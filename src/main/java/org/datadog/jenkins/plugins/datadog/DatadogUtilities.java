@@ -114,8 +114,9 @@ public class DatadogUtilities {
             return ExtensionList.lookupSingleton(DatadogGlobalConfiguration.class);
         } catch (IllegalStateException | NullPointerException e) {
             // It can only throw such an exception when running tests
-            System.out.println(e);
-            return null;
+            throw e;
+            // System.out.println("Error: " + e);
+            // return null;
         }
     }
 
@@ -1070,7 +1071,7 @@ public class DatadogUtilities {
         DatadogGlobalConfiguration cfg = getDatadogGlobalDescriptor();
 
         if (cfg == null) { // sometimes null for tests, so default is to send all events but config changed
-            return !event.getEventName().equals("Config Changed");
+            return !event.getEventName().equals(DatadogGlobalConfiguration.CONFIG_CHANGED_EVENT);
         }
 
         return !cfg.getListOfExcludedEvents().contains(event.getEventName()) 
