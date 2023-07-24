@@ -8,3 +8,5 @@ target/*
 nb-configuration.xml
 .idea
 *.iml
+docker-compose.yaml
+/.vscode/

@@ -114,9 +114,7 @@ public class DatadogUtilities {
             return ExtensionList.lookupSingleton(DatadogGlobalConfiguration.class);
         } catch (IllegalStateException | NullPointerException e) {
             // It can only throw such an exception when running tests
-            throw e;
-            // System.out.println("Error: " + e);
-            // return null;
+            return null;
         }
     }
 

@@ -12,7 +12,7 @@
     tags they use. Views are always organized according to its owner class,
     so it should be straightforward to find them.
   -->
-  <f:form title="Datadog Plugin" name="datadogPlugin">
+  <f:section title="Datadog Plugin">
 
     <f:radioBlock title="Use the Datadog Agent to report to Datadog (recommended)" name="reportWith" value="DSD"
         checked="${instance.reportWithEquals('DSD')}" inline="true">
@@ -149,5 +149,5 @@
             <f:checkbox title="Cache Build Runs" field="cacheBuildRuns" default="true" />
         </f:entry>
     </f:advanced>
-  </f:form>
+  </f:section>
 </j:jelly>

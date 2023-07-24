@@ -188,7 +188,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         loadEnvVariables(); // Load environment variables after as they should take precedence.
     }
 
-    private void loadEnvVariables(){
+    public void loadEnvVariables(){
         String reportWithEnvVar = System.getenv(REPORT_WITH_PROPERTY);
         if(StringUtils.isNotBlank(reportWithEnvVar) &&
                 (reportWithEnvVar.equals(DatadogClient.ClientType.HTTP.name()) ||
@@ -284,31 +284,26 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         String emitSecurityEventsEnvVar = System.getenv(EMIT_SECURITY_EVENTS_PROPERTY);
         if(StringUtils.isNotBlank(emitSecurityEventsEnvVar)){
             this.emitSecurityEvents = Boolean.valueOf(emitSecurityEventsEnvVar);
-            this.createIncludeExcludeLists();
         }
 
         String emitSystemEventsEnvVar = System.getenv(EMIT_SYSTEM_EVENTS_PROPERTY);
         if(StringUtils.isNotBlank(emitSystemEventsEnvVar)){
             this.emitSystemEvents = Boolean.valueOf(emitSystemEventsEnvVar);
-            this.createIncludeExcludeLists();
         }
 
         String emitConfigChangeEventsEnvVar = System.getenv(EMIT_CONFIG_CHANGE_EVENTS_PROPERTY);
         if(StringUtils.isNotBlank(emitConfigChangeEventsEnvVar)){
             this.emitConfigChangeEvents = Boolean.valueOf(emitConfigChangeEventsEnvVar);
-            this.createIncludeExcludeLists();
         }
 
         String includeEventsEnvVar = System.getenv(INCLUDE_EVENTS_PROPERTY);
         if(StringUtils.isNotBlank(includeEventsEnvVar)){
             this.includeEvents = includeEventsEnvVar;
-            this.createIncludeExcludeLists();
         }
 
         String excludeEventsEnvVar = System.getenv(EXCLUDE_EVENTS_PROPERTY);
         if(StringUtils.isNotBlank(excludeEventsEnvVar)){
             this.excludeEvents = excludeEventsEnvVar;
-            this.createIncludeExcludeLists();
         }
 
         String collectBuildLogsEnvVar = System.getenv(COLLECT_BUILD_LOGS_PROPERTY);
@@ -345,6 +340,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         if(StringUtils.isNotBlank(ciVisibilityCiInstanceNameVar)) {
             this.traceServiceName = ciVisibilityCiInstanceNameVar;
         }
+
+        this.createIncludeExcludeLists();
     }
 
     /**
@@ -1378,6 +1375,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     /**
      * @return - A {@link Boolean} indicating if the user has configured Datadog to emit Config Change events.
      */
+    @Deprecated
     public boolean isEmitConfigChangeEvents() {
         return emitConfigChangeEvents;
     }
@@ -1388,6 +1386,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @param emitConfigChangeEvents - The checkbox status (checked/unchecked)
      */
     @DataBoundSetter
+    @Deprecated
     public void setEmitConfigChangeEvents(boolean emitConfigChangeEvents) {
         this.emitConfigChangeEvents = emitConfigChangeEvents;
         this.createIncludeExcludeLists();
@@ -1513,13 +1512,13 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     }
 
     private void createIncludeExcludeLists() {
-        if (!this.includeEvents.isEmpty()) {
+        if (this.includeEvents != null && !this.includeEvents.isEmpty()) {
             this.includedEvents = new ArrayList<String>(Arrays.asList(this.includeEvents.split(",")));
         } else {
             this.includedEvents.clear();
         }
 
-        if (!this.excludeEvents.isEmpty()) {
+        if (this.excludeEvents != null && !this.excludeEvents.isEmpty()) {
             this.excludedEvents = new ArrayList<String>(Arrays.asList(this.excludeEvents.split(",")));
         } else {
             this.excludedEvents.clear();
@@ -1591,6 +1590,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                 ((emitConfigChangeEvents) ? "on" : "off") + " as well as written in the " + ((emitConfigChangeEvents) ? "include" : "exclude") + " list manually");
         }
 
-        return FormValidation.ok();
+        return FormValidation.ok("Your filtering configuration looks good!");
     }
 }

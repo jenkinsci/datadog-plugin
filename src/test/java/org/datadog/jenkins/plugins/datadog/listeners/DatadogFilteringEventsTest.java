@@ -5,7 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
-import java.io.IOException;
+import org.junit.contrib.java.lang.system.EnvironmentVariables;
 
 import org.acegisecurity.userdetails.UserDetails;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
@@ -20,17 +20,12 @@ import org.datadog.jenkins.plugins.datadog.stubs.ProjectStub;
 
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
-import org.jvnet.hudson.test.JenkinsRule.WebClient;
-import org.xml.sax.SAXException;
 
-import com.gargoylesoftware.htmlunit.html.HtmlPage;
-
-import hudson.EnvVars;
 import hudson.model.Result;
 import hudson.model.TaskListener;
-import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.slaves.OfflineCause;
 import hudson.slaves.SlaveComputer;
 
@@ -47,7 +42,10 @@ public class DatadogFilteringEventsTest {
     private ProjectStub job;
 
     @ClassRule
-    public static JenkinsRule jenkinsRule = new JenkinsRule();
+    private static final JenkinsRule jenkinsRule = new JenkinsRule();  
+    
+    @Rule
+    private final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
     @Before
     public void setUp() throws Exception {
@@ -383,32 +381,30 @@ public class DatadogFilteringEventsTest {
         assert(this.client.events.isEmpty());
     }
 
-    // @Test
-    // public void testWithEnvVars() throws Exception {
-    //     EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
-    //     EnvVars envVars = prop.getEnvVars();
-    //     envVars.put("DATADOG_JENKINS_PLUGIN_EMIT_SECURITY_EVENTS", "false");
-    //     envVars.put("DATADOG_JENKINS_PLUGIN_EMIT_CONFIG_CHANGE_EVENTS", "false");
-    //     envVars.put("DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS", "true");
-    //     envVars.put("DATADOG_JENKINS_PLUGIN_EXCLUDE_EVENTS", DatadogGlobalConfiguration.DEFAULT_EVENTS);
-    //     jenkinsRule.jenkins.getGlobalNodeProperties().add(prop);
+    @Test
+    public void testWithEnvVars() throws Exception {
+        environmentVariables.set("DATADOG_JENKINS_PLUGIN_EMIT_SECURITY_EVENTS", "false");
+        environmentVariables.set("DATADOG_JENKINS_PLUGIN_EMIT_CONFIG_CHANGE_EVENTS", "false");
+        environmentVariables.set("DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS", "true");
+        environmentVariables.set("DATADOG_JENKINS_PLUGIN_EXCLUDE_EVENTS", DatadogGlobalConfiguration.DEFAULT_EVENTS);
+
+        DatadogUtilities.getDatadogGlobalDescriptor().loadEnvVariables();
         
-    //     this.runAllEvents();
-    //     this.assertSystemEvents();
-    // }
+        this.runAllEvents();
+        this.assertSystemEvents();
+    }
 
-    // @Test
-    // public void testFilteringEventPage() throws IOException, SAXException {
-    //     WebClient webClient = jenkinsRule.createWebClient();
-    //     System.out.println(webClient.goToXml("configure").asNormalizedText());
-    //     HtmlPage configPage = webClient.goTo("configure");
-    //     //HtmlForm form = configPage.getFormByName("datadogPlugin");
-    //     //form.submit(form.getButtonByName("button"));
+    @Test
+    public void testWithEnvVarsPart2() throws Exception {
+        environmentVariables.set("DATADOG_JENKINS_PLUGIN_EMIT_SECURITY_EVENTS", "false");
+        environmentVariables.set("DATADOG_JENKINS_PLUGIN_EMIT_CONFIG_CHANGE_EVENTS", "false");
+        environmentVariables.set("DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS", "false");
 
-    //     DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
-    //     System.out.println(cfg.getListOfIncludedEvents());
-    //     assertTrue(false);
-    // }
+        DatadogUtilities.getDatadogGlobalDescriptor().loadEnvVariables();
+        
+        this.runAllEvents();
+        this.assertDefaultEvents();
+    }
 
     private void assertAllIncludedEvents() throws Exception {
         this.runDefaultEvents();
