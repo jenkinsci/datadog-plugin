@@ -254,6 +254,8 @@ public class DatadogAgentClient implements DatadogClient {
         }
         try {
             logger.info("Re/Initialize Datadog-Plugin Logger: hostname = " + this.hostname + ", logCollectionPort = " + this.logCollectionPort);
+            // need to close existing logger since it has a socket opened - not closing it leads to a file descriptor leak
+            close(this.ddLogger);
             this.ddLogger = Logger.getLogger("Datadog-Plugin Logger");
             this.ddLogger.setUseParentHandlers(false);
             //Remove all existing Handlers
@@ -280,6 +282,24 @@ public class DatadogAgentClient implements DatadogClient {
             return false;
         }
         return true;
+    }
+
+
+    private void close(Logger logger) {
+        if (logger == null) {
+            return;
+        }
+        Handler[] handlers = logger.getHandlers();
+        if (handlers == null) {
+            return;
+        }
+        for (Handler handler : handlers) {
+            try {
+                handler.close();
+            } catch (Exception e) {
+                // ignore
+            }
+        }
     }
 
     /**
