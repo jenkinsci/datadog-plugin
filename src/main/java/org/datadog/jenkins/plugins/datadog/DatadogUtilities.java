@@ -879,7 +879,7 @@ public class DatadogUtilities {
     public static void severe(Logger logger, Throwable e, String message){
         if (e != null) {
             String stackTrace = ExceptionUtils.getStackTrace(e);
-            message = (message != null ? message : "An unexpected error occurred: ") + stackTrace;
+            message = (message != null ? message : "An unexpected error occurred") + ": " + stackTrace;
         }
         if (StringUtils.isNotEmpty(message)) {
             logger.severe(message);

@@ -35,9 +35,20 @@ import com.timgroup.statsd.ServiceCheck;
 import com.timgroup.statsd.StatsDClient;
 import hudson.model.Run;
 import hudson.util.Secret;
-import org.apache.commons.lang.StringUtils;
+import java.net.ConnectException;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.URL;
+import java.net.UnknownHostException;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.logging.Handler;
+import java.util.logging.Logger;
+import java.util.logging.SocketHandler;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
+import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogBaseBuildLogic;
@@ -95,12 +106,12 @@ public class DatadogAgentClient implements DatadogClient {
     @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL")
     public static boolean enableValidations = true;
 
-    private HttpClient agentHttpClient;
-    private DatadogBaseBuildLogic traceBuildLogic;
-    private DatadogBasePipelineLogic tracePipelineLogic;
+    private volatile HttpClient agentHttpClient;
+    private volatile DatadogBaseBuildLogic traceBuildLogic;
+    private volatile DatadogBasePipelineLogic tracePipelineLogic;
 
-    private StatsDClient statsd;
-    private Logger ddLogger;
+    private volatile StatsDClient statsd;
+    private volatile Logger ddLogger;
     private String previousPayload;
 
     private String hostname = null;
@@ -214,27 +225,16 @@ public class DatadogAgentClient implements DatadogClient {
         if (!(object instanceof DatadogAgentClient)) {
             return false;
         }
-
         DatadogAgentClient newInstance = (DatadogAgentClient) object;
-
-        if ((StringUtils.equals(getHostname(), newInstance.getHostname())
-        && (((getPort() == null) && (newInstance.getPort() == null)) || (null != getPort() && port.equals(newInstance.getPort())))
-        && (((getLogCollectionPort() == null) && (newInstance.getLogCollectionPort() == null)) || (null != getLogCollectionPort() && logCollectionPort.equals(newInstance.getLogCollectionPort())))
-        && (((getTraceCollectionPort() == null) && (newInstance.getTraceCollectionPort() == null)) || (null != getTraceCollectionPort() && traceCollectionPort.equals(newInstance.getTraceCollectionPort())))
-        )){
-           return true;
-        }
-
-        return false;
+        return Objects.equals(getHostname(), newInstance.getHostname())
+                && Objects.equals(getPort(), newInstance.getPort())
+                && Objects.equals(getLogCollectionPort(), newInstance.getLogCollectionPort())
+                && Objects.equals(getTraceCollectionPort(), newInstance.getTraceCollectionPort());
     }
 
     @Override
     public int hashCode() {
-        int result = hostname != null ? hostname.hashCode() : 0;
-        result = 47 * result + (port != null ? port.hashCode() : 0);
-        result = 47 * result + (logCollectionPort != null ? logCollectionPort.hashCode() : 0);
-        result = 47 * result + (traceCollectionPort != null ? traceCollectionPort.hashCode() : 0);
-        return result;
+        return Objects.hash(hostname, port, logCollectionPort, traceCollectionPort);
     }
 
     /**
@@ -244,35 +244,55 @@ public class DatadogAgentClient implements DatadogClient {
      */
     private boolean reinitializeStatsDClient(boolean force) {
         try {
-            boolean refreshClient = DatadogUtilities.getDatadogGlobalDescriptor().isRefreshDogstatsdClient();
-            if(!this.isStoppedStatsDClient && this.statsd != null && !force && (!refreshClient || !this.hasIpChanged())){
+            DatadogGlobalConfiguration datadogGlobalDescriptor = DatadogUtilities.getDatadogGlobalDescriptor();
+            if (datadogGlobalDescriptor == null) {
+                // probably running on a node other than master
+                return false;
+            }
+
+            if (this.statsd != null && !force && (!datadogGlobalDescriptor.isRefreshDogstatsdClient() || !this.hasIpChanged())) {
                 return true;
             }
-            this.stopStatsDClient();
-            logger.info("Re/Initialize DogStatsD Client: hostname = " + this.hostname + ", port = " + this.port);
-            this.statsd = new NonBlockingStatsDClient(null, this.hostname, this.port);
-            this.isStoppedStatsDClient = false;
+
+            return statsDInitializer.init(force);
+
         } catch (Exception e){
             DatadogUtilities.severe(logger, e, "Failed to reinitialize DogStatsD Client");
-            this.stopStatsDClient();
+            return false;
         }
-
-        return !isStoppedStatsDClient;
-    }
-
-    private String resolveHostnameIp() throws UnknownHostException {
-        InetAddress inet = InetAddress.getByName(this.hostname);
-        String ipAddress = inet.getHostAddress();
-        return ipAddress;
     }
 
     private boolean hasIpChanged() throws UnknownHostException {
-        String ipAddress = this.resolveHostnameIp();
+        String ipAddress = resolveHostnameIp();
         if (this.resolvedIp.equals(ipAddress)) {
             return false;
         } else {
             this.resolvedIp = ipAddress;
             return true;
+        }
+    }
+
+    private String resolveHostnameIp() throws UnknownHostException {
+        InetAddress inet = InetAddress.getByName(this.hostname);
+        return inet.getHostAddress();
+    }
+
+    private final ExponentialBackoffInitializer statsDInitializer = new ExponentialBackoffInitializer(
+            () -> {
+                stopStatsDClient();
+                logger.info("Re/Initialize DogStatsD Client: hostname = " + this.hostname + ", port = " + this.port);
+                statsd = new NonBlockingStatsDClient(null, this.hostname, this.port);
+            }
+    );
+
+    private void stopStatsDClient(){
+        if (statsd != null) {
+            try {
+                statsd.stop();
+            } catch(Exception e) {
+                DatadogUtilities.severe(logger, e, "Failed to stop DogStatsD Client");
+            }
+            statsd = null;
         }
     }
 
@@ -282,31 +302,22 @@ public class DatadogAgentClient implements DatadogClient {
      * @return true if reinitialized properly otherwise false
      */
     private boolean reinitializeLogger(boolean force) {
-        if(this.ddLogger != null && !force){
+        if (ddLogger != null && !force) {
             return true;
         }
-        if(!DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs() || this.logCollectionPort == null){
+
+        DatadogGlobalConfiguration datadogGlobalDescriptor = DatadogUtilities.getDatadogGlobalDescriptor();
+        if (datadogGlobalDescriptor == null) {
+            // probably running on a node other than master
             return false;
         }
-        try {
-            logger.info("Re/Initialize Datadog-Plugin Logger: hostname = " + this.hostname + ", logCollectionPort = " + this.logCollectionPort);
-            // need to close existing logger since it has a socket opened - not closing it leads to a file descriptor leak
-            close(this.ddLogger);
-            this.ddLogger = Logger.getLogger("Datadog-Plugin Logger");
-            this.ddLogger.setUseParentHandlers(false);
-            //Remove all existing Handlers
-            Handler[] handlers = this.ddLogger.getHandlers();
+        if (!datadogGlobalDescriptor.isCollectBuildLogs() || logCollectionPort == null){
+            return false;
+        }
 
-            if (handlers != null) {
-                for(Handler h : handlers){
-                    this.ddLogger.removeHandler(h);
-                }
-            }
-            //Add New Handler
-            SocketHandler socketHandler = new SocketHandler(this.hostname, this.logCollectionPort);
-            socketHandler.setFormatter(new DatadogFormatter());
-            socketHandler.setErrorManager(new DatadogErrorManager());
-            this.ddLogger.addHandler(socketHandler);
+        try {
+            return loggerInitializer.init(force);
+
         } catch (Exception e){
             if(e instanceof UnknownHostException){
                 DatadogUtilities.severe(logger, e, "Failed to reinitialize Datadog-Plugin Logger, Unknown Host " + this.hostname);
@@ -317,25 +328,53 @@ public class DatadogAgentClient implements DatadogClient {
             }
             return false;
         }
-        return true;
     }
 
+    private final ExponentialBackoffInitializer loggerInitializer = new ExponentialBackoffInitializer(
+            () -> {
+                logger.info("Re/Initialize Datadog-Plugin Logger: hostname = " + this.hostname + ", logCollectionPort = " + this.logCollectionPort);
 
-    private void close(Logger logger) {
-        if (logger == null) {
+                stopDdLogger();
+                try {
+                    ddLogger = Logger.getLogger("Datadog-Plugin Logger");
+                    ddLogger.setUseParentHandlers(false);
+
+                    //Remove all existing Handlers
+                    Handler[] handlers = ddLogger.getHandlers();
+                    if (handlers != null) {
+                        for(Handler h : handlers){
+                            ddLogger.removeHandler(h);
+                        }
+                    }
+
+                    //Add New Handler
+                    SocketHandler socketHandler = new SocketHandler(this.hostname, this.logCollectionPort);
+                    socketHandler.setFormatter(new DatadogFormatter());
+                    socketHandler.setErrorManager(new DatadogErrorManager());
+                    ddLogger.addHandler(socketHandler);
+
+                } catch (Exception e) {
+                    stopDdLogger();
+                    throw e;
+                }
+            }
+    );
+
+    private void stopDdLogger() {
+        if (ddLogger == null) {
             return;
         }
-        Handler[] handlers = logger.getHandlers();
-        if (handlers == null) {
-            return;
-        }
-        for (Handler handler : handlers) {
-            try {
-                handler.close();
-            } catch (Exception e) {
-                // ignore
+        Handler[] handlers = ddLogger.getHandlers();
+        if (handlers != null) {
+            for (Handler handler : handlers) {
+                try {
+                    handler.close();
+                } catch (Exception e) {
+                    // ignore
+                }
             }
         }
+        ddLogger = null;
     }
 
     /**
@@ -469,36 +508,64 @@ public class DatadogAgentClient implements DatadogClient {
      * @return true if reinitialized properly otherwise false
      */
     protected boolean reinitializeAgentHttpClient(boolean force) {
-        if(!this.isStoppedAgentHttpClient && this.traceBuildLogic != null && this.tracePipelineLogic != null && !force) {
+        if (this.traceBuildLogic != null && this.tracePipelineLogic != null && !force) {
             return true;
         }
 
-        if(!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility() || this.getHostname() == null || this.getTraceCollectionPort() == null) {
+        DatadogGlobalConfiguration datadogGlobalDescriptor = DatadogUtilities.getDatadogGlobalDescriptor();
+        if (datadogGlobalDescriptor == null) {
+            // probably running on a node other than master
             return false;
         }
 
-        this.stopAgentHttpClient();
+        if(!datadogGlobalDescriptor.getEnableCiVisibility() || getHostname() == null || getTraceCollectionPort() == null) {
+            return false;
+        }
+
         try {
-            logger.info("Re/Initialize Datadog-Plugin Agent Http Client");
+            return agentClientInitializer.init(force);
 
-            // Build
-            final URL tracesURL = buildHttpURL(this.getHostname(), this.getTraceCollectionPort(), "/v0.3/traces");
-            this.agentHttpClient = NonBlockingHttpClient.builder()
-                    .errorHandler(LOGGER_HTTP_ERROR_HANDLER)
-                    .messageRoute(PayloadMessage.Type.TRACE, HttpMessageFactory.builder()
-                            .agentURL(tracesURL)
-                            .httpMethod(HttpMessage.HttpMethod.PUT)
-                            .payloadMapper(new JsonTraceSpanMapper())
-                            .build())
-                    .build();
-
-            this.isStoppedAgentHttpClient = false;
-            return true;
-        } catch (Throwable e){
+        } catch (Throwable e) {
             DatadogUtilities.severe(logger, e, "Failed to reinitialize Datadog-Plugin Agent Http Client");
-            this.stopAgentHttpClient();
             return false;
         }
+    }
+
+    private final ExponentialBackoffInitializer agentClientInitializer = new ExponentialBackoffInitializer(
+            () -> {
+                logger.info("Re/Initialize Datadog-Plugin Agent Http Client");
+                stopAgentHttpClient();
+                try {
+                    URL tracesURL = buildHttpURL(getHostname(), getTraceCollectionPort(), "/v0.3/traces");
+                    agentHttpClient = NonBlockingHttpClient.builder()
+                            .errorHandler(LOGGER_HTTP_ERROR_HANDLER)
+                            .messageRoute(PayloadMessage.Type.TRACE, HttpMessageFactory.builder()
+                                    .agentURL(tracesURL)
+                                    .httpMethod(HttpMessage.HttpMethod.PUT)
+                                    .payloadMapper(new JsonTraceSpanMapper())
+                                    .build())
+                            .build();
+                    traceBuildLogic = new DatadogTraceBuildLogic(agentHttpClient);
+                    tracePipelineLogic = new DatadogTracePipelineLogic(agentHttpClient);
+
+                } catch (Exception e) {
+                    stopAgentHttpClient();
+                    throw e;
+                }
+            }
+    );
+
+    private void stopAgentHttpClient() {
+        if (agentHttpClient != null) {
+            try {
+                agentHttpClient.stop();
+            } catch (Throwable e) {
+                DatadogUtilities.severe(logger, e, "Failed to stop Agent Http Client");
+            }
+        }
+        agentHttpClient = null;
+        traceBuildLogic = null;
+        tracePipelineLogic = null;
     }
 
     protected boolean checkEvpProxySupportAndUpdateLogic() {
@@ -526,35 +593,6 @@ public class DatadogAgentClient implements DatadogClient {
             }
         }
         return evpProxySupported;
-    }
-
-    private boolean stopAgentHttpClient() {
-        if(agentHttpClient != null) {
-            try {
-                this.agentHttpClient.stop();
-            } catch (Throwable e) {
-                DatadogUtilities.severe(logger, e, "Failed to stop Agent Http Client");
-                return false;
-            }
-            this.agentHttpClient = null;
-        }
-        this.isStoppedAgentHttpClient = true;
-        return true;
-    }
-
-    private boolean stopStatsDClient(){
-        if (this.statsd != null){
-            try{
-                this.statsd.stop();
-            }catch(Exception e){
-                DatadogUtilities.severe(logger, e, "Failed to stop DogStatsD Client");
-                return false;
-            }
-            this.statsd = null;
-        }
-
-        this.isStoppedStatsDClient = true;
-        return true;
     }
 
     public String getHostname() {
@@ -738,7 +776,7 @@ public class DatadogAgentClient implements DatadogClient {
         }
 
         if(this.ddLogger == null) {
-            boolean status = reinitializeLogger(true);
+            boolean status = reinitializeLogger(false);
             if(!status) {
                 logger.info("Datadog Plugin Logger could not be initialized");
                 return false;
@@ -867,5 +905,50 @@ public class DatadogAgentClient implements DatadogClient {
         }
     }
 
+    private static final class ExponentialBackoffInitializer {
+        private static final long DEFAULT_INIT_DELAY_MILLIS = 100;
+        private static final long MAX_INIT_DELAY_MILLIS = 60_000;
+
+        private volatile long initTimestamp;
+        private volatile long initDelay = DEFAULT_INIT_DELAY_MILLIS;
+        private final Object initLock = new Object();
+        private final InitAction initAction;
+
+        ExponentialBackoffInitializer(InitAction initAction) {
+            this.initAction = initAction;
+        }
+
+        boolean init(boolean force) throws Exception {
+            long now = System.currentTimeMillis();
+            if (initTimestamp + initDelay > now && !force) {
+                // too early to attempt re-init
+                return false;
+            }
+
+            synchronized (initLock) {
+                // double-checking once we got the lock
+                if (initTimestamp + initDelay > now && !force) {
+                    // too early to attempt re-init
+                    return false;
+                }
+
+                initTimestamp = now;
+                initDelay = Math.min(initDelay * 2, MAX_INIT_DELAY_MILLIS);
+
+                initAction.init();
+
+                // No exception == successfully initialized.
+                // Resetting state so that future re-inits start with smaller delays
+                initTimestamp = 0;
+                initDelay = DEFAULT_INIT_DELAY_MILLIS;
+
+                return true;
+            }
+        }
+    }
+
+    interface InitAction {
+        void init() throws Exception;
+    }
 
 }
