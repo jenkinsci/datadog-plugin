@@ -33,7 +33,6 @@ import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
-import org.datadog.jenkins.plugins.datadog.events.ConfigChangedEventImpl;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 import java.util.Map;
@@ -58,13 +57,6 @@ public class DatadogSaveableListener  extends SaveableListener {
             tags = TagsUtil.addTagToTags(tags, "user_id", DatadogUtilities.getUserId());
             tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
 
-            DatadogEvent event = new ConfigChangedEventImpl(config, file, tags);
-
-            final boolean canSendEvent = DatadogUtilities.canSendEventToClient(event);
-            if (!canSendEvent) {
-                return;
-            }
-
             logger.fine("Start DatadogSaveableListener#onChange");
 
             // Get Datadog Client Instance
@@ -72,9 +64,6 @@ public class DatadogSaveableListener  extends SaveableListener {
             if(client == null){
                 return;
             }
-            
-            // Send event
-            client.event(event);
 
             // Submit counter
             String hostname = DatadogUtilities.getHostname(null);

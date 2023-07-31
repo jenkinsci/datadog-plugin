@@ -16,16 +16,7 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.CredentialsStore;
 import com.cloudbees.plugins.credentials.domains.Domain;
-import com.gargoylesoftware.htmlunit.html.HtmlButton;
-import com.gargoylesoftware.htmlunit.html.HtmlForm;
-import com.gargoylesoftware.htmlunit.html.HtmlPage;
-
-import org.junit.Assert;
-
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
-import java.net.URL;
 
 public class DatadogGlobalConfigurationTest {
 
@@ -69,8 +60,6 @@ public class DatadogGlobalConfigurationTest {
         Assert.assertTrue(cfg.findSecret("", null).getPlainText().equals(""));
 
         Assert.assertTrue(cfg.findSecret(null, "").getPlainText().equals(""));
-
     }
-
 }
 

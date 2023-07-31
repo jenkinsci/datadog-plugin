@@ -1065,16 +1065,18 @@ public class DatadogUtilities {
         return null;
     }
 
+    /**
+     * Checks to see if event can be sent to client
+     * @param event - the event to check
+     * @return true if event is can be sent to client
+     */
     public static boolean canSendEventToClient(DatadogEvent event) {
         DatadogGlobalConfiguration cfg = getDatadogGlobalDescriptor();
 
-        if (cfg == null) { // sometimes null for tests, so default is to send all events but config changed
-            return !event.getEventName().equals(DatadogGlobalConfiguration.CONFIG_CHANGED_EVENT);
+        if (cfg == null) { // sometimes null for tests, so default is to send all events
+            return true;
         }
 
-        return !cfg.getListOfExcludedEvents().contains(event.getEventName()) 
-            && (DatadogGlobalConfiguration.DEFAULT_EVENTS.contains(event.getEventName()) // only default events don't have to be explicitly included
-            || cfg.getListOfIncludedEvents().contains(event.getEventName()));
-        
+        return cfg.getListOfIncludedEvents().contains(event.getEventName());
     }
 }

@@ -61,6 +61,7 @@ import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 import org.kohsuke.stapler.AncestorInPath;
 
+import javax.management.InvalidAttributeValueException;
 import javax.servlet.ServletException;
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -181,14 +182,16 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private boolean useAwsInstanceHostname = DEFAULT_USE_AWS_INSTANCE_HOSTNAME_VALUE;
 
     private List<String> includedEvents = new ArrayList<String>();
-    private List<String> excludedEvents = new ArrayList<String>();
+    private boolean includeEventsIsEnv = false;
+    private boolean excludeEventsIsEnv = false;
 
+    @DataBoundConstructor
     public DatadogGlobalConfiguration() {
         load(); // Load the persisted global configuration
         loadEnvVariables(); // Load environment variables after as they should take precedence.
     }
 
-    public void loadEnvVariables(){
+    public void loadEnvVariables() {
         String reportWithEnvVar = System.getenv(REPORT_WITH_PROPERTY);
         if(StringUtils.isNotBlank(reportWithEnvVar) &&
                 (reportWithEnvVar.equals(DatadogClient.ClientType.HTTP.name()) ||
@@ -291,19 +294,16 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.emitSystemEvents = Boolean.valueOf(emitSystemEventsEnvVar);
         }
 
-        String emitConfigChangeEventsEnvVar = System.getenv(EMIT_CONFIG_CHANGE_EVENTS_PROPERTY);
-        if(StringUtils.isNotBlank(emitConfigChangeEventsEnvVar)){
-            this.emitConfigChangeEvents = Boolean.valueOf(emitConfigChangeEventsEnvVar);
-        }
-
         String includeEventsEnvVar = System.getenv(INCLUDE_EVENTS_PROPERTY);
         if(StringUtils.isNotBlank(includeEventsEnvVar)){
             this.includeEvents = includeEventsEnvVar;
+            this.includeEventsIsEnv = true;
         }
 
         String excludeEventsEnvVar = System.getenv(EXCLUDE_EVENTS_PROPERTY);
         if(StringUtils.isNotBlank(excludeEventsEnvVar)){
             this.excludeEvents = excludeEventsEnvVar;
+            this.excludeEventsIsEnv = true;
         }
 
         String collectBuildLogsEnvVar = System.getenv(COLLECT_BUILD_LOGS_PROPERTY);
@@ -341,7 +341,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.traceServiceName = ciVisibilityCiInstanceNameVar;
         }
 
-        this.createIncludeExcludeLists();
+        this.createIncludeLists();
     }
 
     /**
@@ -488,13 +488,24 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             .includeCurrentValue(targetCredentialsApiKey);
     }
 
+    /**
+     * Checks filtering config for comma-separated list, overlapping include/exclude lists,
+     * unrecognizable event names, and redundant inclusion/exclusion. 
+     * 
+     * @param emitSecurityEvents toggle to send security events
+     * @param emitSystemEvents toggle to send system events
+     * @param includeEvents string of included events list (comma-separated)
+     * @param excludeEvents string of excluded events list (comma-separated)
+     * @return FormValidation.error() if not formatted correctly or overlapping lists,
+     * FormValidation.warning() for redundant config, and FormValidation.ok() for all else
+     */
     public FormValidation doTestFilteringConfig(
         @QueryParameter("emitSecurityEvents") boolean emitSecurityEvents,
         @QueryParameter("emitSystemEvents") boolean emitSystemEvents,
         @QueryParameter("includeEvents") String includeEvents,
         @QueryParameter("excludeEvents") String excludeEvents
-    ) throws IOException, ServletException {
-        return checkConfig(emitSecurityEvents, emitSystemEvents, emitSystemEvents, includeEvents,
+    ) {
+        return checkConfig(emitSecurityEvents, emitSystemEvents, includeEvents,
                 excludeEvents);
     }
 
@@ -799,11 +810,9 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
             boolean emitSecurityEvents = formData.getBoolean("emitSecurityEvents");
             boolean emitSystemEvents = formData.getBoolean("emitSystemEvents");
-            boolean emitConfigChangeEvents = !formData.has("emitConfigChangeEvents") ? emitSystemEvents : formData.getBoolean("emitConfigChangeEvents");
             String includeEvents = formData.getString("includeEvents");
             String excludeEvents = formData.getString("excludeEvents");
-            FormValidation configStatus = this.checkConfig(emitSecurityEvents, emitSystemEvents, 
-                emitConfigChangeEvents, includeEvents, excludeEvents);
+            FormValidation configStatus = this.checkConfig(emitSecurityEvents, emitSystemEvents, includeEvents, excludeEvents);
 
             if (configStatus.kind == Kind.ERROR) {
                 String message = configStatus.getMessage();
@@ -813,7 +822,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
             this.setEmitSecurityEvents(emitSecurityEvents);
             this.setEmitSystemEvents(emitSystemEvents);
-            this.setEmitConfigChangeEvents(emitConfigChangeEvents);
             this.setIncludeEvents(includeEvents);
             this.setExcludeEvents(excludeEvents);
 
@@ -1268,24 +1276,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     }
 
     /**
-     * @return - A {@link Boolean} indicating if the user has configured Datadog to emit Security related events.
-     */
-    public boolean isEmitSecurityEvents() {
-        return emitSecurityEvents;
-    }
-
-    /**
-     * Set the checkbox in the UI, used for Jenkins data binding
-     *
-     * @param emitSecurityEvents - The checkbox status (checked/unchecked)
-     */
-    @DataBoundSetter
-    public void setEmitSecurityEvents(boolean emitSecurityEvents) {
-        this.emitSecurityEvents = emitSecurityEvents;
-        this.createIncludeExcludeLists();
-    }
-
-    /**
      * @return - A {@link Boolean} indicating if the user has configured Datadog to retry sending logs.
      */
     public boolean isRetryLogs() {
@@ -1355,6 +1345,24 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     }
 
     /**
+     * @return - A {@link Boolean} indicating if the user has configured Datadog to emit Security related events.
+     */
+    public boolean isEmitSecurityEvents() {
+        return emitSecurityEvents;
+    }
+
+    /**
+     * Set the checkbox in the UI, used for Jenkins data binding
+     *
+     * @param emitSecurityEvents - The checkbox status (checked/unchecked)
+     */
+    @DataBoundSetter
+    public void setEmitSecurityEvents(boolean emitSecurityEvents) {
+        this.emitSecurityEvents = emitSecurityEvents;
+        this.createIncludeLists();
+    }
+
+    /**
      * @return - A {@link Boolean} indicating if the user has configured Datadog to emit System related events.
      */
     public boolean isEmitSystemEvents() {
@@ -1369,7 +1377,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @DataBoundSetter
     public void setEmitSystemEvents(boolean emitSystemEvents) {
         this.emitSystemEvents = emitSystemEvents;
-        this.createIncludeExcludeLists();
+        this.createIncludeLists();
     }
 
     /**
@@ -1389,7 +1397,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @Deprecated
     public void setEmitConfigChangeEvents(boolean emitConfigChangeEvents) {
         this.emitConfigChangeEvents = emitConfigChangeEvents;
-        this.createIncludeExcludeLists();
+        this.createIncludeLists();
     }
 
     /**
@@ -1399,9 +1407,14 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @param events - a comma-separated list of events to include for sending to agent.
      */
     @DataBoundSetter
-    public void setIncludeEvents(String events) {
+    public void setIncludeEvents(String events) throws InvalidAttributeValueException {
+        if (this.isOverlappingStrings(events, this.excludeEvents)) {
+            throw new InvalidAttributeValueException("Included events and excluded events contain an overlap.");
+        }  
+        
         this.includeEvents = events;
-        this.createIncludeExcludeLists();
+        this.includeEventsIsEnv = false;
+        this.createIncludeLists();
     }
 
     /**
@@ -1415,25 +1428,20 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     }
 
     /**
-     * Getter function for the included global configuration, containing
-     * a list of events to send to agent.
-     *
-     * @return a String ArrayList containing the events included global configuration.
-     */
-    public List<String> getListOfIncludedEvents() {
-        return includedEvents;
-    }
-
-    /**
      * Setter function for the included global configuration,
      * accepting a comma-separated string of events.
      *
-     * @param events - a comma-separated list of events to excl=kyde for sending to agent.
+     * @param events - a comma-separated list of events to exclude for sending to agent.
      */
     @DataBoundSetter
-    public void setExcludeEvents(String events) {
+    public void setExcludeEvents(String events) throws InvalidAttributeValueException{
+        if (this.isOverlappingStrings(events, this.includeEvents)) {
+            throw new InvalidAttributeValueException("Included events and excluded events contain an overlap.");
+        }
+        
         this.excludeEvents = events;
-        this.createIncludeExcludeLists();
+        this.excludeEventsIsEnv = false;
+        this.createIncludeLists();
     }
 
     /**
@@ -1448,12 +1456,12 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
     /**
      * Getter function for the included global configuration, containing
-     * a list of events not to send to agent.
+     * a list of events to send to agent.
      *
      * @return a String ArrayList containing the events included global configuration.
      */
-    public List<String> getListOfExcludedEvents() {
-        return excludedEvents;
+    public List<String> getListOfIncludedEvents() {
+        return includedEvents;
     }
 
     /**
@@ -1511,37 +1519,55 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         this.collectBuildTraces = enableCiVisibility;
     }
 
-    private void createIncludeExcludeLists() {
+    /**
+     * Helper function to determine if strings are overlapping in any way.
+     * 
+     * @param firstString first string
+     * @param stringToCompare second string
+     * @return true if strings are overlapping (shared event)
+     */
+    private boolean isOverlappingStrings(String firstString, String stringToCompare) {
+        if (stringToCompare == null || stringToCompare.isEmpty()) return false;
+
+        return Arrays.asList(stringToCompare.split(",")).stream().anyMatch(firstString::contains);
+    }
+
+    /**
+     * Creates inclusion list for events by looking at toggles and inclusion/exclusion string lists
+     */
+    private void createIncludeLists() {
+        this.includedEvents = new ArrayList<String>(Arrays.asList(DEFAULT_EVENTS.split(",")));
+
+        // applies exclusion first for default events
+        if (this.excludeEvents != null) this.includedEvents.removeIf(this.excludeEvents::contains);
+
         if (this.includeEvents != null && !this.includeEvents.isEmpty()) {
-            this.includedEvents = new ArrayList<String>(Arrays.asList(this.includeEvents.split(",")));
-        } else {
-            this.includedEvents.clear();
+            this.includedEvents.addAll(Arrays.asList(this.includeEvents.split(",")));
         }
 
-        if (this.excludeEvents != null && !this.excludeEvents.isEmpty()) {
-            this.excludedEvents = new ArrayList<String>(Arrays.asList(this.excludeEvents.split(",")));
-        } else {
-            this.excludedEvents.clear();
+        if (this.emitSystemEvents) {
+            this.includedEvents.addAll(new ArrayList<String>(Arrays.asList(SYSTEM_EVENTS.split(","))));
         }
 
-        this.addToggleEventsToArray(this.emitSystemEvents, SYSTEM_EVENTS);
-        if (!this.emitSystemEvents && !this.includedEvents.contains(CONFIG_CHANGED_EVENT)) this.excludedEvents.add(CONFIG_CHANGED_EVENT);
+        if (this.emitSecurityEvents) {
+            this.includedEvents.addAll(new ArrayList<String>(Arrays.asList(SECURITY_EVENTS.split(","))));
+        }
 
-        this.addToggleEventsToArray(this.emitSecurityEvents, SECURITY_EVENTS);
-        this.addToggleEventsToArray(this.emitConfigChangeEvents, CONFIG_CHANGED_EVENT);
+        this.includedEvents = this.includedEvents.stream().distinct().collect(Collectors.toList());
+
+        if (this.excludeEvents == null || this.excludeEvents.isEmpty()) return;
+        
+        // no exclusion rules for included events set in env var
+        if (this.includeEventsIsEnv && !this.excludeEventsIsEnv) return;
+
+        this.includedEvents.removeIf(this.excludeEvents::contains);
     }
 
-    private void addToggleEventsToArray(boolean toggle, String events) {
-        for (String event : events.split(",")) {
-            List<String> listToAddTo = (toggle) ? this.includedEvents : this.excludedEvents;
-            List<String> listToCompareTo = (toggle) ? this.excludedEvents : this.includedEvents;
-
-            if (!listToCompareTo.contains(event)) listToAddTo.add(event);
-        }
-    }
-
+    /**
+     * @see #doTestFilteringConfig
+     */
     private FormValidation checkConfig(boolean emitSecurityEvents, boolean emitSystemEvents,
-            boolean emitConfigChangeEvents, String includeEvents, String excludeEvents) {
+            String includeEvents, String excludeEvents) {
         String commaSeparatedRegex = "((\\w+,)*\\w+)?";
         if (!includeEvents.matches(commaSeparatedRegex)) {
             return FormValidation.error("The included events list is not correctly written in a comma-separated list.");
@@ -1554,7 +1580,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         List<String> excludedEventsList = (excludeEvents.isEmpty()) ? new ArrayList<String>() : Arrays.asList(excludeEvents.split(","));
 
         List<String> allEvents = Arrays.asList(
-            String.format("%s,%s,%s,%s", SYSTEM_EVENTS, SECURITY_EVENTS, DEFAULT_EVENTS, CONFIG_CHANGED_EVENT).split(","));
+            String.format("%s,%s,%s", SYSTEM_EVENTS, SECURITY_EVENTS, DEFAULT_EVENTS).split(","));
         if (!includedEventsList.stream().allMatch(allEvents::contains)) {
             return FormValidation.error("The included events list contains one or more unrecognized events.");
         }        
@@ -1573,7 +1599,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
         List<String> systemListToCheck = (emitSystemEvents) ? includedEventsList : excludedEventsList;
         List<String> securityListToCheck = (emitSecurityEvents) ? includedEventsList : excludedEventsList;
-        List<String> configListToCheck = (emitConfigChangeEvents) ? includedEventsList : excludedEventsList;
 
         if (systemListToCheck.stream().anyMatch(SYSTEM_EVENTS::contains)) {
             return FormValidation.warning("Redundant filtering: One or more system events have been toggled " + 
@@ -1583,11 +1608,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         if (securityListToCheck.stream().anyMatch(SECURITY_EVENTS::contains)) {
             return FormValidation.warning("Redundant filtering: One or more security events have been toggled " + 
                 ((emitSecurityEvents) ? "on" : "off") + " as well as written in the " + ((emitSecurityEvents) ? "include" : "exclude") + " list manually");
-        }
-
-        if (configListToCheck.stream().anyMatch(CONFIG_CHANGED_EVENT::equals)) {
-            return FormValidation.warning("Redundant filtering: Config change event has been toggled " + 
-                ((emitConfigChangeEvents) ? "on" : "off") + " as well as written in the " + ((emitConfigChangeEvents) ? "include" : "exclude") + " list manually");
         }
 
         return FormValidation.ok("Your filtering configuration looks good!");
