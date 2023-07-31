@@ -1070,7 +1070,7 @@ public class DatadogUtilities {
      * @param event - the event to check
      * @return true if event is can be sent to client
      */
-    public static boolean canSendEventToClient(DatadogEvent event) {
+    public static boolean shouldSendEvent(DatadogEvent event) {
         DatadogGlobalConfiguration cfg = getDatadogGlobalDescriptor();
 
         if (cfg == null) { // sometimes null for tests, so default is to send all events
