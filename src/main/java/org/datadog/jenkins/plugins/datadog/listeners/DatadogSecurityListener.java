@@ -63,7 +63,7 @@ public class DatadogSecurityListener extends SecurityListener {
             DatadogEvent event = new UserAuthenticationEventImpl(details.getUsername(),
                     UserAuthenticationEventImpl.LOGIN, tags);
 
-            final boolean canSendEvent = DatadogUtilities.canSendEventToClient(event);
+            final boolean canSendEvent = DatadogUtilities.shouldSendEvent(event);
             if (!canSendEvent) {
                 return;
             }
@@ -99,7 +99,7 @@ public class DatadogSecurityListener extends SecurityListener {
 
             DatadogEvent event = new UserAuthenticationEventImpl(username, UserAuthenticationEventImpl.ACCESS_DENIED, tags);
 
-            final boolean canSendEvent = DatadogUtilities.canSendEventToClient(event);
+            final boolean canSendEvent = DatadogUtilities.shouldSendEvent(event);
             if (!canSendEvent) {
                 return;
             }
@@ -145,7 +145,7 @@ public class DatadogSecurityListener extends SecurityListener {
 
             DatadogEvent event = new UserAuthenticationEventImpl(username, UserAuthenticationEventImpl.LOGOUT, tags);
 
-            final boolean canSendEvent = DatadogUtilities.canSendEventToClient(event);
+            final boolean canSendEvent = DatadogUtilities.shouldSendEvent(event);
             if (!canSendEvent) {
                 return;
             }

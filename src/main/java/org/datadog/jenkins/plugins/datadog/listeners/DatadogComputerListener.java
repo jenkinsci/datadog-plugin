@@ -67,7 +67,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             DatadogEvent event = new ComputerOnlineEventImpl(computer, listener, tags, false);
 
-            final boolean canSendEvent = DatadogUtilities.canSendEventToClient(event);
+            final boolean canSendEvent = DatadogUtilities.shouldSendEvent(event);
             if (!canSendEvent) {
                 return;
             }
@@ -102,7 +102,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             DatadogEvent event = new ComputerOfflineEventImpl(computer, cause, tags, false);
 
-            final boolean canSendEvent = DatadogUtilities.canSendEventToClient(event);
+            final boolean canSendEvent = DatadogUtilities.shouldSendEvent(event);
             if (!canSendEvent) {
                 return;
             }
@@ -137,7 +137,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             DatadogEvent event = new ComputerOnlineEventImpl(computer, null, tags, true);
 
-            final boolean canSendEvent = DatadogUtilities.canSendEventToClient(event);
+            final boolean canSendEvent = DatadogUtilities.shouldSendEvent(event);
             if (!canSendEvent) {
                 return;
             }
@@ -172,7 +172,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             DatadogEvent event = new ComputerOfflineEventImpl(computer, cause, tags, true);
 
-            final boolean canSendEvent = DatadogUtilities.canSendEventToClient(event);
+            final boolean canSendEvent = DatadogUtilities.shouldSendEvent(event);
             if (!canSendEvent) {
                 return;
             }
@@ -207,7 +207,7 @@ public class DatadogComputerListener extends ComputerListener {
 
             DatadogEvent event = new ComputerLaunchFailedEventImpl(computer, taskListener, tags);
 
-            final boolean canSendEvent = DatadogUtilities.canSendEventToClient(event);
+            final boolean canSendEvent = DatadogUtilities.shouldSendEvent(event);
             if (!canSendEvent) {
                 return;
             }

@@ -79,7 +79,7 @@ public class DatadogItemListener extends ItemListener {
 
             DatadogEvent event = new ItemCRUDEventImpl(item, action, tags);
 
-            final boolean canSendEvent = DatadogUtilities.canSendEventToClient(event);
+            final boolean canSendEvent = DatadogUtilities.shouldSendEvent(event);
             if (!canSendEvent) {
                 return;
             }
@@ -115,7 +115,7 @@ public class DatadogItemListener extends ItemListener {
 
             DatadogEvent event = new ItemCopiedEventImpl(src, item, tags);
 
-            final boolean canSendEvent = DatadogUtilities.canSendEventToClient(event);
+            final boolean canSendEvent = DatadogUtilities.shouldSendEvent(event);
             if (!canSendEvent) {
                 return;
             }
@@ -151,7 +151,7 @@ public class DatadogItemListener extends ItemListener {
 
             DatadogEvent event = new ItemLocationChangedEventImpl(item, oldFullName, newFullName, tags);
 
-            final boolean canSendEvent = DatadogUtilities.canSendEventToClient(event);
+            final boolean canSendEvent = DatadogUtilities.shouldSendEvent(event);
             if (!canSendEvent) {
                 return;
             }

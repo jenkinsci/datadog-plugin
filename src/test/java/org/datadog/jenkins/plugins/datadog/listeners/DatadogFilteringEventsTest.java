@@ -447,8 +447,6 @@ public class DatadogFilteringEventsTest {
 
         DatadogUtilities.getDatadogGlobalDescriptor().loadEnvVariables();
 
-        this.client.events.forEach(event -> System.out.println(event.getEvent()));
-
         this.runDefaultEvents();
         assertTrue(this.client.events.get(0).getEvent() instanceof BuildStartedEventImpl);
         assertTrue(this.client.events.get(1).getEvent() instanceof SCMCheckoutCompletedEventImpl);
