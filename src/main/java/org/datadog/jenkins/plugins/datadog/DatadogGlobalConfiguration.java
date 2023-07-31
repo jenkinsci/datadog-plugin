@@ -1446,7 +1446,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
     /**
      * Getter function for the included global configuration, containing
-     * a comma-separated list of events not to send to agent.
+     * a comma-separated list of events not to send.
      *
      * @return a String array containing the events included global configuration.
      */
