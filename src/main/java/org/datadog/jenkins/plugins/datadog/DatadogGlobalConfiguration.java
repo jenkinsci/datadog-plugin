@@ -177,8 +177,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private boolean cacheBuildRuns = DEFAULT_CACHE_BUILD_RUNS_VALUE;
     private boolean useAwsInstanceHostname = DEFAULT_USE_AWS_INSTANCE_HOSTNAME_VALUE;
 
-    private List<String> includedEvents = new ArrayList<String>();
-
     @DataBoundConstructor
     public DatadogGlobalConfiguration() {
         load(); // Load the persisted global configuration
@@ -332,8 +330,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         if(StringUtils.isNotBlank(ciVisibilityCiInstanceNameVar)) {
             this.traceServiceName = ciVisibilityCiInstanceNameVar;
         }
-
-        this.createIncludeLists();
     }
 
     /**
@@ -1351,7 +1347,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @DataBoundSetter
     public void setEmitSecurityEvents(boolean emitSecurityEvents) {
         this.emitSecurityEvents = emitSecurityEvents;
-        this.createIncludeLists();
     }
 
     /**
@@ -1369,7 +1364,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @DataBoundSetter
     public void setEmitSystemEvents(boolean emitSystemEvents) {
         this.emitSystemEvents = emitSystemEvents;
-        this.createIncludeLists();
     }
 
     /**
@@ -1385,7 +1379,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         }  
         
         this.includeEvents = events;
-        this.createIncludeLists();
     }
 
     /**
@@ -1411,7 +1404,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         }
         
         this.excludeEvents = events;
-        this.createIncludeLists();
     }
 
     /**
@@ -1422,16 +1414,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      */
     public String getExcludeEvents() {
         return excludeEvents;
-    }
-
-    /**
-     * Getter function for the included global configuration, containing
-     * a list of events to send.
-     *
-     * @return a String ArrayList containing the events included global configuration.
-     */
-    public List<String> getListOfIncludedEvents() {
-        return includedEvents;
     }
 
     /**
@@ -1500,31 +1482,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         if (stringToCompare == null || stringToCompare.isEmpty()) return false;
 
         return Arrays.asList(stringToCompare.split(",")).stream().anyMatch(firstString::contains);
-    }
-
-    /**
-     * Creates inclusion list for events by looking at toggles and inclusion/exclusion string lists
-     */
-    private void createIncludeLists() {
-        this.includedEvents = new ArrayList<String>(Arrays.asList(DEFAULT_EVENTS.split(",")));
-
-        if (this.includeEvents != null && !this.includeEvents.isEmpty()) {
-            this.includedEvents.addAll(Arrays.asList(this.includeEvents.split(",")));
-        }
-
-        if (this.emitSystemEvents) {
-            this.includedEvents.addAll(new ArrayList<String>(Arrays.asList(SYSTEM_EVENTS.split(","))));
-        }
-
-        if (this.emitSecurityEvents) {
-            this.includedEvents.addAll(new ArrayList<String>(Arrays.asList(SECURITY_EVENTS.split(","))));
-        }
-
-        this.includedEvents = this.includedEvents.stream().distinct().collect(Collectors.toList());
-
-        if (this.excludeEvents == null || this.excludeEvents.isEmpty()) return;
-
-        this.includedEvents.removeIf(this.excludeEvents::contains);
     }
 
     /**

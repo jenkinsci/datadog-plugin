@@ -420,41 +420,22 @@ public class DatadogFilteringEventsTest {
     @Test
     public void conflictingGlobalConfigsStrings() throws Exception {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
-        cfg.setEmitSecurityEvents(false);
-        cfg.setIncludeEvents("UserAuthenticated");
         environmentVariables.set("DATADOG_JENKINS_PLUGIN_EXCLUDE_EVENTS", "UserAuthenticated");
+        cfg.loadEnvVariables();
 
-        DatadogUtilities.getDatadogGlobalDescriptor().loadEnvVariables();
-
-        this.runDefaultEvents();
-        this.assertDefaultEvents();
-
-        this.runSystemEvents();
-        this.assertSystemEvents();
-        
-        this.runSecurityEvents();
-
-        assertTrue(this.client.events.size() == 14);
+        cfg.setEmitSecurityEvents(false);
+        assertThrows(InvalidAttributeValueException.class, () -> cfg.setIncludeEvents("UserAuthenticated"));
     }
 
     @Test
     public void conflictingGlobalConfigsStrings2() throws Exception {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+        environmentVariables.set("DATADOG_JENKINS_PLUGIN_INCLUDE_EVENTS", "BuildStarted,SCMCheckout");
+        cfg.loadEnvVariables();
         cfg.setEmitSecurityEvents(false);
         cfg.setEmitSystemEvents(false);
-        cfg.setExcludeEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
-        environmentVariables.set("DATADOG_JENKINS_PLUGIN_INCLUDE_EVENTS", "BuildStarted,SCMCheckout");
-
-        DatadogUtilities.getDatadogGlobalDescriptor().loadEnvVariables();
-
-        this.runDefaultEvents();
-        assertTrue(this.client.events.get(0).getEvent() instanceof BuildStartedEventImpl);
-        assertTrue(this.client.events.get(1).getEvent() instanceof SCMCheckoutCompletedEventImpl);
-
-        this.runSystemEvents();        
-        this.runSecurityEvents();
-
-        assertTrue(this.client.events.size() == 2);    
+        
+        assertThrows(InvalidAttributeValueException.class, () -> cfg.setExcludeEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS));  
     }
 
     @Test
