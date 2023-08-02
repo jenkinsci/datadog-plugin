@@ -493,7 +493,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         @QueryParameter("includeEvents") String includeEvents,
         @QueryParameter("excludeEvents") String excludeEvents
     ) {
-        return checkConfig(emitSecurityEvents, emitSystemEvents, includeEvents,
+        return validateEventFilteringConfig(emitSecurityEvents, emitSystemEvents, includeEvents,
                 excludeEvents);
     }
 
@@ -800,7 +800,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             boolean emitSystemEvents = formData.getBoolean("emitSystemEvents");
             String includeEvents = formData.getString("includeEvents");
             String excludeEvents = formData.getString("excludeEvents");
-            FormValidation configStatus = this.checkConfig(emitSecurityEvents, emitSystemEvents, includeEvents, excludeEvents);
+            FormValidation configStatus = this.validateEventFilteringConfig(emitSecurityEvents, emitSystemEvents, includeEvents, excludeEvents);
 
             if (configStatus.kind == Kind.ERROR) {
                 String message = configStatus.getMessage();
@@ -1487,7 +1487,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     /**
      * @see #doTestFilteringConfig
      */
-    private FormValidation checkConfig(boolean emitSecurityEvents, boolean emitSystemEvents,
+    private FormValidation validateEventFilteringConfig(boolean emitSecurityEvents, boolean emitSystemEvents,
             String includeEvents, String excludeEvents) {
         String commaSeparatedRegex = "((\\w+,)*\\w+)?";
         if (!includeEvents.matches(commaSeparatedRegex)) {
