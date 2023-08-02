@@ -54,6 +54,11 @@ public class DatadogSecurityListener extends SecurityListener {
     @Override
     protected void authenticated(@Nonnull UserDetails details) {
         try {
+            final boolean canSendEvent = DatadogUtilities.shouldSendEvent("UserAuthenticated");
+            if (!canSendEvent) {
+                return;
+            }
+
             // Get the list of global tags to apply
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
             // Add userId and JenkinsUrl Tags
@@ -63,10 +68,6 @@ public class DatadogSecurityListener extends SecurityListener {
             DatadogEvent event = new UserAuthenticationEventImpl(details.getUsername(),
                     UserAuthenticationEventImpl.LOGIN, tags);
 
-            final boolean canSendEvent = DatadogUtilities.shouldSendEvent(event);
-            if (!canSendEvent) {
-                return;
-            }
             logger.fine("Start DatadogSecurityListener#authenticated");
 
             // Get Datadog Client Instance
@@ -91,6 +92,11 @@ public class DatadogSecurityListener extends SecurityListener {
     @Override
     protected void failedToAuthenticate(@Nonnull String username) {
         try {
+            final boolean canSendEvent = DatadogUtilities.shouldSendEvent("UserFailedToAuthenticate");
+            if (!canSendEvent) {
+                return;
+            }
+
             // Get the list of global tags to apply
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
             // Add userId and JenkinsUrl Tags
@@ -99,10 +105,6 @@ public class DatadogSecurityListener extends SecurityListener {
 
             DatadogEvent event = new UserAuthenticationEventImpl(username, UserAuthenticationEventImpl.ACCESS_DENIED, tags);
 
-            final boolean canSendEvent = DatadogUtilities.shouldSendEvent(event);
-            if (!canSendEvent) {
-                return;
-            }
             logger.fine("Start DatadogSecurityListener#failedToAuthenticate");
 
             // Get Datadog Client Instance
@@ -137,6 +139,11 @@ public class DatadogSecurityListener extends SecurityListener {
     @Override
     protected void loggedOut(@Nonnull String username) {
         try {
+            final boolean canSendEvent = DatadogUtilities.shouldSendEvent("UserLoggedOut");
+            if (!canSendEvent) {
+                return;
+            }
+
             // Get the list of global tags to apply
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
             // Add userId and JenkinsUrl Tags
@@ -145,10 +152,6 @@ public class DatadogSecurityListener extends SecurityListener {
 
             DatadogEvent event = new UserAuthenticationEventImpl(username, UserAuthenticationEventImpl.LOGOUT, tags);
 
-            final boolean canSendEvent = DatadogUtilities.shouldSendEvent(event);
-            if (!canSendEvent) {
-                return;
-            }
             logger.fine("Start DatadogSecurityListener#loggedOut");
 
             // Get Datadog Client Instance

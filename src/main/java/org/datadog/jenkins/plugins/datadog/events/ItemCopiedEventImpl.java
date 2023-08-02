@@ -50,7 +50,5 @@ public class ItemCopiedEventImpl extends AbstractDatadogSimpleEvent {
 
         setPriority(Priority.NORMAL);
         setAlertType(AlertType.INFO);
-
-        this.eventName = "ItemCopied";
     }
 }

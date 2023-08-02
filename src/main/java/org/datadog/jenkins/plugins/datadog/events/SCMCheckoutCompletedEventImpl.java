@@ -53,7 +53,5 @@ public class SCMCheckoutCompletedEventImpl extends AbstractDatadogBuildEvent {
 
         setPriority(Priority.LOW);
         setAlertType(AlertType.SUCCESS);
-
-        this.eventName = "SCMCheckout";
     }
 }

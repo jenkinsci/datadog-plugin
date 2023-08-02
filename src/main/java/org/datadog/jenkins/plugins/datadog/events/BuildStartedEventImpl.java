@@ -55,7 +55,5 @@ public class BuildStartedEventImpl extends AbstractDatadogBuildEvent {
 
         setPriority(Priority.LOW);
         setAlertType(AlertType.INFO);
-
-        this.eventName = "BuildStarted";
     }
 }

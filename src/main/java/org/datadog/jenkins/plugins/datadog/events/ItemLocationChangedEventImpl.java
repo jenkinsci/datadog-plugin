@@ -49,7 +49,5 @@ public class ItemLocationChangedEventImpl extends AbstractDatadogSimpleEvent {
 
         setPriority(Priority.NORMAL);
         setAlertType(AlertType.INFO);
-
-        this.eventName = "ItemLocationChanged";
     }
 }

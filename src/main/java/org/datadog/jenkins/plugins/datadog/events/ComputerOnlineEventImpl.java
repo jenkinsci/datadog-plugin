@@ -53,7 +53,6 @@ public class ComputerOnlineEventImpl extends AbstractDatadogSimpleEvent {
         setAlertType(AlertType.SUCCESS);
 
         this.isTemporarily = isTemporarily;
-        this.eventName = "Computer" + (isTemporarily ? "Temporarily" : "") + "Online";
     }
 
     public boolean isTemporarily() {

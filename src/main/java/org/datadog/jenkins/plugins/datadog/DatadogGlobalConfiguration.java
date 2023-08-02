@@ -83,7 +83,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             + "ComputerOnline,ComputerOffline,ComputerTemporarilyOnline,ComputerTemporarilyOffline,"
             + "ComputerLaunchFailure,ItemCreated,ItemDeleted,ItemUpdated,ItemCopied";
     public static final String SECURITY_EVENTS = "UserAuthenticated,UserFailedToAuthenticate,UserLoggedOut";
-    public static final String CONFIG_CHANGED_EVENT = "ConfigChanged"; 
     public static final String DEFAULT_EVENTS = "BuildStarted,BuildAborted,BuildCompleted,SCMCheckout";
 
     // Standard Agent EnvVars
@@ -179,8 +178,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private boolean useAwsInstanceHostname = DEFAULT_USE_AWS_INSTANCE_HOSTNAME_VALUE;
 
     private List<String> includedEvents = new ArrayList<String>();
-    private boolean includeEventsIsEnv = false;
-    private boolean excludeEventsIsEnv = false;
 
     @DataBoundConstructor
     public DatadogGlobalConfiguration() {
@@ -294,13 +291,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         String includeEventsEnvVar = System.getenv(INCLUDE_EVENTS_PROPERTY);
         if(StringUtils.isNotBlank(includeEventsEnvVar)){
             this.includeEvents = includeEventsEnvVar;
-            this.includeEventsIsEnv = true;
         }
 
         String excludeEventsEnvVar = System.getenv(EXCLUDE_EVENTS_PROPERTY);
         if(StringUtils.isNotBlank(excludeEventsEnvVar)){
             this.excludeEvents = excludeEventsEnvVar;
-            this.excludeEventsIsEnv = true;
         }
 
         String collectBuildLogsEnvVar = System.getenv(COLLECT_BUILD_LOGS_PROPERTY);
@@ -1390,7 +1385,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         }  
         
         this.includeEvents = events;
-        this.includeEventsIsEnv = false;
         this.createIncludeLists();
     }
 
@@ -1417,7 +1411,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         }
         
         this.excludeEvents = events;
-        this.excludeEventsIsEnv = false;
         this.createIncludeLists();
     }
 
@@ -1515,9 +1508,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private void createIncludeLists() {
         this.includedEvents = new ArrayList<String>(Arrays.asList(DEFAULT_EVENTS.split(",")));
 
-        // applies exclusion first for default events
-        if (this.excludeEvents != null) this.includedEvents.removeIf(this.excludeEvents::contains);
-
         if (this.includeEvents != null && !this.includeEvents.isEmpty()) {
             this.includedEvents.addAll(Arrays.asList(this.includeEvents.split(",")));
         }
@@ -1533,9 +1523,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         this.includedEvents = this.includedEvents.stream().distinct().collect(Collectors.toList());
 
         if (this.excludeEvents == null || this.excludeEvents.isEmpty()) return;
-        
-        // no exclusion rules for included events set in env var
-        if (this.includeEventsIsEnv && !this.excludeEventsIsEnv) return;
 
         this.includedEvents.removeIf(this.excludeEvents::contains);
     }

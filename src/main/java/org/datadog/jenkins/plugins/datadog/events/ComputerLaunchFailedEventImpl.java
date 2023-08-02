@@ -49,7 +49,5 @@ public class ComputerLaunchFailedEventImpl extends AbstractDatadogSimpleEvent {
 
         setPriority(Priority.NORMAL);
         setAlertType(AlertType.ERROR);
-
-        this.eventName = "ComputerLaunchFailure";
     }
 }

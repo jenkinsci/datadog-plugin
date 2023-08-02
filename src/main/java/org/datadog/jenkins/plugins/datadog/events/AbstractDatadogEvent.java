@@ -41,7 +41,6 @@ public abstract class AbstractDatadogEvent implements DatadogEvent {
     private String aggregationKey;
     private Long date;
     private Map<String, Set<String>> tags;
-    protected String eventName;
 
     @Override
     public String getTitle() {
@@ -122,10 +121,6 @@ public abstract class AbstractDatadogEvent implements DatadogEvent {
 
     public void setTags(Map<String, Set<String>> tags) {
         this.tags = tags;
-    }
-
-    public String getEventName() {
-        return this.eventName;
     }
 
     protected String getLocationDetails(){

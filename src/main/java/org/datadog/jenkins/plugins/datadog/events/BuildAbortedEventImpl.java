@@ -51,6 +51,5 @@ public class BuildAbortedEventImpl extends AbstractDatadogBuildEvent {
 
         setPriority(Priority.LOW);
         setAlertType(AlertType.INFO);
-        this.eventName = "BuildAborted";
     }
 }
