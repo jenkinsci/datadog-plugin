@@ -216,6 +216,8 @@ To customize your global configuration, in Jenkins navigate to `Manage Jenkins -
 | Global job tags            | A comma separated list of regex to match a job and a list of tags to apply to that job. Tags can include environment variables that are defined in the master jenkins instance. **Note**: Tags can reference match groups in the regex using the `$` symbol, for example: `(.*?)_job_(*?)_release, owner:$1, release_env:$2, optional:Tag3` | `DATADOG_JENKINS_PLUGIN_GLOBAL_JOB_TAGS`      |
 | Send security audit events | Submits the `Security Events Type` of events and metrics (enabled by default).                                                                                                                                                                | `DATADOG_JENKINS_PLUGIN_EMIT_SECURITY_EVENTS` |
 | Send system events         | Submits the `System Events Type` of events and metrics (enabled by default).                                                                                                                                                                  | `DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS`   |
+| Include events to send        | A comma-separated list of event name strings that'll be sent regardless of the event type being enabled/disabled.                                                                               | `DATADOG_JENKINS_PLUGIN_INCLUDE_EVENTS`   |
+| Exclude events to send        | A comma-separated list of event name strings that'll not be sent regardless of the event type being enabled/disabled.                                                                               | `DATADOG_JENKINS_PLUGIN_EXCLUDE_EVENTS`   |
 
 ### Job customization
 
@@ -236,10 +238,10 @@ This plugin is collecting the following [events](#events), [metrics](#metrics), 
 
 | Event name      | Triggered on              | Default tags                                                              | Associated RATE metric  |
 |-----------------|---------------------------|---------------------------------------------------------------------------|-------------------------|
-| Build started   | `RunListener#onStarted`   | `branch`, `event_type`, `jenkins_url`, `job`, `node`, `user_id`           | `jenkins.job.started`   |
-| Build aborted   | `RunListener#onDeleted`   | `branch`, `event_type`, `jenkins_url`, `job`, `node`, `user_id`           | `jenkins.job.aborted`   |
-| Build completed | `RunListener#onCompleted` | `branch`, `event_type`, `jenkins_url`, `job`, `node`, `result`, `user_id` | `jenkins.job.completed` |
-| SCM checkout    | `SCMListener#onCheckout`  | `branch`, `event_type`, `jenkins_url`, `job`, `node`, `user_id`           | `jenkins.scm.checkout`  |
+| BuildStarted   | `RunListener#onStarted`   | `branch`, `event_type`, `jenkins_url`, `job`, `node`, `user_id`           | `jenkins.job.started`   |
+| BuildAborted   | `RunListener#onDeleted`   | `branch`, `event_type`, `jenkins_url`, `job`, `node`, `user_id`           | `jenkins.job.aborted`   |
+| BuildCompleted | `RunListener#onCompleted` | `branch`, `event_type`, `jenkins_url`, `job`, `node`, `result`, `user_id` | `jenkins.job.completed` |
+| SCMCheckout    | `SCMListener#onCheckout`  | `branch`, `event_type`, `jenkins_url`, `job`, `node`, `user_id`           | `jenkins.scm.checkout`  |
 
 NOTE: `event_type` is always set to `default` for above events and metrics.
 
@@ -247,17 +249,16 @@ NOTE: `event_type` is always set to `default` for above events and metrics.
 
 | Event name                   | Triggered on                            | Default tags                                                            | Associated RATE metric                 |
 |------------------------------|-----------------------------------------|-------------------------------------------------------------------------|----------------------------------------|
-| Computer Online              | `ComputerListener#onOnline`             | `event_type`, `jenkins_url`, `node_hostname`, `node_name`, `node_label` | `jenkins.computer.online`              |
-| Computer Offline             | `ComputerListener#onOffline`            | `event_type`, `jenkins_url`, `node_hostname`, `node_name`, `node_label` | `jenkins.computer.offline`             |
-| Computer TemporarilyOnline   | `ComputerListener#onTemporarilyOnline`  | `event_type`, `jenkins_url`, `node_hostname`, `node_name`, `node_label` | `jenkins.computer.temporarily_online`  |
-| Computer TemporarilyOffline  | `ComputerListener#onTemporarilyOffline` | `event_type`, `jenkins_url`, `node_hostname`, `node_name`, `node_label` | `jenkins.computer.temporarily_offline` |
-| Computer LaunchFailure       | `ComputerListener#onLaunchFailure`      | `event_type`, `jenkins_url`, `node_hostname`, `node_name`, `node_label` | `jenkins.computer.launch_failure`      |
-| Item Created                 | `ItemListener#onCreated`                | `event_type`, `jenkins_url`, `user_id`                                  | `jenkins.item.created`                 |
-| Item Deleted                 | `ItemListener#onDeleted`                | `event_type`, `jenkins_url`, `user_id`                                  | `jenkins.item.deleted`                 |
-| Item Updated                 | `ItemListener#onUpdated`                | `event_type`, `jenkins_url`, `user_id`                                  | `jenkins.item.updated`                 |
-| Item Copied                  | `ItemListener#onCopied`                 | `event_type`, `jenkins_url`, `user_id`                                  | `jenkins.item.copied`                  |
-| Item Location Changed        | `ItemListener#onLocationChanged`        | `event_type`, `jenkins_url`, `user_id`                                  | `jenkins.item.location_changed`        |
-| Config Changed               | `SaveableListener#onChange`             | `event_type`, `jenkins_url`, `user_id`                                  | `jenkins.config.changed`               |
+| ComputerOnline              | `ComputerListener#onOnline`             | `event_type`, `jenkins_url`, `node_hostname`, `node_name`, `node_label` | `jenkins.computer.online`              |
+| ComputerOffline             | `ComputerListener#onOffline`            | `event_type`, `jenkins_url`, `node_hostname`, `node_name`, `node_label` | `jenkins.computer.offline`             |
+| ComputerTemporarilyOnline   | `ComputerListener#onTemporarilyOnline`  | `event_type`, `jenkins_url`, `node_hostname`, `node_name`, `node_label` | `jenkins.computer.temporarily_online`  |
+| ComputerTemporarilyOffline  | `ComputerListener#onTemporarilyOffline` | `event_type`, `jenkins_url`, `node_hostname`, `node_name`, `node_label` | `jenkins.computer.temporarily_offline` |
+| ComputerLaunchFailure       | `ComputerListener#onLaunchFailure`      | `event_type`, `jenkins_url`, `node_hostname`, `node_name`, `node_label` | `jenkins.computer.launch_failure`      |
+| ItemCreated                 | `ItemListener#onCreated`                | `event_type`, `jenkins_url`, `user_id`                                  | `jenkins.item.created`                 |
+| ItemDeleted                 | `ItemListener#onDeleted`                | `event_type`, `jenkins_url`, `user_id`                                  | `jenkins.item.deleted`                 |
+| ItemUpdated                 | `ItemListener#onUpdated`                | `event_type`, `jenkins_url`, `user_id`                                  | `jenkins.item.updated`                 |
+| ItemCopied                  | `ItemListener#onCopied`                 | `event_type`, `jenkins_url`, `user_id`                                  | `jenkins.item.copied`                  |
+| ItemLocationChanged        | `ItemListener#onLocationChanged`        | `event_type`, `jenkins_url`, `user_id`                                  | `jenkins.item.location_changed`        |
 
 NOTE: `event_type` is always set to `system` for above events and metrics.
 
@@ -265,11 +266,22 @@ NOTE: `event_type` is always set to `system` for above events and metrics.
 
 | Event name                  | Triggered on                            | Default tags                                     | Associated RATE metric       |
 |-----------------------------|-----------------------------------------|--------------------------------------------------|------------------------------|
-| User Authenticated          | `SecurityListener#authenticated`        | `event_type`, `jenkins_url`, `user_id`           | `jenkins.user.authenticated` |
-| User failed To Authenticate | `SecurityListener#failedToAuthenticate` | `event_type`, `jenkins_url`, `user_id`           | `jenkins.user.access_denied` |
-| User loggedOut              | `SecurityListener#loggedOut`            | `event_type`, `jenkins_url`, `user_id`           | `jenkins.user.logout`        |
+| UserAuthenticated          | `SecurityListener#authenticated`        | `event_type`, `jenkins_url`, `user_id`           | `jenkins.user.authenticated` |
+| UserFailedToAuthenticate | `SecurityListener#failedToAuthenticate` | `event_type`, `jenkins_url`, `user_id`           | `jenkins.user.access_denied` |
+| UserLoggedOut              | `SecurityListener#loggedOut`            | `event_type`, `jenkins_url`, `user_id`           | `jenkins.user.logout`        |
 
 NOTE: `event_type` is always set to `security` for above events and metrics.
+
+#### Filtering events
+
+This plugin allows for events to be filtered by the event types as well as the specific event names listed
+above. To include/exclude all events of the system or security type, in the UI, uncheck the checkboxes for these events. In a groovy script, fetch the Datadog global descriptor and call either `d.setEmitSystemEvents()` or `d.setEmitSecurityEvents()`. As listed in the [environment variables](#environment-variables) section, set the environment variables for the emitting security or system events.
+
+To get more specific control over what events are sent, three configuration options are provided to allow a comma-separated include/exclude list of strings of event names. The include/exclude list has precedence over the filtering by event type. For example, `security` events can be toggled off, but including `UserAuthenticated` takes precedence, so only `UserAuthenticated` events will be sent from the `security` type. In the UI, text boxes are provided for both the included and excluded lists. In a groovy script, the 
+methods `d.setIncludeEvents()` and `d.setExcludeEvents()` taking in a comma-separated list of event names as input as well is another valid configuration method. Lastly, there are provided [environment variables](#environment-variables) for manually setting included/excluded lists.
+
+Note:
+As mentioned in the [job customization](#job-customization) section, there are job-specific toggles to send `SCMCheckout` events. If the `SCMCheckout` event is excluded globally, this toggle will have no effect.
 
 ### Metrics
 
