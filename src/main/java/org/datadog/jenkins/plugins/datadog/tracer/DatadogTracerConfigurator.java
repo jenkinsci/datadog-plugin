@@ -15,6 +15,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -40,8 +41,8 @@ public class DatadogTracerConfigurator {
 
     public Map<String, String> configure(Run<?, ?> run, Node node, Map<String, String> envs) {
         Job<?, ?> job = run.getParent();
-        DatadogTracerJobProperty<?> property = job.getProperty(DatadogTracerJobProperty.class);
-        if (property == null || !property.isOn()) {
+        DatadogTracerJobProperty<?> tracerConfig = job.getProperty(DatadogTracerJobProperty.class);
+        if (tracerConfig == null || !tracerConfig.isOn()) {
             return Collections.emptyMap();
         }
 
@@ -51,16 +52,15 @@ public class DatadogTracerConfigurator {
             }
         }
 
-        DatadogTracerJobPropertyInfo info = property.getInfo();
-        Map<String, String> variables = doConfigure(info, run, node, envs);
+        Map<String, String> variables = doConfigure(tracerConfig, run, node, envs);
         run.addAction(new ConfigureTracerAction(node, variables));
         return variables;
     }
 
-    private Map<String, String> doConfigure(DatadogTracerJobPropertyInfo info, Run<?, ?> run, Node node, Map<String, String> envs) {
+    private Map<String, String> doConfigure(DatadogTracerJobProperty<?> tracerConfig, Run<?, ?> run, Node node, Map<String, String> envs) {
         try {
             FilePath tracerFile = downloadTracer(run, node);
-            return createEnvVariables(info, node, tracerFile, envs);
+            return createEnvVariables(tracerConfig, node, tracerFile, envs);
         } catch (Exception e) {
             LOGGER.log(Level.INFO, "Error while configuring Datadog Tracer for run " + run + " and node " + node, e);
             return Collections.emptyMap();
@@ -126,7 +126,7 @@ public class DatadogTracerConfigurator {
         }
     }
 
-    private static Map<String, String> createEnvVariables(DatadogTracerJobPropertyInfo info, Node node, FilePath tracerFile, Map<String, String> envs) {
+    private static Map<String, String> createEnvVariables(DatadogTracerJobProperty<?> tracerConfig, Node node, FilePath tracerFile, Map<String, String> envs) {
         DatadogGlobalConfiguration datadogConfig = DatadogUtilities.getDatadogGlobalDescriptor();
         if (datadogConfig == null) {
             LOGGER.log(Level.INFO, "Cannot set up tracer: Datadog config not found");
@@ -136,7 +136,7 @@ public class DatadogTracerConfigurator {
         Map<String, String> variables = new HashMap<>();
         variables.put("DD_CIVISIBILITY_ENABLED", "true");
         variables.put("DD_ENV", "ci");
-        variables.put("DD_SERVICE", info.getServiceName());
+        variables.put("DD_SERVICE", tracerConfig.getServiceName());
 
         String tracerAgent = "-javaagent:" + tracerFile.getRemote();
         variables.put("MAVEN_OPTS", prepend(envs, "MAVEN_OPTS", tracerAgent));
@@ -163,8 +163,12 @@ public class DatadogTracerConfigurator {
             variables.put("JAVA_TOOL_OPTIONS", prepend(envs, "JAVA_TOOL_OPTIONS", proxyConfiguration));
         }
 
-        // FIXME nikita: consider adding fields for additional tracer properties to config section (DatadogTracerJobPropertyInfo)
-        //    see http://localhost:8080/computer/(built-in)/configure - Node Properties - Environment Variable for an example of dynamic list
+        List<DatadogTracerJobProperty.DatadogTracerEnvironmentProperty> additionalVariables = tracerConfig.getAdditionalVariables();
+        if (additionalVariables != null) {
+            for (DatadogTracerJobProperty.DatadogTracerEnvironmentProperty additionalVariable : additionalVariables) {
+                variables.put(additionalVariable.getName(), additionalVariable.getValue());
+            }
+        }
 
         // FIXME nikita: see if I can maybe group Tagging and Test Visibility settings in one Datadog section
 
