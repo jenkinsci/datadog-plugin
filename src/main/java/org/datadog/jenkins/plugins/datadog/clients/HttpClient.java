@@ -1,5 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.clients;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +12,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
@@ -26,6 +29,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -152,7 +156,7 @@ public class HttpClient {
                         return false;
                     }
                 }
-                return true;
+                return super.matches(origin);
             }
         });
     }
@@ -180,6 +184,24 @@ public class HttpClient {
                 requestSupplier(url, HttpMethod.GET, headers, null, null),
                 retryPolicyFactory.create(),
                 responseParser);
+    }
+
+    public void getBinary(String url, Map<String, String> headers, Consumer<InputStream> responseParser) throws ExecutionException, InterruptedException, TimeoutException, IOException {
+        ensureProxyConfiguration();
+
+        Request request = requestSupplier(url, HttpMethod.GET, headers, null, null).get();
+        InputStreamResponseListener responseListener = new InputStreamResponseListener();
+        request.send(responseListener);
+
+        Response response = responseListener.get(timeoutMillis, TimeUnit.MILLISECONDS);
+        int responseStatus = response.getStatus();
+        if (responseStatus >= 200 && responseStatus < 300) {
+            try (InputStream responseStream = responseListener.getInputStream()) {
+                responseParser.accept(responseStream);
+            }
+        } else {
+            throw new ResponseProcessingException("Received erroneous response " + response);
+        }
     }
 
     public <T> T post(String url, Map<String, String> headers, String contentType, byte[] body, Function<String, T> responseParser) throws ExecutionException, InterruptedException, TimeoutException {

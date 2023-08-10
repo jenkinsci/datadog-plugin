@@ -1,0 +1,15 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:u="/util">
+
+    <f:optionalBlock name="on"
+                     field="on"
+                     title="Enable Datadog Test Visibility"
+                     checked="${instance != null and instance.on}"
+                     inline="true">
+
+        <f:property field="info"/>
+
+    </f:optionalBlock>
+
+</j:jelly>
+
