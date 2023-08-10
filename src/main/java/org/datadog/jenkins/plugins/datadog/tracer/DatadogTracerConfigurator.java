@@ -15,7 +15,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -32,6 +31,7 @@ public class DatadogTracerConfigurator {
 
     private static final String TRACER_DISTRIBUTION_URL = "https://dtdg.co/latest-java-tracer";
     private static final String TRACER_FILE_NAME = "dd-java-agent.jar";
+    private static final String TRACER_IGNORE_JENKINS_PROXY_ENV_VAR = "DATADOG_JENKINS_PLUGIN_TRACER_IGNORE_JENKINS_PROXY";
     private static final String TRACER_JAR_CACHE_TTL_ENV_VAR = "DATADOG_JENKINS_PLUGIN_TRACER_JAR_CACHE_TTL_MINUTES";
     private static final int DEFAULT_TRACER_JAR_CACHE_TTL_MINUTES = 60 * 12;
 
@@ -52,22 +52,32 @@ public class DatadogTracerConfigurator {
             }
         }
 
-        Map<String, String> variables = doConfigure(tracerConfig, run, node, envs);
+        DatadogGlobalConfiguration datadogConfig = DatadogUtilities.getDatadogGlobalDescriptor();
+        if (datadogConfig == null) {
+            LOGGER.log(Level.INFO, "Cannot set up tracer: Datadog config not found");
+            return Collections.emptyMap();
+        }
+
+        Map<String, String> variables = doConfigure(datadogConfig, tracerConfig, run, node, envs);
         run.addAction(new ConfigureTracerAction(node, variables));
         return variables;
     }
 
-    private Map<String, String> doConfigure(DatadogTracerJobProperty<?> tracerConfig, Run<?, ?> run, Node node, Map<String, String> envs) {
+    private Map<String, String> doConfigure(DatadogGlobalConfiguration datadogConfig,
+                                            DatadogTracerJobProperty<?> tracerConfig,
+                                            Run<?, ?> run,
+                                            Node node,
+                                            Map<String, String> envs) {
         try {
-            FilePath tracerFile = downloadTracer(run, node);
-            return createEnvVariables(tracerConfig, node, tracerFile, envs);
+            FilePath tracerFile = downloadTracer(tracerConfig, run, node);
+            return createEnvVariables(datadogConfig, tracerConfig, node, tracerFile, envs);
         } catch (Exception e) {
             LOGGER.log(Level.INFO, "Error while configuring Datadog Tracer for run " + run + " and node " + node, e);
             return Collections.emptyMap();
         }
     }
 
-    private FilePath downloadTracer(Run<?, ?> run, Node node) throws Exception {
+    private FilePath downloadTracer(DatadogTracerJobProperty<?> tracerConfig, Run<?, ?> run, Node node) throws Exception {
         TopLevelItem topLevelItem = getTopLevelItem(run);
         FilePath workspacePath = node.getWorkspaceFor(topLevelItem);
         if (workspacePath == null) {
@@ -79,7 +89,7 @@ public class DatadogTracerConfigurator {
 
         FilePath datadogTracerFile = datadogFolder.child(TRACER_FILE_NAME);
         long minutesSinceModification = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - datadogTracerFile.lastModified());
-        if (minutesSinceModification < getTracerJarCacheTtlMinutes()) {
+        if (minutesSinceModification < getTracerJarCacheTtlMinutes(tracerConfig)) {
             // downloaded tracer is fresh enough
             return datadogTracerFile.absolutize();
         }
@@ -93,18 +103,6 @@ public class DatadogTracerConfigurator {
         });
 
         return datadogTracerFile.absolutize();
-    }
-
-    private int getTracerJarCacheTtlMinutes() {
-        String envVariable = System.getenv(TRACER_JAR_CACHE_TTL_ENV_VAR);
-        if (envVariable != null) {
-            try {
-                return Integer.parseInt(envVariable);
-            } catch (Exception e) {
-                // ignored
-            }
-        }
-        return DEFAULT_TRACER_JAR_CACHE_TTL_MINUTES;
     }
 
     private static TopLevelItem getTopLevelItem(Run<?, ?> run) {
@@ -126,13 +124,36 @@ public class DatadogTracerConfigurator {
         }
     }
 
-    private static Map<String, String> createEnvVariables(DatadogTracerJobProperty<?> tracerConfig, Node node, FilePath tracerFile, Map<String, String> envs) {
-        DatadogGlobalConfiguration datadogConfig = DatadogUtilities.getDatadogGlobalDescriptor();
-        if (datadogConfig == null) {
-            LOGGER.log(Level.INFO, "Cannot set up tracer: Datadog config not found");
-            return Collections.emptyMap();
+    private int getTracerJarCacheTtlMinutes(DatadogTracerJobProperty<?> tracerConfig) {
+        Map<String, String> additionalVariables = tracerConfig.getAdditionalVariables();
+        if (additionalVariables != null) {
+            String envVariable = additionalVariables.get(TRACER_JAR_CACHE_TTL_ENV_VAR);
+            if (envVariable != null) {
+                try {
+                    return Integer.parseInt(envVariable);
+                } catch (Exception e) {
+                    // ignored
+                }
+            }
         }
 
+        String envVariable = System.getenv(TRACER_JAR_CACHE_TTL_ENV_VAR);
+        if (envVariable != null) {
+            try {
+                return Integer.parseInt(envVariable);
+            } catch (Exception e) {
+                // ignored
+            }
+        }
+
+        return DEFAULT_TRACER_JAR_CACHE_TTL_MINUTES;
+    }
+
+    private static Map<String, String> createEnvVariables(DatadogGlobalConfiguration datadogConfig,
+                                                          DatadogTracerJobProperty<?> tracerConfig,
+                                                          Node node,
+                                                          FilePath tracerFile,
+                                                          Map<String, String> envs) {
         Map<String, String> variables = new HashMap<>();
         variables.put("DD_CIVISIBILITY_ENABLED", "true");
         variables.put("DD_ENV", "ci");
@@ -158,19 +179,15 @@ public class DatadogTracerConfigurator {
                 throw new IllegalArgumentException("Unexpected client type: " + clientType);
         }
 
-        String proxyConfiguration = getProxyConfiguration(node);
+        String proxyConfiguration = getProxyConfiguration(tracerConfig, node);
         if (proxyConfiguration != null) {
             variables.put("JAVA_TOOL_OPTIONS", prepend(envs, "JAVA_TOOL_OPTIONS", proxyConfiguration));
         }
 
-        List<DatadogTracerJobProperty.DatadogTracerEnvironmentProperty> additionalVariables = tracerConfig.getAdditionalVariables();
+        Map<String, String> additionalVariables = tracerConfig.getAdditionalVariables();
         if (additionalVariables != null) {
-            for (DatadogTracerJobProperty.DatadogTracerEnvironmentProperty additionalVariable : additionalVariables) {
-                variables.put(additionalVariable.getName(), additionalVariable.getValue());
-            }
+            variables.putAll(additionalVariables);
         }
-
-        // FIXME nikita: see if I can maybe group Tagging and Test Visibility settings in one Datadog section
 
         return variables;
     }
@@ -206,7 +223,7 @@ public class DatadogTracerConfigurator {
         }
     }
 
-    private static String getProxyConfiguration(Node node) {
+    private static String getProxyConfiguration(DatadogTracerJobProperty<?> tracerConfig, Node node) {
         if (!(node instanceof Jenkins)) {
             // only apply Jenkins proxy settings if tracer will be run on master node
             return null;
@@ -218,6 +235,11 @@ public class DatadogTracerConfigurator {
         }
         hudson.ProxyConfiguration jenkinsProxyConfiguration = jenkins.getProxy();
         if (jenkinsProxyConfiguration == null) {
+            return null;
+        }
+
+        Map<String, String> additionalVariables = tracerConfig.getAdditionalVariables();
+        if (Boolean.parseBoolean(additionalVariables.get(TRACER_IGNORE_JENKINS_PROXY_ENV_VAR))) {
             return null;
         }
 
@@ -255,5 +277,4 @@ public class DatadogTracerConfigurator {
             this.variables = variables;
         }
     }
-
 }

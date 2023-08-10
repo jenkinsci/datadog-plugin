@@ -18,7 +18,7 @@
                 <div width="100%">
 
                     <f:entry title="Name">
-                        <f:textbox name="additionalVariable.name" value="${additionalVariable.name}"/>
+                        <f:textbox name="additionalVariable.key" value="${additionalVariable.key}"/>
                     </f:entry>
 
                     <f:entry title="Value">

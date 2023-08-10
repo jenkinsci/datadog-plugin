@@ -7,7 +7,9 @@ import hudson.model.Job;
 import hudson.model.JobProperty;
 import hudson.model.JobPropertyDescriptor;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
@@ -18,9 +20,9 @@ public class DatadogTracerJobProperty<T extends Job<?, ?>> extends JobProperty<T
 
     private final boolean on;
     private final String serviceName;
-    private final List<DatadogTracerEnvironmentProperty> additionalVariables;
+    private final Map<String, String> additionalVariables;
 
-    public DatadogTracerJobProperty(boolean on, String serviceName, List<DatadogTracerEnvironmentProperty> additionalVariables) {
+    public DatadogTracerJobProperty(boolean on, String serviceName, Map<String, String> additionalVariables) {
         this.on = on;
         this.serviceName = serviceName;
         this.additionalVariables = additionalVariables;
@@ -34,12 +36,13 @@ public class DatadogTracerJobProperty<T extends Job<?, ?>> extends JobProperty<T
         return serviceName;
     }
 
-    public List<DatadogTracerEnvironmentProperty> getAdditionalVariables() {
+    public Map<String, String> getAdditionalVariables() {
         return additionalVariables;
     }
 
     @Extension
     public static final class DatadogTracerJobPropertyDescriptor extends JobPropertyDescriptor {
+        @NonNull
         @Override
         public String getDisplayName() {
             return DISPLAY_NAME;
@@ -51,14 +54,20 @@ public class DatadogTracerJobProperty<T extends Job<?, ?>> extends JobProperty<T
         }
 
         @Override
-        public DatadogTracerJobProperty newInstance(StaplerRequest req, JSONObject formData) {
+        public DatadogTracerJobProperty<?> newInstance(StaplerRequest req, JSONObject formData) {
             if (!formData.optBoolean("on")) {
                 return null;
             }
 
             String serviceName = formData.getString("serviceName");
-            List<DatadogTracerEnvironmentProperty> additionalVariables = req.bindJSONToList(DatadogTracerEnvironmentProperty.class, formData.get("additionalVariable"));
-            return new DatadogTracerJobProperty(true, serviceName, additionalVariables);
+
+            Map<String, String> additionalVariables = new HashMap<>();
+            List<DatadogTracerEnvironmentProperty> additionalVariablesList = req.bindJSONToList(DatadogTracerEnvironmentProperty.class, formData.get("additionalVariable"));
+            for (DatadogTracerEnvironmentProperty additionalVariable : additionalVariablesList) {
+                additionalVariables.put(additionalVariable.getName(), additionalVariable.getValue());
+            }
+
+            return new DatadogTracerJobProperty<>(true, serviceName, additionalVariables);
         }
     }
 
