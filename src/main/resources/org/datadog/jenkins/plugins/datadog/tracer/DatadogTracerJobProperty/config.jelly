@@ -8,7 +8,7 @@
                      inline="true">
 
         <f:entry field="serviceName" title="Service Name">
-            <f:textbox field="serviceName" optional="false" default="${serviceName}"/>
+            <f:textbox field="serviceName" default="${serviceName}" optional="false" clazz="required"/>
         </f:entry>
 
         <f:entry title="Additional Settings (Optional)"
