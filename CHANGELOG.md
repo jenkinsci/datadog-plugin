@@ -1,5 +1,12 @@
 Changes
 =======
+
+## 5.4.2 / 2023-07-12
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.4.1...datadog-5.4.2
+
+* [Fixed] Fix [CVE-2023-37944](https://www.jenkins.io/security/advisory/2023-07-12/#SECURITY-3130) and require Overall/Administer permission to access the affected HTTP endpoint. See [#350](https://github.com/jenkinsci/datadog-plugin/pull/350).
+
 ## 5.4.1 / 2023-05-24
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.4.0...datadog-5.4.1
