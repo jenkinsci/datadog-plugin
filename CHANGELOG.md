@@ -1,6 +1,19 @@
 Changes
 =======
 
+## 5.5.0 / 2023-08-22
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.4.2...datadog-5.5.0
+
+***Added***:
+
+* Add option to use AWS instance ID as hostname. See [#345](https://github.com/jenkinsci/datadog-plugin/pull/345).
+
+***Fixed***:
+
+* Fix error status propagation to take into account catch/catchError/warnError blocks. See [#343](https://github.com/jenkinsci/datadog-plugin/pull/343).
+* Look up hostname from controller environment. See [#340](https://github.com/jenkinsci/datadog-plugin/pull/340). Thanks [Vlatombe](https://github.com/Vlatombe).
+
 ## 5.4.2 / 2023-07-12
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.4.1...datadog-5.4.2
