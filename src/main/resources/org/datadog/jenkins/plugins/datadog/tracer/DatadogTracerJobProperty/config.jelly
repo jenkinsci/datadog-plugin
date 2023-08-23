@@ -11,6 +11,10 @@
             <f:textbox field="serviceName" default="${serviceName}" optional="false" clazz="required"/>
         </f:entry>
 
+        <f:entry field="languages" title="Languages">
+            <f:enumSet field="languages" default="${languages}"/>
+        </f:entry>
+
         <f:entry title="Additional Settings (Optional)"
              help="/descriptor/org.datadog.jenkins.plugins.datadog.tracer.DatadogTracerJobProperty/help/additionalVariables">
 

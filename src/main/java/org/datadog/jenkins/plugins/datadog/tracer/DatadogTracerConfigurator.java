@@ -13,31 +13,31 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
 
 public class DatadogTracerConfigurator {
 
     private static final Logger LOGGER = Logger.getLogger(DatadogTracerConfigurator.class.getName());
 
-    private static final String TRACER_DISTRIBUTION_URL = "https://dtdg.co/latest-java-tracer";
-    private static final String TRACER_FILE_NAME = "dd-java-agent.jar";
-    private static final String TRACER_IGNORE_JENKINS_PROXY_ENV_VAR = "DATADOG_JENKINS_PLUGIN_TRACER_IGNORE_JENKINS_PROXY";
-    private static final String TRACER_JAR_CACHE_TTL_ENV_VAR = "DATADOG_JENKINS_PLUGIN_TRACER_JAR_CACHE_TTL_MINUTES";
-    private static final int DEFAULT_TRACER_JAR_CACHE_TTL_MINUTES = 60 * 12;
-
-    private final HttpClient httpClient = new HttpClient(60_000);
+    private final Map<TracerLanguage, TracerConfigurator> configurators;
 
     public static final DatadogTracerConfigurator INSTANCE = new DatadogTracerConfigurator();
+
+    public DatadogTracerConfigurator() {
+        configurators = new EnumMap<>(TracerLanguage.class);
+        configurators.put(TracerLanguage.JAVA, new JavaConfigurator());
+        configurators.put(TracerLanguage.JAVASCRIPT, new JavascriptConfigurator());
+        configurators.put(TracerLanguage.PYTHON, new PythonConfigurator());
+    }
 
     public Map<String, String> configure(Run<?, ?> run, Node node, Map<String, String> envs) {
         Job<?, ?> job = run.getParent();
@@ -46,8 +46,9 @@ public class DatadogTracerConfigurator {
             return Collections.emptyMap();
         }
 
+        Collection<TracerLanguage> languages = tracerConfig.getLanguages();
         for (ConfigureTracerAction action : run.getActions(ConfigureTracerAction.class)) {
-            if (action.node == node) {
+            if (action.node == node && languages.equals(action.languages)) {
                 return action.variables;
             }
         }
@@ -58,51 +59,30 @@ public class DatadogTracerConfigurator {
             return Collections.emptyMap();
         }
 
-        Map<String, String> variables = doConfigure(datadogConfig, tracerConfig, run, node, envs);
-        run.addAction(new ConfigureTracerAction(node, variables));
-        return variables;
-    }
-
-    private Map<String, String> doConfigure(DatadogGlobalConfiguration datadogConfig,
-                                            DatadogTracerJobProperty<?> tracerConfig,
-                                            Run<?, ?> run,
-                                            Node node,
-                                            Map<String, String> envs) {
-        try {
-            FilePath tracerFile = downloadTracer(tracerConfig, run, node);
-            return createEnvVariables(datadogConfig, tracerConfig, node, tracerFile, envs);
-        } catch (Exception e) {
-            LOGGER.log(Level.INFO, "Error while configuring Datadog Tracer for run " + run + " and node " + node, e);
-            return Collections.emptyMap();
-        }
-    }
-
-    private FilePath downloadTracer(DatadogTracerJobProperty<?> tracerConfig, Run<?, ?> run, Node node) throws Exception {
         TopLevelItem topLevelItem = getTopLevelItem(run);
         FilePath workspacePath = node.getWorkspaceFor(topLevelItem);
         if (workspacePath == null) {
             throw new IllegalStateException("Cannot find workspace path for " + topLevelItem + " on " + node);
         }
 
-        FilePath datadogFolder = workspacePath.child(".datadog");
-        datadogFolder.mkdirs();
-
-        FilePath datadogTracerFile = datadogFolder.child(TRACER_FILE_NAME);
-        long minutesSinceModification = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - datadogTracerFile.lastModified());
-        if (minutesSinceModification < getTracerJarCacheTtlMinutes(tracerConfig)) {
-            // downloaded tracer is fresh enough
-            return datadogTracerFile.absolutize();
-        }
-
-        httpClient.getBinary(TRACER_DISTRIBUTION_URL, Collections.emptyMap(), is -> {
-            try {
-                datadogTracerFile.copyFrom(is);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+        Map<String, String> variables = new HashMap<>(getCommonEnvVariables(datadogConfig, tracerConfig));
+        for (TracerLanguage language : languages) {
+            TracerConfigurator tracerConfigurator = configurators.get(language);
+            if (tracerConfigurator == null) {
+                LOGGER.log(Level.INFO, "Cannot find tracer configurator for " + language);
+                continue;
             }
-        });
 
-        return datadogTracerFile.absolutize();
+            try {
+                Map<String, String> languageVariables = tracerConfigurator.configure(tracerConfig, node, workspacePath, envs);
+                variables.putAll(languageVariables);
+            } catch (Exception e) {
+                LOGGER.log(Level.INFO, "Error while configuring " + language + " Datadog Tracer for run " + run + " and node " + node, e);
+                return Collections.emptyMap();
+            }
+        }
+        run.addAction(new ConfigureTracerAction(node, languages, variables));
+        return variables;
     }
 
     private static TopLevelItem getTopLevelItem(Run<?, ?> run) {
@@ -124,44 +104,12 @@ public class DatadogTracerConfigurator {
         }
     }
 
-    private int getTracerJarCacheTtlMinutes(DatadogTracerJobProperty<?> tracerConfig) {
-        Map<String, String> additionalVariables = tracerConfig.getAdditionalVariables();
-        if (additionalVariables != null) {
-            String envVariable = additionalVariables.get(TRACER_JAR_CACHE_TTL_ENV_VAR);
-            if (envVariable != null) {
-                try {
-                    return Integer.parseInt(envVariable);
-                } catch (Exception e) {
-                    // ignored
-                }
-            }
-        }
-
-        String envVariable = System.getenv(TRACER_JAR_CACHE_TTL_ENV_VAR);
-        if (envVariable != null) {
-            try {
-                return Integer.parseInt(envVariable);
-            } catch (Exception e) {
-                // ignored
-            }
-        }
-
-        return DEFAULT_TRACER_JAR_CACHE_TTL_MINUTES;
-    }
-
-    private static Map<String, String> createEnvVariables(DatadogGlobalConfiguration datadogConfig,
-                                                          DatadogTracerJobProperty<?> tracerConfig,
-                                                          Node node,
-                                                          FilePath tracerFile,
-                                                          Map<String, String> envs) {
+    private static Map<String, String> getCommonEnvVariables(DatadogGlobalConfiguration datadogConfig,
+                                                             DatadogTracerJobProperty<?> tracerConfig) {
         Map<String, String> variables = new HashMap<>();
         variables.put("DD_CIVISIBILITY_ENABLED", "true");
         variables.put("DD_ENV", "ci");
         variables.put("DD_SERVICE", tracerConfig.getServiceName());
-
-        String tracerAgent = "-javaagent:" + tracerFile.getRemote();
-        variables.put("MAVEN_OPTS", prepend(envs, "MAVEN_OPTS", tracerAgent));
-        variables.put("GRADLE_OPTS", prepend(envs, "GRADLE_OPTS", "-Dorg.gradle.jvmargs=" + tracerAgent));
 
         DatadogClient.ClientType clientType = DatadogClient.ClientType.valueOf(datadogConfig.getReportWith());
         switch (clientType) {
@@ -179,22 +127,12 @@ public class DatadogTracerConfigurator {
                 throw new IllegalArgumentException("Unexpected client type: " + clientType);
         }
 
-        String proxyConfiguration = getProxyConfiguration(tracerConfig, node);
-        if (proxyConfiguration != null) {
-            variables.put("JAVA_TOOL_OPTIONS", prepend(envs, "JAVA_TOOL_OPTIONS", proxyConfiguration));
-        }
-
         Map<String, String> additionalVariables = tracerConfig.getAdditionalVariables();
         if (additionalVariables != null) {
             variables.putAll(additionalVariables);
         }
 
         return variables;
-    }
-
-    private static String prepend(Map<String, String> envs, String propertyName, String propertyValue) {
-        String existingPropertyValue = envs.get(propertyName);
-        return propertyValue + (existingPropertyValue != null ? " " + existingPropertyValue : "");
     }
 
     private static String getSite(String apiUrl) {
@@ -223,57 +161,14 @@ public class DatadogTracerConfigurator {
         }
     }
 
-    private static String getProxyConfiguration(DatadogTracerJobProperty<?> tracerConfig, Node node) {
-        if (!(node instanceof Jenkins)) {
-            // only apply Jenkins proxy settings if tracer will be run on master node
-            return null;
-        }
-
-        Jenkins jenkins = Jenkins.getInstanceOrNull();
-        if (jenkins == null) {
-            return null;
-        }
-        hudson.ProxyConfiguration jenkinsProxyConfiguration = jenkins.getProxy();
-        if (jenkinsProxyConfiguration == null) {
-            return null;
-        }
-
-        Map<String, String> additionalVariables = tracerConfig.getAdditionalVariables();
-        if (Boolean.parseBoolean(additionalVariables.get(TRACER_IGNORE_JENKINS_PROXY_ENV_VAR))) {
-            return null;
-        }
-
-        String proxyHost = jenkinsProxyConfiguration.getName();
-        int proxyPort = jenkinsProxyConfiguration.getPort();
-        String noProxyHost = jenkinsProxyConfiguration.getNoProxyHost();
-        String userName = jenkinsProxyConfiguration.getUserName();
-        Secret password = jenkinsProxyConfiguration.getSecretPassword();
-
-        StringBuilder proxyOptions = new StringBuilder();
-        if (proxyHost != null) {
-            proxyOptions.append("-Dhttp.proxyHost=").append(proxyHost);
-        }
-        if (proxyPort > 0) {
-            proxyOptions.append("-Dhttp.proxyPort=").append(proxyPort);
-        }
-        if (noProxyHost != null) {
-            proxyOptions.append("-Dhttp.nonProxyHosts=").append(noProxyHost);
-        }
-        if (userName != null) {
-            proxyOptions.append("-Dhttp.proxyUser=").append(userName);
-        }
-        if (password != null) {
-            proxyOptions.append("-Dhttp.proxyPassword=").append(Secret.toString(password));
-        }
-        return proxyOptions.length() > 0 ? proxyOptions.toString() : null;
-    }
-
     private static final class ConfigureTracerAction extends InvisibleAction {
         private final Node node;
+        private final Collection<TracerLanguage> languages;
         private final Map<String, String> variables;
 
-        private ConfigureTracerAction(Node node, Map<String, String> variables) {
+        private ConfigureTracerAction(Node node, Collection<TracerLanguage> languages, Map<String, String> variables) {
             this.node = node;
+            this.languages = languages;
             this.variables = variables;
         }
     }
