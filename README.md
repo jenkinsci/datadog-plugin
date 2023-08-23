@@ -234,8 +234,6 @@ Before enabling Test Visibility, be sure to properly configure the plugin to sub
 
 To enable Test Visibility, go to the `Configure` page of the job or pipeline whose tests need to be traced, tick `Enable Datadog Test Visibility` checkbox in the `General` section and save your changes. 
 
-Once Test Visibility is enabled, any Maven or Gradle build that the job or pipeline executes will be traced. 
-
 ## Data collected
 
 This plugin is collecting the following [events](#events), [metrics](#metrics), and [service checks](#service-checks):
