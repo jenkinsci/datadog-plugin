@@ -220,7 +220,7 @@ public class HttpClient {
                 response = request.send();
 
             } catch (TimeoutException | ExecutionException e) {
-                if (retryPolicy.shouldRetry(e, null)) {
+                if (retryPolicy.shouldRetry(null)) {
                     Thread.sleep(retryPolicy.backoff());
                     continue;
                 } else {
@@ -238,7 +238,7 @@ public class HttpClient {
                 return responseParser.apply(content);
 
             } else {
-                if (retryPolicy.shouldRetry(null, response)) {
+                if (retryPolicy.shouldRetry(response)) {
                     Thread.sleep(retryPolicy.backoff());
                     continue;
                 }
@@ -287,11 +287,11 @@ public class HttpClient {
                     return;
                 }
 
-                Throwable failure = result.getFailure();
-                if (retryPolicy.shouldRetry(failure, response)) {
+                if (retryPolicy.shouldRetry(response)) {
                     Thread.sleep(retryPolicy.backoff());
                     requestSupplier.get().send(this);
                 } else {
+                    Throwable failure = result.getFailure();
                     DatadogUtilities.severe(logger, failure, "HTTP request failed: " + result.getRequest() + ", response: " + response);
                 }
 

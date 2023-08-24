@@ -56,13 +56,13 @@ public class HttpRetryPolicy {
     this.delayFactor = delayFactor;
   }
 
-  public boolean shouldRetry(@Nullable Throwable failure, @Nullable Response response) {
+  public boolean shouldRetry(@Nullable Response response) {
     if (retriesLeft == 0) {
       return false;
     }
 
     int responseCode = response != null ? response.getStatus() : NO_RESPONSE_RECEIVED;
-    if (failure != null || responseCode >= 500 || responseCode == NO_RESPONSE_RECEIVED) {
+    if (responseCode >= 500 || responseCode == NO_RESPONSE_RECEIVED) {
       retriesLeft--;
       return true;
 
