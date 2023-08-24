@@ -56,13 +56,17 @@ public class HttpRetryPolicy {
     this.delayFactor = delayFactor;
   }
 
-  public boolean shouldRetry(@Nullable Response response) {
+  public boolean shouldRetry(@Nullable Throwable failure, @Nullable Response response) {
     if (retriesLeft == 0) {
       return false;
     }
 
     int responseCode = response != null ? response.getStatus() : NO_RESPONSE_RECEIVED;
-    if (responseCode == TOO_MANY_REQUESTS_HTTP_CODE) {
+    if (failure != null || responseCode >= 500 || responseCode == NO_RESPONSE_RECEIVED) {
+      retriesLeft--;
+      return true;
+
+    } else if (responseCode == TOO_MANY_REQUESTS_HTTP_CODE) {
       long waitTimeSeconds = getRateLimitResetTime(response);
       if (waitTimeSeconds == RATE_LIMIT_RESET_TIME_UNDEFINED) {
         retriesLeft--; // doing a regular retry if proper reset time was not provided
@@ -77,10 +81,6 @@ public class HttpRetryPolicy {
       delay =
           TimeUnit.SECONDS.toMillis(waitTimeSeconds)
               + ThreadLocalRandom.current().nextInt(RATE_LIMIT_DELAY_RANDOM_COMPONENT_MAX_MILLIS);
-      return true;
-
-    } else if (responseCode >= 500 || responseCode == NO_RESPONSE_RECEIVED) {
-      retriesLeft--;
       return true;
 
     } else {

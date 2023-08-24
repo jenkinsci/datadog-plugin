@@ -218,8 +218,9 @@ public class HttpClient {
             try {
                 Request request = requestSupplier.get();
                 response = request.send();
+
             } catch (TimeoutException | ExecutionException e) {
-                if (retryPolicy.shouldRetry(null)) {
+                if (retryPolicy.shouldRetry(e, null)) {
                     Thread.sleep(retryPolicy.backoff());
                     continue;
                 } else {
@@ -237,7 +238,7 @@ public class HttpClient {
                 return responseParser.apply(content);
 
             } else {
-                if (retryPolicy.shouldRetry(response)) {
+                if (retryPolicy.shouldRetry(null, response)) {
                     Thread.sleep(retryPolicy.backoff());
                     continue;
                 }
@@ -279,16 +280,6 @@ public class HttpClient {
         @Override
         public void onComplete(Result result) {
             try {
-                Throwable failure = result.getFailure();
-                if (failure != null) {
-                    if (retryPolicy.shouldRetry(null)) {
-                        Thread.sleep(retryPolicy.backoff());
-                        requestSupplier.get().send(this);
-                    } else {
-                        DatadogUtilities.severe(logger, failure, "HTTP request failed: " + result.getRequest());
-                    }
-                }
-
                 Response response = result.getResponse();
                 int responseCode = response != null ? response.getStatus() : -1;
                 if (responseCode > 0 && responseCode < 400) {
@@ -296,11 +287,12 @@ public class HttpClient {
                     return;
                 }
 
-                if (retryPolicy.shouldRetry(response)) {
+                Throwable failure = result.getFailure();
+                if (retryPolicy.shouldRetry(failure, response)) {
                     Thread.sleep(retryPolicy.backoff());
                     requestSupplier.get().send(this);
                 } else {
-                    DatadogUtilities.severe(logger, null, "HTTP request failed: " + result.getRequest() + ", response: " + response);
+                    DatadogUtilities.severe(logger, failure, "HTTP request failed: " + result.getRequest() + ", response: " + response);
                 }
 
             } catch (InterruptedException e) {
