@@ -36,6 +36,8 @@ public class UserAuthenticationEventImpl extends AbstractDatadogSimpleEvent {
     public final static String ACCESS_DENIED = "failed to authenticate";
     public final static String LOGOUT = "logout";
 
+    private String action;
+
     public UserAuthenticationEventImpl(String username, String action, Map<String, Set<String>> tags) {
         super(tags);
         // Overriding tags set in parent class
@@ -62,6 +64,11 @@ public class UserAuthenticationEventImpl extends AbstractDatadogSimpleEvent {
             setPriority(Priority.NORMAL);
             setAlertType(AlertType.ERROR);
         }
+
+        this.action = action;
     }
 
+    public String getAction() {
+        return this.action;
+    }
 }

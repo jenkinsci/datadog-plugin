@@ -60,15 +60,8 @@ public class DatadogComputerListener extends ComputerListener {
     @Override
     public void onOnline(Computer computer, TaskListener listener) throws IOException, InterruptedException {
         try {
-            final boolean emitSystemEvents = DatadogUtilities.getDatadogGlobalDescriptor().isEmitSystemEvents();
-            if (!emitSystemEvents) {
-                return;
-            }
-            logger.fine("Start DatadogComputerListener#onOnline");
-
-            // Get Datadog Client Instance
-            DatadogClient client = ClientFactory.getClient();
-            if(client == null){
+            final boolean canSendEvent = DatadogUtilities.shouldSendEvent("ComputerOnline");
+            if (!canSendEvent) {
                 return;
             }
 
@@ -77,8 +70,17 @@ public class DatadogComputerListener extends ComputerListener {
                     DatadogUtilities.getTagsFromGlobalTags(),
                     DatadogUtilities.getComputerTags(computer));
 
-            // Send event
             DatadogEvent event = new ComputerOnlineEventImpl(computer, listener, tags, false);
+
+            logger.fine("Start DatadogComputerListener#onOnline");
+
+            // Get Datadog Client Instance
+            DatadogClient client = ClientFactory.getClient();
+            if(client == null){
+                return;
+            }
+
+            // Send event
             client.event(event);
 
             // Submit counter
@@ -94,15 +96,8 @@ public class DatadogComputerListener extends ComputerListener {
     @Override
     public void onOffline(@Nonnull Computer computer, @CheckForNull OfflineCause cause) {
         try {
-            final boolean emitSystemEvents = DatadogUtilities.getDatadogGlobalDescriptor().isEmitSystemEvents();
-            if (!emitSystemEvents) {
-                return;
-            }
-            logger.fine("Start DatadogComputerListener#onOffline");
-
-            // Get Datadog Client Instance
-            DatadogClient client = ClientFactory.getClient();
-            if(client == null){
+            final boolean canSendEvent = DatadogUtilities.shouldSendEvent("ComputerOffline");
+            if (!canSendEvent) {
                 return;
             }
 
@@ -111,8 +106,17 @@ public class DatadogComputerListener extends ComputerListener {
                     DatadogUtilities.getTagsFromGlobalTags(),
                     DatadogUtilities.getComputerTags(computer));
 
-            // Send event
             DatadogEvent event = new ComputerOfflineEventImpl(computer, cause, tags, false);
+
+            logger.fine("Start DatadogComputerListener#onOffline");
+
+            // Get Datadog Client Instance
+            DatadogClient client = ClientFactory.getClient();
+            if(client == null){
+                return;
+            }
+
+            // Send event
             client.event(event);
 
             // Submit counter
@@ -128,10 +132,18 @@ public class DatadogComputerListener extends ComputerListener {
     @Override
     public void onTemporarilyOnline(Computer computer) {
         try {
-            final boolean emitSystemEvents = DatadogUtilities.getDatadogGlobalDescriptor().isEmitSystemEvents();
-            if (!emitSystemEvents) {
+            final boolean canSendEvent = DatadogUtilities.shouldSendEvent("ComputerTemporarilyOnline");
+            if (!canSendEvent) {
                 return;
             }
+            
+            // Get the list of tags to apply
+            Map<String, Set<String>> tags = TagsUtil.merge(
+                    DatadogUtilities.getTagsFromGlobalTags(),
+                    DatadogUtilities.getComputerTags(computer));
+
+            DatadogEvent event = new ComputerOnlineEventImpl(computer, null, tags, true);
+
             logger.fine("Start DatadogComputerListener#onTemporarilyOnline");
 
             // Get Datadog Client Instance
@@ -140,13 +152,7 @@ public class DatadogComputerListener extends ComputerListener {
                 return;
             }
 
-            // Get the list of tags to apply
-            Map<String, Set<String>> tags = TagsUtil.merge(
-                    DatadogUtilities.getTagsFromGlobalTags(),
-                    DatadogUtilities.getComputerTags(computer));
-
             // Send event
-            DatadogEvent event = new ComputerOnlineEventImpl(computer, null, tags, true);
             client.event(event);
 
             // Submit counter
@@ -162,15 +168,8 @@ public class DatadogComputerListener extends ComputerListener {
     @Override
     public void onTemporarilyOffline(Computer computer, OfflineCause cause) {
         try {
-            final boolean emitSystemEvents = DatadogUtilities.getDatadogGlobalDescriptor().isEmitSystemEvents();
-            if (!emitSystemEvents) {
-                return;
-            }
-            logger.fine("Start DatadogComputerListener#onTemporarilyOffline");
-
-            // Get Datadog Client Instance
-            DatadogClient client = ClientFactory.getClient();
-            if(client == null){
+            final boolean canSendEvent = DatadogUtilities.shouldSendEvent("ComputerTemporarilyOffline");
+            if (!canSendEvent) {
                 return;
             }
 
@@ -179,8 +178,17 @@ public class DatadogComputerListener extends ComputerListener {
                     DatadogUtilities.getTagsFromGlobalTags(),
                     DatadogUtilities.getComputerTags(computer));
 
-            // Send event
             DatadogEvent event = new ComputerOfflineEventImpl(computer, cause, tags, true);
+
+            logger.fine("Start DatadogComputerListener#onTemporarilyOffline");
+
+            // Get Datadog Client Instance
+            DatadogClient client = ClientFactory.getClient();
+            if(client == null){
+                return;
+            }
+
+            // Send event
             client.event(event);
 
             // Submit counter
@@ -196,15 +204,8 @@ public class DatadogComputerListener extends ComputerListener {
     @Override
     public void onLaunchFailure(Computer computer, TaskListener taskListener) throws IOException, InterruptedException {
         try {
-            final boolean emitSystemEvents = DatadogUtilities.getDatadogGlobalDescriptor().isEmitSystemEvents();
-            if (!emitSystemEvents) {
-                return;
-            }
-            logger.fine("Start DatadogComputerListener#onLaunchFailure");
-
-            // Get Datadog Client Instance
-            DatadogClient client = ClientFactory.getClient();
-            if(client == null){
+            final boolean canSendEvent = DatadogUtilities.shouldSendEvent("ComputerLaunchFailure");
+            if (!canSendEvent) {
                 return;
             }
 
@@ -213,8 +214,17 @@ public class DatadogComputerListener extends ComputerListener {
                     DatadogUtilities.getTagsFromGlobalTags(),
                     DatadogUtilities.getComputerTags(computer));
 
-            // Send event
             DatadogEvent event = new ComputerLaunchFailedEventImpl(computer, taskListener, tags);
+
+            logger.fine("Start DatadogComputerListener#onLaunchFailure");
+
+            // Get Datadog Client Instance
+            DatadogClient client = ClientFactory.getClient();
+            if(client == null){
+                return;
+            }
+
+            // Send event
             client.event(event);
 
             // Submit counter

@@ -98,6 +98,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class DatadogUtilities {
 
@@ -1063,5 +1064,54 @@ public class DatadogUtilities {
             }
         }
         return null;
+    }
+
+    /**
+     * Checks to see if event can be sent to client
+     * @param event - the event to check
+     * @return true if event is can be sent to client
+     */
+    public static boolean shouldSendEvent(String eventName) {
+        if (getDatadogGlobalDescriptor() == null) { // sometimes null for tests, so default is to send all events
+            return true;
+        }
+
+        return createIncludeLists().contains(eventName);
+    }
+
+    /**
+     * Creates inclusion list for events by looking at toggles and inclusion/exclusion string lists
+     * @return list of event name strings that can be sent 
+     */
+    private static List<String> createIncludeLists() {
+        List<String> includedEvents = new ArrayList<String>(Arrays.asList(
+            DatadogGlobalConfiguration.DEFAULT_EVENTS.split(",")));
+
+        DatadogGlobalConfiguration cfg = getDatadogGlobalDescriptor();
+        String includeEvents = cfg.getIncludeEvents();
+        String excludeEvents = cfg.getExcludeEvents();
+
+        if (includeEvents != null && !includeEvents.isEmpty()) {
+            includedEvents.addAll(Arrays.asList(includeEvents.split(",")));
+        }
+
+        if (cfg.isEmitSystemEvents()) {
+            includedEvents.addAll(new ArrayList<String>(
+                Arrays.asList(DatadogGlobalConfiguration.SYSTEM_EVENTS.split(","))
+            ));
+        }
+
+        if (cfg.isEmitSecurityEvents()) {
+            includedEvents.addAll(new ArrayList<String>(
+                Arrays.asList(DatadogGlobalConfiguration.SECURITY_EVENTS.split(","))
+            ));
+        }
+
+        includedEvents = includedEvents.stream().distinct().collect(Collectors.toList());
+
+        if (excludeEvents != null && !excludeEvents.isEmpty()) 
+            includedEvents.removeIf(excludeEvents::contains);
+
+        return includedEvents;
     }
 }

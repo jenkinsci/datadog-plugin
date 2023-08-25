@@ -110,14 +110,30 @@
           <f:textarea field="globalJobTags" optional="true" default="${globalJobTags}" />
         </f:entry>
 
-        <f:entry title="Security Events" description="Send security events like login, logout, and login failure.">
+          <f:entry title="Security Events" description="Send security events like login, logout, and login failure.">
             <f:checkbox title="Send Security audit events" field="emitSecurityEvents" default="true" />
         </f:entry>
+
+        <f:entry title="System Events">
+          <f:entry description="Send system events like Node changes of states.">
+            <f:checkbox title="Send System events" field="emitSystemEvents" default="true" />
+          </f:entry>
+        </f:entry>
+
+        <f:entry title="Included Events" description="A comma-separated list of events that should be included. This overrides the toggle above." >
+          <f:textarea field="includeEvents" optional="true" default="${includeEvents}"/>
+        </f:entry>
+
+        <f:entry title="Excluded Events" description="A comma-separated list of events that should be excluded. This overrides the toggle above." >
+          <f:textarea field="excludeEvents" optional="true" default="${excludeEvents}"/>
+        </f:entry>
+
+        <f:validateButton title="${%Test Filtering Configuration}" progress="${%Testing...}" method="testFilteringConfig" 
+          with="emitSecurityEvents,emitSystemEvents,includeEvents,excludeEvents"/>
 
         <f:entry title="Retry Logs" description="Retry sending a log if sending to Datadog fails">
             <f:checkbox title="Retry Logs" field="retryLogs" default="true" />
         </f:entry>
-
 
         <f:entry title="Refresh Dogstatsd Client" description="Refresh Dogstatsd Client when your agent IP changes">
             <f:checkbox title="Refresh Dogstatsd Client" field="refreshDogstatsdClient" default="false" />
@@ -132,18 +148,6 @@
         <f:entry title="Cache Build Runs" description="Cache build runs when calculating pause duration">
             <f:checkbox title="Cache Build Runs" field="cacheBuildRuns" default="true" />
         </f:entry>
-
-
-        <f:entry title="System Events">
-          <f:entry description="Send system events like Node changes of states.">
-            <f:checkbox title="Send System events" field="emitSystemEvents" default="true" />
-          </f:entry>
-
-          <f:entry description="Send events on configuration changes to jobs or changes to jenkins. These events include changes by the system which may be frequent and redundant.">
-            <f:checkbox title="Send Config Change events" field="emitConfigChangeEvents" default="false"/>
-          </f:entry>
-        </f:entry>
-
     </f:advanced>
   </f:section>
 </j:jelly>

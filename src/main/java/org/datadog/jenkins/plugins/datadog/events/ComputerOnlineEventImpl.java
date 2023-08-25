@@ -34,6 +34,8 @@ import java.util.Set;
 
 public class ComputerOnlineEventImpl extends AbstractDatadogSimpleEvent {
 
+    private boolean isTemporarily;
+
     public ComputerOnlineEventImpl(Computer computer, TaskListener listener, Map<String, Set<String>> tags, boolean isTemporarily) {
         super(tags);
 
@@ -49,5 +51,11 @@ public class ComputerOnlineEventImpl extends AbstractDatadogSimpleEvent {
 
         setPriority(Priority.LOW);
         setAlertType(AlertType.SUCCESS);
+
+        this.isTemporarily = isTemporarily;
+    }
+
+    public boolean isTemporarily() {
+        return this.isTemporarily;
     }
 }
