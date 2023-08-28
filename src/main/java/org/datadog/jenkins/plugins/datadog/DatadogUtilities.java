@@ -66,6 +66,7 @@ import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
+import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
@@ -465,36 +466,23 @@ public class DatadogUtilities {
 
     public static String getAwsInstanceID() throws IOException {
         String metadataUrl = "http://169.254.169.254/latest/meta-data/instance-id";
-        HttpURLConnection conn = null;
-        String instance_id = null;
+        HttpClient client = null;
         // Make request
-        conn = getHttpURLConnection(new URL(metadataUrl), 300);
-        conn.setRequestMethod("GET");
-
-        // Get response
-        BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"));
-        StringBuilder result = new StringBuilder();
-        String line;
-        while ((line = rd.readLine()) != null) {
-            result.append(line);
-        }
-        rd.close();
-
-        // Validate
-        instance_id = result.toString();
         try {
-            if (conn.getResponseCode() == 404) {
-                logger.fine("Could not retrieve AWS instance ID");
-            }
-            conn.disconnect();
-        } catch (IOException e) {
-            logger.info("Failed to inspect HTTP response when getting AWS Instance ID");
-        }
-
-        if (instance_id.equals("")) {
+            client = new HttpClient(60_000);
+            client.get(metadataUrl, Collections.emptyMap(), result -> {
+                String instance_id = result.toString();
+                return instance_id;
+            });
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            DatadogUtilities.severe(logger, e, "Could not retrieve the AWS instance ID");
+            return null;
+        } catch (Exception e) {
+            DatadogUtilities.severe(logger, e, "Could not retrieve the AWS instance ID");
             return null;
         }
-        return instance_id;
+        return null;
     }
 
     /**
