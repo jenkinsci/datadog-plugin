@@ -1374,10 +1374,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      */
     @DataBoundSetter
     public void setIncludeEvents(String events) throws InvalidAttributeValueException {
-        if (this.isOverlappingStrings(events, this.excludeEvents)) {
-            throw new InvalidAttributeValueException("Included events and excluded events contain an overlap.");
-        }  
-        
         this.includeEvents = events;
     }
 
@@ -1399,10 +1395,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      */
     @DataBoundSetter
     public void setExcludeEvents(String events) throws InvalidAttributeValueException{
-        if (this.isOverlappingStrings(events, this.includeEvents)) {
-            throw new InvalidAttributeValueException("Included events and excluded events contain an overlap.");
-        }
-        
         this.excludeEvents = events;
     }
 
