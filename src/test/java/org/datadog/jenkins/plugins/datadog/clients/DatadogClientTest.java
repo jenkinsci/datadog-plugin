@@ -49,7 +49,7 @@ public class DatadogClientTest {
 
     @Test
     public void testHttpClientGetInstanceApiKey() {
-        //validateCongiguration throws an error when given an invalid API key when the urls are valid
+        //validateConfiguration throws an error when given an invalid API key when the urls are valid
         Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> {
             DatadogHttpClient.enableValidations = false;
             DatadogHttpClient client = (DatadogHttpClient) DatadogHttpClient.getInstance("http", "test", "test", null);
@@ -63,7 +63,7 @@ public class DatadogClientTest {
 
     @Test
     public void testHttpClientGetInstanceApiUrl() {
-        // validateCongiguration throws an error when given an invalid url
+        // validateConfiguration throws an error when given an invalid url
         Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> {
             DatadogHttpClient.enableValidations = false;
             DatadogHttpClient client = (DatadogHttpClient) DatadogHttpClient.getInstance("", null, null, null);
@@ -86,7 +86,7 @@ public class DatadogClientTest {
 
     @Test
     public void testDogstatsDClientGetInstanceTargetPort() {
-        // validateCongiguration throws an error when given an invalid port
+        // validateConfiguration throws an error when given an invalid port
         Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> {
             DatadogAgentClient.enableValidations = false;
             DatadogAgentClient client = (DatadogAgentClient) DatadogAgentClient.getInstance("test", null, null, null);

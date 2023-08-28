@@ -26,7 +26,6 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.clients;
 
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.buildHttpURL;
-import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.getHttpURLConnection;
 import static org.datadog.jenkins.plugins.datadog.transport.LoggerHttpErrorHandler.LOGGER_HTTP_ERROR_HANDLER;
 
 import com.timgroup.statsd.Event;
@@ -35,9 +34,25 @@ import com.timgroup.statsd.ServiceCheck;
 import com.timgroup.statsd.StatsDClient;
 import hudson.model.Run;
 import hudson.util.Secret;
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.URL;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Handler;
+import java.util.logging.Logger;
+import java.util.logging.SocketHandler;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
+import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogBaseBuildLogic;
@@ -47,7 +62,6 @@ import org.datadog.jenkins.plugins.datadog.traces.DatadogTracePipelineLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookBuildLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookPipelineLogic;
 import org.datadog.jenkins.plugins.datadog.traces.mapper.JsonTraceSpanMapper;
-import org.datadog.jenkins.plugins.datadog.transport.HttpClient;
 import org.datadog.jenkins.plugins.datadog.transport.HttpMessage;
 import org.datadog.jenkins.plugins.datadog.transport.HttpMessageFactory;
 import org.datadog.jenkins.plugins.datadog.transport.NonBlockingHttpClient;
@@ -55,26 +69,8 @@ import org.datadog.jenkins.plugins.datadog.transport.PayloadMessage;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
-import org.jfree.util.Log;
 import org.json.JSONArray;
 import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.net.ConnectException;
-import java.net.HttpURLConnection;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.net.URL;
-import java.net.UnknownHostException;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Handler;
-import java.util.logging.Logger;
-import java.util.logging.SocketHandler;
 
 /**
  * This class is used to collect all methods that has to do with transmitting
@@ -82,20 +78,18 @@ import java.util.logging.SocketHandler;
  */
 public class DatadogAgentClient implements DatadogClient {
 
-    private static DatadogAgentClient instance = null;
+    private static volatile DatadogAgentClient instance = null;
     // Used to determine if the instance failed last validation last time, so
     // we do not keep retrying to create the instance and logging the same error
     private static boolean failedLastValidation = false;
 
     private static final Logger logger = Logger.getLogger(DatadogAgentClient.class.getName());
 
-    private static final Integer BAD_REQUEST = 400;
-    private static final Integer NOT_FOUND = 404;
 
     @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL")
     public static boolean enableValidations = true;
 
-    private HttpClient agentHttpClient;
+    private org.datadog.jenkins.plugins.datadog.transport.HttpClient agentHttpClient;
     private DatadogBaseBuildLogic traceBuildLogic;
     private DatadogBasePipelineLogic tracePipelineLogic;
 
@@ -112,6 +106,8 @@ public class DatadogAgentClient implements DatadogClient {
     private boolean isStoppedAgentHttpClient = true;
     private boolean evpProxySupported = false;
     private long lastEvpProxyCheckTimeMs = 0L;
+
+    private final HttpClient client;
 
     /**
      * How often to check the /info endpoint in case the Agent got updated.
@@ -178,6 +174,7 @@ public class DatadogAgentClient implements DatadogClient {
         this.port = port;
         this.logCollectionPort = logCollectionPort;
         this.traceCollectionPort = traceCollectionPort;
+        this.client = new HttpClient(HTTP_TIMEOUT_EVP_PROXY_MS);
     }
 
     public static ConnectivityResult checkConnectivity(final String host, final int port) {
@@ -327,48 +324,26 @@ public class DatadogAgentClient implements DatadogClient {
     public Set<String> fetchAgentSupportedEndpoints() {
         logger.fine("Fetching Agent info");
 
-        HashSet<String> endpoints = new HashSet<>();
-
-        HttpURLConnection conn = null;
+        String url = String.format("http://%s:%d/info", hostname, traceCollectionPort);
         try {
-            logger.fine("Setting up HttpURLConnection...");
-            final URL traceAgentUrl = buildHttpURL(this.hostname, this.traceCollectionPort, "/info");
-            conn = getHttpURLConnection(traceAgentUrl, HTTP_TIMEOUT_INFO_MS);
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setUseCaches(false);
+            return client.get(url, Collections.emptyMap(), s -> {
+                JSONObject jsonResponse = new JSONObject(s);
+                JSONArray jsonEndpoints = jsonResponse.getJSONArray("endpoints");
 
-            // Get response
-            BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"));
-            StringBuilder result = new StringBuilder();
-            String line;
-            while ((line = rd.readLine()) != null) {
-                result.append(line);
-            }
-            rd.close();
-
-            JSONObject jsonResponse = new JSONObject(result.toString());
-            JSONArray jsonEndpoints = jsonResponse.getJSONArray("endpoints");
-
-            // Iterate jsonArray using for loop
-            for (int i = 0; i < jsonEndpoints.length(); i++) {
-                endpoints.add(jsonEndpoints.getString(i));
-            }
-        } catch (Exception e) {
-            try {
-                if (conn != null && conn.getResponseCode() == NOT_FOUND) {
-                    logger.info("Agent /info returned 404. Requires Agent v6.27+ or v7.27+.");
-                } else {
-                    DatadogUtilities.severe(logger, e, "Unknown client error, please check your config");
+                Set<String> endpoints = new HashSet<>();
+                for (int i = 0; i < jsonEndpoints.length(); i++) {
+                    endpoints.add(jsonEndpoints.getString(i));
                 }
-            } catch (IOException ex) {
-                DatadogUtilities.severe(logger, ex, "Failed to inspect HTTP response");
-            }
-        } finally {
-            if (conn != null) {
-                conn.disconnect();
-            }
+                return endpoints;
+            });
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            DatadogUtilities.severe(logger, e, "Could not get the list of agent endpoints");
+            return Collections.emptySet();
+        } catch (Exception e) {
+            DatadogUtilities.severe(logger, e, "Could not get the list of agent endpoints");
+            return Collections.emptySet();
         }
-        return endpoints;
     }
 
     /**
@@ -387,60 +362,23 @@ public class DatadogAgentClient implements DatadogClient {
             return false;
         }
 
-        HttpURLConnection conn = null;
+        DatadogGlobalConfiguration datadogGlobalDescriptor = DatadogUtilities.getDatadogGlobalDescriptor();
+        String urlParameters = datadogGlobalDescriptor != null ? "?service=" + datadogGlobalDescriptor.getCiInstanceName() : "";
+        String url = String.format("http://%s:%d/evp_proxy/v1/api/v2/webhook/%s", hostname, traceCollectionPort, urlParameters);
+
+        Map<String, String> headers = new HashMap<>();
+        headers.put("X-Datadog-EVP-Subdomain", "webhook-intake");
+        headers.put("DD-CI-PROVIDER-NAME", "jenkins");
+
+        byte[] body = payload.getBytes(StandardCharsets.UTF_8);
+
         try {
-            logger.fine("Setting up HttpURLConnection...");
-            String urlParameters = "?service=" + DatadogUtilities.getDatadogGlobalDescriptor().getCiInstanceName();
-            final URL traceAgentUrl = buildHttpURL(this.hostname, this.traceCollectionPort, "/evp_proxy/v1/api/v2/webhook/"+urlParameters);
-            conn = getHttpURLConnection(traceAgentUrl, HTTP_TIMEOUT_EVP_PROXY_MS);
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("X-Datadog-EVP-Subdomain", "webhook-intake");
-            conn.setRequestProperty("DD-CI-PROVIDER-NAME", "jenkins");
-            conn.setUseCaches(false);
-            conn.setDoInput(true);
-            conn.setDoOutput(true);
-
-            OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream(), "utf-8");
-            logger.fine("Writing to OutputStreamWriter...");
-            wr.write(payload);
-            wr.close();
-
-            // Get response
-            BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"));
-            StringBuilder result = new StringBuilder();
-            String line;
-            while ((line = rd.readLine()) != null) {
-                result.append(line);
-            }
-            rd.close();
-
-            if ("{}".equals(result.toString())) {
-                logger.fine(String.format("Webhook API call through Agent proxy was sent successfully!"));
-                logger.fine(String.format("Payload: %s", payload));
-            } else {
-                logger.severe(String.format("Webhook API call through Agent proxy failed!"));
-                logger.fine(String.format("Payload: %s", payload));
-                logger.fine(String.format("Response: %s", result));
-                return false;
-            }
+            client.postAsynchronously(url, headers, "application/json", body);
+            return true;
         } catch (Exception e) {
-            try {
-                if (conn != null && conn.getResponseCode() == BAD_REQUEST) {
-                    logger.severe("We received a 400 from the Agent EVP Proxy.");
-                } else {
-                    DatadogUtilities.severe(logger, e, "Unknown client error, please check your config");
-                }
-            } catch (IOException ex) {
-                DatadogUtilities.severe(logger, ex, "Failed to inspect HTTP response");
-            }
+            DatadogUtilities.severe(logger, e, "Error while posting webhook");
             return false;
-        } finally {
-            if (conn != null) {
-                conn.disconnect();
-            }
         }
-        return true;
     }
 
     /**

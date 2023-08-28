@@ -15,7 +15,7 @@
   <url>https://github.com/jenkinsci/datadog-plugin</url>
   <groupId>org.datadog.jenkins.plugins</groupId>
   <artifactId>datadog</artifactId>
-  <version>5.4.2-SNAPSHOT</version>
+  <version>5.5.1-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <properties>
@@ -166,6 +166,11 @@
       <artifactId>jackson2-api</artifactId>
       <version>2.13.3-285.vc03c0256d517</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <version>9.4.51.v20230217</version>
     </dependency>
   </dependencies>
 

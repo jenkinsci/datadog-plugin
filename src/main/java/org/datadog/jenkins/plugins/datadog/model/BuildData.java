@@ -55,16 +55,6 @@ import hudson.tasks.Mailer;
 import hudson.triggers.SCMTrigger;
 import hudson.triggers.TimerTrigger;
 import hudson.util.LogTaskListener;
-import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
-import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
-import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
-import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
-import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
-import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
-import org.jenkinsci.plugins.gitclient.GitClient;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.Charset;
@@ -74,6 +64,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
+import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
+import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
+import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
+import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
+import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
+import org.jenkinsci.plugins.gitclient.GitClient;
 
 public class BuildData implements Serializable {
 
@@ -228,6 +228,50 @@ public class BuildData implements Serializable {
         if(buildSpan !=null) {
             setTraceId(Long.toUnsignedString(buildSpan.context().getTraceId()));
             setSpanId(Long.toUnsignedString(buildSpan.context().getSpanId()));
+        }
+
+        BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
+        if (buildSpanAction != null) {
+            getMissingGitValuesFrom(buildSpanAction.getBuildData());
+        }
+    }
+
+    private void getMissingGitValuesFrom(BuildData previousData) {
+        if (branch == null) {
+            branch = previousData.branch;
+        }
+        if (gitUrl == null) {
+            gitUrl = previousData.gitUrl;
+        }
+        if (gitCommit == null) {
+            gitCommit = previousData.gitCommit;
+        }
+        if (gitMessage == null) {
+            gitMessage = previousData.gitMessage;
+        }
+        if (gitAuthorName == null) {
+            gitAuthorName = previousData.gitAuthorName;
+        }
+        if (gitAuthorEmail == null) {
+            gitAuthorEmail = previousData.gitAuthorEmail;
+        }
+        if (gitAuthorDate == null) {
+            gitAuthorDate = previousData.gitAuthorDate;
+        }
+        if (gitCommitterName == null) {
+            gitCommitterName = previousData.gitCommitterName;
+        }
+        if (gitCommitterEmail == null) {
+            gitCommitterEmail = previousData.gitCommitterEmail;
+        }
+        if (gitCommitterDate == null) {
+            gitCommitterDate = previousData.gitCommitterDate;
+        }
+        if (gitDefaultBranch == null) {
+            gitDefaultBranch = previousData.gitDefaultBranch;
+        }
+        if (gitTag == null) {
+            gitTag = previousData.gitTag;
         }
     }
 
