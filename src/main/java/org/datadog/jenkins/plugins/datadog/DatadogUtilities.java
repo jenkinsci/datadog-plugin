@@ -27,7 +27,6 @@ package org.datadog.jenkins.plugins.datadog;
 
 import hudson.EnvVars;
 import hudson.ExtensionList;
-import hudson.ProxyConfiguration;
 import hudson.XmlFile;
 import hudson.model.Computer;
 import hudson.model.Item;
@@ -36,6 +35,34 @@ import hudson.model.Run;
 import hudson.model.User;
 import hudson.model.labels.LabelAtom;
 import hudson.util.LogTaskListener;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.net.Inet4Address;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.UnknownHostException;
+import java.nio.charset.Charset;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
@@ -68,37 +95,6 @@ import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
-import javax.annotation.Nonnull;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.net.HttpURLConnection;
-import java.net.Inet4Address;
-import java.net.MalformedURLException;
-import java.net.Proxy;
-import java.net.URL;
-import java.net.UnknownHostException;
-import java.nio.charset.Charset;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 public class DatadogUtilities {
 
     private static final Logger logger = Logger.getLogger(DatadogUtilities.class.getName());
@@ -125,7 +121,7 @@ public class DatadogUtilities {
     public static DatadogJobProperty getDatadogJobProperties(@Nonnull Run r) {
         try {
             return (DatadogJobProperty) r.getParent().getProperty(DatadogJobProperty.class);
-        } catch(NullPointerException e){
+        } catch (NullPointerException e) {
             // It can only throw a NullPointerException when running tests
             return null;
         }
@@ -134,37 +130,37 @@ public class DatadogUtilities {
     /**
      * Builds extraTags if any are configured in the Job.
      *
-     * @param run      - Current build
-     * @param envVars  - Environment Variables
+     * @param run     - Current build
+     * @param envVars - Environment Variables
      * @return A {@link HashMap} containing the key,value pairs of tags if any.
      */
     public static Map<String, Set<String>> getBuildTags(Run run, EnvVars envVars) {
         Map<String, Set<String>> result = new HashMap<>();
-        if(run == null){
+        if (run == null) {
             return result;
         }
         String jobName;
         try {
             jobName = run.getParent().getFullName();
-        } catch (NullPointerException e){
+        } catch (NullPointerException e) {
             // It can only throw a NullPointerException when running tests
             return result;
         }
         final DatadogGlobalConfiguration datadogGlobalConfig = getDatadogGlobalDescriptor();
-        if (datadogGlobalConfig == null){
+        if (datadogGlobalConfig == null) {
             return result;
         }
         final String globalJobTags = datadogGlobalConfig.getGlobalJobTags();
         String workspaceTagFile = null;
         String tagProperties = null;
         final DatadogJobProperty property = DatadogUtilities.getDatadogJobProperties(run);
-        if(property != null){
+        if (property != null) {
             workspaceTagFile = property.readTagFile(run);
             tagProperties = property.getTagProperties();
         }
 
         // If job doesn't have a workspace Tag File set we check if one has been defined globally
-        if(workspaceTagFile == null){
+        if (workspaceTagFile == null) {
             workspaceTagFile = datadogGlobalConfig.getGlobalTagFile();
         }
         if (workspaceTagFile != null) {
@@ -182,24 +178,24 @@ public class DatadogUtilities {
     /**
      * Pipeline extraTags if any are configured in the Job from DatadogPipelineAction.
      *
-     * @param run      - Current build
+     * @param run - Current build
      * @return A {@link HashMap} containing the key,value pairs of tags if any.
      */
     public static Map<String, Set<String>> getTagsFromPipelineAction(Run run) {
         // pipeline defined tags
         final Map<String, Set<String>> result = new HashMap<>();
         DatadogPipelineAction action = run.getAction(DatadogPipelineAction.class);
-        if(action != null) {
+        if (action != null) {
             List<String> pipelineTags = action.getTags();
             for (int i = 0; i < pipelineTags.size(); i++) {
                 String[] tagItem = pipelineTags.get(i).replaceAll(" ", "").split(":", 2);
-                if(tagItem.length == 2) {
+                if (tagItem.length == 2) {
                     String tagName = tagItem[0];
                     String tagValue = tagItem[1];
                     Set<String> tagValues = result.containsKey(tagName) ? result.get(tagName) : new HashSet<String>();
                     tagValues.add(tagValue.toLowerCase());
                     result.put(tagName, tagValues);
-                } else if(tagItem.length == 1) {
+                } else if (tagItem.length == 1) {
                     String tagName = tagItem[0];
                     Set<String> tagValues = result.containsKey(tagName) ? result.get(tagName) : new HashSet<String>();
                     tagValues.add(""); // no values
@@ -237,7 +233,7 @@ public class DatadogUtilities {
     /**
      * Retrieve the list of tags from the globalJobTagsLines param for jobName
      *
-     * @param jobName - JobName to retrieve and process tags from.
+     * @param jobName       - JobName to retrieve and process tags from.
      * @param globalJobTags - globalJobTags string
      * @return - A Map of values containing the key and values of each Datadog tag to apply to the metric/event
      */
@@ -270,20 +266,19 @@ public class DatadogUtilities {
                             } catch (IndexOutOfBoundsException e) {
 
                                 String tagNameEnvVar = tagValue.substring(1);
-                                if (EnvVars.masterEnvVars.containsKey(tagNameEnvVar)){
+                                if (EnvVars.masterEnvVars.containsKey(tagNameEnvVar)) {
                                     tagValue = EnvVars.masterEnvVars.get(tagNameEnvVar);
-                                }
-                                else {
+                                } else {
                                     logger.fine(String.format(
-                                        "Specified a capture group or environment variable that doesn't exist, not applying tag: %s Exception: %s",
-                                        Arrays.toString(tagItem), e));
+                                            "Specified a capture group or environment variable that doesn't exist, not applying tag: %s Exception: %s",
+                                            Arrays.toString(tagItem), e));
                                 }
                             }
                         }
                         Set<String> tagValues = tags.containsKey(tagName) ? tags.get(tagName) : new HashSet<String>();
                         tagValues.add(tagValue.toLowerCase());
                         tags.put(tagName, tagValues);
-                    } else if(tagItem.length == 1) {
+                    } else if (tagItem.length == 1) {
                         String tagName = tagItem[0];
                         Set<String> tagValues = tags.containsKey(tagName) ? tags.get(tagName) : new HashSet<String>();
                         tagValues.add(""); // no values
@@ -308,7 +303,7 @@ public class DatadogUtilities {
         Map<String, Set<String>> tags = new HashMap<>();
 
         final DatadogGlobalConfiguration datadogGlobalConfig = getDatadogGlobalDescriptor();
-        if (datadogGlobalConfig == null){
+        if (datadogGlobalConfig == null) {
             return tags;
         }
 
@@ -323,22 +318,21 @@ public class DatadogUtilities {
 
             for (int i = 0; i < tagList.size(); i++) {
                 String[] tagItem = tagList.get(i).replaceAll(" ", "").split(":", 2);
-                if(tagItem.length == 2) {
+                if (tagItem.length == 2) {
                     String tagName = tagItem[0];
                     String tagValue = tagItem[1];
                     Set<String> tagValues = tags.containsKey(tagName) ? tags.get(tagName) : new HashSet<String>();
                     // Apply environment variables if specified. ie (custom_tag:$ENV_VAR)
-                    if (tagValue.startsWith("$") && EnvVars.masterEnvVars.containsKey(tagValue.substring(1))){
+                    if (tagValue.startsWith("$") && EnvVars.masterEnvVars.containsKey(tagValue.substring(1))) {
                         tagValue = EnvVars.masterEnvVars.get(tagValue.substring(1));
-                    }
-                    else {
+                    } else {
                         logger.fine(String.format(
-                            "Specified an environment variable that doesn't exist, not applying tag: %s",
-                            Arrays.toString(tagItem)));
+                                "Specified an environment variable that doesn't exist, not applying tag: %s",
+                                Arrays.toString(tagItem)));
                     }
                     tagValues.add(tagValue.toLowerCase());
                     tags.put(tagName, tagValues);
-                } else if(tagItem.length == 1) {
+                } else if (tagItem.length == 1) {
                     String tagName = tagItem[0];
                     Set<String> tagValues = tags.containsKey(tagName) ? tags.get(tagName) : new HashSet<String>();
                     tagValues.add(""); // no values
@@ -360,12 +354,12 @@ public class DatadogUtilities {
      */
     private static boolean isJobExcluded(final String jobName) {
         final DatadogGlobalConfiguration datadogGlobalConfig = getDatadogGlobalDescriptor();
-        if (datadogGlobalConfig == null){
+        if (datadogGlobalConfig == null) {
             return false;
         }
         final String excludedProp = datadogGlobalConfig.getExcluded();
         List<String> excluded = cstrToList(excludedProp);
-        for (String excludedJob : excluded){
+        for (String excludedJob : excluded) {
             Pattern excludedJobPattern = Pattern.compile(excludedJob);
             Matcher jobNameMatcher = excludedJobPattern.matcher(jobName);
             if (jobNameMatcher.matches()) {
@@ -384,12 +378,12 @@ public class DatadogUtilities {
      */
     private static boolean isJobIncluded(final String jobName) {
         final DatadogGlobalConfiguration datadogGlobalConfig = getDatadogGlobalDescriptor();
-        if (datadogGlobalConfig == null){
+        if (datadogGlobalConfig == null) {
             return true;
         }
         final String includedProp = datadogGlobalConfig.getIncluded();
         final List<String> included = cstrToList(includedProp);
-        for (String includedJob : included){
+        for (String includedJob : included) {
             Pattern includedJobPattern = Pattern.compile(includedJob);
             Matcher jobNameMatcher = includedJobPattern.matcher(jobName);
             if (jobNameMatcher.matches()) {
@@ -422,7 +416,7 @@ public class DatadogUtilities {
     /**
      * Converts a string List into a List Object
      *
-     * @param str - A String containing a comma separated list of items.
+     * @param str   - A String containing a comma separated list of items.
      * @param regex - Regex to use to split the string list
      * @return a String List with all items
      */
@@ -456,7 +450,7 @@ public class DatadogUtilities {
                     values.add(value);
                     result.put(name, values);
                     logger.fine(String.format("Emitted tag %s:%s", name, value));
-                } else if(expanded.length == 1) {
+                } else if (expanded.length == 1) {
                     String name = expanded[0];
                     Set<String> values = result.containsKey(name) ? result.get(name) : new HashSet<String>();
                     values.add(""); // no values
@@ -507,7 +501,7 @@ public class DatadogUtilities {
      * Getter function to return either the saved hostname global configuration,
      * or the hostname that is set in the Jenkins host itself. Returns null if no
      * valid hostname is found.
-     *
+     * <p>
      * Tries, in order:
      * Jenkins configuration
      * Jenkins hostname environment variable
@@ -526,7 +520,7 @@ public class DatadogUtilities {
         String hostname = null;
         try {
             hostname = getDatadogGlobalDescriptor().getHostname();
-        } catch (NullPointerException e){
+        } catch (NullPointerException e) {
             // noop
         }
         if (isValidHostname(hostname)) {
@@ -624,7 +618,7 @@ public class DatadogUtilities {
      * Fetches the environment variables from the worker and returns the value
      * of DD_CI_HOSTNAME if set.
      *
-     * @param run  - Current build
+     * @param run - Current build
      * @return the specified hostname or an empty Optional if not set
      */
     public static Optional<String> getHostnameFromWorkerEnv(Run run) {
@@ -634,7 +628,8 @@ public class DatadogUtilities {
             if (StringUtils.isNotEmpty(envHostname)) {
                 return Optional.of(envHostname);
             }
-        } catch (IOException | InterruptedException e) { }
+        } catch (IOException | InterruptedException e) {
+        }
         return Optional.empty();
     }
 
@@ -683,7 +678,7 @@ public class DatadogUtilities {
         Set<LabelAtom> labels = null;
         try {
             labels = computer.getNode().getAssignedLabels();
-        } catch (NullPointerException e){
+        } catch (NullPointerException e) {
             logger.fine("Could not retrieve labels");
         }
         String nodeHostname = null;
@@ -697,14 +692,14 @@ public class DatadogUtilities {
         Set<String> nodeNameValues = new HashSet<>();
         nodeNameValues.add(nodeName);
         result.put("node_name", nodeNameValues);
-        if(nodeHostname != null){
+        if (nodeHostname != null) {
             Set<String> nodeHostnameValues = new HashSet<>();
             nodeHostnameValues.add(nodeHostname);
             result.put("node_hostname", nodeHostnameValues);
         }
-        if(labels != null){
+        if (labels != null) {
             Set<String> nodeLabelsValues = new HashSet<>();
-            for (LabelAtom label: labels){
+            for (LabelAtom label : labels) {
                 nodeLabelsValues.add(label.getName());
             }
             result.put("node_label", nodeLabelsValues);
@@ -713,8 +708,8 @@ public class DatadogUtilities {
         return result;
     }
 
-    public static String getNodeName(Computer computer){
-        if(computer == null){
+    public static String getNodeName(Computer computer) {
+        if (computer == null) {
             return null;
         }
         if (computer instanceof Jenkins.MasterComputer) {
@@ -724,7 +719,7 @@ public class DatadogUtilities {
         }
     }
 
-    public static boolean isMainNode(String nodeName){
+    public static boolean isMainNode(String nodeName) {
         return "master".equalsIgnoreCase(nodeName) || "built-in".equalsIgnoreCase(nodeName);
     }
 
@@ -734,13 +729,13 @@ public class DatadogUtilities {
         Set<LabelAtom> labels;
         try {
             labels = computer.getNode().getAssignedLabels();
-        } catch (Exception e){
+        } catch (Exception e) {
             logger.fine("Could not retrieve labels: " + e.getMessage());
             return Collections.emptySet();
         }
 
         final Set<String> labelsStr = new HashSet<>();
-        for(final LabelAtom label : labels) {
+        for (final LabelAtom label : labels) {
             labelsStr.add(label.getName());
         }
 
@@ -768,13 +763,13 @@ public class DatadogUtilities {
         return run.getStartTimeInMillis();
     }
 
-    public static long currentTimeMillis(){
+    public static long currentTimeMillis() {
         // This method exist so we can mock System.currentTimeMillis in unit tests
         return System.currentTimeMillis();
     }
 
     public static String getFileName(XmlFile file) {
-        if(file == null || file.getFile() == null || file.getFile().getName().isEmpty()){
+        if (file == null || file.getFile() == null || file.getFile().getName().isEmpty()) {
             return "unknown";
         } else {
             return file.getFile().getName();
@@ -783,12 +778,12 @@ public class DatadogUtilities {
 
     public static String getJenkinsUrl() {
         Jenkins jenkins = Jenkins.getInstance();
-        if(jenkins == null){
+        if (jenkins == null) {
             return "unknown";
-        }else{
+        } else {
             try {
                 return jenkins.getRootUrl();
-            }catch(Exception e){
+            } catch (Exception e) {
                 return "unknown";
             }
         }
@@ -796,12 +791,12 @@ public class DatadogUtilities {
 
     public static String getResultTag(@Nonnull FlowNode node) {
         if (StageStatus.isSkippedStage(node)) {
-            return  "SKIPPED";
+            return "SKIPPED";
         }
         if (node instanceof BlockEndNode) {
             BlockStartNode startNode = ((BlockEndNode) node).getStartNode();
             if (StageStatus.isSkippedStage(startNode)) {
-                return  "SKIPPED";
+                return "SKIPPED";
             }
         }
         ErrorAction error = node.getError();
@@ -827,6 +822,7 @@ public class DatadogUtilities {
 
     /**
      * Returns true if a {@code FlowNode} is a Stage node.
+     *
      * @param flowNode the flow node to evaluate
      * @return flag indicating if a flowNode is a Stage node.
      */
@@ -848,6 +844,7 @@ public class DatadogUtilities {
 
     /**
      * Returns true if a {@code FlowNode} is a Pipeline node.
+     *
      * @param flowNode the flow node to evaluate
      * @return flag indicating if a flowNode is a Pipeline node.
      */
@@ -857,6 +854,7 @@ public class DatadogUtilities {
 
     /**
      * Returns a normalized result for traces.
+     *
      * @param result (success, failure, error, aborted, not_build, canceled, skipped, unknown)
      * @return the normalized result for the traces based on the jenkins result
      */
@@ -875,14 +873,14 @@ public class DatadogUtilities {
     }
 
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH")
-    public static void severe(Logger logger, Throwable e, String message){
-        if(message == null){
-            message = e != null ? "An unexpected error occurred": "";
+    public static void severe(Logger logger, Throwable e, String message) {
+        if (message == null) {
+            message = e != null ? "An unexpected error occurred" : "";
         }
-        if(!message.isEmpty()) {
+        if (!message.isEmpty()) {
             logger.severe(message);
         }
-        if(e != null) {
+        if (e != null) {
             StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
             logger.info(message + ": " + sw.toString());
@@ -896,11 +894,12 @@ public class DatadogUtilities {
 
     /**
      * Returns a date as String in the ISO8601 format
+     *
      * @param date the date object to transform
      * @return date as String in the ISO8601 format
      */
     public static String toISO8601(Date date) {
-        if(date == null) {
+        if (date == null) {
             return null;
         }
 
@@ -911,11 +910,12 @@ public class DatadogUtilities {
 
     /**
      * Returns a JSON array string based on the set.
+     *
      * @param set the set to transform into a JSON
      * @return json array string
      */
     public static String toJson(final Set<String> set) {
-        if(set == null || set.isEmpty()) {
+        if (set == null || set.isEmpty()) {
             return null;
         }
 
@@ -924,10 +924,10 @@ public class DatadogUtilities {
         final StringBuilder sb = new StringBuilder();
         sb.append("[");
         int index = 1;
-        for(String val : set) {
+        for (String val : set) {
             final String escapedValue = StringEscapeUtils.escapeJavaScript(val);
             sb.append("\"").append(escapedValue).append("\"");
-            if(index < set.size()) {
+            if (index < set.size()) {
                 sb.append(",");
             }
             index += 1;
@@ -939,11 +939,12 @@ public class DatadogUtilities {
 
     /**
      * Returns a JSON object string based on the map.
+     *
      * @param map the map to transform into a JSON
      * @return json object string
      */
     public static String toJson(final Map<String, String> map) {
-        if(map == null || map.isEmpty()) {
+        if (map == null || map.isEmpty()) {
             return null;
         }
 
@@ -952,11 +953,11 @@ public class DatadogUtilities {
         final StringBuilder sb = new StringBuilder();
         sb.append("{");
         int index = 1;
-        for(Map.Entry<String, String> entry : map.entrySet()) {
+        for (Map.Entry<String, String> entry : map.entrySet()) {
             final String escapedKey = StringEscapeUtils.escapeJavaScript(entry.getKey());
             final String escapedValue = StringEscapeUtils.escapeJavaScript(entry.getValue());
             sb.append(String.format("\"%s\":\"%s\"", escapedKey, escapedValue));
-            if(index < map.size()) {
+            if (index < map.size()) {
                 sb.append(",");
             }
             index += 1;
@@ -968,10 +969,11 @@ public class DatadogUtilities {
 
     /**
      * Removes all actions related to traces for Jenkins pipelines.
+     *
      * @param run the current run.
      */
     public static void cleanUpTraceActions(final Run<?, ?> run) {
-        if(run != null) {
+        if (run != null) {
             run.removeActions(BuildSpanAction.class);
             run.removeActions(StepDataAction.class);
             run.removeActions(CIGlobalTagsAction.class);
@@ -988,6 +990,7 @@ public class DatadogUtilities {
     /**
      * Check if a run is from a Jenkins pipeline.
      * This action is added if the run is based on FlowNodes.
+     *
      * @param run the current run.
      * @return true if is a Jenkins pipeline.
      */
@@ -996,55 +999,16 @@ public class DatadogUtilities {
     }
 
     /**
-     * Returns an HTTP url connection given a url object. Supports jenkins configured proxy.
-     *
-     * @param url - a URL object containing the URL to open a connection to.
-     * @param timeoutMS - the timeout in MS
-     * @return a HttpURLConnection object.
-     * @throws IOException if HttpURLConnection fails to open connection
-     */
-    public static HttpURLConnection getHttpURLConnection(final URL url, final int timeoutMS) throws IOException {
-        HttpURLConnection conn = null;
-        ProxyConfiguration proxyConfig = null;
-
-        Jenkins jenkins = Jenkins.getInstance();
-        if(jenkins != null){
-            proxyConfig = jenkins.proxy;
-        }
-
-        /* Attempt to use proxy */
-        if (proxyConfig != null) {
-            Proxy proxy = proxyConfig.createProxy(url.getHost());
-            if (proxy != null && proxy.type() == Proxy.Type.HTTP) {
-                logger.fine("Attempting to use the Jenkins proxy configuration");
-                conn = (HttpURLConnection) url.openConnection(proxy);
-            }
-        } else {
-            logger.fine("Jenkins proxy configuration not found");
-        }
-
-        /* If proxy fails, use HttpURLConnection */
-        if (conn == null) {
-            conn = (HttpURLConnection) url.openConnection();
-            logger.fine("Using HttpURLConnection, without proxy");
-        }
-
-        conn.setConnectTimeout(timeoutMS);
-        conn.setReadTimeout(timeoutMS);
-
-        return conn;
-    }
-
-    /**
      * Returns an HTTP URL
+     *
      * @param hostname - the Hostname
-     * @param port - the port to use
-     * @param path - the path
+     * @param port     - the port to use
+     * @param path     - the path
      * @return the HTTP URL
      * @throws MalformedURLException if the URL is not in a valid format
      */
     public static URL buildHttpURL(final String hostname, final Integer port, final String path) throws MalformedURLException {
-        return new URL(String.format("http://%s:%d"+path, hostname, port));
+        return new URL(String.format("http://%s:%d" + path, hostname, port));
     }
 
     public static String getCatchErrorResult(BlockStartNode startNode) {

@@ -14,6 +14,7 @@ import java.util.logging.Logger;
 public class NonBlockingHttpClient implements HttpClient {
 
     private static final int DEFAULT_TIMEOUT_MS = 10 * 1000;
+    private static final int DEFAULT_MAX_QUEUE_SIZE = 10_000;
     private static final int SIZE_SPANS_SEND_BUFFER = 100;
 
     private static final Logger logger = Logger.getLogger(NonBlockingHttpClient.class.getName());
@@ -37,7 +38,7 @@ public class NonBlockingHttpClient implements HttpClient {
     });
 
     private NonBlockingHttpClient(final Builder builder) {
-        final int queueSize = builder.queueSize != null ? builder.queueSize : Integer.MAX_VALUE;
+        final int queueSize = builder.queueSize != null ? builder.queueSize : DEFAULT_MAX_QUEUE_SIZE;
         final int httpTimeoutMs = builder.httpTimeoutMs != null ? builder.httpTimeoutMs : DEFAULT_TIMEOUT_MS;
         this.errorHandler = builder.errorHandler != null ? builder.errorHandler : NO_OP_HANDLER;
         this.messageFactoryByType = builder.messageFactoryByType;

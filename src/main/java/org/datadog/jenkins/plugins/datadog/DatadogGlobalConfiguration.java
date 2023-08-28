@@ -40,9 +40,9 @@ import jenkins.model.Jenkins;
 
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
+import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 
 import net.sf.json.JSONObject;
@@ -416,7 +416,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             throws IOException, ServletException {
         Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
         final Secret secret = findSecret(targetApiKey, targetCredentialsApiKey);
-        if (DatadogHttpClient.validateDefaultIntakeConnection(targetApiURL, secret)) {
+        if (DatadogHttpClient.validateDefaultIntakeConnection(new HttpClient(60_000), targetApiURL, secret)) {
             return FormValidation.ok("Great! Your API key is valid.");
         } else {
             return FormValidation.error("Hmmm, your API key seems to be invalid.");

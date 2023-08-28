@@ -31,7 +31,7 @@ public class FakeHttpSender extends HttpSender {
     }
 
     @Override
-    protected void blockingSend(HttpMessage message) {
+    protected void process(HttpMessage message) {
         this.messageCount.incrementAndGet();
         synchronized (this.latches) {
             httpMessages.add(message);
