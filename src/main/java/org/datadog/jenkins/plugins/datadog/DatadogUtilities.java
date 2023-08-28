@@ -470,8 +470,9 @@ public class DatadogUtilities {
         // Make request
         try {
             client = new HttpClient(60_000);
-            client.get(metadataUrl, Collections.emptyMap(), result -> {
+            return client.get(metadataUrl, Collections.emptyMap(), result -> {
                 String instance_id = result.toString();
+                logger.fine("Instance ID detected: " + instance_id);
                 return instance_id;
             });
         } catch (InterruptedException e) {
@@ -482,7 +483,6 @@ public class DatadogUtilities {
             DatadogUtilities.severe(logger, e, "Could not retrieve the AWS instance ID");
             return null;
         }
-        return null;
     }
 
     /**
@@ -511,24 +511,17 @@ public class DatadogUtilities {
         } catch (NullPointerException e) {
             // noop
         }
+
         if (isValidHostname(hostname)) {
             logger.fine("Using hostname set in 'Manage Plugins'. Hostname: " + hostname);
             return hostname;
-        }
-
-        // Check hostname using jenkins env variables
-        if (envVars != null) {
-            hostname = envVars.get("HOSTNAME");
-            if (isValidHostname(hostname)) {
-                logger.fine("Using hostname found in $HOSTNAME agent environment variable. Hostname: " + hostname);
-                return hostname;
-            }
         }
 
         final DatadogGlobalConfiguration datadogGlobalConfig = getDatadogGlobalDescriptor();
         if (datadogGlobalConfig != null){
             if (datadogGlobalConfig.isUseAwsInstanceHostname()) {
                 try {
+                    logger.fine("Attempting to resolve AWS instance ID for hostname");
                     hostname = getAwsInstanceID();
                 } catch (IOException e) {
                     logger.fine("Error retrieving AWS hostname: " + e);
@@ -537,6 +530,15 @@ public class DatadogUtilities {
                     logger.fine("Using AWS instance ID as hostname. Hostname: " + hostname);
                     return hostname;
                 }
+            }
+        }
+
+        // Check hostname using jenkins env variables
+        if (envVars != null) {
+            hostname = envVars.get("HOSTNAME");
+            if (isValidHostname(hostname)) {
+                logger.fine("Using hostname found in $HOSTNAME agent environment variable. Hostname: " + hostname);
+                return hostname;
             }
         }
 
