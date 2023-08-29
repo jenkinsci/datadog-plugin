@@ -67,6 +67,7 @@ import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
@@ -862,17 +863,13 @@ public class DatadogUtilities {
     }
 
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH")
-    public static void severe(Logger logger, Throwable e, String message) {
-        if (message == null) {
-            message = e != null ? "An unexpected error occurred" : "";
-        }
-        if (!message.isEmpty()) {
-            logger.severe(message);
-        }
+    public static void severe(Logger logger, Throwable e, String message){
         if (e != null) {
-            StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            logger.info(message + ": " + sw.toString());
+            String stackTrace = ExceptionUtils.getStackTrace(e);
+            message = (message != null ? message : "An unexpected error occurred: ") + stackTrace;
+        }
+        if (StringUtils.isNotEmpty(message)) {
+            logger.severe(message);
         }
     }
 
