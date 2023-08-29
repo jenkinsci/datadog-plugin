@@ -51,6 +51,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.function.Function;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -470,11 +471,9 @@ public class DatadogUtilities {
         // Make request
         try {
             client = new HttpClient(60_000);
-            return client.get(metadataUrl, Collections.emptyMap(), result -> {
-                String instance_id = result.toString();
-                logger.fine("Instance ID detected: " + instance_id);
-                return instance_id;
-            });
+            String instanceId = client.get(metadataUrl, Collections.emptyMap(), Function.identity());
+            logger.fine("Instance ID detected: " + instanceId);
+            return instanceId;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             DatadogUtilities.severe(logger, e, "Could not retrieve the AWS instance ID");
