@@ -35,6 +35,15 @@ public class HttpMessage {
         return this.payload;
     }
 
+    @Override
+    public String toString() {
+        return "HttpMessage{" +
+                "url=" + url +
+                ", method=" + method +
+                ", contentType='" + contentType + '\'' +
+                '}';
+    }
+
     public enum HttpMethod {
         PUT
     }

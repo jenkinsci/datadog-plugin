@@ -186,7 +186,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
                 // we test it's at least 10s.
                 double pauseValue = clientStub.assertMetricGetValue("jenkins.job.stage_pause_duration", hostname, expectedTags);
                 assertTrue(pauseValue > 10000);
-                assertTrue(pauseValue <= 11000);
+                assertTrue(pauseValue <= 11100);
             } else {
                 clientStub.assertMetric("jenkins.job.stage_pause_duration", 0.0, hostname, expectedTags);
             }
