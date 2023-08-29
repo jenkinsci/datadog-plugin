@@ -51,6 +51,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.function.Function;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -66,6 +67,7 @@ import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
+import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
@@ -465,36 +467,21 @@ public class DatadogUtilities {
 
     public static String getAwsInstanceID() throws IOException {
         String metadataUrl = "http://169.254.169.254/latest/meta-data/instance-id";
-        HttpURLConnection conn = null;
-        String instance_id = null;
+        HttpClient client = null;
         // Make request
-        conn = getHttpURLConnection(new URL(metadataUrl), 300);
-        conn.setRequestMethod("GET");
-
-        // Get response
-        BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"));
-        StringBuilder result = new StringBuilder();
-        String line;
-        while ((line = rd.readLine()) != null) {
-            result.append(line);
-        }
-        rd.close();
-
-        // Validate
-        instance_id = result.toString();
         try {
-            if (conn.getResponseCode() == 404) {
-                logger.fine("Could not retrieve AWS instance ID");
-            }
-            conn.disconnect();
-        } catch (IOException e) {
-            logger.info("Failed to inspect HTTP response when getting AWS Instance ID");
-        }
-
-        if (instance_id.equals("")) {
+            client = new HttpClient(60_000);
+            String instanceId = client.get(metadataUrl, Collections.emptyMap(), Function.identity());
+            logger.fine("Instance ID detected: " + instanceId);
+            return instanceId;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            DatadogUtilities.severe(logger, e, "Could not retrieve the AWS instance ID");
+            return null;
+        } catch (Exception e) {
+            DatadogUtilities.severe(logger, e, "Could not retrieve the AWS instance ID");
             return null;
         }
-        return instance_id;
     }
 
     /**
@@ -523,24 +510,17 @@ public class DatadogUtilities {
         } catch (NullPointerException e) {
             // noop
         }
+
         if (isValidHostname(hostname)) {
             logger.fine("Using hostname set in 'Manage Plugins'. Hostname: " + hostname);
             return hostname;
-        }
-
-        // Check hostname using jenkins env variables
-        if (envVars != null) {
-            hostname = envVars.get("HOSTNAME");
-            if (isValidHostname(hostname)) {
-                logger.fine("Using hostname found in $HOSTNAME agent environment variable. Hostname: " + hostname);
-                return hostname;
-            }
         }
 
         final DatadogGlobalConfiguration datadogGlobalConfig = getDatadogGlobalDescriptor();
         if (datadogGlobalConfig != null){
             if (datadogGlobalConfig.isUseAwsInstanceHostname()) {
                 try {
+                    logger.fine("Attempting to resolve AWS instance ID for hostname");
                     hostname = getAwsInstanceID();
                 } catch (IOException e) {
                     logger.fine("Error retrieving AWS hostname: " + e);
@@ -549,6 +529,15 @@ public class DatadogUtilities {
                     logger.fine("Using AWS instance ID as hostname. Hostname: " + hostname);
                     return hostname;
                 }
+            }
+        }
+
+        // Check hostname using jenkins env variables
+        if (envVars != null) {
+            hostname = envVars.get("HOSTNAME");
+            if (isValidHostname(hostname)) {
+                logger.fine("Using hostname found in $HOSTNAME agent environment variable. Hostname: " + hostname);
+                return hostname;
             }
         }
 
