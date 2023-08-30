@@ -49,7 +49,6 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
 
     @Override
     public void execute(Run run, FlowNode flowNode) {
-
         if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
             return;
         }
@@ -70,10 +69,7 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
         }
 
         final BuildData buildData = buildSpanAction.getBuildData();
-        if(!isLastNode(flowNode)){
-            final BuildPipelineNode pipelineNode = buildPipelineNode(flowNode);
-            updateStageBreakdown(run, pipelineNode);
-            updateBuildData(buildData, run, pipelineNode, flowNode);
+        if(!DatadogUtilities.isLastNode(flowNode)){
             updateCIGlobalTags(run);
             return;
         }
@@ -113,7 +109,7 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
 
         // At this point, the current node is traceable.
         final TraceSpan.TraceSpanContext spanContext = new TraceSpan.TraceSpanContext(parentSpanContext.getTraceId(), parentSpanContext.getSpanId(), current.getSpanId());
-        final TraceSpan span = new TraceSpan(buildOperationName(current), fixedStartTimeNanos + getNanosInQueue(current), spanContext);
+        final TraceSpan span = new TraceSpan(buildOperationName(current), fixedStartTimeNanos + DatadogUtilities.getNanosInQueue(current), spanContext);
         span.setServiceName(DatadogUtilities.getDatadogGlobalDescriptor().getCiInstanceName());
         span.setResourceName(current.getName());
         span.setType("ci");
@@ -154,7 +150,7 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
 
     private Map<String, Long> buildTraceMetrics(BuildPipelineNode current) {
         final Map<String, Long> metrics = new HashMap<>();
-        metrics.put(CITags.QUEUE_TIME, TimeUnit.NANOSECONDS.toSeconds(getNanosInQueue(current)));
+        metrics.put(CITags.QUEUE_TIME, TimeUnit.NANOSECONDS.toSeconds(DatadogUtilities.getNanosInQueue(current)));
         return metrics;
     }
 
