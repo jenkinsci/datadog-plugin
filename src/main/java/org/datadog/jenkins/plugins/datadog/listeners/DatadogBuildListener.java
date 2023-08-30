@@ -374,7 +374,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             client.finishBuildTrace(buildData, run);
             logger.fine("End DatadogBuildListener#onFinalized");
 
-            BuildSpanManager.get().get(buildData.getBuildTag(""));
+            BuildSpanManager.get().remove(buildData.getBuildTag(""));
 
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to process build finalization");
