@@ -12,13 +12,15 @@ import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
 
 final class JavaConfigurator implements TracerConfigurator {
 
-    private static final String TRACER_DISTRIBUTION_URL = "https://dtdg.co/latest-java-tracer";
+    private static final String TRACER_DISTRIBUTION_URL_ENV_VAR = "DATADOG_JENKINS_PLUGIN_TRACER_DISTRIBUTION_URL";
+    private static final String DEFAULT_TRACER_DISTRIBUTION_URL = "https://dtdg.co/latest-java-tracer";
     private static final String TRACER_FILE_NAME = "dd-java-agent.jar";
     private static final String TRACER_IGNORE_JENKINS_PROXY_ENV_VAR = "DATADOG_JENKINS_PLUGIN_TRACER_IGNORE_JENKINS_PROXY";
     private static final String TRACER_JAR_CACHE_TTL_ENV_VAR = "DATADOG_JENKINS_PLUGIN_TRACER_JAR_CACHE_TTL_MINUTES";
     private static final int DEFAULT_TRACER_JAR_CACHE_TTL_MINUTES = 60 * 12;
+    private static final int TRACER_DOWNLOAD_TIMEOUT_MILLIS = 60_000;
 
-    private final HttpClient httpClient = new HttpClient(60_000);
+    private final HttpClient httpClient = new HttpClient(TRACER_DOWNLOAD_TIMEOUT_MILLIS);
 
     @Override
     public Map<String, String> configure(DatadogTracerJobProperty<?> tracerConfig, Node node, FilePath workspacePath, Map<String, String> envs) throws Exception {
@@ -37,7 +39,8 @@ final class JavaConfigurator implements TracerConfigurator {
             return datadogTracerFile.absolutize();
         }
 
-        httpClient.getBinary(TRACER_DISTRIBUTION_URL, Collections.emptyMap(), is -> {
+        String tracerDistributionUrl = getTracerDistributionUrl(tracerConfig);
+        httpClient.getBinary(tracerDistributionUrl, Collections.emptyMap(), is -> {
             try {
                 datadogTracerFile.copyFrom(is);
             } catch (Exception e) {
@@ -49,28 +52,31 @@ final class JavaConfigurator implements TracerConfigurator {
     }
 
     private int getTracerJarCacheTtlMinutes(DatadogTracerJobProperty<?> tracerConfig) {
-        Map<String, String> additionalVariables = tracerConfig.getAdditionalVariables();
-        if (additionalVariables != null) {
-            String envVariable = additionalVariables.get(TRACER_JAR_CACHE_TTL_ENV_VAR);
-            if (envVariable != null) {
-                try {
-                    return Integer.parseInt(envVariable);
-                } catch (Exception e) {
-                    // ignored
-                }
-            }
-        }
-
-        String envVariable = System.getenv(TRACER_JAR_CACHE_TTL_ENV_VAR);
-        if (envVariable != null) {
+        String ttl = getEnvVariable(tracerConfig, TRACER_JAR_CACHE_TTL_ENV_VAR);
+        if (ttl != null) {
             try {
-                return Integer.parseInt(envVariable);
+                return Integer.parseInt(ttl);
             } catch (Exception e) {
                 // ignored
             }
         }
-
         return DEFAULT_TRACER_JAR_CACHE_TTL_MINUTES;
+    }
+
+    private String getTracerDistributionUrl(DatadogTracerJobProperty<?> tracerConfig) {
+        String distributionUrl = getEnvVariable(tracerConfig, TRACER_DISTRIBUTION_URL_ENV_VAR);
+        return distributionUrl != null ? distributionUrl : DEFAULT_TRACER_DISTRIBUTION_URL;
+    }
+
+    private String getEnvVariable(DatadogTracerJobProperty<?> tracerConfig, String name) {
+        Map<String, String> additionalVariables = tracerConfig.getAdditionalVariables();
+        if (additionalVariables != null) {
+            String envVariable = additionalVariables.get(name);
+            if (envVariable != null) {
+                return name;
+            }
+        }
+        return System.getenv(TRACER_JAR_CACHE_TTL_ENV_VAR);
     }
 
     private static Map<String, String> getEnvVariables(DatadogTracerJobProperty<?> tracerConfig,

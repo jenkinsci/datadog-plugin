@@ -55,7 +55,7 @@ public class DatadogTracerConfigurator {
 
         DatadogGlobalConfiguration datadogConfig = DatadogUtilities.getDatadogGlobalDescriptor();
         if (datadogConfig == null) {
-            LOGGER.log(Level.INFO, "Cannot set up tracer: Datadog config not found");
+            LOGGER.log(Level.WARNING, "Cannot set up tracer: Datadog config not found");
             return Collections.emptyMap();
         }
 
@@ -69,7 +69,7 @@ public class DatadogTracerConfigurator {
         for (TracerLanguage language : languages) {
             TracerConfigurator tracerConfigurator = configurators.get(language);
             if (tracerConfigurator == null) {
-                LOGGER.log(Level.INFO, "Cannot find tracer configurator for " + language);
+                LOGGER.log(Level.WARNING, "Cannot find tracer configurator for " + language);
                 continue;
             }
 
@@ -77,7 +77,7 @@ public class DatadogTracerConfigurator {
                 Map<String, String> languageVariables = tracerConfigurator.configure(tracerConfig, node, workspacePath, envs);
                 variables.putAll(languageVariables);
             } catch (Exception e) {
-                LOGGER.log(Level.INFO, "Error while configuring " + language + " Datadog Tracer for run " + run + " and node " + node, e);
+                LOGGER.log(Level.WARNING, "Error while configuring " + language + " Datadog Tracer for run " + run + " and node " + node, e);
                 return Collections.emptyMap();
             }
         }
