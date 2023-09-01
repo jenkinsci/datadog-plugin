@@ -13,7 +13,7 @@ public class ShellCommandCallable extends MasterToSlaveFileCallable<String> {
 
     public ShellCommandCallable(long timeoutMillis, String... command) {
         this.timeoutMillis = timeoutMillis;
-        this.command = command;
+        this.command = Arrays.copyOf(command, command.length);
     }
 
     @Override
