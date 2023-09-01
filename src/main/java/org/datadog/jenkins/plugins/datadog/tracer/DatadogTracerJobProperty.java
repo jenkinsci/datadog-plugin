@@ -7,6 +7,7 @@ import hudson.model.Job;
 import hudson.model.JobProperty;
 import hudson.model.JobPropertyDescriptor;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -47,6 +48,14 @@ public class DatadogTracerJobProperty<T extends Job<?, ?>> extends JobProperty<T
 
     public Map<String, String> getAdditionalVariables() {
         return additionalVariables;
+    }
+
+    public List<DatadogTracerEnvironmentProperty> getAdditionalVariablesAsList() {
+        List<DatadogTracerEnvironmentProperty> list = new ArrayList<>();
+        for (Map.Entry<String, String> e : additionalVariables.entrySet()) {
+            list.add(new DatadogTracerEnvironmentProperty(e.getKey(), e.getValue()));
+        }
+        return list;
     }
 
     @Extension

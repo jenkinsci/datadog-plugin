@@ -4,7 +4,6 @@ import hudson.FilePath;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Job;
-import hudson.model.Label;
 import hudson.model.TopLevelItem;
 import hudson.slaves.DumbSlave;
 import hudson.tasks.Shell;

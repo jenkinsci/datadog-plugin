@@ -18,7 +18,7 @@
         <f:entry title="Additional Settings (Optional)"
              help="/descriptor/org.datadog.jenkins.plugins.datadog.tracer.DatadogTracerJobProperty/help/additionalVariables">
 
-            <f:repeatable var="additionalVariable" items="${instance.additionalVariables}">
+            <f:repeatable var="additionalVariable" items="${instance.additionalVariablesAsList}">
                 <div width="100%">
 
                     <f:entry title="Name">
