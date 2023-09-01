@@ -30,6 +30,7 @@ import hudson.model.Result;
 import hudson.model.TaskListener;
 import hudson.slaves.OfflineCause;
 import hudson.slaves.SlaveComputer;
+import hudson.util.FormValidation;
 
 public class DatadogFilteringEventsTest {
     private DatadogClientStub client;
@@ -422,9 +423,13 @@ public class DatadogFilteringEventsTest {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         environmentVariables.set("DATADOG_JENKINS_PLUGIN_EXCLUDE_EVENTS", "UserAuthenticated");
         cfg.loadEnvVariables();
-
         cfg.setEmitSecurityEvents(false);
-        assertThrows(InvalidAttributeValueException.class, () -> cfg.setIncludeEvents("UserAuthenticated"));
+        cfg.setIncludeEvents("UserAuthenticated");
+
+        FormValidation validation = cfg.doTestFilteringConfig(cfg.isEmitSecurityEvents(), cfg.isEmitSystemEvents(), cfg.getIncludeEvents(),
+                cfg.getExcludeEvents());
+
+        assertEquals(validation.getMessage(), "The following events are in both the include and exclude lists: UserAuthenticated");
     }
 
     @Test
@@ -434,8 +439,12 @@ public class DatadogFilteringEventsTest {
         cfg.loadEnvVariables();
         cfg.setEmitSecurityEvents(false);
         cfg.setEmitSystemEvents(false);
+        cfg.setExcludeEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
         
-        assertThrows(InvalidAttributeValueException.class, () -> cfg.setExcludeEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS));  
+        FormValidation validation = cfg.doTestFilteringConfig(cfg.isEmitSecurityEvents(), cfg.isEmitSystemEvents(), cfg.getIncludeEvents(),
+                cfg.getExcludeEvents());
+
+        assertEquals(validation.getMessage(), "The following events are in both the include and exclude lists: BuildStarted,SCMCheckout");
     }
 
     @Test
@@ -443,8 +452,11 @@ public class DatadogFilteringEventsTest {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEmitSecurityEvents(false);
         cfg.setIncludeEvents("UserAuthenticated");
-        
-        assertThrows(InvalidAttributeValueException.class, () -> cfg.setExcludeEvents("UserAuthenticated"));
+        cfg.setExcludeEvents("UserAuthenticated");
+        FormValidation validation = cfg.doTestFilteringConfig(cfg.isEmitSecurityEvents(), cfg.isEmitSystemEvents(), cfg.getIncludeEvents(),
+                cfg.getExcludeEvents());
+
+        assertEquals(validation.getMessage(), "The following events are in both the include and exclude lists: UserAuthenticated");
     }
 
     @Test
@@ -453,8 +465,12 @@ public class DatadogFilteringEventsTest {
         cfg.setEmitSecurityEvents(false);
         cfg.setEmitSystemEvents(false);
         cfg.setExcludeEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
-        
-        assertThrows(InvalidAttributeValueException.class, () -> cfg.setIncludeEvents("BuildStarted,SCMCheckout"));
+        cfg.setIncludeEvents("BuildStarted,SCMCheckout");
+
+
+        FormValidation validation = cfg.doTestFilteringConfig(cfg.isEmitSecurityEvents(), cfg.isEmitSystemEvents(), cfg.getIncludeEvents(),
+                cfg.getExcludeEvents());
+        assertEquals(validation.getMessage(), "The following events are in both the include and exclude lists: BuildStarted,SCMCheckout");
     }
 
 
