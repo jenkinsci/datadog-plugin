@@ -122,13 +122,23 @@ public class TracerInjectionIT {
                 "    stages {\n" +
                 "        stage('test'){\n" +
                 "            steps {\n" +
-                "                sh \"./mvnw clean\"" +
+                "                " + getMavenCommand() + "\n" +
                 "            }\n" +
                 "        }\n" +
                 "    }\n" +
                 "}";
         job.setDefinition(new CpsFlowDefinition(definition, true));
         return job;
+    }
+
+    private String getMavenCommand() {
+        return isRunningOnWindows()
+                ? "bat \"./mvnw.cmd clean\""
+                : "sh \"./mvnw clean\"";
+    }
+
+    private boolean isRunningOnWindows() {
+        return System.getProperty("os.name").toLowerCase().contains("win");
     }
 
     private void givenProjectIsBuiltOnAgentNode(FreeStyleProject project) throws Exception {
