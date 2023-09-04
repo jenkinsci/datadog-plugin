@@ -79,10 +79,6 @@ public class DatadogHttpClient implements DatadogClient {
 
     @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL")
     public static boolean enableValidations = true;
-    private String jreVersion = null;
-    private String jenkinsVersion = null;
-    private String pluginVersion = null;
-
 
     private String url = null;
     private String logIntakeUrl = null;
@@ -455,10 +451,6 @@ public class DatadogHttpClient implements DatadogClient {
 
         Map<String, String> headers = new HashMap<>();
         headers.put("DD-API-KEY", Secret.toString(apiKey));
-        headers.put("User-Agent", String.format("Datadog/%s/jenkins Java/%s Jenkins/%s",
-                getDatadogPluginVersion(),
-                getJavaRuntimeVersion(),
-                getJenkinsVersion()));
 
         byte[] body = payload.toString().getBytes(StandardCharsets.UTF_8);
 
@@ -496,10 +488,6 @@ public class DatadogHttpClient implements DatadogClient {
 
         Map<String, String> headers = new HashMap<>();
         headers.put("DD-API-KEY", Secret.toString(apiKey));
-        headers.put("User-Agent", String.format("Datadog/%s/jenkins Java/%s Jenkins/%s",
-                getDatadogPluginVersion(),
-                getJavaRuntimeVersion(),
-                getJenkinsVersion()));
 
         byte[] body = payload.getBytes(StandardCharsets.UTF_8);
 
@@ -534,10 +522,6 @@ public class DatadogHttpClient implements DatadogClient {
         Map<String, String> headers = new HashMap<>();
         headers.put("DD-API-KEY", Secret.toString(apiKey));
         headers.put("DD-CI-PROVIDER-NAME", "jenkins");
-        headers.put("User-Agent", String.format("Datadog/%s/jenkins Java/%s Jenkins/%s",
-                getDatadogPluginVersion(),
-                getJavaRuntimeVersion(),
-                getJenkinsVersion()));
 
         byte[] body = payload.getBytes(StandardCharsets.UTF_8);
 
@@ -579,10 +563,6 @@ public class DatadogHttpClient implements DatadogClient {
 
         Map<String, String> headers = new HashMap<>();
         headers.put("DD-API-KEY", Secret.toString(apiKey));
-        headers.put("User-Agent", String.format("Datadog/%s/jenkins Java/%s Jenkins/%s",
-                getDatadogPluginVersion(),
-                getJavaRuntimeVersion(),
-                getJenkinsVersion()));
 
         byte[] body = "{}".getBytes(StandardCharsets.UTF_8);
 
@@ -598,27 +578,6 @@ public class DatadogHttpClient implements DatadogClient {
             DatadogUtilities.severe(logger, e, "Failed to validate webhook connection");
             return false;
         }
-    }
-
-    private String getJavaRuntimeVersion(){
-        if(this.jreVersion == null) {
-            this.jreVersion =  System.getProperty("java.version");
-        }
-        return this.jreVersion;
-    }
-
-    private String getDatadogPluginVersion(){
-        if(this.pluginVersion == null){
-            this.pluginVersion = this.getClass().getPackage().getImplementationVersion();
-        }
-        return this.pluginVersion;
-    }
-
-    private String getJenkinsVersion(){
-        if(this.jenkinsVersion == null) {
-            this.jenkinsVersion =  Jenkins.VERSION;
-        }
-        return this.jenkinsVersion;
     }
 
     @Override
