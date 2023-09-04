@@ -28,11 +28,11 @@ package org.datadog.jenkins.plugins.datadog;
 import com.timgroup.statsd.ServiceCheck;
 import hudson.model.Run;
 import hudson.util.Secret;
-import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.jenkinsci.plugins.workflow.graph.FlowNode;
-
 import java.util.Map;
 import java.util.Set;
+import org.datadog.jenkins.plugins.datadog.clients.Metrics;
+import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 public interface DatadogClient {
 
@@ -114,16 +114,7 @@ public interface DatadogClient {
      */
     public void flushCounters();
 
-    /**
-     * Sends a metric to the Datadog API, including the gauge name, and value.
-     *
-     * @param name     - A String with the name of the metric to record.
-     * @param value    - A long containing the value to submit.
-     * @param hostname - A String with the hostname to submit.
-     * @param tags     - A Map containing the tags to submit.
-     * @return a boolean to signify the success or failure of the HTTP POST request.
-     */
-    public boolean gauge(String name, long value, String hostname, Map<String, Set<String>> tags);
+    public Metrics metrics();
 
     /**
      * Sends a service check to the Datadog API, including the check name, and status.

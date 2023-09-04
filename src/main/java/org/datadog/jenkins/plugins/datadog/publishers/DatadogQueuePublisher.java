@@ -35,6 +35,7 @@ import hudson.model.Run;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.clients.Metrics;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
@@ -62,15 +63,14 @@ public class DatadogQueuePublisher extends PeriodicWork {
 
     @Override
     protected void doRun() throws Exception {
-        try {
-            logger.fine("doRun called: Computing queue metrics");
+        logger.fine("doRun called: Computing queue metrics");
 
-            // Get Datadog Client Instance
-            DatadogClient client = ClientFactory.getClient();
-            if(client == null){
-                return;
-            }
+        DatadogClient client = ClientFactory.getClient();
+        if (client == null) {
+            return;
+        }
 
+        try (Metrics metrics = client.metrics()) {
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
             // Add JenkinsUrl Tag
             tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
@@ -122,19 +122,19 @@ public class DatadogQueuePublisher extends PeriodicWork {
                     isPending = true;
                     pending++;
                 }
-                
-                client.gauge("jenkins.queue.job.in_queue", 1, hostname, job_tags);
-                client.gauge("jenkins.queue.job.buildable", DatadogUtilities.toInt(isBuildable), hostname, job_tags);
-                client.gauge("jenkins.queue.job.pending", DatadogUtilities.toInt(isPending), hostname, job_tags);
-                client.gauge("jenkins.queue.job.stuck", DatadogUtilities.toInt(isStuck), hostname, job_tags);
-                client.gauge("jenkins.queue.job.blocked", DatadogUtilities.toInt(isBlocked), hostname, job_tags);
+
+                metrics.gauge("jenkins.queue.job.in_queue", 1, hostname, job_tags);
+                metrics.gauge("jenkins.queue.job.buildable", DatadogUtilities.toInt(isBuildable), hostname, job_tags);
+                metrics.gauge("jenkins.queue.job.pending", DatadogUtilities.toInt(isPending), hostname, job_tags);
+                metrics.gauge("jenkins.queue.job.stuck", DatadogUtilities.toInt(isStuck), hostname, job_tags);
+                metrics.gauge("jenkins.queue.job.blocked", DatadogUtilities.toInt(isBlocked), hostname, job_tags);
             }
 
-            client.gauge("jenkins.queue.size", size, hostname, tags);
-            client.gauge("jenkins.queue.buildable", buildable, hostname, tags);
-            client.gauge("jenkins.queue.pending", pending, hostname, tags);
-            client.gauge("jenkins.queue.stuck", stuck, hostname, tags);
-            client.gauge("jenkins.queue.blocked", blocked, hostname, tags);
+            metrics.gauge("jenkins.queue.size", size, hostname, tags);
+            metrics.gauge("jenkins.queue.buildable", buildable, hostname, tags);
+            metrics.gauge("jenkins.queue.pending", pending, hostname, tags);
+            metrics.gauge("jenkins.queue.stuck", stuck, hostname, tags);
+            metrics.gauge("jenkins.queue.blocked", blocked, hostname, tags);
 
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to compute and send queue metrics");
