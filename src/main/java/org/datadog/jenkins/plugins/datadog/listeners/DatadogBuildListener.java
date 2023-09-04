@@ -223,15 +223,22 @@ public class DatadogBuildListener extends RunListener<Run> {
 
     @Override
     public void onCompleted(Run run, @Nonnull TaskListener listener) {
-        // Process only if job in NOT in excluded and is in included
-        if (!DatadogUtilities.isJobTracked(run.getParent().getFullName())) {
-            return;
-        }
+        DatadogClient client;
+        try {
+            // Process only if job in NOT in excluded and is in included
+            if (!DatadogUtilities.isJobTracked(run.getParent().getFullName())) {
+                return;
+            }
 
-        logger.fine("Start DatadogBuildListener#onCompleted");
+            logger.fine("Start DatadogBuildListener#onCompleted");
 
-        DatadogClient client = getDatadogClient();
-        if (client == null) {
+            client = getDatadogClient();
+            if (client == null) {
+                return;
+            }
+
+        } catch (Exception e) {
+            DatadogUtilities.severe(logger, e, "Failed to process build completion");
             return;
         }
 
