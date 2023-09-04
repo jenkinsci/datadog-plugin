@@ -327,13 +327,13 @@ public class DatadogHttpClient implements DatadogClient {
             logger.severe("Your client is not initialized properly");
             return false;
         }
-        ConcurrentMetricCounters.getInstance().increment(name, hostname, tags);
+        ConcurrentMetricCounters.increment(name, hostname, tags);
         return true;
     }
 
     @Override
     public void flushCounters() {
-        ConcurrentMap<CounterMetric, Integer> counters = ConcurrentMetricCounters.getInstance().getAndReset();
+        ConcurrentMap<CounterMetric, Integer> counters = ConcurrentMetricCounters.getAndReset();
 
         logger.fine("Run flushCounters method");
         // Submit all metrics as gauge
