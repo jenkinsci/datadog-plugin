@@ -34,8 +34,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-import jenkins.model.Jenkins;
 import net.sf.json.JSON;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -79,10 +79,6 @@ public class DatadogHttpClient implements DatadogClient {
 
     @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL")
     public static boolean enableValidations = true;
-    private String jreVersion = null;
-    private String jenkinsVersion = null;
-    private String pluginVersion = null;
-
 
     private String url = null;
     private String logIntakeUrl = null;
@@ -336,79 +332,85 @@ public class DatadogHttpClient implements DatadogClient {
         ConcurrentMap<CounterMetric, Integer> counters = ConcurrentMetricCounters.getInstance().getAndReset();
 
         logger.fine("Run flushCounters method");
-        // Submit all metrics as gauge
-        for (Map.Entry<CounterMetric, Integer> entry : counters.entrySet()) {
-            CounterMetric counterMetric = entry.getKey();
-            int count = entry.getValue();
-            logger.fine("Flushing: " + counterMetric.getMetricName() + " - " + count);
+        try (HttpMetrics metrics = metrics()) {
+            // Submit all metrics as gauge
+            for (Map.Entry<CounterMetric, Integer> entry : counters.entrySet()) {
+                CounterMetric counterMetric = entry.getKey();
+                int count = entry.getValue();
+                logger.fine("Flushing: " + counterMetric.getMetricName() + " - " + count);
 
-            try {
-                // Since we submit a rate we need to divide the submitted value by the interval (10)
-                this.postMetric(
+                metrics.rate(
                         counterMetric.getMetricName(), count,
                         counterMetric.getHostname(),
-                        counterMetric.getTags(),
-                        "rate");
-            } catch (IOException e) {
-                DatadogUtilities.severe(logger, e, "Failed to flush counters");
+                        counterMetric.getTags());
             }
+        } catch (Exception e) {
+            DatadogUtilities.severe(logger, e, "Failed to flush counters");
         }
     }
 
     @Override
-    public boolean gauge(String name, long value, String hostname, Map<String, Set<String>> tags) {
-        try {
-            postMetric(name, value, hostname, tags, "gauge");
-            return true;
-        } catch (IOException e) {
-            DatadogUtilities.severe(logger, e, "Failed to send gauge");
-            return false;
-        }
+    public HttpMetrics metrics() {
+        return new HttpMetrics();
     }
 
-    private void postMetric(String name, float value, String hostname, Map<String, Set<String>> tags, String type) throws IOException {
-        if (this.isDefaultIntakeConnectionBroken()) {
-            throw new IOException("Your client is not initialized properly");
+    private final class HttpMetrics implements Metrics {
+        // when we submit a rate we need to divide the submitted value by the interval (10)
+        private static final int RATE_INTERVAL = 10;
+
+        private final JSONArray series = new JSONArray();
+        private final long timestamp = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+
+        @Override
+        public void gauge(String name, long value, String hostname, Map<String, Set<String>> tags) {
+            addMetric(name, value, hostname, tags, "gauge");
         }
 
-        int INTERVAL = 10;
-
-        logger.fine(String.format("Sending metric '%s' with value %s", name, String.valueOf(value)));
-
-        // Setup data point, of type [<unix_timestamp>, <value>]
-        JSONArray points = new JSONArray();
-        JSONArray point = new JSONArray();
-
-        point.add(System.currentTimeMillis() / 1000); // current time, s
-        if(type.equals("rate")){
-            point.add(value / (float)INTERVAL);
-        } else {
-            point.add(value);
+        public void rate(String name, float value, String hostname, Map<String, Set<String>> tags) {
+            addMetric(name, value, hostname, tags, "rate");
         }
-        points.add(point); // api expects a list of points
 
-        JSONObject metric = new JSONObject();
-        metric.put("metric", name);
-        metric.put("points", points);
-        metric.put("type", type);
-        metric.put("host", hostname);
-        if(type.equals("rate")){
-            metric.put("interval", INTERVAL);
+        private void addMetric(String name, float value, String hostname, Map<String, Set<String>> tags, String type) {
+            logger.fine(String.format("Sending metric '%s' with value %s", name, value));
+
+            JSONArray point = new JSONArray();
+            point.add(timestamp);
+            if (type.equals("rate")) {
+                point.add(value / (float) RATE_INTERVAL);
+            } else {
+                point.add(value);
+            }
+
+            // Setup data point, of type [<unix_timestamp>, <value>]
+            JSONArray points = new JSONArray();
+            points.add(point); // api expects a list of points
+
+            JSONObject metric = new JSONObject();
+            metric.put("metric", name);
+            metric.put("points", points);
+            metric.put("type", type);
+            metric.put("host", hostname);
+            if(type.equals("rate")) {
+                metric.put("interval", RATE_INTERVAL);
+            }
+            if (tags != null) {
+                logger.fine(tags.toString());
+                metric.put("tags", TagsUtil.convertTagsToJSONArray(tags));
+            }
+
+            // Place metric as item of series list
+            series.add(metric);
         }
-        if (tags != null) {
-            logger.fine(tags.toString());
-            metric.put("tags", TagsUtil.convertTagsToJSONArray(tags));
+
+        @Override
+        public void close() throws Exception {
+            // Add series to payload
+            JSONObject payload = new JSONObject();
+            payload.put("series", series);
+
+            logger.fine(String.format("payload: %s", payload));
+            postApi(payload, METRIC);
         }
-        // Place metric as item of series list
-        JSONArray series = new JSONArray();
-        series.add(metric);
-
-        // Add series to payload
-        JSONObject payload = new JSONObject();
-        payload.put("series", series);
-
-        logger.fine(String.format("payload: %s", payload.toString()));
-        postApi(payload, METRIC);
     }
 
     @Override
@@ -455,10 +457,6 @@ public class DatadogHttpClient implements DatadogClient {
 
         Map<String, String> headers = new HashMap<>();
         headers.put("DD-API-KEY", Secret.toString(apiKey));
-        headers.put("User-Agent", String.format("Datadog/%s/jenkins Java/%s Jenkins/%s",
-                getDatadogPluginVersion(),
-                getJavaRuntimeVersion(),
-                getJenkinsVersion()));
 
         byte[] body = payload.toString().getBytes(StandardCharsets.UTF_8);
 
@@ -496,10 +494,6 @@ public class DatadogHttpClient implements DatadogClient {
 
         Map<String, String> headers = new HashMap<>();
         headers.put("DD-API-KEY", Secret.toString(apiKey));
-        headers.put("User-Agent", String.format("Datadog/%s/jenkins Java/%s Jenkins/%s",
-                getDatadogPluginVersion(),
-                getJavaRuntimeVersion(),
-                getJenkinsVersion()));
 
         byte[] body = payload.getBytes(StandardCharsets.UTF_8);
 
@@ -534,10 +528,6 @@ public class DatadogHttpClient implements DatadogClient {
         Map<String, String> headers = new HashMap<>();
         headers.put("DD-API-KEY", Secret.toString(apiKey));
         headers.put("DD-CI-PROVIDER-NAME", "jenkins");
-        headers.put("User-Agent", String.format("Datadog/%s/jenkins Java/%s Jenkins/%s",
-                getDatadogPluginVersion(),
-                getJavaRuntimeVersion(),
-                getJenkinsVersion()));
 
         byte[] body = payload.getBytes(StandardCharsets.UTF_8);
 
@@ -579,10 +569,6 @@ public class DatadogHttpClient implements DatadogClient {
 
         Map<String, String> headers = new HashMap<>();
         headers.put("DD-API-KEY", Secret.toString(apiKey));
-        headers.put("User-Agent", String.format("Datadog/%s/jenkins Java/%s Jenkins/%s",
-                getDatadogPluginVersion(),
-                getJavaRuntimeVersion(),
-                getJenkinsVersion()));
 
         byte[] body = "{}".getBytes(StandardCharsets.UTF_8);
 
@@ -598,27 +584,6 @@ public class DatadogHttpClient implements DatadogClient {
             DatadogUtilities.severe(logger, e, "Failed to validate webhook connection");
             return false;
         }
-    }
-
-    private String getJavaRuntimeVersion(){
-        if(this.jreVersion == null) {
-            this.jreVersion =  System.getProperty("java.version");
-        }
-        return this.jreVersion;
-    }
-
-    private String getDatadogPluginVersion(){
-        if(this.pluginVersion == null){
-            this.pluginVersion = this.getClass().getPackage().getImplementationVersion();
-        }
-        return this.pluginVersion;
-    }
-
-    private String getJenkinsVersion(){
-        if(this.jenkinsVersion == null) {
-            this.jenkinsVersion =  Jenkins.VERSION;
-        }
-        return this.jenkinsVersion;
     }
 
     @Override

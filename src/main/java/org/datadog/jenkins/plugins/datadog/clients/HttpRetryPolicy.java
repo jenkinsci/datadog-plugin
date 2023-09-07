@@ -39,7 +39,7 @@ public class HttpRetryPolicy {
 
   private static final Logger logger = Logger.getLogger(HttpRetryPolicy.class.getName());
 
-  private static final int NO_RESPONSE_RECEIVED = -1;
+  private static final int NO_RESPONSE_RECEIVED = 0;
   private static final int TOO_MANY_REQUESTS_HTTP_CODE = 429;
   private static final String X_RATELIMIT_RESET_HTTP_HEADER = "x-ratelimit-reset";
   private static final int RATE_LIMIT_RESET_TIME_UNDEFINED = -1;
@@ -108,7 +108,7 @@ public class HttpRetryPolicy {
 
   public long backoff() {
     long currentDelay = delay;
-    delay = (long) (delay * delayFactor * randomJitter(0.15));
+    delay = (long) (delay * delayFactor * randomJitter(0.25));
     return currentDelay;
   }
 
