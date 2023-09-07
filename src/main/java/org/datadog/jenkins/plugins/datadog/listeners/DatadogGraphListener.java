@@ -32,6 +32,7 @@ import hudson.model.Run;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.clients.Metrics;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
@@ -96,7 +97,7 @@ public class DatadogGraphListener implements GraphListener {
             return;
         }
 
-        try {
+        try (Metrics metrics = client.metrics()) {
             String result = DatadogUtilities.getResultTag(endNode);
             BuildData buildData = new BuildData(run, flowNode.getExecution().getOwner().getListener());
             String hostname = buildData.getHostname("");
@@ -108,10 +109,10 @@ public class DatadogGraphListener implements GraphListener {
             TagsUtil.addTagToTags(tags, "result", result);
             long pauseDuration = getPauseDurationMillis(startNode);
 
-            client.gauge("jenkins.job.stage_duration", getTime(startNode, endNode), hostname, tags);
-            client.gauge("jenkins.job.stage_pause_duration", pauseDuration, hostname, tags);
+            metrics.gauge("jenkins.job.stage_duration", getTime(startNode, endNode), hostname, tags);
+            metrics.gauge("jenkins.job.stage_pause_duration", pauseDuration, hostname, tags);
             client.incrementCounter("jenkins.job.stage_completed", hostname, tags);
-        } catch (IOException | InterruptedException e) {
+        } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Unable to submit the stage duration metric for " + getStageName(startNode));
         }
     }

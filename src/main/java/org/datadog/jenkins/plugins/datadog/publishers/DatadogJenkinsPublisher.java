@@ -34,6 +34,7 @@ import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.clients.Metrics;
 import org.datadog.jenkins.plugins.datadog.model.PluginData;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
@@ -84,12 +85,14 @@ public class DatadogJenkinsPublisher extends PeriodicWork {
             }
 
             PluginData pluginData = collectPluginData(instance);
-            client.gauge("jenkins.project.count", projectCount, hostname, tags);
-            client.gauge("jenkins.plugin.count", pluginData.getCount(), hostname, tags);
-            client.gauge("jenkins.plugin.active", pluginData.getActive(), hostname, tags);
-            client.gauge("jenkins.plugin.failed", pluginData.getFailed(), hostname, tags);
-            client.gauge("jenkins.plugin.inactivate", pluginData.getInactive(), hostname, tags);
-            client.gauge("jenkins.plugin.withUpdate", pluginData.getUpdatable(), hostname, tags);
+            try (Metrics metrics = client.metrics()) {
+                metrics.gauge("jenkins.project.count", projectCount, hostname, tags);
+                metrics.gauge("jenkins.plugin.count", pluginData.getCount(), hostname, tags);
+                metrics.gauge("jenkins.plugin.active", pluginData.getActive(), hostname, tags);
+                metrics.gauge("jenkins.plugin.failed", pluginData.getFailed(), hostname, tags);
+                metrics.gauge("jenkins.plugin.inactivate", pluginData.getInactive(), hostname, tags);
+                metrics.gauge("jenkins.plugin.withUpdate", pluginData.getUpdatable(), hostname, tags);
+            }
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to compute and send Jenkins metrics");
         }

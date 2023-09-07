@@ -34,7 +34,6 @@ import com.timgroup.statsd.ServiceCheck;
 import com.timgroup.statsd.StatsDClient;
 import hudson.model.Run;
 import hudson.util.Secret;
-import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -287,6 +286,8 @@ public class DatadogAgentClient implements DatadogClient {
         }
         try {
             logger.info("Re/Initialize Datadog-Plugin Logger: hostname = " + this.hostname + ", logCollectionPort = " + this.logCollectionPort);
+            // need to close existing logger since it has a socket opened - not closing it leads to a file descriptor leak
+            close(this.ddLogger);
             this.ddLogger = Logger.getLogger("Datadog-Plugin Logger");
             this.ddLogger.setUseParentHandlers(false);
             //Remove all existing Handlers
@@ -313,6 +314,24 @@ public class DatadogAgentClient implements DatadogClient {
             return false;
         }
         return true;
+    }
+
+
+    private void close(Logger logger) {
+        if (logger == null) {
+            return;
+        }
+        Handler[] handlers = logger.getHandlers();
+        if (handlers == null) {
+            return;
+        }
+        for (Handler handler : handlers) {
+            try {
+                handler.close();
+            } catch (Exception e) {
+                // ignore
+            }
+        }
     }
 
     /**
@@ -609,19 +628,29 @@ public class DatadogAgentClient implements DatadogClient {
     }
 
     @Override
-    public boolean gauge(String name, long value, String hostname, Map<String, Set<String>> tags) {
-        try {
-            boolean status = reinitializeStatsDClient(false);
-            if(!status){
-                return false;
+    public Metrics metrics() {
+        return new AgentMetrics();
+    }
+
+    private final class AgentMetrics implements Metrics {
+        @Override
+        public void gauge(String name, long value, String hostname, Map<String, Set<String>> tags) {
+            try {
+                boolean status = reinitializeStatsDClient(false);
+                if (!status) {
+                    return;
+                }
+                logger.fine("Submit gauge with dogStatD client");
+                statsd.gauge(name, value, TagsUtil.convertTagsToArray(tags));
+            } catch(Exception e){
+                DatadogUtilities.severe(logger, e, "Failed to send gauge metric payload to DogStatsD");
+                reinitializeStatsDClient(true);
             }
-            logger.fine("Submit gauge with dogStatD client");
-            this.statsd.gauge(name, value, TagsUtil.convertTagsToArray(tags));
-            return true;
-        } catch(Exception e){
-            DatadogUtilities.severe(logger, e, "Failed to send gauge metric payload to DogStatsD");
-            reinitializeStatsDClient(true);
-            return false;
+        }
+
+        @Override
+        public void close() throws Exception {
+            // no op
         }
     }
 

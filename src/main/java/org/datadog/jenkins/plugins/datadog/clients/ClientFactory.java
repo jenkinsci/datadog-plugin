@@ -60,29 +60,22 @@ public class ClientFactory {
             // Only used for tests
             return testClient;
         }
+
         DatadogGlobalConfiguration descriptor = DatadogUtilities.getDatadogGlobalDescriptor();
-        String reportWith = null;
-        String targetApiURL = null;
-        String targetLogIntakeURL = null;
-        String targetWebhookIntakeURL = null;
-        Secret targetApiKey = null;
-        String targetHost = null;
-        Integer targetPort = null;
-        Integer targetLogCollectionPort = null;
-        Integer targetTraceCollectionPort = null;
-        String ciInstanceName = null;
-        if(descriptor != null){
-            reportWith = descriptor.getReportWith();
-            targetApiURL = descriptor.getTargetApiURL();
-            targetLogIntakeURL = descriptor.getTargetLogIntakeURL();
-            targetWebhookIntakeURL = descriptor.getTargetWebhookIntakeURL();
-            targetApiKey = descriptor.getUsedApiKey();
-            targetHost = descriptor.getTargetHost();
-            targetPort = descriptor.getTargetPort();
-            targetLogCollectionPort = descriptor.getTargetLogCollectionPort();
-            targetTraceCollectionPort = descriptor.getTargetTraceCollectionPort();
-            ciInstanceName = descriptor.getCiInstanceName();
+        if (descriptor == null) {
+            return null;
         }
+
+        String reportWith = descriptor.getReportWith();
+        String targetApiURL = descriptor.getTargetApiURL();
+        String targetLogIntakeURL = descriptor.getTargetLogIntakeURL();
+        String targetWebhookIntakeURL = descriptor.getTargetWebhookIntakeURL();
+        Secret targetApiKey = descriptor.getUsedApiKey();
+        String targetHost = descriptor.getTargetHost();
+        Integer targetPort = descriptor.getTargetPort();
+        Integer targetLogCollectionPort = descriptor.getTargetLogCollectionPort();
+        Integer targetTraceCollectionPort = descriptor.getTargetTraceCollectionPort();
+        String ciInstanceName = descriptor.getCiInstanceName();
         return ClientFactory.getClient(DatadogClient.ClientType.valueOf(reportWith), targetApiURL, targetLogIntakeURL, targetWebhookIntakeURL,
                 targetApiKey, targetHost, targetPort, targetLogCollectionPort, targetTraceCollectionPort, ciInstanceName);
     }
