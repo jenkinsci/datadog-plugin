@@ -167,6 +167,11 @@
       <artifactId>jetty-client</artifactId>
       <version>9.4.51.v20230217</version>
     </dependency>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpg-jdk18on</artifactId>
+      <version>1.72</version>
+    </dependency>
   </dependencies>
 
   <build>

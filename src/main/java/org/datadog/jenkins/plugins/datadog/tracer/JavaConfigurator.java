@@ -3,14 +3,18 @@ package org.datadog.jenkins.plugins.datadog.tracer;
 import hudson.FilePath;
 import hudson.model.Node;
 import hudson.util.Secret;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
+import org.datadog.jenkins.plugins.datadog.tracer.signature.SignatureVerifier;
 
 final class JavaConfigurator implements TracerConfigurator {
 
@@ -53,52 +57,45 @@ final class JavaConfigurator implements TracerConfigurator {
             }
         });
 
+        if (!DEFAULT_TRACER_DISTRIBUTION_URL.equals(tracerDistributionUrl)) {
+            // verify signature if downloading from Maven Central
+            String signatureFileUrl = tracerDistributionUrl + ".asc";
+            byte[] signaturePublicKey = getTracerSignaturePublicKey(tracerConfig);
+
+            httpClient.getBinary(signatureFileUrl, Collections.emptyMap(), signatureStream -> {
+                try (InputStream tracerStream = datadogTracerFile.read();
+                     InputStream publicKeyStream = new ByteArrayInputStream(signaturePublicKey)) {
+                    boolean signatureValid = SignatureVerifier.verifySignature(tracerStream, signatureStream, publicKeyStream);
+                    if (!signatureValid) {
+                        throw new IllegalStateException("Tracer downloaded from " + tracerDistributionUrl + " is not signed with a valid signature");
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException("Error while verifying tracer signature", e);
+                }
+            });
+        }
+
         return datadogTracerFile.absolutize();
     }
 
     private int getTracerJarCacheTtlMinutes(DatadogTracerJobProperty<?> tracerConfig) {
-        String ttl = getEnvVariable(tracerConfig, TRACER_JAR_CACHE_TTL_ENV_VAR);
-        if (ttl != null) {
-            try {
-                return Integer.parseInt(ttl);
-            } catch (Exception e) {
-                // ignored
-            }
-        }
-        return DEFAULT_TRACER_JAR_CACHE_TTL_MINUTES;
+        return getSetting(tracerConfig, TRACER_JAR_CACHE_TTL_ENV_VAR, DEFAULT_TRACER_JAR_CACHE_TTL_MINUTES, Integer::parseInt);
     }
 
     private String getTracerDistributionUrl(DatadogTracerJobProperty<?> tracerConfig) {
-        String distributionUrl = getEnvVariable(tracerConfig, TRACER_DISTRIBUTION_URL_ENV_VAR);
-        if (distributionUrl != null) {
-            validateUserSuppliedTracerUrl(distributionUrl);
-            return distributionUrl;
-        } else {
-            return DEFAULT_TRACER_DISTRIBUTION_URL;
-        }
+        return getSetting(tracerConfig, TRACER_DISTRIBUTION_URL_ENV_VAR, DEFAULT_TRACER_DISTRIBUTION_URL, this::validateUserSuppliedTracerUrl);
     }
 
-    private void validateUserSuppliedTracerUrl(String distributionUrl) {
-        URL url;
-        try {
-            url = new URL(distributionUrl);
-        } catch (MalformedURLException e) {
-            throw new IllegalArgumentException("Error while parsing tracer distribution URL: " + distributionUrl, e);
-        }
+    private byte[] getTracerSignaturePublicKey(DatadogTracerJobProperty<?> tracerConfig) {
+        return getSetting(tracerConfig, TRACER_DISTRIBUTION_URL_ENV_VAR, SignatureVerifier.DATADOG_PUBLIC_KEY, String::getBytes);
+    }
 
-        String host = url.getHost();
-        if (DATADOG_DISTRIBUTION_HOST.equals(host)) {
-            return;
+    private <T> T getSetting(DatadogTracerJobProperty<?> tracerConfig, String envVariableName, T defaultValue, Function<String, T> parser) {
+        String envVariable = getEnvVariable(tracerConfig, envVariableName);
+        if (envVariable != null) {
+            return parser.apply(envVariable);
         }
-
-        if (!MAVEN_CENTRAL_HOST.equals(host)) {
-            throw new IllegalArgumentException("Illegal tracer distribution host: " + host + " (" + distributionUrl + ")");
-        }
-
-        String path = url.getPath();
-        if (!path.startsWith(DATADOG_AGENT_MAVEN_DISTRIBUTION_PATH)) {
-            throw new IllegalArgumentException("Illegal tracer distribution path: " + path + " (" + distributionUrl + ")");
-        }
+        return defaultValue;
     }
 
     private String getEnvVariable(DatadogTracerJobProperty<?> tracerConfig, String name) {
@@ -110,6 +107,30 @@ final class JavaConfigurator implements TracerConfigurator {
             }
         }
         return System.getenv(TRACER_JAR_CACHE_TTL_ENV_VAR);
+    }
+
+    private String validateUserSuppliedTracerUrl(String distributionUrl) {
+        URL url;
+        try {
+            url = new URL(distributionUrl);
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException("Error while parsing tracer distribution URL: " + distributionUrl, e);
+        }
+
+        String host = url.getHost();
+        if (DATADOG_DISTRIBUTION_HOST.equals(host)) {
+            return distributionUrl;
+        }
+
+        if (!MAVEN_CENTRAL_HOST.equals(host)) {
+            throw new IllegalArgumentException("Illegal tracer distribution host: " + host + " (" + distributionUrl + ")");
+        }
+
+        String path = url.getPath();
+        if (!path.startsWith(DATADOG_AGENT_MAVEN_DISTRIBUTION_PATH)) {
+            throw new IllegalArgumentException("Illegal tracer distribution path: " + path + " (" + distributionUrl + ")");
+        }
+        return distributionUrl;
     }
 
     private static Map<String, String> getEnvVariables(DatadogTracerJobProperty<?> tracerConfig,
