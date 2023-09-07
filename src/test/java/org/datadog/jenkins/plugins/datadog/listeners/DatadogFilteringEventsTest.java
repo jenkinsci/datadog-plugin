@@ -44,8 +44,8 @@ public class DatadogFilteringEventsTest {
     private ProjectStub job;
 
     @ClassRule
-    public static final JenkinsRule jenkinsRule = new JenkinsRule();  
-    
+    public static final JenkinsRule jenkinsRule = new JenkinsRule();
+
     @Rule
     public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
@@ -62,7 +62,7 @@ public class DatadogFilteringEventsTest {
 
         this.job = new ProjectStub(jenkinsRule.jenkins,"JobName");
         this.job.addProperty(new DatadogJobProperty<>());
-        
+
         // Default config settings
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEmitSecurityEvents(true);
@@ -122,7 +122,7 @@ public class DatadogFilteringEventsTest {
 
         this.runAllEvents();
         this.assertSecurityEvents();
-        assertTrue(this.client.events.size() == 3); 
+        assertTrue(this.client.events.size() == 3);
     }
 
     @Test
@@ -136,7 +136,7 @@ public class DatadogFilteringEventsTest {
         this.runAllEvents();
         this.assertSecurityEvents();
 
-        assertTrue(this.client.events.size() == 3); 
+        assertTrue(this.client.events.size() == 3);
     }
 
     @Test
@@ -179,7 +179,7 @@ public class DatadogFilteringEventsTest {
     public void excludeOnlySecurityEventsViaToggle() throws Exception {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEmitSecurityEvents(false);
-    
+
         this.runDefaultEvents();
         this.assertDefaultEvents();
 
@@ -188,7 +188,7 @@ public class DatadogFilteringEventsTest {
 
         this.runSecurityEvents();
 
-        assertTrue(this.client.events.size() == 14); 
+        assertTrue(this.client.events.size() == 14);
     }
 
     @Test
@@ -204,13 +204,13 @@ public class DatadogFilteringEventsTest {
 
         this.runSecurityEvents();
 
-        assertTrue(this.client.events.size() == 14); 
+        assertTrue(this.client.events.size() == 14);
     }
 
     @Test
     public void excludeOnlySystemEventsViaToggle() throws Exception {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
-        cfg.setEmitSystemEvents(false);    
+        cfg.setEmitSystemEvents(false);
 
         this.runDefaultEvents();
         this.assertDefaultEvents();
@@ -220,7 +220,7 @@ public class DatadogFilteringEventsTest {
         this.runSecurityEvents();
         this.assertSecurityEvents();
 
-        assertTrue(this.client.events.size() == 7); 
+        assertTrue(this.client.events.size() == 7);
     }
 
     @Test
@@ -236,7 +236,7 @@ public class DatadogFilteringEventsTest {
         this.runSecurityEvents();
         this.assertSecurityEvents();
 
-        assertTrue(this.client.events.size() == 7); 
+        assertTrue(this.client.events.size() == 7);
     }
 
     @Test
@@ -251,7 +251,7 @@ public class DatadogFilteringEventsTest {
         this.runSecurityEvents();
         this.assertSecurityEvents();
 
-        assertTrue(this.client.events.size() == 13); 
+        assertTrue(this.client.events.size() == 13);
     }
 
     @Test
@@ -261,7 +261,7 @@ public class DatadogFilteringEventsTest {
         cfg.setEmitSecurityEvents(false);
         cfg.setExcludeEvents("BuildAborted,BuildCompleted,SCMCheckout");
         cfg.setIncludeEvents("ComputerOnline,UserAuthenticated");
-        
+
         this.runAllEvents();
         assertTrue(this.client.events.get(0).getEvent() instanceof BuildStartedEventImpl);
 
@@ -316,7 +316,7 @@ public class DatadogFilteringEventsTest {
         cfg.setEmitSystemEvents(false);
         cfg.setEmitSecurityEvents(false);
         cfg.setExcludeEvents("BuildStarted,BuildAborted,BuildCompleted");
-        
+
         BuildStub previousSuccessfulRun = new BuildStub(this.job, Result.SUCCESS, null, null,
                 121000L, 1, null, 1000000L, null);
 
@@ -338,7 +338,7 @@ public class DatadogFilteringEventsTest {
         cfg.setEmitSystemEvents(false);
         cfg.setEmitSecurityEvents(false);
         cfg.setExcludeEvents("BuildStarted,BuildAborted,BuildCompleted,SCMCheckout");
-        
+
         BuildStub previousSuccessfulRun = new BuildStub(this.job, Result.SUCCESS, null, null,
                 121000L, 1, null, 1000000L, null);
 
@@ -359,7 +359,7 @@ public class DatadogFilteringEventsTest {
         cfg.setEmitSystemEvents(false);
         cfg.setEmitSecurityEvents(false);
         cfg.setExcludeEvents("BuildStarted,BuildAborted,BuildCompleted");
-        
+
         BuildStub previousSuccessfulRun = new BuildStub(this.job, Result.SUCCESS, null, null,
                 121000L, 1, null, 1000000L, null);
 
@@ -380,7 +380,7 @@ public class DatadogFilteringEventsTest {
         cfg.setEmitSystemEvents(false);
         cfg.setEmitSecurityEvents(false);
         cfg.setExcludeEvents("BuildStarted,BuildAborted,BuildCompleted,SCMCheckout");
-        
+
         BuildStub previousSuccessfulRun = new BuildStub(this.job, Result.SUCCESS, null, null,
                 121000L, 1, null, 1000000L, null);
 
@@ -402,7 +402,7 @@ public class DatadogFilteringEventsTest {
         environmentVariables.set("DATADOG_JENKINS_PLUGIN_EXCLUDE_EVENTS", DatadogGlobalConfiguration.DEFAULT_EVENTS);
 
         DatadogUtilities.getDatadogGlobalDescriptor().loadEnvVariables();
-        
+
         this.runAllEvents();
         this.assertSystemEvents();
     }
@@ -413,7 +413,7 @@ public class DatadogFilteringEventsTest {
         environmentVariables.set("DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS", "false");
 
         DatadogUtilities.getDatadogGlobalDescriptor().loadEnvVariables();
-        
+
         this.runAllEvents();
         this.assertDefaultEvents();
     }
@@ -440,7 +440,7 @@ public class DatadogFilteringEventsTest {
         cfg.setEmitSecurityEvents(false);
         cfg.setEmitSystemEvents(false);
         cfg.setExcludeEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
-        
+
         FormValidation validation = cfg.doTestFilteringConfig(cfg.isEmitSecurityEvents(), cfg.isEmitSystemEvents(), cfg.getIncludeEvents(),
                 cfg.getExcludeEvents());
 
@@ -503,7 +503,7 @@ public class DatadogFilteringEventsTest {
 
         BuildStub checkoutRun = new BuildStub(this.job, Result.SUCCESS, null, previousSuccessfulRun,
                 122000L, 2, previousSuccessfulRun, 2000000L, null);
-       
+
         this.datadogBuildListener.onStarted(successRun, mock(TaskListener.class));
         this.datadogBuildListener.onCompleted(successRun, mock(TaskListener.class));
         this.datadogBuildListener.onDeleted(previousFailedRun1);
@@ -550,7 +550,7 @@ public class DatadogFilteringEventsTest {
         computerEvent = this.client.events.get(size - 7).getEvent();
         assertTrue(computerEvent instanceof ComputerOfflineEventImpl);
         assertTrue(((ComputerOfflineEventImpl) computerEvent).isTemporarily());
-        
+
         assertTrue(this.client.events.get(size - 6).getEvent() instanceof ComputerLaunchFailedEventImpl);
 
         assertTrue(this.client.events.get(size - 5).getEvent() instanceof ItemCopiedEventImpl);
@@ -578,7 +578,7 @@ public class DatadogFilteringEventsTest {
 
     private void assertSecurityEvents() throws Exception {
         int size = this.client.events.size();
-        
+
         DatadogEvent authEvent = this.client.events.get(size - 3).getEvent();
         assertTrue(authEvent instanceof UserAuthenticationEventImpl);
         assertEquals(((UserAuthenticationEventImpl) authEvent).getAction(), UserAuthenticationEventImpl.LOGIN);

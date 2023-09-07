@@ -32,7 +32,7 @@ import org.datadog.jenkins.plugins.datadog.model.BuildData;
  * the right message for Datadog.
  */
 public class BuildStartedEventImpl extends AbstractDatadogBuildEvent {
-    
+
     public BuildStartedEventImpl(BuildData buildData) {
         super(buildData);
 

@@ -1031,7 +1031,7 @@ public class DatadogUtilities {
 
     /**
      * Creates inclusion list for events by looking at toggles and inclusion/exclusion string lists
-     * @return list of event name strings that can be sent 
+     * @return list of event name strings that can be sent
      */
     private static List<String> createIncludeLists() {
         List<String> includedEvents = new ArrayList<String>(Arrays.asList(
@@ -1059,7 +1059,7 @@ public class DatadogUtilities {
 
         includedEvents = includedEvents.stream().distinct().collect(Collectors.toList());
 
-        if (excludeEvents != null && !excludeEvents.isEmpty()) 
+        if (excludeEvents != null && !excludeEvents.isEmpty())
             includedEvents.removeIf(excludeEvents::contains);
 
         return includedEvents;

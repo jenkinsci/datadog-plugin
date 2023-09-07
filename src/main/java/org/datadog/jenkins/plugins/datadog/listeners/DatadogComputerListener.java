@@ -136,7 +136,7 @@ public class DatadogComputerListener extends ComputerListener {
             if (!canSendEvent) {
                 return;
             }
-            
+
             // Get the list of tags to apply
             Map<String, Set<String>> tags = TagsUtil.merge(
                     DatadogUtilities.getTagsFromGlobalTags(),

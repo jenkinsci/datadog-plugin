@@ -163,7 +163,7 @@ public class DatadogItemListener extends ItemListener {
             if(client == null){
                 return;
             }
-            
+
             // Send event
             client.event(event);
 

@@ -277,11 +277,9 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 This plugin allows for events to be filtered by the event type as well as the specific event names listed
 above. To include/exclude all events of the system or security type, in the UI, uncheck the checkboxes for these events. In a groovy script, fetch the Datadog global descriptor and call either `d.setEmitSystemEvents()` or `d.setEmitSecurityEvents()`. As listed in the [environment variables](#environment-variables) section, set the environment variables for the emitting security or system events.
 
-To get more specific control over what events are sent, three configuration options are provided to allow a comma-separated include/exclude list of strings of event names. The include/exclude list has precedence over the filtering by event type. For example, `security` events can be toggled off, but including `UserAuthenticated` takes precedence, so only `UserAuthenticated` events will be sent from the `security` type. In the UI, text boxes are provided for both the included and excluded lists. In a groovy script, the 
-methods `d.setIncludeEvents()` and `d.setExcludeEvents()` taking in a comma-separated list of event names as input as well is another valid configuration method. Lastly, there are provided [environment variables](#environment-variables) for manually setting included/excluded lists.
+To get more specific control over what events are sent, three configuration options are provided to allow a comma-separated include/exclude list of strings of event names. The include/exclude list has precedence over the filtering by event type. For example, `security` events can be toggled off, but including `UserAuthenticated` takes precedence, so only `UserAuthenticated` events will be sent from the `security` type. In the UI, text boxes are provided for both the included and excluded lists. In a groovy script, the methods `d.setIncludeEvents()` and `d.setExcludeEvents()` taking in a comma-separated list of event names as input as well is another valid configuration method. Lastly, there are provided [environment variables](#environment-variables) for manually setting included/excluded lists.
 
-Note:
-As mentioned in the [job customization](#job-customization) section, there are job-specific toggles to send `SCMCheckout` events. If the `SCMCheckout` event is excluded globally, this toggle will have no effect.
+NOTE: As mentioned in the [job customization](#job-customization) section, there are job-specific toggles to send `SCMCheckout` events. If the `SCMCheckout` event is excluded globally, this toggle will have no effect.
 
 ### Metrics
 

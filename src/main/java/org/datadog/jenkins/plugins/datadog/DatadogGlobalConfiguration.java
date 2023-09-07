@@ -478,8 +478,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
     /**
      * Checks filtering config for comma-separated list, overlapping include/exclude lists,
-     * unrecognizable event names, and redundant inclusion/exclusion. 
-     * 
+     * unrecognizable event names, and redundant inclusion/exclusion.
+     *
      * @param emitSecurityEvents toggle to send security events
      * @param emitSystemEvents toggle to send system events
      * @param includeEvents string of included events list (comma-separated)
@@ -1465,7 +1465,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
     /**
      * Helper function to determine if strings are overlapping in any way.
-     * 
+     *
      * @param firstString first string
      * @param stringToCompare second string
      * @return true if strings are overlapping (shared event)
@@ -1484,7 +1484,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         String commaSeparatedRegex = "((\\w+,)*\\w+)?";
         if (!includeEvents.matches(commaSeparatedRegex)) {
             return FormValidation.error("The included events list is not correctly written in a comma-separated list.");
-        } 
+        }
         if (!excludeEvents.matches(commaSeparatedRegex)) {
             return FormValidation.error("The excluded events list is not correctly written in a comma-separated list.");
         }
@@ -1496,7 +1496,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             String.format("%s,%s,%s", SYSTEM_EVENTS, SECURITY_EVENTS, DEFAULT_EVENTS).split(","));
         if (!includedEventsList.stream().allMatch(allEvents::contains)) {
             return FormValidation.error("The included events list contains one or more unrecognized events.");
-        }        
+        }
         if (!excludedEventsList.stream().allMatch(allEvents::contains)) {
             return FormValidation.error("The excluded events list contains one or more unrecognized events.");
         }
@@ -1505,21 +1505,21 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             .distinct()
             .filter(excludedEventsList::contains)
             .collect(Collectors.toSet());
-        
+
         if (intersection.size() > 0) {
             return FormValidation.error("The following events are in both the include and exclude lists: " + String.join(",", intersection));
-        } 
+        }
 
         List<String> systemListToCheck = (emitSystemEvents) ? includedEventsList : excludedEventsList;
         List<String> securityListToCheck = (emitSecurityEvents) ? includedEventsList : excludedEventsList;
 
         if (systemListToCheck.stream().anyMatch(SYSTEM_EVENTS::contains)) {
-            return FormValidation.warning("Redundant filtering: One or more system events have been toggled " + 
+            return FormValidation.warning("Redundant filtering: One or more system events have been toggled " +
                 ((emitSystemEvents) ? "on" : "off") + " as well as written in the " + ((emitSystemEvents) ? "include" : "exclude") + " list manually");
         }
 
         if (securityListToCheck.stream().anyMatch(SECURITY_EVENTS::contains)) {
-            return FormValidation.warning("Redundant filtering: One or more security events have been toggled " + 
+            return FormValidation.warning("Redundant filtering: One or more security events have been toggled " +
                 ((emitSecurityEvents) ? "on" : "off") + " as well as written in the " + ((emitSecurityEvents) ? "include" : "exclude") + " list manually");
         }
 
