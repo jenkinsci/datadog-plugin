@@ -7,6 +7,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -87,7 +88,7 @@ final class JavaConfigurator implements TracerConfigurator {
     }
 
     private byte[] getTracerSignaturePublicKey(DatadogTracerJobProperty<?> tracerConfig) {
-        return getSetting(tracerConfig, TRACER_DISTRIBUTION_URL_ENV_VAR, SignatureVerifier.DATADOG_PUBLIC_KEY, String::getBytes);
+        return getSetting(tracerConfig, TRACER_DISTRIBUTION_URL_ENV_VAR, SignatureVerifier.DATADOG_PUBLIC_KEY.getBytes(StandardCharsets.UTF_8), String::getBytes);
     }
 
     private <T> T getSetting(DatadogTracerJobProperty<?> tracerConfig, String envVariableName, T defaultValue, Function<String, T> parser) {

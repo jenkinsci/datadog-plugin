@@ -16,7 +16,7 @@ import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 
 public class SignatureVerifier {
 
-    public static final byte[] DATADOG_PUBLIC_KEY = (
+    public static final String DATADOG_PUBLIC_KEY = (
             "-----BEGIN PGP PUBLIC KEY BLOCK-----\n" +
             "Version: Hockeypuck 2.1.0-222-g25248d4\n" +
             "Comment: Hostname:\n" +
@@ -49,7 +49,7 @@ public class SignatureVerifier {
             "IPdMz7WGf1S8iuZcBwF6PhAqJJv41pJ0mO4ewnZbnQ==\n" +
             "=7erW\n" +
             "-----END PGP PUBLIC KEY BLOCK-----"
-    ).getBytes(StandardCharsets.UTF_8);
+    );
 
     public static boolean verifySignature(InputStream artifactStream, InputStream signatureStream, InputStream publicKeyStream) throws Exception {
         PGPPublicKeyRing publicKeys = loadPublicKeyRing(publicKeyStream);
