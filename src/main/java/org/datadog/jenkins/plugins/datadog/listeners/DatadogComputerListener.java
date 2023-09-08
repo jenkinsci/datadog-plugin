@@ -60,8 +60,8 @@ public class DatadogComputerListener extends ComputerListener {
     @Override
     public void onOnline(Computer computer, TaskListener listener) throws IOException, InterruptedException {
         try {
-            final boolean canSendEvent = DatadogUtilities.shouldSendEvent("ComputerOnline");
-            if (!canSendEvent) {
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("ComputerOnline");
+            if (!shouldSendEvent) {
                 return;
             }
 
@@ -96,8 +96,8 @@ public class DatadogComputerListener extends ComputerListener {
     @Override
     public void onOffline(@Nonnull Computer computer, @CheckForNull OfflineCause cause) {
         try {
-            final boolean canSendEvent = DatadogUtilities.shouldSendEvent("ComputerOffline");
-            if (!canSendEvent) {
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("ComputerOffline");
+            if (!shouldSendEvent) {
                 return;
             }
 
@@ -132,8 +132,8 @@ public class DatadogComputerListener extends ComputerListener {
     @Override
     public void onTemporarilyOnline(Computer computer) {
         try {
-            final boolean canSendEvent = DatadogUtilities.shouldSendEvent("ComputerTemporarilyOnline");
-            if (!canSendEvent) {
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("ComputerTemporarilyOnline");
+            if (!shouldSendEvent) {
                 return;
             }
 
@@ -168,8 +168,8 @@ public class DatadogComputerListener extends ComputerListener {
     @Override
     public void onTemporarilyOffline(Computer computer, OfflineCause cause) {
         try {
-            final boolean canSendEvent = DatadogUtilities.shouldSendEvent("ComputerTemporarilyOffline");
-            if (!canSendEvent) {
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("ComputerTemporarilyOffline");
+            if (!shouldSendEvent) {
                 return;
             }
 
@@ -204,8 +204,8 @@ public class DatadogComputerListener extends ComputerListener {
     @Override
     public void onLaunchFailure(Computer computer, TaskListener taskListener) throws IOException, InterruptedException {
         try {
-            final boolean canSendEvent = DatadogUtilities.shouldSendEvent("ComputerLaunchFailure");
-            if (!canSendEvent) {
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("ComputerLaunchFailure");
+            if (!shouldSendEvent) {
                 return;
             }
 

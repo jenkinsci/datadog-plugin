@@ -1017,9 +1017,9 @@ public class DatadogUtilities {
     }
 
     /**
-     * Checks to see if event can be sent to client
+     * Checks to see if event should be sent to client
      * @param event - the event to check
-     * @return true if event is can be sent to client
+     * @return true if event should be sent to client
      */
     public static boolean shouldSendEvent(String eventName) {
         if (getDatadogGlobalDescriptor() == null) { // sometimes null for tests, so default is to send all events

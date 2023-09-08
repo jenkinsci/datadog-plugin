@@ -54,8 +54,8 @@ public class DatadogSecurityListener extends SecurityListener {
     @Override
     protected void authenticated(@Nonnull UserDetails details) {
         try {
-            final boolean canSendEvent = DatadogUtilities.shouldSendEvent("UserAuthenticated");
-            if (!canSendEvent) {
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("UserAuthenticated");
+            if (!shouldSendEvent) {
                 return;
             }
 
@@ -92,8 +92,8 @@ public class DatadogSecurityListener extends SecurityListener {
     @Override
     protected void failedToAuthenticate(@Nonnull String username) {
         try {
-            final boolean canSendEvent = DatadogUtilities.shouldSendEvent("UserFailedToAuthenticate");
-            if (!canSendEvent) {
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("UserFailedToAuthenticate");
+            if (!shouldSendEvent) {
                 return;
             }
 
@@ -139,8 +139,8 @@ public class DatadogSecurityListener extends SecurityListener {
     @Override
     protected void loggedOut(@Nonnull String username) {
         try {
-            final boolean canSendEvent = DatadogUtilities.shouldSendEvent("UserLoggedOut");
-            if (!canSendEvent) {
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("UserLoggedOut");
+            if (!shouldSendEvent) {
                 return;
             }
 

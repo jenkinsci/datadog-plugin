@@ -71,8 +71,8 @@ public class DatadogItemListener extends ItemListener {
 
     private void onCRUD(Item item, String action) {
         try {
-            final boolean canSendEvent = DatadogUtilities.shouldSendEvent("Item" + action);
-            if (!canSendEvent) {
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("Item" + action);
+            if (!shouldSendEvent) {
                 return;
             }
 
@@ -107,8 +107,8 @@ public class DatadogItemListener extends ItemListener {
     @Override
     public void onCopied(Item src, Item item) {
         try {
-            final boolean canSendEvent = DatadogUtilities.shouldSendEvent("ItemCopied");
-            if (!canSendEvent) {
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("ItemCopied");
+            if (!shouldSendEvent) {
                 return;
             }
 
@@ -143,8 +143,8 @@ public class DatadogItemListener extends ItemListener {
     @Override
     public void onLocationChanged(Item item, String oldFullName, String newFullName) {
         try {
-            final boolean canSendEvent = DatadogUtilities.shouldSendEvent("ItemLocationChanged");
-            if (!canSendEvent) {
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("ItemLocationChanged");
+            if (!shouldSendEvent) {
                 return;
             }
 
