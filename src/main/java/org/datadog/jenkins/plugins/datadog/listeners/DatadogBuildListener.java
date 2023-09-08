@@ -180,9 +180,10 @@ public class DatadogBuildListener extends RunListener<Run> {
             }
 
             // Send an event
-            DatadogEvent event = new BuildStartedEventImpl(buildData);
-            if (DatadogUtilities.shouldSendEvent("BuildStarted")) client.event(event);
-
+            if (DatadogUtilities.shouldSendEvent("BuildStarted")) {
+                DatadogEvent event = new BuildStartedEventImpl(buildData);
+                client.event(event);
+            }
             // Send a metric
             // item.getInQueueSince() may raise a NPE if a worker node is spinning up to run the job.
             // This could be expected behavior with ec2 spot instances/ecs containers, meaning no waiting
@@ -252,9 +253,11 @@ public class DatadogBuildListener extends RunListener<Run> {
                 return;
             }
 
-            // Send an event
-            DatadogEvent event = new BuildFinishedEventImpl(buildData);
-            if (DatadogUtilities.shouldSendEvent("BuildCompleted")) client.event(event);
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("BuildCompleted");
+            if (shouldSendEvent) {
+                DatadogEvent event = new BuildFinishedEventImpl(buildData);
+                client.event(event);
+            }
 
             // Send a metric
             Map<String, Set<String>> tags = buildData.getTags();
@@ -420,8 +423,11 @@ public class DatadogBuildListener extends RunListener<Run> {
             String hostname = buildData.getHostname("unknown");
 
             // Send an event
-            DatadogEvent event = new BuildAbortedEventImpl(buildData);
-            if (DatadogUtilities.shouldSendEvent("BuildAborted")) client.event(event);
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("BuildAborted");
+            if (shouldSendEvent) {
+                DatadogEvent event = new BuildAbortedEventImpl(buildData);
+                client.event(event);
+            }
 
             // Submit counter
             Map<String, Set<String>> tags = buildData.getTags();

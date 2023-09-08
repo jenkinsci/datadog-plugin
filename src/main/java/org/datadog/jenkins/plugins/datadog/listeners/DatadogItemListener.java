@@ -71,10 +71,6 @@ public class DatadogItemListener extends ItemListener {
 
     private void onCRUD(Item item, String action) {
         try {
-            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("Item" + action);
-            if (!shouldSendEvent) {
-                return;
-            }
 
             // Get the list of global tags to apply
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
@@ -82,7 +78,6 @@ public class DatadogItemListener extends ItemListener {
             tags = TagsUtil.addTagToTags(tags, "user_id", DatadogUtilities.getUserId());
             tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
 
-            DatadogEvent event = new ItemCRUDEventImpl(item, action, tags);
             logger.fine("Start DatadogItemListener#on" + action);
 
             // Get Datadog Client Instance
@@ -91,8 +86,11 @@ public class DatadogItemListener extends ItemListener {
                 return;
             }
 
-            // Send event
-            client.event(event);
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("Item" + action);
+            if (shouldSendEvent) {
+                DatadogEvent event = new ItemCRUDEventImpl(item, action, tags);
+                client.event(event);
+            }
 
             // Submit counter
             String hostname = DatadogUtilities.getHostname(null);
@@ -107,10 +105,6 @@ public class DatadogItemListener extends ItemListener {
     @Override
     public void onCopied(Item src, Item item) {
         try {
-            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("ItemCopied");
-            if (!shouldSendEvent) {
-                return;
-            }
 
             // Get the list of global tags to apply
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
@@ -118,7 +112,6 @@ public class DatadogItemListener extends ItemListener {
             tags = TagsUtil.addTagToTags(tags, "user_id", DatadogUtilities.getUserId());
             tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
 
-            DatadogEvent event = new ItemCopiedEventImpl(src, item, tags);
             logger.fine("Start DatadogItemListener#onCopied");
 
             // Get Datadog Client Instance
@@ -127,8 +120,11 @@ public class DatadogItemListener extends ItemListener {
                 return;
             }
 
-            // Send event
-            client.event(event);
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("ItemCopied");
+            if (shouldSendEvent) {
+                DatadogEvent event = new ItemCopiedEventImpl(src, item, tags);
+                client.event(event);
+            }
 
             // Submit counter
             String hostname = DatadogUtilities.getHostname(null);
@@ -143,18 +139,12 @@ public class DatadogItemListener extends ItemListener {
     @Override
     public void onLocationChanged(Item item, String oldFullName, String newFullName) {
         try {
-            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("ItemLocationChanged");
-            if (!shouldSendEvent) {
-                return;
-            }
 
             // Get the list of global tags to apply
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
             // Add userId and JenkinsUrl Tags
             tags = TagsUtil.addTagToTags(tags, "user_id", DatadogUtilities.getUserId());
             tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
-
-            DatadogEvent event = new ItemLocationChangedEventImpl(item, oldFullName, newFullName, tags);
 
             logger.fine("Start DatadogItemListener#onLocationChanged");
 
@@ -164,8 +154,11 @@ public class DatadogItemListener extends ItemListener {
                 return;
             }
 
-            // Send event
-            client.event(event);
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("ItemLocationChanged");
+            if (shouldSendEvent) {
+                DatadogEvent event = new ItemLocationChangedEventImpl(item, oldFullName, newFullName, tags);
+                client.event(event);
+            }
 
             // Submit counter
             String hostname = DatadogUtilities.getHostname(null);
