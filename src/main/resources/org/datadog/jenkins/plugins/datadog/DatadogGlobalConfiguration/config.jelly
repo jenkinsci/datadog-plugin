@@ -110,7 +110,7 @@
           <f:textarea field="globalJobTags" optional="true" default="${globalJobTags}" />
         </f:entry>
 
-          <f:entry title="Security Events" description="Send security events like login, logout, and login failure.">
+        <f:entry title="Security Events" description="Send security events like login, logout, and login failure.">
             <f:checkbox title="Send Security audit events" field="emitSecurityEvents" default="true" />
         </f:entry>
 
