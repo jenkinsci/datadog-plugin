@@ -27,6 +27,15 @@ package org.datadog.jenkins.plugins.datadog.clients;
 
 import hudson.model.Run;
 import hudson.util.Secret;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
@@ -40,16 +49,6 @@ import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookPipelineLogic;
 import org.datadog.jenkins.plugins.datadog.transport.FakeTracesHttpClient;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.junit.Assert;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 public class DatadogClientStub implements DatadogClient {
 
@@ -170,9 +169,20 @@ public class DatadogClientStub implements DatadogClient {
     }
 
     @Override
-    public boolean gauge(String name, long value, String hostname, Map<String, Set<String>> tags) {
-        this.metrics.add(new DatadogMetric(name, value, hostname, convertTagMapToList(tags)));
-        return true;
+    public Metrics metrics() {
+        return new StubMetrics();
+    }
+
+    public final class StubMetrics implements Metrics {
+        @Override
+        public void gauge(String name, long value, String hostname, Map<String, Set<String>> tags) {
+            metrics.add(new DatadogMetric(name, value, hostname, convertTagMapToList(tags)));
+        }
+
+        @Override
+        public void close() throws Exception {
+            // no op
+        }
     }
 
     @Override

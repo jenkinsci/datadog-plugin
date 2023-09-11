@@ -34,7 +34,6 @@ import com.timgroup.statsd.ServiceCheck;
 import com.timgroup.statsd.StatsDClient;
 import hudson.model.Run;
 import hudson.util.Secret;
-import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -629,19 +628,29 @@ public class DatadogAgentClient implements DatadogClient {
     }
 
     @Override
-    public boolean gauge(String name, long value, String hostname, Map<String, Set<String>> tags) {
-        try {
-            boolean status = reinitializeStatsDClient(false);
-            if(!status){
-                return false;
+    public Metrics metrics() {
+        return new AgentMetrics();
+    }
+
+    private final class AgentMetrics implements Metrics {
+        @Override
+        public void gauge(String name, long value, String hostname, Map<String, Set<String>> tags) {
+            try {
+                boolean status = reinitializeStatsDClient(false);
+                if (!status) {
+                    return;
+                }
+                logger.fine("Submit gauge with dogStatD client");
+                statsd.gauge(name, value, TagsUtil.convertTagsToArray(tags));
+            } catch(Exception e){
+                DatadogUtilities.severe(logger, e, "Failed to send gauge metric payload to DogStatsD");
+                reinitializeStatsDClient(true);
             }
-            logger.fine("Submit gauge with dogStatD client");
-            this.statsd.gauge(name, value, TagsUtil.convertTagsToArray(tags));
-            return true;
-        } catch(Exception e){
-            DatadogUtilities.severe(logger, e, "Failed to send gauge metric payload to DogStatsD");
-            reinitializeStatsDClient(true);
-            return false;
+        }
+
+        @Override
+        public void close() throws Exception {
+            // no op
         }
     }
 

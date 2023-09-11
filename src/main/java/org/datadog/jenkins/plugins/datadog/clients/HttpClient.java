@@ -26,6 +26,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -36,6 +37,7 @@ public class HttpClient {
 
     private static final org.eclipse.jetty.client.HttpClient CLIENT = buildHttpClient();
 
+    private static final String MAX_CONNECTIONS_PER_DESTINATION_ENV_VAR = "DD_JENKINS_HTTP_CLIENT_MAX_CONNECTIONS_PER_DESTINATION";
     private static final String MAX_THREADS_ENV_VAR = "DD_JENKINS_HTTP_CLIENT_MAX_THREADS";
     private static final String MIN_THREADS_ENV_VAR = "DD_JENKINS_HTTP_CLIENT_MIN_THREADS";
     private static final String IDLE_THREAD_TIMEOUT_MILLIS_ENV_VAR = "DD_JENKINS_HTTP_CLIENT_IDLE_THREAD_TIMEOUT";
@@ -44,12 +46,13 @@ public class HttpClient {
     private static final String INITIAL_RETRY_DELAY_MILLIS_ENV_VAR = "DD_JENKINS_HTTP_CLIENT_INITIAL_RETRY_DELAY";
     private static final String RETRY_DELAY_FACTOR_ENV_VAR = "DD_JENKINS_HTTP_CLIENT_RETRY_DELAY_FACTOR";
     private static final String MAX_RESPONSE_LENGTH_BYTES_ENV_VAR = "DD_JENKINS_HTTP_CLIENT_MAX_RESPONSE_LENGTH";
+    private static final int MAX_CONNECTIONS_PER_DESTINATION_DEFAULT = 6;
     private static final int MAX_THREADS_DEFAULT = 64;
     private static final int MIN_THREADS_DEFAULT = 1;
     private static final int IDLE_THREAD_TIMEOUT_MILLIS = 60_000;
     private static final int RESERVED_THREADS_DEFAULT = -1;
     private static final int MAX_REQUEST_RETRIES_DEFAULT = 5;
-    private static final int INITIAL_RETRY_DELAY_MILLIS_DEFAULT = 100;
+    private static final int INITIAL_RETRY_DELAY_MILLIS_DEFAULT = 200;
     private static final double RETRY_DELAY_FACTOR_DEFAULT = 2.0;
     private static final int MAX_RESPONSE_LENGTH_BYTES_DEFAULT = 64 * 1024 * 1024; // 64 MB
     private static volatile hudson.ProxyConfiguration EFFECTIVE_PROXY_CONFIGURATION;
@@ -84,12 +87,21 @@ public class HttpClient {
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
         org.eclipse.jetty.client.HttpClient httpClient = new org.eclipse.jetty.client.HttpClient(sslContextFactory);
         httpClient.setExecutor(threadPool);
+        httpClient.setMaxConnectionsPerDestination(getEnv(MAX_CONNECTIONS_PER_DESTINATION_ENV_VAR, MAX_CONNECTIONS_PER_DESTINATION_DEFAULT));
+        httpClient.setUserAgentField(new HttpField("User-Agent", getUserAgent()));
         try {
             httpClient.start();
         } catch (Exception e) {
             throw new RuntimeException("Could not start HTTP client", e);
         }
         return httpClient;
+    }
+
+    private static String getUserAgent() {
+        return String.format("Datadog/%s/jenkins Java/%s Jenkins/%s",
+                HttpClient.class.getPackage().getImplementationVersion(),
+                System.getProperty("java.version"),
+                Jenkins.VERSION);
     }
 
     private static void ensureProxyConfiguration() {

@@ -32,6 +32,7 @@ import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.clients.Metrics;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 import java.util.Map;
@@ -57,16 +58,15 @@ public class DatadogComputerPublisher extends PeriodicWork {
 
     @Override
     protected void doRun() throws Exception {
-        try {
-            logger.fine("doRun called: Computing Node metrics");
+        logger.fine("doRun called: Computing Node metrics");
 
-            // Get Datadog Client Instance
-            DatadogClient client = ClientFactory.getClient();
+        DatadogClient client = ClientFactory.getClient();
+        if (client == null) {
+            return;
+        }
+
+        try (Metrics metrics = client.metrics()) {
             String hostname = DatadogUtilities.getHostname(null);
-            if(client == null){
-                return;
-            }
-
             long nodeCount = 0;
             long nodeOffline = 0;
             long nodeOnline = 0;
@@ -84,25 +84,25 @@ public class DatadogComputerPublisher extends PeriodicWork {
                 nodeCount++;
                 if (computer.isOffline()) {
                     nodeOffline++;
-                    client.gauge("jenkins.node_status.up", 0, hostname, tags);
+                    metrics.gauge("jenkins.node_status.up", 0, hostname, tags);
                 }   
                 if (computer.isOnline()) {
                     nodeOnline++;
-                    client.gauge("jenkins.node_status.up", 1, hostname, tags);
+                    metrics.gauge("jenkins.node_status.up", 1, hostname, tags);
                 }
                 int executorCount = computer.countExecutors();
                 int inUse = computer.countBusy();
                 int free = computer.countIdle();
-                
-                client.gauge("jenkins.node_status.count", 1, hostname, tags);
-                
-                client.gauge("jenkins.executor.count", executorCount, hostname, tags);
-                client.gauge("jenkins.executor.in_use", inUse, hostname, tags);
-                client.gauge("jenkins.executor.free", free, hostname, tags);
+
+                metrics.gauge("jenkins.node_status.count", 1, hostname, tags);
+
+                metrics.gauge("jenkins.executor.count", executorCount, hostname, tags);
+                metrics.gauge("jenkins.executor.in_use", inUse, hostname, tags);
+                metrics.gauge("jenkins.executor.free", free, hostname, tags);
             }
-            client.gauge("jenkins.node.count", nodeCount, hostname, globalTags);
-            client.gauge("jenkins.node.offline", nodeOffline, hostname, globalTags);
-            client.gauge("jenkins.node.online", nodeOnline, hostname, globalTags);
+            metrics.gauge("jenkins.node.count", nodeCount, hostname, globalTags);
+            metrics.gauge("jenkins.node.offline", nodeOffline, hostname, globalTags);
+            metrics.gauge("jenkins.node.online", nodeOnline, hostname, globalTags);
 
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to compute and send node metrics");
