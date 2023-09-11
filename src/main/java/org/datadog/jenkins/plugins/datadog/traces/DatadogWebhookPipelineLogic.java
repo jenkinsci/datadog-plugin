@@ -58,10 +58,7 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
         }
 
         final BuildData buildData = buildSpanAction.getBuildData();
-        if(!isLastNode(flowNode)){
-            final BuildPipelineNode pipelineNode = buildPipelineNode(flowNode);
-            updateStageBreakdown(run, pipelineNode);
-            updateBuildData(buildData, run, pipelineNode, flowNode);
+        if(!DatadogUtilities.isLastNode(flowNode)){
             updateCIGlobalTags(run);
             return;
         }
@@ -107,7 +104,7 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
         payload.put("start", DatadogUtilities.toISO8601(new Date(fixedStartTimeMillis)));
         payload.put("end", DatadogUtilities.toISO8601(new Date(fixedEndTimeMillis)));
         payload.put("partial_retry", false);
-        payload.put("queue_time", TimeUnit.NANOSECONDS.toMillis(getNanosInQueue(current)));
+        payload.put("queue_time", TimeUnit.NANOSECONDS.toMillis(DatadogUtilities.getNanosInQueue(current)));
         payload.put("status", status);
 
         payload.put("trace_id", spanContext.getTraceId());

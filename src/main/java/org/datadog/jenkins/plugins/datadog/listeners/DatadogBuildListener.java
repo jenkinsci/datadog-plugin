@@ -59,6 +59,9 @@ import org.datadog.jenkins.plugins.datadog.events.BuildFinishedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildStartedEventImpl;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
+
+import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
+import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
@@ -103,6 +106,21 @@ public class DatadogBuildListener extends RunListener<Run> {
                 DatadogUtilities.severe(logger, e, "Failed to parse initialized build data");
                 return;
             }
+
+            final TraceSpan buildSpan = new TraceSpan("jenkins.build", TimeUnit.MILLISECONDS.toNanos(buildData.getStartTime(0L)));
+            BuildSpanManager.get().put(buildData.getBuildTag(""), buildSpan);
+
+            // The buildData object is stored in the BuildSpanAction to be updated
+            // by the information that will be calculated when the pipeline listeners
+            // were executed. This is needed because if the user build is based on
+            // Jenkins Pipelines, there are many information that is missing when the
+            // root span is created, such as Git info (this is calculated in an inner step
+            // of the pipeline)
+            final BuildSpanAction buildSpanAction = new BuildSpanAction(buildData, buildSpan.context());
+            run.addAction(buildSpanAction);
+
+            final StepDataAction stepDataAction = new StepDataAction();
+            run.addAction(stepDataAction);
 
             // Traces
             client.startBuildTrace(buildData, run);
@@ -362,6 +380,9 @@ public class DatadogBuildListener extends RunListener<Run> {
             // APM Traces
             client.finishBuildTrace(buildData, run);
             logger.fine("End DatadogBuildListener#onFinalized");
+
+            BuildSpanManager.get().remove(buildData.getBuildTag(""));
+
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to process build finalization");
         } finally {
