@@ -33,6 +33,8 @@ import org.datadog.jenkins.plugins.datadog.model.BuildData;
  */
 public class BuildStartedEventImpl extends AbstractDatadogBuildEvent {
 
+    public static final String BUILD_STARTED_EVENT_NAME = "BuildStarted";
+
     public BuildStartedEventImpl(BuildData buildData) {
         super(buildData);
 

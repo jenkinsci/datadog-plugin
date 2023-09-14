@@ -36,7 +36,6 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.events.*;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
-
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -75,7 +74,7 @@ public class DatadogComputerListener extends ComputerListener {
             }
 
 
-            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("ComputerOnline");
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent(ComputerOnlineEventImpl.COMPUTER_ONLINE_EVENT_NAME);
             if (shouldSendEvent) {
                 DatadogEvent event = new ComputerOnlineEventImpl(computer, listener, tags, false);
                 // Send event
@@ -109,7 +108,7 @@ public class DatadogComputerListener extends ComputerListener {
                 return;
             }
 
-            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("ComputerOffline");
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent(ComputerOfflineEventImpl.COMPUTER_OFFLINE_EVENT_NAME);
             if (shouldSendEvent) {
                 DatadogEvent event = new ComputerOfflineEventImpl(computer, cause, tags, false);
                 client.event(event);
@@ -142,7 +141,7 @@ public class DatadogComputerListener extends ComputerListener {
                 return;
             }
 
-            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("ComputerTemporarilyOnline");
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent(ComputerOnlineEventImpl.COMPUTER_TEMPORARILY_ONLINE_EVENT_NAME);
             if (shouldSendEvent) {
                 DatadogEvent event = new ComputerOnlineEventImpl(computer, null, tags, true);
                 client.event(event);
@@ -175,7 +174,7 @@ public class DatadogComputerListener extends ComputerListener {
                 return;
             }
 
-            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("ComputerTemporarilyOffline");
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent(ComputerOfflineEventImpl.COMPUTER_TEMPORARILY_OFFLINE_EVENT_NAME);
             if (shouldSendEvent) {
                 DatadogEvent event = new ComputerOfflineEventImpl(computer, cause, tags, true);
                 client.event(event);
@@ -208,7 +207,7 @@ public class DatadogComputerListener extends ComputerListener {
                 return;
             }
 
-            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("ComputerLaunchFailure");
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent(ComputerLaunchFailedEventImpl.COMPUTER_LAUNCH_FAILED_EVENT_NAME);
             if (shouldSendEvent) {
                 DatadogEvent event = new ComputerLaunchFailedEventImpl(computer, taskListener, tags);
                 client.event(event);

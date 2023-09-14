@@ -271,7 +271,7 @@ public class DatadogFilteringEventsTest {
 
         DatadogEvent authEvent = this.client.events.get(2).getEvent();
         assertTrue(authEvent instanceof UserAuthenticationEventImpl);
-        assertEquals(((UserAuthenticationEventImpl) authEvent).getAction(), UserAuthenticationEventImpl.LOGIN);
+        assertEquals(((UserAuthenticationEventImpl) authEvent).getAction(), UserAuthenticationEventImpl.USER_LOGIN_MESSAGE);
 
         assertTrue(this.client.events.size() == 3);
     }
@@ -285,11 +285,11 @@ public class DatadogFilteringEventsTest {
         this.runAllEvents();
         DatadogEvent authEvent = this.client.events.get(0).getEvent();
         assertTrue(authEvent instanceof UserAuthenticationEventImpl);
-        assertEquals(((UserAuthenticationEventImpl) authEvent).getAction(), UserAuthenticationEventImpl.ACCESS_DENIED);
+        assertEquals(((UserAuthenticationEventImpl) authEvent).getAction(), UserAuthenticationEventImpl.USER_ACCESS_DENIED_MESSAGE);
 
         authEvent = this.client.events.get(1).getEvent();
         assertTrue(authEvent instanceof UserAuthenticationEventImpl);
-        assertEquals(((UserAuthenticationEventImpl) authEvent).getAction(), UserAuthenticationEventImpl.LOGOUT);
+        assertEquals(((UserAuthenticationEventImpl) authEvent).getAction(), UserAuthenticationEventImpl.USER_LOGOUT_MESSAGE);
 
         assertTrue(this.client.events.size() == 2);
     }
@@ -581,14 +581,14 @@ public class DatadogFilteringEventsTest {
 
         DatadogEvent authEvent = this.client.events.get(size - 3).getEvent();
         assertTrue(authEvent instanceof UserAuthenticationEventImpl);
-        assertEquals(((UserAuthenticationEventImpl) authEvent).getAction(), UserAuthenticationEventImpl.LOGIN);
+        assertEquals(((UserAuthenticationEventImpl) authEvent).getAction(), UserAuthenticationEventImpl.USER_LOGIN_MESSAGE);
 
         authEvent = this.client.events.get(size - 2).getEvent();
         assertTrue(authEvent instanceof UserAuthenticationEventImpl);
-        assertEquals(((UserAuthenticationEventImpl) authEvent).getAction(), UserAuthenticationEventImpl.ACCESS_DENIED);
+        assertEquals(((UserAuthenticationEventImpl) authEvent).getAction(), UserAuthenticationEventImpl.USER_ACCESS_DENIED_MESSAGE);
 
         authEvent = this.client.events.get(size - 1).getEvent();
         assertTrue(authEvent instanceof UserAuthenticationEventImpl);
-        assertEquals(((UserAuthenticationEventImpl) authEvent).getAction(), UserAuthenticationEventImpl.LOGOUT);
+        assertEquals(((UserAuthenticationEventImpl) authEvent).getAction(), UserAuthenticationEventImpl.USER_LOGOUT_MESSAGE);
     }
 }

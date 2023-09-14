@@ -34,6 +34,8 @@ import java.util.Set;
 
 public class ComputerLaunchFailedEventImpl extends AbstractDatadogSimpleEvent {
 
+    public static final String COMPUTER_LAUNCH_FAILED_EVENT_NAME = "ComputerLaunchFailure";
+
     public ComputerLaunchFailedEventImpl(Computer computer, TaskListener listener, Map<String, Set<String>> tags) {
         super(tags);
 

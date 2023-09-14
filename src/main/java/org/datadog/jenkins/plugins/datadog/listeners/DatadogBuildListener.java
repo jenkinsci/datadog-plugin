@@ -180,7 +180,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             }
 
             // Send an event
-            if (DatadogUtilities.shouldSendEvent("BuildStarted")) {
+            if (DatadogUtilities.shouldSendEvent(BuildStartedEventImpl.BUILD_STARTED_EVENT_NAME)) {
                 DatadogEvent event = new BuildStartedEventImpl(buildData);
                 client.event(event);
             }
@@ -253,7 +253,7 @@ public class DatadogBuildListener extends RunListener<Run> {
                 return;
             }
 
-            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("BuildCompleted");
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent(BuildFinishedEventImpl.BUILD_FINISHED_EVENT_NAME);
             if (shouldSendEvent) {
                 DatadogEvent event = new BuildFinishedEventImpl(buildData);
                 client.event(event);
@@ -423,7 +423,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             String hostname = buildData.getHostname("unknown");
 
             // Send an event
-            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("BuildAborted");
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent(BuildAbortedEventImpl.BUILD_ABORTED_EVENT_NAME);
             if (shouldSendEvent) {
                 DatadogEvent event = new BuildAbortedEventImpl(buildData);
                 client.event(event);

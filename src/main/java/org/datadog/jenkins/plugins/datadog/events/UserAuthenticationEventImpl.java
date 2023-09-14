@@ -32,9 +32,14 @@ import java.util.Set;
 
 public class UserAuthenticationEventImpl extends AbstractDatadogSimpleEvent {
 
-    public final static String LOGIN = "authenticated";
-    public final static String ACCESS_DENIED = "failed to authenticate";
-    public final static String LOGOUT = "logout";
+    public final static String USER_LOGIN_MESSAGE = "authenticated";
+    public final static String USER_ACCESS_DENIED_MESSAGE = "failed to authenticate";
+    public final static String USER_LOGOUT_MESSAGE = "logout";
+
+    public final static String USER_LOGIN_EVENT_NAME = "UserAuthenticated";
+    public final static String USER_ACCESS_DENIED_EVENT_NAME = "UserFailedToAuthenticate";
+    public final static String USER_LOGOUT_EVENT_NAME = "UserLoggedOut";
+
 
     private String action;
 
@@ -57,7 +62,7 @@ public class UserAuthenticationEventImpl extends AbstractDatadogSimpleEvent {
                 "\n" + super.getLocationDetails() + " \n%%%";
         setText(text);
 
-        if (LOGIN.equals(action) || LOGOUT.equals(action)){
+        if (USER_LOGIN_MESSAGE.equals(action) || USER_LOGOUT_MESSAGE.equals(action)){
             setPriority(Priority.LOW);
             setAlertType(AlertType.SUCCESS);
         } else {

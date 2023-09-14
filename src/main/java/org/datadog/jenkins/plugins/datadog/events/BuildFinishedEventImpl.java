@@ -30,6 +30,8 @@ import org.datadog.jenkins.plugins.datadog.model.BuildData;
 
 public class BuildFinishedEventImpl extends AbstractDatadogBuildEvent {
 
+    public static final String BUILD_FINISHED_EVENT_NAME = "BuildCompleted";
+
     public BuildFinishedEventImpl(BuildData buildData) {
         super(buildData);
 

@@ -68,10 +68,10 @@ public class DatadogSecurityListener extends SecurityListener {
             if(client == null){
                 return;
             }
-            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("UserAuthenticated");
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent(UserAuthenticationEventImpl.USER_LOGIN_EVENT_NAME);
             if (shouldSendEvent) {
                 DatadogEvent event = new UserAuthenticationEventImpl(details.getUsername(),
-                    UserAuthenticationEventImpl.LOGIN, tags);
+                    UserAuthenticationEventImpl.USER_LOGIN_MESSAGE, tags);
                 client.event(event);
             }
 
@@ -102,9 +102,9 @@ public class DatadogSecurityListener extends SecurityListener {
                 return;
             }
 
-            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("UserFailedToAuthenticate");
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent(UserAuthenticationEventImpl.USER_ACCESS_DENIED_EVENT_NAME);
             if (shouldSendEvent) {
-                DatadogEvent event = new UserAuthenticationEventImpl(username, UserAuthenticationEventImpl.ACCESS_DENIED, tags);
+                DatadogEvent event = new UserAuthenticationEventImpl(username, UserAuthenticationEventImpl.USER_ACCESS_DENIED_MESSAGE, tags);
                 client.event(event);
             }
 
@@ -145,9 +145,9 @@ public class DatadogSecurityListener extends SecurityListener {
             if(client == null){
                 return;
             }
-            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("UserLoggedOut");
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent(UserAuthenticationEventImpl.USER_LOGOUT_EVENT_NAME);
             if (shouldSendEvent) {
-                DatadogEvent event = new UserAuthenticationEventImpl(username, UserAuthenticationEventImpl.LOGOUT, tags);
+                DatadogEvent event = new UserAuthenticationEventImpl(username, UserAuthenticationEventImpl.USER_LOGOUT_MESSAGE, tags);
                 client.event(event);
             }
 

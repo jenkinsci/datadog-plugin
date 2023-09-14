@@ -120,7 +120,7 @@ public class DatadogItemListener extends ItemListener {
                 return;
             }
 
-            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("ItemCopied");
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent(ItemCopiedEventImpl.ITEM_COPIED_EVENT_NAME);
             if (shouldSendEvent) {
                 DatadogEvent event = new ItemCopiedEventImpl(src, item, tags);
                 client.event(event);
@@ -154,7 +154,7 @@ public class DatadogItemListener extends ItemListener {
                 return;
             }
 
-            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent("ItemLocationChanged");
+            final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent(ItemLocationChangedEventImpl.ITEM_LOCATION_CHANGED_EVENT_NAME);
             if (shouldSendEvent) {
                 DatadogEvent event = new ItemLocationChangedEventImpl(item, oldFullName, newFullName, tags);
                 client.event(event);

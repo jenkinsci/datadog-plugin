@@ -34,6 +34,9 @@ import java.util.Set;
 
 public class ComputerOfflineEventImpl extends AbstractDatadogSimpleEvent {
 
+    public static final String COMPUTER_OFFLINE_EVENT_NAME = "ComputerOffline";
+    public static final String COMPUTER_TEMPORARILY_OFFLINE_EVENT_NAME = "ComputerTemporarilyOffline";
+
     public ComputerOfflineEventImpl(Computer computer, OfflineCause cause, Map<String, Set<String>> tags, boolean isTemporarily) {
         super(tags);
         String nodeName = DatadogUtilities.getNodeName(computer);
