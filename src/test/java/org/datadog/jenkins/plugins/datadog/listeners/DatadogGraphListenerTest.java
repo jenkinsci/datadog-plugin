@@ -233,6 +233,29 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
     }
 
     @Test
+    public void testIntegrationNonCIVisibilityEnvVars() throws Exception {
+        Jenkins jenkins = jenkinsRule.jenkins;
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "testPipelineGitBranchEnv");
+        String definition = IOUtils.toString(
+                this.getClass().getResourceAsStream("testPipelineGitBranchEnv.txt"),
+                "UTF-8"
+        );
+
+         String[] expectedTags = new String[]{
+                "jenkins_url:" + DatadogUtilities.getJenkinsUrl(),
+                "user_id:anonymous",
+                "job:testPipelineGitBranchEnv",
+                "branch:test-branch",
+                "result:SUCCESS"
+        };
+        String hostname = DatadogUtilities.getHostname(null);
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        WorkflowRun run = job.scheduleBuild2(0).get();
+        clientStub.assertMetric("jenkins.job.duration", hostname, expectedTags);
+
+    }
+
+    @Test
     public void testIntegrationGitInfoWebhooks() throws Exception {
         clientStub.configureForWebhooks();
 

@@ -25,10 +25,6 @@ public class DatadogStepListener implements StepListener {
 
     @Override
     public void notifyOfNewStep(@Nonnull Step step, @Nonnull StepContext context) {
-        if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
-            return;
-        }
-
         try {
             final Run<?,?> run = context.get(Run.class);
             final StepDataAction stepDataAction = run.getAction(StepDataAction.class);
@@ -49,6 +45,10 @@ public class DatadogStepListener implements StepListener {
 
             final StepData stepData = new StepData(context);
             stepDataAction.put(run, flowNode, stepData);
+
+            if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
+                return;
+            }
 
             // We use the PipelineNodeInfoAction to propagate
             // the correct node name to the root span (ci.pipeline).

@@ -39,8 +39,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.Inet4Address;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -51,7 +49,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
-import java.util.function.Function;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -59,17 +56,21 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
 import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
+import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
@@ -93,6 +94,7 @@ import org.jenkinsci.plugins.workflow.actions.QueueItemAction;
 import org.jenkinsci.plugins.workflow.actions.StageAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.actions.WarningAction;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
@@ -1063,5 +1065,19 @@ public class DatadogUtilities {
             includedEvents.removeIf(excludeEvents::contains);
 
         return includedEvents;
+    }
+}
+     * Check if flowNode is the last node of the pipeline.
+     * @param flowNode
+     * @return true if flowNode is the last node of the pipeline
+     */
+    public static boolean isLastNode(FlowNode flowNode) {
+        return flowNode instanceof FlowEndNode;
+    }
+
+    public static Long getNanosInQueue(BuildPipelineNode current) {
+        // If the concrete queue time for this node is not set
+        // we look for the queue time propagated by its children.
+        return Math.max(Math.max(current.getNanosInQueue(), current.getPropagatedNanosInQueue()), 0);
     }
 }
