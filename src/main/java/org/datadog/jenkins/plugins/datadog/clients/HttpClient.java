@@ -35,7 +35,9 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class HttpClient {
 
-    private static final org.eclipse.jetty.client.HttpClient CLIENT = buildHttpClient();
+    private static final Object CLIENT_INIT_LOCK = new Object();
+    private static volatile hudson.ProxyConfiguration EFFECTIVE_PROXY_CONFIGURATION;
+    private static volatile org.eclipse.jetty.client.HttpClient CLIENT;
 
     private static final String MAX_CONNECTIONS_PER_DESTINATION_ENV_VAR = "DD_JENKINS_HTTP_CLIENT_MAX_CONNECTIONS_PER_DESTINATION";
     private static final String MAX_THREADS_ENV_VAR = "DD_JENKINS_HTTP_CLIENT_MAX_THREADS";
@@ -55,11 +57,39 @@ public class HttpClient {
     private static final int INITIAL_RETRY_DELAY_MILLIS_DEFAULT = 200;
     private static final double RETRY_DELAY_FACTOR_DEFAULT = 2.0;
     private static final int MAX_RESPONSE_LENGTH_BYTES_DEFAULT = 64 * 1024 * 1024; // 64 MB
-    private static volatile hudson.ProxyConfiguration EFFECTIVE_PROXY_CONFIGURATION;
 
     private static final Logger logger = Logger.getLogger(HttpClient.class.getName());
 
-    private static org.eclipse.jetty.client.HttpClient buildHttpClient() {
+    private static void ensureClientIsUpToDate() {
+        hudson.ProxyConfiguration jenkinsProxyConfiguration = getJenkinsProxyConfiguration();
+        if (CLIENT == null || jenkinsProxyConfiguration != EFFECTIVE_PROXY_CONFIGURATION) {
+            synchronized (CLIENT_INIT_LOCK) {
+                if (CLIENT == null || jenkinsProxyConfiguration != EFFECTIVE_PROXY_CONFIGURATION) {
+                    stopExistingClientIfNeeded();
+                    CLIENT = buildHttpClient(jenkinsProxyConfiguration);
+                    EFFECTIVE_PROXY_CONFIGURATION = jenkinsProxyConfiguration;
+                }
+            }
+        }
+    }
+
+    private static hudson.ProxyConfiguration getJenkinsProxyConfiguration() {
+        Jenkins jenkins = Jenkins.getInstanceOrNull();
+        return jenkins != null ? jenkins.getProxy() : null;
+    }
+
+    private static void stopExistingClientIfNeeded() {
+        try {
+            if (CLIENT != null) {
+                CLIENT.stop();
+                CLIENT = null;
+            }
+        } catch (Exception e) {
+            // ignore
+        }
+    }
+
+    private static org.eclipse.jetty.client.HttpClient buildHttpClient(hudson.ProxyConfiguration jenkinsProxyConfiguration) {
         BlockingQueue<Runnable> queue = new ArrayBlockingQueue<>(1024);
         ThreadFactory threadFactory = new ThreadFactory() {
             final ThreadFactory delegate = Executors.defaultThreadFactory();
@@ -86,6 +116,9 @@ public class HttpClient {
 
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
         org.eclipse.jetty.client.HttpClient httpClient = new org.eclipse.jetty.client.HttpClient(sslContextFactory);
+
+        configureProxies(jenkinsProxyConfiguration, httpClient);
+
         httpClient.setExecutor(threadPool);
         httpClient.setMaxConnectionsPerDestination(getEnv(MAX_CONNECTIONS_PER_DESTINATION_ENV_VAR, MAX_CONNECTIONS_PER_DESTINATION_DEFAULT));
         httpClient.setUserAgentField(new HttpField("User-Agent", getUserAgent()));
@@ -97,51 +130,38 @@ public class HttpClient {
         return httpClient;
     }
 
+    private static void configureProxies(hudson.ProxyConfiguration jenkinsProxyConfiguration, org.eclipse.jetty.client.HttpClient httpClient) {
+        if (jenkinsProxyConfiguration == null) {
+            return;
+        }
+
+        ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();
+        List<ProxyConfiguration.Proxy> proxies = proxyConfig.getProxies();
+        proxies.clear();
+
+        String proxyHost = jenkinsProxyConfiguration.getName();
+        int proxyPort = jenkinsProxyConfiguration.getPort();
+        List<Pattern> noProxyHostPatterns = jenkinsProxyConfiguration.getNoProxyHostPatterns();
+        proxies.add(new HttpProxy(proxyHost, proxyPort) {
+            @Override
+            public boolean matches(Origin origin) {
+                Origin.Address address = origin.getAddress();
+                String host = address.getHost();
+                for (Pattern noProxyHostPattern : noProxyHostPatterns) {
+                    if (noProxyHostPattern.matcher(host).matches()) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        });
+    }
+
     private static String getUserAgent() {
         return String.format("Datadog/%s/jenkins Java/%s Jenkins/%s",
                 HttpClient.class.getPackage().getImplementationVersion(),
                 System.getProperty("java.version"),
                 Jenkins.VERSION);
-    }
-
-    private static void ensureProxyConfiguration() {
-        Jenkins jenkins = Jenkins.getInstanceOrNull();
-        if (jenkins == null) {
-            return;
-        }
-        hudson.ProxyConfiguration jenkinsProxyConfiguration = jenkins.getProxy();
-        if (jenkinsProxyConfiguration == null) {
-            return;
-        }
-
-        if (EFFECTIVE_PROXY_CONFIGURATION != jenkinsProxyConfiguration) {
-            synchronized (CLIENT) {
-                if (EFFECTIVE_PROXY_CONFIGURATION != jenkinsProxyConfiguration) {
-                    org.eclipse.jetty.client.ProxyConfiguration proxyConfig = CLIENT.getProxyConfiguration();
-                    List<ProxyConfiguration.Proxy> proxies = proxyConfig.getProxies();
-                    proxies.clear();
-
-                    String proxyHost = jenkinsProxyConfiguration.getName();
-                    int proxyPort = jenkinsProxyConfiguration.getPort();
-                    List<Pattern> noProxyHostPatterns = jenkinsProxyConfiguration.getNoProxyHostPatterns();
-                    proxies.add(new HttpProxy(proxyHost, proxyPort) {
-                        @Override
-                        public boolean matches(Origin origin) {
-                            Origin.Address address = origin.getAddress();
-                            String host = address.getHost();
-                            for (Pattern noProxyHostPattern : noProxyHostPatterns) {
-                                if (noProxyHostPattern.matcher(host).matches()) {
-                                    return false;
-                                }
-                            }
-                            return true;
-                        }
-                    });
-
-                    EFFECTIVE_PROXY_CONFIGURATION = jenkinsProxyConfiguration;
-                }
-            }
-        }
     }
 
     private final long timeoutMillis;
@@ -156,8 +176,6 @@ public class HttpClient {
     }
 
     public <T> T get(String url, Map<String, String> headers, Function<String, T> responseParser) throws ExecutionException, InterruptedException, TimeoutException {
-        ensureProxyConfiguration();
-
         return executeSynchronously(
                 requestSupplier(url, HttpMethod.GET, headers, null, null),
                 retryPolicyFactory.create(),
@@ -165,8 +183,6 @@ public class HttpClient {
     }
 
     public <T> T post(String url, Map<String, String> headers, String contentType, byte[] body, Function<String, T> responseParser) throws ExecutionException, InterruptedException, TimeoutException {
-        ensureProxyConfiguration();
-
         return executeSynchronously(
                 requestSupplier(url, HttpMethod.POST, headers, contentType, body),
                 retryPolicyFactory.create(),
@@ -174,8 +190,6 @@ public class HttpClient {
     }
 
     public void postAsynchronously(String url, Map<String, String> headers, String contentType, byte[] body) {
-        ensureProxyConfiguration();
-
         executeAsynchronously(
                 requestSupplier(
                         url,
@@ -188,8 +202,6 @@ public class HttpClient {
     }
 
     public void sendAsynchronously(HttpMessage message) {
-        ensureProxyConfiguration();
-
         String url = message.getURL().toString();
         HttpMethod httpMethod = HttpMethod.fromString(message.getMethod().name());
         String contentType = message.getContentType();
@@ -225,6 +237,8 @@ public class HttpClient {
     }
 
     private static <T> T executeSynchronously(Supplier<Request> requestSupplier, HttpRetryPolicy retryPolicy, Function<String, T> responseParser) throws InterruptedException, TimeoutException, ExecutionException {
+        ensureClientIsUpToDate();
+
         while (true) {
             ContentResponse response;
             try {
@@ -275,6 +289,8 @@ public class HttpClient {
     }
 
     private static void executeAsynchronously(Supplier<Request> requestSupplier, HttpRetryPolicy retryPolicy) {
+        ensureClientIsUpToDate();
+
         Request request = requestSupplier.get();
         request.send(new ResponseListener(getEnv(MAX_RESPONSE_LENGTH_BYTES_ENV_VAR, MAX_RESPONSE_LENGTH_BYTES_DEFAULT), requestSupplier, retryPolicy));
     }
