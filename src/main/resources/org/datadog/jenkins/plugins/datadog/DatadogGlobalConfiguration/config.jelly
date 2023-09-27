@@ -61,13 +61,6 @@
         </f:entry>
 
         <f:validateButton title="${%Test Key}" progress="${%Testing...}" method="testConnection" with="targetApiKey,targetCredentialsApiKey,targetApiURL" checkMethod="post" />
-
-        <f:entry title="Datadog Application Key" field="targetApplicationKeyEntry" description="Optional, required only for Intelligent Test Runner in Tests Visibility">
-          <f:password field="targetApplicationKey" default="${targetApplicationKey}" checkMethod="post" />
-        </f:entry>
-        <f:entry title="Datadog Application Key (Select from Credentials)" field="targetCredentialsApplicationKeyEntry" description="Optional, required only for Intelligent Test Runner in Tests Visibility">
-          <f:select field="targetCredentialsApplicationKey" default="${targetCredentialsApplicationKey}" checkMethod="post" />
-        </f:entry>
     </f:radioBlock>
 
     <f:entry title="Logs">

@@ -90,7 +90,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static final String TARGET_LOG_INTAKE_URL_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_LOG_INTAKE_URL";
     private static final String TARGET_WEBHOOK_INTAKE_URL_PROPERTY = "DATADOG_JENKINS_TARGET_WEBHOOK_INTAKE_URL";
     private static final String TARGET_API_KEY_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_API_KEY";
-    private static final String TARGET_APPLICATION_KEY_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_APPLICATION_KEY";
     private static final String TARGET_LOG_COLLECTION_PORT_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT";
     private static final String TARGET_TRACE_SERVICE_NAME_PROPERTY = "DATADOG_JENKINS_PLUGIN_TRACE_SERVICE_NAME";
     private static final String HOSTNAME_PROPERTY = "DATADOG_JENKINS_PLUGIN_HOSTNAME";
@@ -141,9 +140,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private Secret targetApiKey = null;
     private String targetCredentialsApiKey = null;
     private Secret usedApiKey = null;
-    private Secret targetApplicationKey = null;
-    private String targetCredentialsApplicationKey = null;
-    private Secret usedApplicationKey = null;
     private String targetHost = DEFAULT_TARGET_HOST_VALUE;
     private Integer targetPort = DEFAULT_TARGET_PORT_VALUE;
     private Integer targetLogCollectionPort = DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE;
@@ -197,11 +193,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         String targetApiKeyEnvVar = System.getenv(TARGET_API_KEY_PROPERTY);
         if(StringUtils.isNotBlank(targetApiKeyEnvVar)){
             this.targetApiKey = Secret.fromString(targetApiKeyEnvVar);
-        }
-
-        String targetApplicationKeyEnvVar = System.getenv(TARGET_APPLICATION_KEY_PROPERTY);
-        if(StringUtils.isNotBlank(targetApplicationKeyEnvVar)){
-            this.targetApplicationKey = Secret.fromString(targetApplicationKeyEnvVar);
         }
 
         final DatadogAgentConfiguration agentConfig = DatadogAgentConfiguration.resolve(System.getenv());
@@ -505,78 +496,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     }
 
     /**
-     * Populates the targetCredentialsApplicationKey field from the configuration screen with all of the valid credentials
-     *
-     * @param item - The context within which to list available credentials
-     * @param targetCredentialsApplicationKey - A String containing the application key as a credential
-     * @return a ListBoxModel object used to display all of the available credentials.
-     */
-    public ListBoxModel doFillTargetCredentialsApplicationKeyItems(
-            @AncestorInPath Item item,
-            @QueryParameter("targetCredentialsApplicationKey") String targetCredentialsApplicationKey
-    ) {
-        StandardListBoxModel result = new StandardListBoxModel();
-        // If the users does not have permissions to list credentials, only list the current value
-        if (item == null) {
-            if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
-                return result.includeCurrentValue(targetCredentialsApplicationKey);
-            }
-        } else {
-            if (!item.hasPermission(Item.EXTENDED_READ)
-                    && !item.hasPermission(CredentialsProvider.USE_ITEM)) {
-                return result.includeCurrentValue(targetCredentialsApplicationKey);
-            }
-        }
-        return result.includeEmptyValue()
-                .includeMatchingAs(ACL.SYSTEM,
-                        Jenkins.get(),
-                        StringCredentials.class,
-                        Collections.emptyList(),
-                        CredentialsMatchers.instanceOf(StringCredentials.class))
-                .includeCurrentValue(targetCredentialsApplicationKey);
-    }
-
-    /**
-     * Tests the targetCredentialsApplicationKey field from the configuration screen, to check its' validity.
-     *
-     * @param item - The context within which to list available credentials.
-     * @param targetCredentialsApplicationKey - A String containing the API key as a credential
-     * @return a FormValidation object used to display a message to the user on the configuration
-     * screen.
-     */
-    @RequirePOST
-    public FormValidation doCheckTargetCredentialsApplicationKey(
-            @AncestorInPath Item item,
-            @QueryParameter("targetCredentialsApplicationKey") String targetCredentialsApplicationKey
-    ) {
-        // Don't validate for users that do not have permission to list credentials
-        if (item == null) {
-            if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
-                return FormValidation.ok();
-            }
-        } else {
-            if (!item.hasPermission(Item.EXTENDED_READ)
-                    && !item.hasPermission(CredentialsProvider.USE_ITEM)) {
-                return FormValidation.ok();
-            }
-        }
-        if (StringUtils.isBlank(targetCredentialsApplicationKey)) {
-            return FormValidation.ok();
-        }
-        if (targetCredentialsApplicationKey.startsWith("${") && targetCredentialsApplicationKey.endsWith("}")) {
-            return FormValidation.warning("Cannot validate expression based credentials");
-        }
-        if (CredentialsProvider.listCredentials(StringCredentials.class,
-                item,
-                ACL.SYSTEM,
-                Collections.emptyList(),
-                CredentialsMatchers.withId(targetCredentialsApplicationKey)).isEmpty()) {
-            return FormValidation.error("Cannot find currently selected credentials");
-        }
-        return FormValidation.ok();
-    }
-
-    /**
      * Tests the hostname field from the configuration screen, to determine if
      * the hostname is of a valid format, according to the RFC 1123.
      * It is used in the config.jelly resource file. See method="testHostname"
@@ -765,8 +684,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.setTargetWebhookIntakeURL(formData.getString("targetWebhookIntakeURL"));
             this.setTargetApiKey(formData.getString("targetApiKey"));
             this.setTargetCredentialsApiKey(formData.getString("targetCredentialsApiKey"));
-            this.setTargetApplicationKey(formData.getString("targetApplicationKey"));
-            this.setTargetCredentialsApplicationKey(formData.getString("targetCredentialsApplicationKey"));
             this.setTargetHost(formData.getString("targetHost"));
             String portStr = formData.getString("targetPort");
             if (validatePort(portStr)) {
@@ -848,9 +765,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
             final Secret apiKeySecret = findSecret(formData.getString("targetApiKey"), formData.getString("targetCredentialsApiKey"));
             this.setUsedApiKey(apiKeySecret);
-
-            final Secret applicationKeySecret = findSecret(formData.getString("targetApplicationKey"), formData.getString("targetCredentialsApplicationKey"));
-            this.setUsedApplicationKey(applicationKeySecret);
 
             //When form is saved....
             DatadogClient client = ClientFactory.getClient(DatadogClient.ClientType.valueOf(this.getReportWith()), this.getTargetApiURL(),
@@ -1014,65 +928,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @DataBoundSetter
     public void setTargetCredentialsApiKey(final String targetCredentialsApiKey) {
         this.targetCredentialsApiKey = targetCredentialsApiKey;
-    }
-
-    /**
-     * Getter function for the targetApplicationKey global configuration.
-     *
-     * @return a Secret containing the targetApplicationKey global configuration.
-     */
-    public Secret getTargetApplicationKey() {
-        return targetApplicationKey;
-    }
-
-    /**
-     * Setter function for the targetApplicationKey global configuration.
-     *
-     * @param targetApplicationKey = A string containing the plaintext representation of a
-     *            DataDog Application Key
-     */
-    @DataBoundSetter
-    public void setTargetApplicationKey(final String targetApplicationKey) {
-        this.targetApplicationKey = Secret.fromString(fixEmptyAndTrim(targetApplicationKey));
-    }
-
-    /**
-     * Getter function for the application key global configuration.
-     *
-     * @return a Secret containing the usedApplicationKey global configuration.
-     */
-    public Secret getUsedApplicationKey() {
-        return usedApplicationKey;
-    }
-
-    /**
-     * Setter function for the application key global configuration..
-     *
-     * @param usedApplicationKey = A Secret containing the DataDog Application Key
-     */
-    @DataBoundSetter
-    public void setUsedApplicationKey(final Secret usedApplicationKey) {
-        this.usedApplicationKey = usedApplicationKey;
-    }
-
-    /**
-     * Getter function for the targetCredentialsApplicationKey global configuration.
-     *
-     * @return a String containing the ID of the targetCredentialsApplicationKey global configuration.
-     */
-    public String getTargetCredentialsApplicationKey() {
-        return targetCredentialsApplicationKey;
-    }
-
-    /**
-     * Setter function for the credentials targetCredentialsApplicationKey global configuration.
-     *
-     * @param targetCredentialsApplicationKey = A string containing the plaintext representation of a
-     *            DataDog Application Key
-     */
-    @DataBoundSetter
-    public void setTargetCredentialsApplicationKey(final String targetCredentialsApplicationKey) {
-        this.targetCredentialsApplicationKey = targetCredentialsApplicationKey;
     }
 
     /**

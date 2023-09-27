@@ -117,7 +117,6 @@ public class DatadogTracerConfigurator {
                 variables.put("DD_CIVISIBILITY_AGENTLESS_ENABLED", "true");
                 variables.put("DD_SITE", getSite(datadogConfig.getTargetApiURL()));
                 variables.put("DD_API_KEY", Secret.toString(datadogConfig.getUsedApiKey()));
-                variables.put("DD_APPLICATION_KEY", Secret.toString(datadogConfig.getUsedApplicationKey()));
                 break;
             case DSD:
                 variables.put("DD_AGENT_HOST", datadogConfig.getTargetHost());

@@ -232,7 +232,9 @@ The plugin can automatically configure Datadog <a target="_blank" href="https://
 
 Before enabling Test Visibility, be sure to properly configure the plugin to submit data to Datadog.
 
-To enable Test Visibility, go to the `Configure` page of the job or pipeline whose tests need to be traced, tick `Enable Datadog Test Visibility` checkbox in the `General` section and save your changes. 
+To enable Test Visibility, go to the `Configure` page of the job or pipeline whose tests need to be traced, tick `Enable Datadog Test Visibility` checkbox in the `General` section and save your changes.
+
+Please bear in mind that Test Visibility is a separate Datadog product that is billed separately.
 
 ## Data collected
 
