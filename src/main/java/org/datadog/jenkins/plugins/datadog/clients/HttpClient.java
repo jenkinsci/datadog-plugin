@@ -187,7 +187,7 @@ public class HttpClient {
     }
 
     public void getBinary(String url, Map<String, String> headers, Consumer<InputStream> responseParser) throws ExecutionException, InterruptedException, TimeoutException, IOException {
-        ensureProxyConfiguration();
+        ensureClientIsUpToDate();
 
         Request request = requestSupplier(url, HttpMethod.GET, headers, null, null).get();
         InputStreamResponseListener responseListener = new InputStreamResponseListener();
