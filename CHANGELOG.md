@@ -1,6 +1,6 @@
 Changes
 =======
-## 5.5.1 / 2023-10-04
+## 5.5.1 / 2023-10-05
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.5.0...datadog-5.5.1
 
