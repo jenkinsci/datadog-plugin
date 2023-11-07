@@ -44,6 +44,8 @@ import hudson.EnvVars;
 import hudson.model.BooleanParameterValue;
 import hudson.model.Cause;
 import hudson.model.CauseAction;
+import hudson.model.ItemGroup;
+import hudson.model.Job;
 import hudson.model.ParameterValue;
 import hudson.model.ParametersAction;
 import hudson.model.Run;
@@ -193,23 +195,10 @@ public class BuildData implements Serializable {
         // Save charset canonical name
         setCharset(run.getCharset());
 
-        // Set Job Name
-        String baseJobName = null;
-        try {
-            baseJobName = run.getParent().getParent().getFullName();
-            if (baseJobName.length() == 0) {
-                baseJobName = run.getParent().getName();
-            }
-        } catch(NullPointerException e){
-            //noop
-        }
+        String baseJobName = getBaseJobName(run, envVars);
         setBaseJobName(normalizeJobName(baseJobName));
-        String jobNameWithConfiguration = null;
-        try {
-            jobNameWithConfiguration = run.getParent().getFullName();
-        } catch(NullPointerException e){
-            //noop
-        }
+
+        String jobNameWithConfiguration = getJobName(run, envVars);
         setJobName(normalizeJobName(jobNameWithConfiguration));
 
         // Set Jenkins Url
@@ -234,6 +223,51 @@ public class BuildData implements Serializable {
         if (buildSpanAction != null) {
             getMissingGitValuesFrom(buildSpanAction.getBuildData());
         }
+    }
+
+    private static String getBaseJobName(Run run, EnvVars envVars) {
+        Job<?, ?> job = run.getParent();
+        if (job != null) {
+            ItemGroup<?> jobParent = job.getParent();
+            if (jobParent != null) {
+                String jobParentFullName = jobParent.getFullName();
+                if (StringUtils.isNotBlank(jobParentFullName)) {
+                    return jobParentFullName;
+                }
+            }
+        }
+        String jobName = job.getName();
+        if (StringUtils.isNotBlank(jobName)) {
+            return jobName;
+        }
+        if (envVars != null) {
+            String envJobBaseName = envVars.get("JOB_BASE_NAME");
+            if (StringUtils.isNotBlank(envJobBaseName)) {
+                return envJobBaseName;
+            }
+            String envJobName = envVars.get("JOB_NAME");
+            if (StringUtils.isNotBlank(envJobName)) {
+                return envJobName;
+            }
+        }
+        return "unknown";
+    }
+
+    private static String getJobName(Run run, EnvVars envVars) {
+        Job<?, ?> job = run.getParent();
+        if (job != null) {
+            String jobFullName = job.getFullName();
+            if (StringUtils.isNotBlank(jobFullName)) {
+                return jobFullName;
+            }
+        }
+        if (envVars != null) {
+            String envJobName = envVars.get("JOB_NAME");
+            if (StringUtils.isNotBlank(envJobName)) {
+                return envJobName;
+            }
+        }
+        return "unknown";
     }
 
     private void getMissingGitValuesFrom(BuildData previousData) {
@@ -311,7 +345,14 @@ public class BuildData implements Serializable {
         setBuildId(envVars.get("BUILD_ID"));
         setBuildUrl(envVars.get("BUILD_URL"));
         setNodeName(envVars.get("NODE_NAME"));
-        setBuildTag(envVars.get("BUILD_TAG"));
+
+        String envBuildTag = envVars.get("BUILD_TAG");
+        if (StringUtils.isNotBlank(envBuildTag)) {
+            setBuildTag(envBuildTag);
+        } else {
+            setBuildTag("jenkins-" + envVars.get("JOB_NAME") + "-" + envVars.get("BUILD_NUMBER"));
+        }
+
         setExecutorNumber(envVars.get("EXECUTOR_NUMBER"));
         setJavaHome(envVars.get("JAVA_HOME"));
         setWorkspace(envVars.get("WORKSPACE"));
