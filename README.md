@@ -228,6 +228,16 @@ From a job specific configuration page:
 | Custom tags                           | Set from a `File` in the job workspace (not compatible with pipeline jobs) or as text `Properties` directly from the configuration page. If set, this overrides the `Global Job Tags` configuration. |
 | Send source control management events | Submits the `Source Control Management Events Type` of events and metrics (enabled by default).                                                                                                         |
 
+### Test Visibility Configuration
+
+The plugin can automatically configure Datadog <a target="_blank" href="https://docs.datadoghq.com/continuous_integration/tests/">Test Visibility</a> for a job or a pipeline.
+
+Before enabling Test Visibility, be sure to properly configure the plugin to submit data to Datadog.
+
+To enable Test Visibility, go to the `Configure` page of the job or pipeline whose tests need to be traced, tick `Enable Datadog Test Visibility` checkbox in the `General` section and save your changes.
+
+Please bear in mind that Test Visibility is a separate Datadog product that is billed separately.
+
 ## Data collected
 
 This plugin is collecting the following [events](#events), [metrics](#metrics), and [service checks](#service-checks):

@@ -1,18 +1,25 @@
 Changes
 =======
+## 5.5.1 / 2023-10-05
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.5.0...datadog-5.5.1
+
+
+* [Fixed] Fix support for setting environment variables such as `GIT_BRANCH` when CI visibility is disabled. See [#361](https://github.com/jenkinsci/datadog-plugin/pull/361).
+* [Fixed] Adjust HTTP client configuration and batch HTTP metrics. See [#362](https://github.com/jenkinsci/datadog-plugin/pull/362).
+* [Fixed] Fix file descriptor leak in logger reinitialisation logic and print stack trace in severe logs. See [#347](https://github.com/jenkinsci/datadog-plugin/pull/347).
+* [Fixed] Update order of hostname detection logic. See [#360](https://github.com/jenkinsci/datadog-plugin/pull/360).
+* [Fixed] Move all HTTP calls to a dedicated class and use Jetty HTTP client instead of raw HttpUrlConnection. See [#346](https://github.com/jenkinsci/datadog-plugin/pull/346).
+* [Fixed] Fix support for setting environment variables in pipeline stages. See [#356](https://github.com/jenkinsci/datadog-plugin/pull/356).
+
 
 ## 5.5.0 / 2023-08-25
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.4.2...datadog-5.5.0
 
-***Added***:
-
-* Add option to use AWS instance ID as hostname. See [#345](https://github.com/jenkinsci/datadog-plugin/pull/345).
-
-***Fixed***:
-
-* Fix error status propagation to take into account catch/catchError/warnError blocks. See [#343](https://github.com/jenkinsci/datadog-plugin/pull/343).
-* Look up hostname from controller environment. See [#340](https://github.com/jenkinsci/datadog-plugin/pull/340). Thanks [Vlatombe](https://github.com/Vlatombe).
+* [Added] Add option to use AWS instance ID as hostname. See [#345](https://github.com/jenkinsci/datadog-plugin/pull/345).
+* [Fixed] Fix error status propagation to take into account catch/catchError/warnError blocks. See [#343](https://github.com/jenkinsci/datadog-plugin/pull/343).
+* [Fixed] Look up hostname from controller environment. See [#340](https://github.com/jenkinsci/datadog-plugin/pull/340). Thanks [Vlatombe](https://github.com/Vlatombe).
 
 ## 5.4.2 / 2023-07-12
 ### Details

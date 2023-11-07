@@ -230,7 +230,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         }
 
         String traceServiceNameVar = System.getenv(TARGET_TRACE_SERVICE_NAME_PROPERTY);
-        if(StringUtils.isNotBlank(targetApiKeyEnvVar)) {
+        if(StringUtils.isNotBlank(traceServiceNameVar)) {
             this.traceServiceName = traceServiceNameVar;
         }
 
@@ -497,6 +497,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                 excludeEvents);
     }
 
+
     /**
      * Tests the targetCredentialsApiKey field from the configuration screen, to check its' validity.
      *
@@ -518,7 +519,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         } else {
             if (!item.hasPermission(Item.EXTENDED_READ)
                 && !item.hasPermission(CredentialsProvider.USE_ITEM)) {
-                return FormValidation.ok(); 
+                return FormValidation.ok();
             }
         }
         if (StringUtils.isBlank(targetCredentialsApiKey)) {
@@ -529,7 +530,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         }
         if (CredentialsProvider.listCredentials(StringCredentials.class,
                         item,
-                        ACL.SYSTEM, 
+                        ACL.SYSTEM,
                         Collections.emptyList(),
                         CredentialsMatchers.withId(targetCredentialsApiKey)).isEmpty()) {
             return FormValidation.error("Cannot find currently selected credentials");
@@ -821,6 +822,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
             final Secret apiKeySecret = findSecret(formData.getString("targetApiKey"), formData.getString("targetCredentialsApiKey"));
             this.setUsedApiKey(apiKeySecret);
+
             //When form is saved....
             DatadogClient client = ClientFactory.getClient(DatadogClient.ClientType.valueOf(this.getReportWith()), this.getTargetApiURL(),
                 this.getTargetLogIntakeURL(), this.getTargetWebhookIntakeURL(), this.getUsedApiKey(), this.getTargetHost(),

@@ -54,21 +54,6 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
             return;
         }
 
-        final TraceSpan buildSpan = new TraceSpan("jenkins.build", TimeUnit.MILLISECONDS.toNanos(buildData.getStartTime(0L)));
-        BuildSpanManager.get().put(buildData.getBuildTag(""), buildSpan);
-
-        // The buildData object is stored in the BuildSpanAction to be updated
-        // by the information that will be calculated when the pipeline listeners
-        // were executed. This is needed because if the user build is based on
-        // Jenkins Pipelines, there are many information that is missing when the
-        // root span is created, such as Git info (this is calculated in an inner step
-        // of the pipeline)
-        final BuildSpanAction buildSpanAction = new BuildSpanAction(buildData, buildSpan.context());
-        run.addAction(buildSpanAction);
-
-        final StepDataAction stepDataAction = new StepDataAction();
-        run.addAction(stepDataAction);
-
         final StepTraceDataAction stepTraceDataAction = new StepTraceDataAction();
         run.addAction(stepTraceDataAction);
 
@@ -88,7 +73,7 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
             return;
         }
 
-        final TraceSpan buildSpan = BuildSpanManager.get().remove(buildData.getBuildTag(""));
+        final TraceSpan buildSpan = BuildSpanManager.get().get(buildData.getBuildTag(""));
         if(buildSpan == null) {
             return;
         }

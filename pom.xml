@@ -15,7 +15,7 @@
   <url>https://github.com/jenkinsci/datadog-plugin</url>
   <groupId>org.datadog.jenkins.plugins</groupId>
   <artifactId>datadog</artifactId>
-  <version>5.5.1-SNAPSHOT</version>
+  <version>5.5.2-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <properties>
@@ -171,6 +171,11 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
       <version>9.4.51.v20230217</version>
+    </dependency>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpg-jdk18on</artifactId>
+      <version>1.72</version>
     </dependency>
   </dependencies>
 
