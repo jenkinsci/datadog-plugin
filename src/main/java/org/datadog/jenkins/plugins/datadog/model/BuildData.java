@@ -230,9 +230,13 @@ public class BuildData implements Serializable {
         if (job != null) {
             ItemGroup<?> jobParent = job.getParent();
             if (jobParent != null) {
-                String jobParentFullName = jobParent.getFullName();
-                if (StringUtils.isNotBlank(jobParentFullName)) {
-                    return jobParentFullName;
+                try {
+                    String jobParentFullName = jobParent.getFullName();
+                    if (StringUtils.isNotBlank(jobParentFullName)) {
+                        return jobParentFullName;
+                    }
+                } catch (NullPointerException e) {
+                    // this is possible if data is not mocked properly in unit tests
                 }
             }
         }
@@ -256,9 +260,13 @@ public class BuildData implements Serializable {
     private static String getJobName(Run run, EnvVars envVars) {
         Job<?, ?> job = run.getParent();
         if (job != null) {
-            String jobFullName = job.getFullName();
-            if (StringUtils.isNotBlank(jobFullName)) {
-                return jobFullName;
+            try {
+                String jobFullName = job.getFullName();
+                if (StringUtils.isNotBlank(jobFullName)) {
+                    return jobFullName;
+                }
+            } catch (NullPointerException e) {
+                // this is possible if data is not mocked properly in unit tests
             }
         }
         if (envVars != null) {
