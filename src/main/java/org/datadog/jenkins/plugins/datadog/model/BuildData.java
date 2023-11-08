@@ -240,21 +240,13 @@ public class BuildData implements Serializable {
                 }
             }
         }
-        String jobName = job.getName();
-        if (StringUtils.isNotBlank(jobName)) {
-            return jobName;
-        }
         if (envVars != null) {
             String envJobBaseName = envVars.get("JOB_BASE_NAME");
             if (StringUtils.isNotBlank(envJobBaseName)) {
                 return envJobBaseName;
             }
-            String envJobName = envVars.get("JOB_NAME");
-            if (StringUtils.isNotBlank(envJobName)) {
-                return envJobName;
-            }
         }
-        return "unknown";
+        return getJobName(run, envVars);
     }
 
     private static String getJobName(Run run, EnvVars envVars) {

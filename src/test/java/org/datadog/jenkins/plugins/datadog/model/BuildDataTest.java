@@ -27,21 +27,21 @@ public class BuildDataTest {
     }
 
     @Test
-    public void testBaseJobNameFallsBackToJobName() throws IOException, InterruptedException {
-        Run run = givenJobRun("jobName", "", Collections.singletonMap("JOB_BASE_NAME", "jobBaseNameFromEnvironment"));
-        BuildData buildData = whenCreatingBuildData(run);
-        assertEquals("jobName", buildData.getBaseJobName(""));
-    }
-
-    @Test
     public void testBaseJobNameFallsBackToEnvVar() throws IOException, InterruptedException {
-        Run run = givenJobRun("", "", Collections.singletonMap("JOB_BASE_NAME", "jobBaseNameFromEnvironment"));
+        Run run = givenJobRun("jobName", "", Collections.singletonMap("JOB_BASE_NAME", "jobBaseNameFromEnvironment"));
         BuildData buildData = whenCreatingBuildData(run);
         assertEquals("jobBaseNameFromEnvironment", buildData.getBaseJobName(""));
     }
 
     @Test
-    public void testBaseJobNameFallsBackToAlternativeEnvVar() throws IOException, InterruptedException {
+    public void testBaseJobNameFallsBackToJobName() throws IOException, InterruptedException {
+        Run run = givenJobRun("jobName", "", Collections.singletonMap("JOB_NAME", "jobNameFromEnvironment"));
+        BuildData buildData = whenCreatingBuildData(run);
+        assertEquals("jobName", buildData.getBaseJobName(""));
+    }
+
+    @Test
+    public void testBaseJobNameFallsBackToJobNameFromEnvVar() throws IOException, InterruptedException {
         Run run = givenJobRun("", "", Collections.singletonMap("JOB_NAME", "jobNameFromEnvironment"));
         BuildData buildData = whenCreatingBuildData(run);
         assertEquals("jobNameFromEnvironment", buildData.getBaseJobName(""));
