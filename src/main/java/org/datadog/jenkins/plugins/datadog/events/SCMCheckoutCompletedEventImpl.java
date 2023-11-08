@@ -29,6 +29,8 @@ import org.datadog.jenkins.plugins.datadog.model.BuildData;
 
 public class SCMCheckoutCompletedEventImpl extends AbstractDatadogBuildEvent {
 
+    public static final String SCM_CHECKOUT_COMPLETED_EVENT_NAME = "SCMCheckout";
+
     public SCMCheckoutCompletedEventImpl(BuildData buildData) {
         super(buildData);
 

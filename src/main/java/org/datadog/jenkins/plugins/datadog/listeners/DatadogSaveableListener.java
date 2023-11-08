@@ -33,7 +33,6 @@ import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
-import org.datadog.jenkins.plugins.datadog.events.ConfigChangedEventImpl;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 import java.util.Map;
@@ -52,14 +51,11 @@ public class DatadogSaveableListener  extends SaveableListener {
     @Override
     public void onChange(Saveable config, XmlFile file) {
         try {
-            final boolean emitSystemEvents = DatadogUtilities.getDatadogGlobalDescriptor().isEmitSystemEvents();
-            if (!emitSystemEvents) {
-                return;
-            }
-            final boolean emitConfigChangeEvents = DatadogUtilities.getDatadogGlobalDescriptor().isEmitConfigChangeEvents();
-            if (!emitConfigChangeEvents) {
-                return;
-            }
+            // Get the list of global tags to apply
+            Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
+            // Add userId and JenkinsUrl Tags
+            tags = TagsUtil.addTagToTags(tags, "user_id", DatadogUtilities.getUserId());
+            tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
 
             logger.fine("Start DatadogSaveableListener#onChange");
 
@@ -68,16 +64,6 @@ public class DatadogSaveableListener  extends SaveableListener {
             if(client == null){
                 return;
             }
-
-            // Get the list of global tags to apply
-            Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
-            // Add userId and JenkinsUrl Tags
-            tags = TagsUtil.addTagToTags(tags, "user_id", DatadogUtilities.getUserId());
-            tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
-
-            // Send event
-            DatadogEvent event = new ConfigChangedEventImpl(config, file, tags);
-            client.event(event);
 
             // Submit counter
             String hostname = DatadogUtilities.getHostname(null);

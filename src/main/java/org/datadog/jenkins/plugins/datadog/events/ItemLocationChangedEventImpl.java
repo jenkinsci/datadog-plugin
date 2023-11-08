@@ -33,6 +33,8 @@ import java.util.Set;
 
 public class ItemLocationChangedEventImpl extends AbstractDatadogSimpleEvent {
 
+    public static final String ITEM_LOCATION_CHANGED_EVENT_NAME = "ItemLocationChanged";
+
     public ItemLocationChangedEventImpl(Item item, String oldFullName, String newFullName, Map<String, Set<String>> tags) {
         super(tags);
 

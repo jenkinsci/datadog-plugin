@@ -33,6 +33,8 @@ import java.util.Set;
 
 public class ItemCopiedEventImpl extends AbstractDatadogSimpleEvent {
 
+    public static final String ITEM_COPIED_EVENT_NAME = "ItemCopied";
+
     public ItemCopiedEventImpl(Item src, Item item, Map<String, Set<String>> tags) {
         super(tags);
 

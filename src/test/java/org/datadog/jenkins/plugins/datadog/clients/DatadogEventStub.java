@@ -39,6 +39,7 @@ public class DatadogEventStub {
     private DatadogEvent.AlertType alertType;
     private Long date;
     private Map<String, Set<String>> tags;
+    private DatadogEvent event;
 
     DatadogEventStub(DatadogEvent event) {
         this.title = event.getTitle();
@@ -49,10 +50,15 @@ public class DatadogEventStub {
         this.alertType = event.getAlertType();
         this.date = event.getDate();
         this.tags = event.getTags();
+        this.event = event;
     }
 
     public Map<String, Set<String>> getTags(){
         return this.tags;
+    }
+
+    public DatadogEvent getEvent() {
+        return this.event;
     }
 
     /**

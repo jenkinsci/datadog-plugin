@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+
 import hudson.util.Secret;
 import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
@@ -13,8 +14,6 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.CredentialsStore;
 import com.cloudbees.plugins.credentials.domains.Domain;
-
-import org.junit.Assert;
 import java.io.IOException;
 
 public class DatadogGlobalConfigurationTest {
@@ -59,9 +58,6 @@ public class DatadogGlobalConfigurationTest {
         Assert.assertTrue(cfg.findSecret("", null).getPlainText().equals(""));
 
         Assert.assertTrue(cfg.findSecret(null, "").getPlainText().equals(""));
-
     }
-
-
 }
 

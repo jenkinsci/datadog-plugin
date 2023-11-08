@@ -67,7 +67,7 @@ public class UserAuthenticationEventTest {
 
     @Test
     public void testWithEverythingSet() throws IOException, InterruptedException {
-        DatadogEvent event = new UserAuthenticationEventImpl("username", UserAuthenticationEventImpl.ACCESS_DENIED, new HashMap<String, Set<String>>());
+        DatadogEvent event = new UserAuthenticationEventImpl("username", UserAuthenticationEventImpl.USER_ACCESS_DENIED_MESSAGE, new HashMap<String, Set<String>>());
 
         String hostname = DatadogUtilities.getHostname(null);
         Assert.assertTrue(event.getHost().equals(hostname));
@@ -82,7 +82,7 @@ public class UserAuthenticationEventTest {
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
         Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
 
-        event = new UserAuthenticationEventImpl("username", UserAuthenticationEventImpl.LOGOUT, new HashMap<String, Set<String>>());
+        event = new UserAuthenticationEventImpl("username", UserAuthenticationEventImpl.USER_LOGOUT_MESSAGE, new HashMap<String, Set<String>>());
 
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);
@@ -96,7 +96,7 @@ public class UserAuthenticationEventTest {
         Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.LOW));
         Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
 
-        event = new UserAuthenticationEventImpl("username", UserAuthenticationEventImpl.LOGIN, new HashMap<String, Set<String>>());
+        event = new UserAuthenticationEventImpl("username", UserAuthenticationEventImpl.USER_LOGIN_MESSAGE, new HashMap<String, Set<String>>());
 
         Assert.assertTrue(event.getHost().equals(hostname));
         Assert.assertTrue(event.getDate() != 0);

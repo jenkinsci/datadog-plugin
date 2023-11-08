@@ -25,6 +25,8 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.listeners;
 
+import static org.datadog.jenkins.plugins.datadog.events.SCMCheckoutCompletedEventImpl.SCM_CHECKOUT_COMPLETED_EVENT_NAME;
+
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.model.Run;
@@ -95,8 +97,11 @@ public class DatadogSCMListener extends SCMListener {
             }
 
             // Send event
-            DatadogEvent event = new SCMCheckoutCompletedEventImpl(buildData);
-            client.event(event);
+            boolean shouldSendEvent = DatadogUtilities.shouldSendEvent(SCM_CHECKOUT_COMPLETED_EVENT_NAME);
+            if (shouldSendEvent) {
+                DatadogEvent event = new SCMCheckoutCompletedEventImpl(buildData);
+                client.event(event);
+            }
 
             // Submit counter
             String hostname = DatadogUtilities.getHostname(null);

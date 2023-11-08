@@ -29,6 +29,8 @@ import org.datadog.jenkins.plugins.datadog.model.BuildData;
 
 public class BuildAbortedEventImpl extends AbstractDatadogBuildEvent {
 
+    public static final String BUILD_ABORTED_EVENT_NAME = "BuildAborted";
+
     public BuildAbortedEventImpl(BuildData buildData) {
         super(buildData);
 

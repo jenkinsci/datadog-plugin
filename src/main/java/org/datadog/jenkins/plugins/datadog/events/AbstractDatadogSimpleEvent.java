@@ -33,11 +33,21 @@ import java.util.Set;
 
 public abstract class AbstractDatadogSimpleEvent extends AbstractDatadogEvent {
 
+    private boolean isTemporarily;
+
     public AbstractDatadogSimpleEvent(Map<String, Set<String>> tags) {
         setHost(DatadogUtilities.getHostname(null));
         setJenkinsUrl(DatadogUtilities.getJenkinsUrl());
         setDate(DatadogUtilities.currentTimeMillis() / 1000);
         setTags(TagsUtil.merge(TagsUtil.addTagToTags(null, "event_type", SYSTEM_EVENT_TYPE), tags));
+    }
+
+    public boolean isTemporarily() {
+        return this.isTemporarily;
+    }
+
+    public void setIsTemporarily(boolean isTemporarily) {
+        this.isTemporarily = isTemporarily;
     }
 
 }
