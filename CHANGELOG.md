@@ -1,9 +1,16 @@
 Changes
 =======
+## 5.6.0 / 2023-11-13
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.5.1...datadog-5.6.0
+
+* [Added] Add ability to granualarly filter events. See [#364](https://github.com/jenkinsci/datadog-plugin/pull/364). Thanks [dawitgirm](https://github.com/dawitgirm).
+* [Added] Add support for automatic APM tracers configuration. See [#354](https://github.com/jenkinsci/datadog-plugin/pull/354).
+* [Fixed] Add fallback logic for job name and build tag in build data. See [#368](https://github.com/jenkinsci/datadog-plugin/pull/368).
+
 ## 5.5.1 / 2023-10-05
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.5.0...datadog-5.5.1
-
 
 * [Fixed] Fix support for setting environment variables such as `GIT_BRANCH` when CI visibility is disabled. See [#361](https://github.com/jenkinsci/datadog-plugin/pull/361).
 * [Fixed] Adjust HTTP client configuration and batch HTTP metrics. See [#362](https://github.com/jenkinsci/datadog-plugin/pull/362).
