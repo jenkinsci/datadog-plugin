@@ -1020,7 +1020,7 @@ public class DatadogUtilities {
 
     /**
      * Checks to see if event should be sent to client
-     * @param event - the event to check
+     * @param eventName - the event to check
      * @return true if event should be sent to client
      */
     public static boolean shouldSendEvent(String eventName) {
@@ -1069,7 +1069,7 @@ public class DatadogUtilities {
 
     /**
      * Check if flowNode is the last node of the pipeline.
-     * @param flowNode
+     * @param flowNode flowNode to check
      * @return true if flowNode is the last node of the pipeline
      */
     public static boolean isLastNode(FlowNode flowNode) {
