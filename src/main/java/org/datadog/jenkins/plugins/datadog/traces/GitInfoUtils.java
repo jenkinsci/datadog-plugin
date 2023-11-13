@@ -48,7 +48,7 @@ public class GitInfoUtils {
 
     /**
      * Filters the user info given a valid HTTP URL.
-     * @param urlStr
+     * @param urlStr input URL
      * @return URL without user info.
      */
     public static String filterSensitiveInfo(String urlStr) {
