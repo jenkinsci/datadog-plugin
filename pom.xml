@@ -24,6 +24,7 @@
     <dd-trace-java.version>0.71.0</dd-trace-java.version>
     <!-- byte-buddy is needed until we bump to java 11: https://stackoverflow.com/questions/69929229/mockito-shipped-within-spring-boot-fails-to-attach-to-jvm-openjdk-11/72912290#72912290 -->
     <byte-buddy.version>1.12.14</byte-buddy.version>
+    <configuration-as-code.version>1462.v069a_b_57ff5c8</configuration-as-code.version>
     <useBeta>true</useBeta>
   </properties>
 
@@ -85,6 +86,19 @@
       <groupId>com.datadoghq</groupId>
       <artifactId>java-dogstatsd-client</artifactId>
       <version>2.9.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.jenkins</groupId>
+      <artifactId>configuration-as-code</artifactId>
+      <version>${configuration-as-code.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>io.jenkins.configuration-as-code</groupId>
+        <artifactId>test-harness</artifactId>
+        <version>${configuration-as-code.version}</version>
+        <scope>test</scope>
     </dependency>
 
     <!-- https://mvnrepository.com/artifact/org.mockito/mockito-core -->

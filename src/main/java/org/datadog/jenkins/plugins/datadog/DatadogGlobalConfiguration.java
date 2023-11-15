@@ -118,6 +118,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static final String GLOBAL_JOB_TAGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_GLOBAL_JOB_TAGS";
     private static final String EMIT_SECURITY_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_SECURITY_EVENTS";
     private static final String EMIT_SYSTEM_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_SYSTEM_EVENTS";
+    private static final String EMIT_CONFIG_CHANGE_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EMIT_CONFIG_CHANGE_EVENTS";
     private static final String INCLUDE_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_INCLUDE_EVENTS";
     private static final String EXCLUDE_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EXCLUDE_EVENTS";
     private static final String COLLECT_BUILD_LOGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS";
@@ -141,6 +142,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static final Integer DEFAULT_TARGET_LOG_COLLECTION_PORT_VALUE = null;
     private static final boolean DEFAULT_EMIT_SECURITY_EVENTS_VALUE = true;
     private static final boolean DEFAULT_EMIT_SYSTEM_EVENTS_VALUE = true;
+    private static final boolean DEFAULT_EMIT_CONFIG_CHANGE_EVENTS_VALUE = false;
     private static final boolean DEFAULT_COLLECT_BUILD_LOGS_VALUE = false;
     private static final boolean DEFAULT_COLLECT_BUILD_TRACES_VALUE = false;
     private static final boolean DEFAULT_RETRY_LOGS_VALUE = true;
@@ -170,6 +172,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private String excludeEvents = null;
     private boolean emitSecurityEvents = DEFAULT_EMIT_SECURITY_EVENTS_VALUE;
     private boolean emitSystemEvents = DEFAULT_EMIT_SYSTEM_EVENTS_VALUE;
+    private boolean emitConfigChangeEvents = DEFAULT_EMIT_CONFIG_CHANGE_EVENTS_VALUE;
     private boolean collectBuildLogs = DEFAULT_COLLECT_BUILD_LOGS_VALUE;
     private boolean collectBuildTraces = DEFAULT_COLLECT_BUILD_TRACES_VALUE;
     private boolean retryLogs = DEFAULT_RETRY_LOGS_VALUE;
@@ -264,6 +267,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         String globalTagFileEnvVar = System.getenv(GLOBAL_TAG_FILE_PROPERTY);
         if(StringUtils.isNotBlank(globalTagFileEnvVar)){
             this.globalTagFile = globalTagFileEnvVar;
+        }
+
+        String emitConfigChangeEventsEnvVar = System.getenv(EMIT_CONFIG_CHANGE_EVENTS_PROPERTY);
+        if(StringUtils.isNotBlank(emitConfigChangeEventsEnvVar)){
+            this.emitConfigChangeEvents = Boolean.valueOf(emitConfigChangeEventsEnvVar);
         }
 
         String globalTagsEnvVar = System.getenv(GLOBAL_TAGS_PROPERTY);
@@ -1203,6 +1211,23 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         this.whitelist = jobs;
     }
 
+    /**
+     * @return - A {@link Boolean} indicating if the user has configured Datadog to emit Config Change events.
+    */
+    public boolean isEmitConfigChangeEvents() {
+        return emitConfigChangeEvents;
+    }
+
+     /**
+     * Used for CasC
+     * accepting a comma-separated string of events.
+     *
+     * @param emitConfigChangeEvents - The checkbox status (checked/unchecked)
+     */
+    @DataBoundSetter
+    public void setEmitConfigChangeEvents(boolean emitConfigChangeEvents) {
+        this.emitConfigChangeEvents = emitConfigChangeEvents;
+    }
     /**
      * Gets the globalTagFile set in the job configuration.
      *

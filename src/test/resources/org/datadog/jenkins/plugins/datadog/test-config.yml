@@ -1,0 +1,8 @@
+jenkins:
+  systemMessage: "Example of configuring datadog in Jenkins"
+
+unclassified:
+    datadogGlobalConfiguration:
+      reportWith: 'http'
+      targetApiKey: 'test'
+      emitConfigChangeEvents: true

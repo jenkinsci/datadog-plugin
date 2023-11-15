@@ -3,7 +3,9 @@ package org.datadog.jenkins.plugins.datadog;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+
 import org.jvnet.hudson.test.JenkinsRule;
 
 import hudson.util.Secret;
@@ -14,12 +16,25 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.CredentialsStore;
 import com.cloudbees.plugins.credentials.domains.Domain;
+
+import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
+import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
+
 import java.io.IOException;
 
 public class DatadogGlobalConfigurationTest {
 
     @ClassRule
     public static JenkinsRule jenkinsRule = new JenkinsRule();
+
+    @Rule public JenkinsConfiguredWithCodeRule r = new JenkinsConfiguredWithCodeRule();
+
+    @Test
+    @ConfiguredWithCode("test-config.yml")
+    public void TestConfigurationAsCodeCompatibility() throws Exception {
+        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+        Assert.assertTrue(cfg.isEmitConfigChangeEvents());
+    }
 
     @Test
     public void testCanGetCredentialFromId() throws IOException {
