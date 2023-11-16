@@ -1,10 +1,17 @@
 Changes
 =======
+## 5.6.1 / 2023-11-16
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.6.0...datadog-5.6.1
+
+* [Fixed] Add emitConfigChangeEvents option back. See [#373](https://github.com/jenkinsci/datadog-plugin/pull/373).
+
 ## 5.6.0 / 2023-11-13
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.5.1...datadog-5.6.0
 
 * [Added] Add ability to granualarly filter events. See [#364](https://github.com/jenkinsci/datadog-plugin/pull/364). Thanks [dawitgirm](https://github.com/dawitgirm).
+  - *Note: removes the deprecated `emitConfigChangeEvents` config option, which is added back in `5.6.1`.*
 * [Added] Add support for automatic APM tracers configuration. See [#354](https://github.com/jenkinsci/datadog-plugin/pull/354).
 * [Fixed] Add fallback logic for job name and build tag in build data. See [#368](https://github.com/jenkinsci/datadog-plugin/pull/368).
 
