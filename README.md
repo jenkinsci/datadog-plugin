@@ -234,7 +234,47 @@ The plugin can automatically configure Datadog <a target="_blank" href="https://
 
 Before enabling Test Visibility, be sure to properly configure the plugin to submit data to Datadog.
 
-To enable Test Visibility, go to the `Configure` page of the job or pipeline whose tests need to be traced, tick `Enable Datadog Test Visibility` checkbox in the `General` section and save your changes.
+There are two options to enable automatic Test Visibility configuration:
+
+1. Using Jenkins UI: go to the `Configure` page of the job or pipeline whose tests need to be traced, tick `Enable Datadog Test Visibility` checkbox in the `General` section and save your changes. This option is unavailable if you are using Multibranch Pipelines, Organization Folders, or other types of pipelines that are configured entirely with `Jenkinsfile`.
+2. Using `datadog` pipeline step:
+
+In declarative pipelines, add the step to a top-level `options` block like so:
+
+```groovy
+pipeline {
+    agent any
+    options {
+        datadog(testVisibility: [ 
+            enabled: true, 
+            serviceName: "my-service", // the name of service or library being tested
+            languages: ["JAVA"], // languages that should be instrumented (available options are "JAVA", "JAVASCRIPT", "PYTHON")
+            additionalVariables: ["my-var": "value"]  // additional tracer configuration settings (optional)
+        ])
+    }
+    stages {
+        stage('Example') {
+            steps {
+                echo "Hello world."
+            }
+        }
+    }
+}
+```
+
+In scripted pipeline, wrap the relevant section with the datadog step like so:
+
+```groovy
+datadog(testVisibility: [ enabled: true, serviceName: "my-service", languages: ["JAVA"], additionalVariables: [:] ]) {
+  node {
+    stage('Example') {
+      echo "Hello world."
+    }
+  }
+}
+```
+
+The other datadog settings, such as `collectLogs` or `tags` can be added alongside the `testVisibility` block.
 
 Please bear in mind that Test Visibility is a separate Datadog product that is billed separately.
 

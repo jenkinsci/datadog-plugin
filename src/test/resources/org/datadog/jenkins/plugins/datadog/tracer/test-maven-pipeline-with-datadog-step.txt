@@ -1,0 +1,15 @@
+pipeline {
+    agent {
+      label 'built-in'
+    }
+    options {
+      datadog(testVisibility: [ enabled: true, serviceName: "my-service", languages: ["JAVA"], additionalVariables: ["my-var": "value"] ])
+    }
+    stages {
+        stage('test') {
+            steps {
+                $PIPELINE_STEPS
+            }
+        }
+    }
+}

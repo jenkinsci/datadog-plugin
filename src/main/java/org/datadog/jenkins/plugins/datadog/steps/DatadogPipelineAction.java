@@ -10,10 +10,12 @@ public class DatadogPipelineAction implements Action, Serializable {
 
     private boolean collectLogs;
     private List<String> tags;
+    private TestVisibility testVisibility;
 
-    public DatadogPipelineAction(boolean collectLogs, List<String> tags) {
+    public DatadogPipelineAction(boolean collectLogs, List<String> tags, TestVisibility testVisibility) {
         this.collectLogs = collectLogs;
         this.tags = tags;
+        this.testVisibility = testVisibility;
     }
 
     public List<String> getTags() {
@@ -22,6 +24,10 @@ public class DatadogPipelineAction implements Action, Serializable {
 
     public boolean isCollectLogs() {
         return collectLogs;
+    }
+
+    public TestVisibility getTestVisibility() {
+        return testVisibility;
     }
 
     @CheckForNull

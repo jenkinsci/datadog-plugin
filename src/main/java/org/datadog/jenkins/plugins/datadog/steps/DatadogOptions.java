@@ -1,6 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.steps;
 
 import hudson.Extension;
+import hudson.model.Job;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import java.io.PrintStream;
@@ -13,6 +14,7 @@ import javax.annotation.Nonnull;
 import jenkins.YesNoMaybe;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.logs.DatadogTaskListenerDecorator;
+import org.datadog.jenkins.plugins.datadog.tracer.DatadogTracerJobProperty;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.log.TaskListenerDecorator;
 import org.jenkinsci.plugins.workflow.steps.BodyExecutionCallback;
@@ -31,7 +33,8 @@ public class DatadogOptions extends Step implements Serializable {
 
     private static final long serialVersionUID = 1L;
     private boolean collectLogs = false;
-    private List<String> tags = new ArrayList<String>();
+    private List<String> tags = new ArrayList<>();
+    private TestVisibility testVisibility;
 
     /** Constructor. */
     @DataBoundConstructor
@@ -47,6 +50,15 @@ public class DatadogOptions extends Step implements Serializable {
         this.collectLogs = collectLogs;
     }
 
+    public TestVisibility getTestVisibility() {
+        return testVisibility;
+    }
+
+    @DataBoundSetter
+    public void setTestVisibility(TestVisibility testVisibility) {
+        this.testVisibility = testVisibility;
+    }
+
     public List<String> getTags() {
         return tags;
     }
@@ -58,7 +70,7 @@ public class DatadogOptions extends Step implements Serializable {
 
     @Override
     public StepExecution start(StepContext context) {
-        DatadogPipelineAction action = new DatadogPipelineAction(this.collectLogs, this.tags);
+        DatadogPipelineAction action = new DatadogPipelineAction(this.collectLogs, this.tags, this.testVisibility);
         return new ExecutionImpl(context, action);
     }
 
@@ -90,6 +102,13 @@ public class DatadogOptions extends Step implements Serializable {
             } else {
                 taskLogger.println("You already defined a datadog step");
             }
+
+            TestVisibility testVisibility = action.getTestVisibility();
+            if (testVisibility != null) {
+                Job<?, ?> job = run.getParent();
+                job.addProperty(new DatadogTracerJobProperty<>(testVisibility.getEnabled(), testVisibility.getServiceName(), testVisibility.getLanguages(), testVisibility.getAdditionalVariables()));
+            }
+
             BodyInvoker invoker = context.newBodyInvoker().withCallback(BodyExecutionCallback.wrap(context));
             if (this.action.isCollectLogs()) {
                 if (DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs()) {
@@ -110,7 +129,6 @@ public class DatadogOptions extends Step implements Serializable {
             StepContext context = getContext();
             context.get(TaskListener.class).getLogger().println("Stop DatadogStep");
             context.get(TaskListener.class).getLogger().println(cause.getMessage());
-
         }
     }
 
