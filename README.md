@@ -236,7 +236,7 @@ Before enabling Test Visibility, be sure to properly configure the plugin to sub
 
 There are two options to enable automatic Test Visibility configuration:
 
-1. Using Jenkins UI (available in the plugin v5.6.0 or newer): go to the `Configure` page of the job or pipeline whose tests need to be traced, tick `Enable Datadog Test Visibility` checkbox in the `General` section and save your changes. This option is unavailable if you are using Multibranch Pipelines, Organization Folders, or other types of pipelines that are configured entirely with `Jenkinsfile`.
+1. Using Jenkins UI (available in the plugin v5.6.0 or newer): go to the **Configure** page of the job or pipeline whose tests need to be traced, tick the **Enable Datadog Test Visibility** checkbox in the **General** section, and save your changes. This option is unavailable if you are using Multibranch Pipelines, Organization Folders, or other types of pipelines that are configured entirely with `Jenkinsfile`.
 2. Using `datadog` pipeline step (available in the plugin v5.6.2 or newer):
 
 In declarative pipelines, add the step to a top-level `options` block like so:
@@ -262,7 +262,7 @@ pipeline {
 }
 ```
 
-In scripted pipeline, wrap the relevant section with the datadog step like so:
+In scripted pipelines, wrap the relevant section with the `datadog` step like so:
 
 ```groovy
 datadog(testVisibility: [ enabled: true, serviceName: "my-service", languages: ["JAVA"], additionalVariables: [:] ]) {
@@ -274,7 +274,7 @@ datadog(testVisibility: [ enabled: true, serviceName: "my-service", languages: [
 }
 ```
 
-The other datadog settings, such as `collectLogs` or `tags` can be added alongside the `testVisibility` block.
+The other `datadog` settings, such as `collectLogs` or `tags` can be added alongside the `testVisibility` block.
 
 Please bear in mind that Test Visibility is a separate Datadog product that is billed separately.
 
