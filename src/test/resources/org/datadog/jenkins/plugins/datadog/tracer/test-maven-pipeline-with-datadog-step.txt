@@ -1,0 +1,15 @@
+pipeline {
+    agent {
+      label 'built-in'
+    }
+    options {
+      datadog($DATADOG_STEP_SETTINGS)
+    }
+    stages {
+        stage('test') {
+            steps {
+                $PIPELINE_STEPS
+            }
+        }
+    }
+}

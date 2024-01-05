@@ -1,0 +1,12 @@
+pipeline {
+    agent {
+      label '$AGENT_LABEL'
+    }
+    stages {
+        stage('test') {
+            steps {
+                $PIPELINE_STEPS
+            }
+        }
+    }
+}

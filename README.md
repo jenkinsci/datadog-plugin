@@ -230,11 +230,51 @@ From a job specific configuration page:
 
 ### Test Visibility Configuration
 
-The plugin can automatically configure Datadog <a target="_blank" href="https://docs.datadoghq.com/continuous_integration/tests/">Test Visibility</a> for a job or a pipeline.
+The plugin can automatically configure Datadog [Test Visibility][19] for a job or a pipeline (see the Test Visibility [documentation for your language][20] to make sure that the testing framework that you use is supported).
 
 Before enabling Test Visibility, be sure to properly configure the plugin to submit data to Datadog.
 
-To enable Test Visibility, go to the `Configure` page of the job or pipeline whose tests need to be traced, tick `Enable Datadog Test Visibility` checkbox in the `General` section and save your changes.
+There are two options to enable automatic Test Visibility configuration:
+
+1. Using Jenkins UI (available in the plugin v5.6.0 or newer): go to the **Configure** page of the job or pipeline whose tests need to be traced, tick the **Enable Datadog Test Visibility** checkbox in the **General** section, and save your changes. This option is unavailable if you are using Multibranch Pipelines, Organization Folders, or other types of pipelines that are configured entirely with `Jenkinsfile`.
+2. Using `datadog` pipeline step (available in the plugin v5.6.2 or newer):
+
+In declarative pipelines, add the step to a top-level `options` block like so:
+
+```groovy
+pipeline {
+    agent any
+    options {
+        datadog(testVisibility: [ 
+            enabled: true, 
+            serviceName: "my-service", // the name of service or library being tested
+            languages: ["JAVA"], // languages that should be instrumented (available options are "JAVA", "JAVASCRIPT", "PYTHON")
+            additionalVariables: ["my-var": "value"]  // additional tracer configuration settings (optional)
+        ])
+    }
+    stages {
+        stage('Example') {
+            steps {
+                echo "Hello world."
+            }
+        }
+    }
+}
+```
+
+In scripted pipelines, wrap the relevant section with the `datadog` step like so:
+
+```groovy
+datadog(testVisibility: [ enabled: true, serviceName: "my-service", languages: ["JAVA"], additionalVariables: [:] ]) {
+  node {
+    stage('Example') {
+      echo "Hello world."
+    }
+  }
+}
+```
+
+The other `datadog` settings, such as `collectLogs` or `tags` can be added alongside the `testVisibility` block.
 
 Please bear in mind that Test Visibility is a separate Datadog product that is billed separately.
 
@@ -417,3 +457,5 @@ Checkout the [development document][12] for tips on spinning up a quick developm
 [16]: https://raw.githubusercontent.com/jenkinsci/datadog-plugin/master/images/dashboard.png
 [17]: https://docs.datadoghq.com/developers/dogstatsd/?tab=containeragent#
 [18]: https://www.jenkins.io/doc/book/using/using-credentials/
+[19]: https://docs.datadoghq.com/tests/
+[20]: https://docs.datadoghq.com/tests/setup/
