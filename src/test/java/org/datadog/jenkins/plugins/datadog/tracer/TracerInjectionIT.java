@@ -120,6 +120,30 @@ public class TracerInjectionIT {
         }
     }
 
+    @Test
+    public void testDisabledTracerInjectionViaPipelineStep() throws Exception {
+        WorkflowJob pipeline = givenPipelineProjectWithTracerDisabledStep();
+        try {
+            givenPipelineIsAMavenBuild(pipeline, false);
+            WorkflowRun build = whenRunningBuild(pipeline);
+            thenTracerIsNotInjected(build);
+        } finally {
+            pipeline.delete();
+        }
+    }
+
+    @Test
+    public void testPipelineStepWithMissingTracerConfig() throws Exception {
+        WorkflowJob pipeline = givenPipelineProjectWithTracerConfigMissing();
+        try {
+            givenPipelineIsAMavenBuild(pipeline, false);
+            WorkflowRun build = whenRunningBuild(pipeline);
+            thenTracerIsNotInjected(build);
+        } finally {
+            pipeline.delete();
+        }
+    }
+
     private FreeStyleProject givenFreestyleProject() throws IOException {
         return jenkinsRule.createFreeStyleProject("freestyleProject");
     }
@@ -145,6 +169,29 @@ public class TracerInjectionIT {
 
     private WorkflowJob givenPipelineProjectWithTracerEnabledStep() throws Exception {
         Map<String, String> replacements = new HashMap<>();
+        replacements.put("DATADOG_STEP_SETTINGS", "testVisibility: [ enabled: true, serviceName: \"my-service\", languages: [\"JAVA\"], additionalVariables: [\"my-var\": \"value\"] ]");
+        replacements.put("PIPELINE_STEPS", getMavenCommand());
+
+        String pipelineDefinition = buildPipelineDefinition("test-maven-pipeline-with-datadog-step.txt", replacements);
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineProject");
+        job.setDefinition(new CpsFlowDefinition(pipelineDefinition, true));
+        return job;
+    }
+
+    private WorkflowJob givenPipelineProjectWithTracerDisabledStep() throws Exception {
+        Map<String, String> replacements = new HashMap<>();
+        replacements.put("DATADOG_STEP_SETTINGS", "testVisibility: [ enabled: false, serviceName: \"my-service\", languages: [\"JAVA\"], additionalVariables: [\"my-var\": \"value\"] ]");
+        replacements.put("PIPELINE_STEPS", getMavenCommand());
+
+        String pipelineDefinition = buildPipelineDefinition("test-maven-pipeline-with-datadog-step.txt", replacements);
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineProject");
+        job.setDefinition(new CpsFlowDefinition(pipelineDefinition, true));
+        return job;
+    }
+
+    private WorkflowJob givenPipelineProjectWithTracerConfigMissing() throws Exception {
+        Map<String, String> replacements = new HashMap<>();
+        replacements.put("DATADOG_STEP_SETTINGS", "");
         replacements.put("PIPELINE_STEPS", getMavenCommand());
 
         String pipelineDefinition = buildPipelineDefinition("test-maven-pipeline-with-datadog-step.txt", replacements);
@@ -233,5 +280,9 @@ public class TracerInjectionIT {
 
     private void thenTracerIsInjected(WorkflowRun build) throws IOException {
         jenkinsRule.assertLogContains("DATADOG TRACER CONFIGURATION", build);
+    }
+
+    private void thenTracerIsNotInjected(WorkflowRun build) throws IOException {
+        jenkinsRule.assertLogNotContains("DATADOG TRACER CONFIGURATION", build);
     }
 }

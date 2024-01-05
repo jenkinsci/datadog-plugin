@@ -3,7 +3,7 @@ pipeline {
       label 'built-in'
     }
     options {
-      datadog(testVisibility: [ enabled: true, serviceName: "my-service", languages: ["JAVA"], additionalVariables: ["my-var": "value"] ])
+      datadog($DATADOG_STEP_SETTINGS)
     }
     stages {
         stage('test') {
