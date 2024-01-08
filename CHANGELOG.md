@@ -1,5 +1,9 @@
 Changes
 =======
+## 5.6.2 / 2024-01-08
+
+* [Added] Support declarative Test Visibility configuration in pipeline scripts. See [#375](https://github.com/jenkinsci/datadog-plugin/pull/375).
+
 ## 5.6.1 / 2023-11-16
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.6.0...datadog-5.6.1
