@@ -58,11 +58,16 @@ import org.datadog.jenkins.plugins.datadog.events.BuildAbortedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildFinishedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildStartedEventImpl;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
+import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
-
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
 import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
+import org.datadog.jenkins.plugins.datadog.traces.StepTraceDataAction;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
+import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriter;
+import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 
@@ -123,11 +128,30 @@ public class DatadogBuildListener extends RunListener<Run> {
             run.addAction(stepDataAction);
 
             // Traces
-            client.startBuildTrace(buildData, run);
+            startBuildTrace(buildData, run);
             logger.fine("End DatadogBuildListener#onInitialize");
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to process build initialization");
         }
+    }
+
+    private void startBuildTrace(final BuildData buildData, Run run) {
+        if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
+            logger.fine("CI Visibility is disabled");
+            return;
+        }
+
+        final StepTraceDataAction stepTraceDataAction = new StepTraceDataAction();
+        run.addAction(stepTraceDataAction);
+
+        final StageBreakdownAction stageBreakdownAction = new StageBreakdownAction();
+        run.addAction(stageBreakdownAction);
+
+        final PipelineQueueInfoAction pipelineQueueInfoAction = new PipelineQueueInfoAction();
+        run.addAction(pipelineQueueInfoAction);
+
+        final CIGlobalTagsAction ciGlobalTags = new CIGlobalTagsAction(buildData.getTagsForTraces());
+        run.addAction(ciGlobalTags);
     }
 
     /**
@@ -365,9 +389,8 @@ public class DatadogBuildListener extends RunListener<Run> {
             }
             logger.fine("Start DatadogBuildListener#onFinalized");
 
-            // Get Datadog Client Instance
-            DatadogClient client = getDatadogClient();
-            if (client == null) {
+            TraceWriter traceWriter = TraceWriterFactory.getTraceWriter();
+            if (traceWriter == null) {
                 return;
             }
 
@@ -381,11 +404,14 @@ public class DatadogBuildListener extends RunListener<Run> {
             }
 
             // APM Traces
-            client.finishBuildTrace(buildData, run);
+            traceWriter.submitBuild(buildData, run);
             logger.fine("End DatadogBuildListener#onFinalized");
 
             BuildSpanManager.get().remove(buildData.getBuildTag(""));
 
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            DatadogUtilities.severe(logger, e, "Interrupted while processing build finalization");
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to process build finalization");
         } finally {

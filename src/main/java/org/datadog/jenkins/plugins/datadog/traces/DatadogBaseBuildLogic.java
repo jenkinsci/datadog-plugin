@@ -1,5 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
+import hudson.model.Cause;
+import hudson.model.Run;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -7,7 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
-
+import javax.annotation.Nullable;
+import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
@@ -15,8 +18,6 @@ import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.json.JsonUtils;
-import hudson.model.Cause;
-import hudson.model.Run;
 
 /**
  * Base class for DatadogTraceBuildLogic and DatadogPipelineBuildLogic
@@ -27,8 +28,8 @@ public abstract class DatadogBaseBuildLogic {
     private static final int MAX_TAG_LENGTH = 5000;
     private static final Logger logger = Logger.getLogger(DatadogBaseBuildLogic.class.getName());
 
-    public abstract void finishBuildTrace(final BuildData buildData, final Run<?,?> run);
-    public abstract void startBuildTrace(final BuildData buildData, Run run);
+    @Nullable
+    public abstract JSONObject finishBuildTrace(final BuildData buildData, final Run<?,?> run);
 
     protected String getNodeName(Run<?, ?> run, BuildData buildData, BuildData updatedBuildData) {
         final PipelineNodeInfoAction pipelineNodeInfoAction = run.getAction(PipelineNodeInfoAction.class);

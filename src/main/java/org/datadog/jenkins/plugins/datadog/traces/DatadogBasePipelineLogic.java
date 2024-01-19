@@ -1,12 +1,16 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
+import hudson.model.Run;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
-
+import javax.annotation.Nonnull;
+import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
@@ -20,8 +24,6 @@ import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 
-import hudson.model.Run;
-
 /**
  * Base class with shared code for DatadogTracePipelineLogic and DatadogWebhookPipelineLogic
  */
@@ -31,7 +33,8 @@ public abstract class DatadogBasePipelineLogic {
     protected static final String HOSTNAME_NONE = "none";
     private static final Logger logger = Logger.getLogger(DatadogBasePipelineLogic.class.getName());
 
-    public abstract void execute(Run run, FlowNode flowNode);
+    @Nonnull
+    public abstract Collection<JSONObject> execute(FlowNode flowNode, Run<?, ?> run);
 
     protected BuildPipelineNode buildPipelineTree(FlowEndNode flowEndNode) {
 

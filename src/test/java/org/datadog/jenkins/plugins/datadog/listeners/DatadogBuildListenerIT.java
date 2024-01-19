@@ -27,6 +27,12 @@ import hudson.model.FreeStyleProject;
 import hudson.model.Label;
 import hudson.slaves.DumbSlave;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -37,19 +43,11 @@ import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
-import org.datadog.jenkins.plugins.datadog.transport.FakeTracesHttpClient;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.ExtractResourceSCM;
 import org.jvnet.hudson.test.JenkinsRule;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
@@ -91,9 +89,8 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         DumbSlave worker = null;
         try {
             worker = jenkinsRule.createOnlineSlave(Label.get("testBuild"));
-            final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
-            agentHttpClient.waitForTraces(1);
-            final List<TraceSpan> spans = agentHttpClient.getSpans();
+            clientStub.waitForTraces(1);
+            final List<TraceSpan> spans = clientStub.getSpans();
             assertEquals(1, spans.size());
 
             final TraceSpan buildSpan = spans.get(0);
@@ -129,9 +126,8 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         FreeStyleBuild run = project.scheduleBuild2(0).get();
         final String buildPrefix = BuildPipelineNode.NodeType.PIPELINE.getTagName();
 
-        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
-        agentHttpClient.waitForTraces(1);
-        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        clientStub.waitForTraces(1);
+        final List<TraceSpan> spans = clientStub.getSpans();
         assertEquals(1, spans.size());
 
         final TraceSpan buildSpan = spans.get(0);
@@ -185,9 +181,8 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         }
         project.scheduleBuild2(0).get();
 
-        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
-        agentHttpClient.waitForTraces(1);
-        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        clientStub.waitForTraces(1);
+        final List<TraceSpan> spans = clientStub.getSpans();
         assertEquals(1, spans.size());
 
         final TraceSpan buildSpan = spans.get(0);
@@ -217,9 +212,8 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         }
         project.scheduleBuild2(0).get();
 
-        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
-        agentHttpClient.waitForTraces(1);
-        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        clientStub.waitForTraces(1);
+        final List<TraceSpan> spans = clientStub.getSpans();
         assertEquals(1, spans.size());
 
         final TraceSpan buildSpan = spans.get(0);
@@ -255,9 +249,8 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         }
         project.scheduleBuild2(0).get();
 
-        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
-        agentHttpClient.waitForTraces(1);
-        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        clientStub.waitForTraces(1);
+        final List<TraceSpan> spans = clientStub.getSpans();
         assertEquals(1, spans.size());
 
         final TraceSpan buildSpan = spans.get(0);
@@ -278,8 +271,6 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
     @Test
     public void testUserSuppliedGitWithCommitInfoWebhook() throws Exception {
-        clientStub.configureForWebhooks();
-
         Jenkins jenkins = jenkinsRule.jenkins;
         final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
         EnvVars env = prop.getEnvVars();
@@ -340,9 +331,8 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
         project.scheduleBuild2(0).get();
 
-        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
-        agentHttpClient.waitForTraces(1);
-        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        clientStub.waitForTraces(1);
+        final List<TraceSpan> spans = clientStub.getSpans();
         assertEquals(1, spans.size());
 
         final TraceSpan buildSpan = spans.get(0);
@@ -368,9 +358,8 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
         project.scheduleBuild2(0).get();
 
-        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
-        agentHttpClient.waitForTraces(1);
-        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        clientStub.waitForTraces(1);
+        final List<TraceSpan> spans = clientStub.getSpans();
         assertEquals(1, spans.size());
 
         final TraceSpan buildSpan = spans.get(0);
@@ -384,8 +373,6 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
     @Test
     public void testGitAlternativeRepoUrlWebhook() throws Exception {
-        clientStub.configureForWebhooks();
-
         Jenkins jenkins = jenkinsRule.jenkins;
         final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
         EnvVars env = prop.getEnvVars();
@@ -421,16 +408,13 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccess-notraces");
         project.scheduleBuild2(0).get();
 
-        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
-        agentHttpClient.waitForTraces(0);
-        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        clientStub.waitForTraces(0);
+        final List<TraceSpan> spans = clientStub.getSpans();
         assertEquals(0, spans.size());
     }
 
     @Test
     public void testTracesDisabledWebhooks() throws Exception {
-        clientStub.configureForWebhooks();
-
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEnableCiVisibility(false);
 
@@ -451,9 +435,8 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessTags_job");
         project.scheduleBuild2(0).get();
 
-        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
-        agentHttpClient.waitForTraces(1);
-        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        clientStub.waitForTraces(1);
+        final List<TraceSpan> spans = clientStub.getSpans();
         assertEquals(1, spans.size());
 
         final TraceSpan buildSpan = spans.get(0);
@@ -464,8 +447,6 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
     @Test
     public void testCITagsOnWebhooks() throws Exception {
-        clientStub.configureForWebhooks();
-
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setGlobalJobTags("(.*?)_job, global_job_tag:$ENV_VAR");
         cfg.setGlobalTags("global_tag:$ENV_VAR");
@@ -489,9 +470,8 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessTagsNoGitInfo");
         project.scheduleBuild2(0).get();
 
-        final FakeTracesHttpClient agentHttpClient = clientStub.agentHttpClient();
-        agentHttpClient.waitForTraces(1);
-        final List<TraceSpan> spans = agentHttpClient.getSpans();
+        clientStub.waitForTraces(1);
+        final List<TraceSpan> spans = clientStub.getSpans();
         assertEquals(1, spans.size());
 
         final TraceSpan buildSpan = spans.get(0);

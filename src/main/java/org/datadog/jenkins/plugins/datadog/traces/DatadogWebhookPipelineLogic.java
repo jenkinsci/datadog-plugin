@@ -6,15 +6,20 @@ import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.filterSens
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 
+import hudson.model.Run;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
+import javax.annotation.Nonnull;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
-import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
@@ -24,27 +29,18 @@ import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
-import hudson.model.Run;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-
 /**
  * Keeps the logic to send webhooks related to inner jobs of Jenkins Pipelines (datadog levels: stage and job).
  * The top-level job (datadog level: pipeline) is handled by DatadogWebhookBuildLogic
  */
 public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
 
-    private final DatadogClient client;
-
-    public DatadogWebhookPipelineLogic(final DatadogClient client) {
-        this.client = client;
-    }
-
+    @Nonnull
     @Override
-    public void execute(Run run, FlowNode flowNode) {
+    public Collection<JSONObject> execute(FlowNode flowNode, Run run) {
 
         if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
-            return;
+            return Collections.emptySet();
         }
 
         final IsPipelineAction isPipelineAction = run.getAction(IsPipelineAction.class);
@@ -54,31 +50,34 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
 
         final BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
         if(buildSpanAction == null) {
-            return;
+            return Collections.emptySet();
         }
 
         final BuildData buildData = buildSpanAction.getBuildData();
         if(!DatadogUtilities.isLastNode(flowNode)){
             updateCIGlobalTags(run);
-            return;
+            return Collections.emptySet();
         }
 
         final TraceSpan.TraceSpanContext traceSpanContext = buildSpanAction.getBuildSpanContext();
         final BuildPipelineNode root = buildPipelineTree((FlowEndNode) flowNode);
-        collectTraces(run, buildData, root, null, traceSpanContext);
-
-        // Explicit removal of InvisibleActions used to collect Traces when the Run finishes.
-        cleanUpTraceActions(run);
+        try {
+            return collectTraces(run, buildData, root, null, traceSpanContext);
+        } finally {
+            // Explicit removal of InvisibleActions used to collect Traces when the Run finishes.
+            cleanUpTraceActions(run);
+        }
     }
 
-    private void collectTraces(final Run run, final BuildData buildData, final BuildPipelineNode current, final BuildPipelineNode parent, final TraceSpan.TraceSpanContext parentSpanContext) {
+    private Collection<JSONObject> collectTraces(final Run run, final BuildData buildData, final BuildPipelineNode current, final BuildPipelineNode parent, final TraceSpan.TraceSpanContext parentSpanContext) {
 
         if(!isTraceable(current)) {
+            Collection<JSONObject> traces = new ArrayList<>();
             // If the current node is not traceable, we continue with its children
             for(final BuildPipelineNode child : current.getChildren()) {
-                collectTraces(run, buildData, child, parent, parentSpanContext);
+                traces.addAll(collectTraces(run, buildData, child, parent, parentSpanContext));
             }
-            return;
+            return traces;
         }
         // If the root has propagated queue time, we need to adjust all startTime and endTime from Jenkins pipelines
         // because this time will be subtracted in the root. See DatadogTraceBuildLogic#finishBuildTrace method.
@@ -314,11 +313,13 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
             payload.put("tags", tagsPayload);
         }
 
+        Collection<JSONObject> traces = new ArrayList<>();
         for(final BuildPipelineNode child : current.getChildren()) {
-            collectTraces(run, buildData, child, current, span.context());
+            traces.addAll(collectTraces(run, buildData, child, current, span.context()));
         }
 
-        client.postWebhook(payload.toString());
+        traces.add(payload);
+        return traces;
     }
 
 }
