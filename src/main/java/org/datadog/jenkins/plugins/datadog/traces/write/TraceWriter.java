@@ -1,19 +1,20 @@
 package org.datadog.jenkins.plugins.datadog.traces.write;
 
 import hudson.model.Run;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
+import javax.annotation.Nullable;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 
 public class TraceWriter {
 
@@ -49,15 +50,13 @@ public class TraceWriter {
         submit(buildJson);
     }
 
-    public void submitPipeline(FlowNode flowNode, Run<?, ?> run) throws InterruptedException, TimeoutException {
-        Collection<JSONObject> nodeJsons = traceWriteStrategy.serialize(flowNode, run);
-        for (JSONObject nodeJson : nodeJsons) {
-            submit(nodeJson);
-        }
+    public void submitPipeline(BuildPipelineNode node, Run<?, ?> run) throws InterruptedException, TimeoutException, IOException {
+        JSONObject nodeJson = traceWriteStrategy.serialize(node, run);
+        submit(nodeJson);
     }
 
-    private void submit(JSONObject json) throws InterruptedException, TimeoutException {
-        if (!queue.offer(json, getEnv(SUBMIT_TIMEOUT_ENV_VAR, DEFAULT_SUBMIT_TIMEOUT_SECONDS), TimeUnit.SECONDS)) {
+    private void submit(@Nullable JSONObject json) throws InterruptedException, TimeoutException {
+        if (json != null && !queue.offer(json, getEnv(SUBMIT_TIMEOUT_ENV_VAR, DEFAULT_SUBMIT_TIMEOUT_SECONDS), TimeUnit.SECONDS)) {
             throw new TimeoutException("Timed out while submitting span");
         }
     }

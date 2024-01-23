@@ -25,7 +25,9 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.clients;
 
+import com.google.common.base.Objects;
 import hudson.model.Run;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -35,13 +37,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTracePipelineLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookBuildLogic;
@@ -49,7 +55,6 @@ import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookPipelineLogic;
 import org.datadog.jenkins.plugins.datadog.traces.mapper.JsonTraceSpanMapper;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy;
-import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.junit.Assert;
 
 public class DatadogClientStub implements DatadogClient {
@@ -60,10 +65,10 @@ public class DatadogClientStub implements DatadogClient {
     public List<JSONObject> logLines;
 
     public DatadogClientStub() {
-        this.metrics = new ArrayList<>();
-        this.serviceChecks = new ArrayList<>();
-        this.events = new ArrayList<>();
-        this.logLines = new ArrayList<>();
+        this.metrics = new CopyOnWriteArrayList<>();
+        this.serviceChecks = new CopyOnWriteArrayList<>();
+        this.events = new CopyOnWriteArrayList<>();
+        this.logLines = new CopyOnWriteArrayList<>();
     }
 
     @Override
@@ -75,7 +80,7 @@ public class DatadogClientStub implements DatadogClient {
     @Override
     public boolean incrementCounter(String name, String hostname, Map<String, Set<String>> tags) {
         for (DatadogMetric m : this.metrics) {
-            if(m.same(new DatadogMetric(name, 0, hostname, convertTagMapToList(tags)))) {
+            if (m.same(new DatadogMetric(name, 0, hostname, convertTagMapToList(tags)))) {
                 double value = m.getValue() + 1;
                 this.metrics.remove(m);
                 this.metrics.add(new DatadogMetric(name, value, hostname, convertTagMapToList(tags)));
@@ -131,7 +136,7 @@ public class DatadogClientStub implements DatadogClient {
                 "metrics: {" + this.metrics.toString() + " }");
         return false;
     }
-    
+
     /*
      * Returns the value of the asserted metric if it exists.
      */
@@ -154,10 +159,10 @@ public class DatadogClientStub implements DatadogClient {
      */
     public boolean assertMetricValues(String name, double value, String hostname, int count) {
         DatadogMetric m = new DatadogMetric(name, value, hostname, new ArrayList<>());
-        
+
         // compare without tags so metrics of the same value are considered the same.
         long timesSeen = this.metrics.stream().filter(x -> x.sameNoTags(m)).count();
-        if (timesSeen == count){
+        if (timesSeen == count) {
             return true;
         }
         Assert.fail("metric { " + m.toString() + " found " + timesSeen + " times, not " + count);
@@ -172,7 +177,7 @@ public class DatadogClientStub implements DatadogClient {
 
         // compare without tags so metrics of the same value are considered the same.
         long timesSeen = this.metrics.stream().filter(x -> x.sameNoTags(m)).count();
-        if (timesSeen >= min){
+        if (timesSeen >= min) {
             return true;
         }
         Assert.fail("metric { " + m.toString() + " found " + timesSeen + " times, not more than" + min);
@@ -183,12 +188,25 @@ public class DatadogClientStub implements DatadogClient {
         // Assert that a metric with the same name and tags has already been submitted without checking the value.
         DatadogMetric m = new DatadogMetric(name, 0, hostname, Arrays.asList(tags));
         Optional<DatadogMetric> match = this.metrics.stream().filter(t -> t.same(m)).findFirst();
-        if(match.isPresent()){
+        if (match.isPresent()) {
             this.metrics.remove(match.get());
             return true;
         }
-        Assert.fail("metric { " + m.toString() + " does not exist (ignoring value). " +
-                "metrics: {" + this.metrics.toString() + " }");
+
+        List<DatadogMetric> sameMetricsNoTags = metrics.stream().filter(t -> t.sameNoTags(m)).collect(Collectors.toList());
+        if (!sameMetricsNoTags.isEmpty()) {
+            Assert.fail("metric { " + m + " does not exist (ignoring value).\n" +
+                    "Same metrics ignoring tags: {" + sameMetricsNoTags + " }");
+        }
+
+        List<DatadogMetric> metricsWithSameName = metrics.stream().filter(t -> Objects.equal(t.getName(), m.getName())).collect(Collectors.toList());
+        if (!metricsWithSameName.isEmpty()) {
+            Assert.fail("metric { " + m + " does not exist (ignoring value).\n" +
+                    "Metrics with same name: {" + metricsWithSameName + " }");
+        }
+
+        Assert.fail("metric { " + m + " does not exist (ignoring value).\n" +
+                "Metrics: {" + this.metrics.toString() + " }");
         return false;
     }
 
@@ -238,11 +256,11 @@ public class DatadogClientStub implements DatadogClient {
         return false;
     }
 
-    public static List<String> convertTagMapToList(Map<String, Set<String>> tags){
+    public static List<String> convertTagMapToList(Map<String, Set<String>> tags) {
         List<String> result = new ArrayList<>();
         for (String name : tags.keySet()) {
             Set<String> values = tags.get(name);
-            for (String value : values){
+            for (String value : values) {
                 result.add(String.format("%s:%s", name, value));
             }
         }
@@ -250,7 +268,7 @@ public class DatadogClientStub implements DatadogClient {
 
     }
 
-    public static Map<String, Set<String>> addTagToMap(Map<String, Set<String>> tags, String name, String value){
+    public static Map<String, Set<String>> addTagToMap(Map<String, Set<String>> tags, String name, String value) {
         Set<String> v = tags.containsKey(name) ? tags.get(name) : new HashSet<String>();
         v.add(value);
         tags.put(name, v);
@@ -264,30 +282,37 @@ public class DatadogClientStub implements DatadogClient {
         private final Collection<TraceSpan> traces = new LinkedBlockingQueue<>();
         private final Collection<JSONObject> webhooks = new LinkedBlockingQueue<>();
 
+        @Nullable
         @Override
         public JSONObject serialize(BuildData buildData, Run<?, ?> run) {
             if (isWebhook) {
-                JSONObject json = new DatadogWebhookBuildLogic().finishBuildTrace(buildData, run);
-                webhooks.add(json);
+                JSONObject json = new DatadogWebhookBuildLogic().toJson(buildData, run);
+                if (json != null) {
+                    webhooks.add(json);
+                }
                 return json;
             } else {
-                TraceSpan span = new DatadogTraceBuildLogic().createSpan(buildData, run);
-                traces.add(span);
-                return new JsonTraceSpanMapper().map(span);
+                TraceSpan span = new DatadogTraceBuildLogic().toSpan(buildData, run);
+                if (span != null) {
+                    traces.add(span);
+                    return new JsonTraceSpanMapper().map(span);
+                } else {
+                    return null;
+                }
             }
         }
 
+        @Nonnull
         @Override
-        public Collection<JSONObject> serialize(FlowNode flowNode, Run<?, ?> run) {
+        public JSONObject serialize(BuildPipelineNode node, Run<?, ?> run) throws IOException, InterruptedException {
             if (isWebhook) {
-                Collection<JSONObject> spans = new DatadogWebhookPipelineLogic().execute(flowNode, run);
-                webhooks.addAll(spans);
-                return spans;
+                JSONObject webhook = new DatadogWebhookPipelineLogic().toJson(node, run);
+                webhooks.add(webhook);
+                return webhook;
             } else {
-                Collection<TraceSpan> traceSpans = new DatadogTracePipelineLogic().collectTraces(flowNode, run);
-                traces.addAll(traceSpans);
-                JsonTraceSpanMapper mapper = new JsonTraceSpanMapper();
-                return traceSpans.stream().map(mapper::map).collect(Collectors.toList());
+                TraceSpan span = new DatadogTracePipelineLogic().toSpan(node, run);
+                traces.add(span);
+                return new JsonTraceSpanMapper().map(span);
             }
         }
 
@@ -347,7 +372,7 @@ public class DatadogClientStub implements DatadogClient {
     public List<TraceSpan> getSpans() {
         ArrayList<TraceSpan> spans = new ArrayList<>(traceWriteStrategy.traces);
         Collections.sort(spans, (span1, span2) -> {
-            if(span1.getStartNano() < span2.getStartNano()){
+            if (span1.getStartNano() < span2.getStartNano()) {
                 return -1;
             } else if (span1.getStartNano() > span2.getStartNano()) {
                 return 1;

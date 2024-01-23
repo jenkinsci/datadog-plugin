@@ -7,15 +7,14 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import java.io.IOException;
+import java.util.logging.Logger;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.model.StepTraceData;
+import org.datadog.jenkins.plugins.datadog.model.TraceInfoAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepEnvironmentContributor;
-
-import java.io.IOException;
-import java.util.logging.Logger;
 
 @Extension
 public class TraceStepEnvironmentContributor extends StepEnvironmentContributor {
@@ -41,12 +40,6 @@ public class TraceStepEnvironmentContributor extends StepEnvironmentContributor 
                 return;
             }
 
-            final StepTraceDataAction stepTraceDataAction = run.getAction(StepTraceDataAction.class);
-            if(stepTraceDataAction == null) {
-                logger.fine("Unable to set trace ids as environment variables. in Run '"+run.getFullDisplayName()+"'. StepTraceDataAction is null");
-                return;
-            }
-
             final FlowNode flowNode = stepContext.get(FlowNode.class);
             if(flowNode == null) {
                 logger.fine("Unable to set trace ids as environment variables. in Run '"+run.getFullDisplayName()+"'. FlowNode is null");
@@ -57,22 +50,20 @@ public class TraceStepEnvironmentContributor extends StepEnvironmentContributor 
                 return;
             }
 
-            StepTraceData stepTraceData = stepTraceDataAction.get(run, flowNode);
-            if(stepTraceData == null){
-                stepTraceData = new StepTraceData(IdGenerator.generate());
-                stepTraceDataAction.put(run, flowNode, stepTraceData);
-            }
-
             if(envs.get(TRACE_ID_ENVVAR_KEY) == null) {
                 final String traceIdStr = Long.toUnsignedString(buildSpanAction.getBuildSpanContext().getTraceId());
                 envs.put(TRACE_ID_ENVVAR_KEY, traceIdStr);
                 logger.fine("Set DD_CUSTOM_TRACE_ID="+traceIdStr+" for FlowNode: "+flowNode);
             }
 
-            if(envs.get(SPAN_ID_ENVVAR_KEY) == null) {
-                final String spanIdStr  = Long.toUnsignedString(stepTraceData.getSpanId());
-                envs.put(SPAN_ID_ENVVAR_KEY, spanIdStr);
-                logger.fine("Set DD_CUSTOM_PARENT_ID="+spanIdStr+" for FlowNode: "+flowNode);
+            TraceInfoAction traceInfoAction = run.getAction(TraceInfoAction.class);
+            if (traceInfoAction != null) {
+                Long spanId = traceInfoAction.getOrCreate(flowNode.getId());
+                if(envs.get(SPAN_ID_ENVVAR_KEY) == null) {
+                    final String spanIdStr  = Long.toUnsignedString(spanId);
+                    envs.put(SPAN_ID_ENVVAR_KEY, spanIdStr);
+                    logger.fine("Set DD_CUSTOM_PARENT_ID="+spanIdStr+" for FlowNode: "+flowNode);
+                }
             }
 
         } catch (Exception ex) {

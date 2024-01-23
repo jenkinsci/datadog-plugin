@@ -4,7 +4,8 @@ pipeline {
         stage('test'){
             steps {
                 withEnv(["GIT_COMMIT=ccccbbbb"]) {
-                    echo "hello"
+                    git branch: 'master',
+                        url: 'file:///tmp/git-repo/'
                 }
             }
         }

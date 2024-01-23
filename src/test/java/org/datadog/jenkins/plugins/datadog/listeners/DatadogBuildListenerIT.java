@@ -25,11 +25,16 @@ import hudson.FilePath;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Label;
+import hudson.plugins.git.BranchSpec;
+import hudson.plugins.git.GitSCM;
+import hudson.plugins.git.browser.GitRepositoryBrowser;
+import hudson.plugins.git.extensions.impl.LocalBranch;
 import hudson.slaves.DumbSlave;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -56,6 +61,11 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
     @ClassRule
     public static JenkinsRule jenkinsRule = new JenkinsRule();
     private DatadogClientStub clientStub;
+
+    static {
+        // to allow checkout from local git repositories - needed for some tests
+        GitSCM.ALLOW_LOCAL_CHECKOUT = true;
+    }
 
     @Before
     public void beforeEach() throws IOException {
@@ -112,17 +122,20 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         EnvVars env = prop.getEnvVars();
         env.put("GIT_BRANCH", "master");
         env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
-        env.put("GIT_URL", "https://github.com/johndoe/foobar.git");
+        env.put("GIT_URL", "file:///tmp/git-repo/");
         jenkins.getGlobalNodeProperties().add(prop);
 
+        createLocallyAvailableGitRepo(jenkins);
+
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccess");
+
+        GitSCM git = new GitSCM(GitSCM.createRepoList("file:///tmp/git-repo/", null), Collections.singletonList(new BranchSpec("*/master")), null, null, Collections.singletonList(new LocalBranch("master")));
+        project.setScm(git);
+
         final FilePath ws = jenkins.getWorkspaceFor(project);
         env.put("NODE_NAME", "master");
         env.put("WORKSPACE", ws.getRemote());
-        InputStream gitZip = getClass().getClassLoader().getResourceAsStream("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
-        if(gitZip != null) {
-            ws.unzipFrom(gitZip);
-        }
+
         FreeStyleBuild run = project.scheduleBuild2(0).get();
         final String buildPrefix = BuildPipelineNode.NodeType.PIPELINE.getTagName();
 
@@ -156,10 +169,18 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         checkHostNameTag(meta);
         assertEquals("success", meta.get(CITags.JENKINS_RESULT));
         assertEquals("jenkins-buildIntegrationSuccess-1", meta.get(CITags.JENKINS_TAG));
-        assertNotNull(meta.get(CITags._DD_CI_STAGES));
-        assertEquals("[]", meta.get(CITags._DD_CI_STAGES));
+        assertNull(meta.get(CITags._DD_CI_STAGES)); // this is a freestyle project which has no stages
 
         assertCleanupActions(run);
+    }
+
+    private void createLocallyAvailableGitRepo(Jenkins jenkins) throws IOException, InterruptedException {
+        try (InputStream gitZip = getClass().getClassLoader().getResourceAsStream("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip")) {
+            FilePath gitRepoPath = jenkins.createPath("/tmp/git-repo");
+            gitRepoPath.deleteRecursive();
+            gitRepoPath.mkdirs();
+            gitRepoPath.unzipFrom(gitZip);
+        }
     }
 
     @Test
@@ -169,16 +190,18 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         EnvVars env = prop.getEnvVars();
         env.put("GIT_BRANCH", "master");
         env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
-        env.put("GIT_URL", "https://github.com/johndoe/foobar.git");
+        env.put("GIT_URL", "file:///tmp/git-repo/");
         final String defaultBranch = "refs/heads/hardcoded-master";
         env.put("DD_GIT_DEFAULT_BRANCH", defaultBranch);
         jenkins.getGlobalNodeProperties().add(prop);
 
+        createLocallyAvailableGitRepo(jenkins);
+
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessDefaultBranch");
-        final URL gitZip = getClass().getClassLoader().getResource("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
-        if(gitZip != null) {
-            project.setScm(new ExtractResourceSCM(gitZip));
-        }
+
+        GitSCM git = new GitSCM(GitSCM.createRepoList("file:///tmp/git-repo/", null), Collections.singletonList(new BranchSpec("*/master")), null, null, Collections.singletonList(new LocalBranch("master")));
+        project.setScm(git);
+
         project.scheduleBuild2(0).get();
 
         clientStub.waitForTraces(1);
@@ -198,18 +221,20 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         env.put(GIT_BRANCH, "not-valid-branch");
         env.put(GIT_COMMIT, "not-valid-commit");
 
-        env.put(DD_GIT_REPOSITORY_URL, "https://github.com/johndoe/foobar.git");
+        env.put(DD_GIT_REPOSITORY_URL, "file:///tmp/git-repo/");
         env.put(DD_GIT_BRANCH, "master");
         env.put(DD_GIT_COMMIT_SHA, "401d997a6eede777602669ccaec059755c98161f");
         final String defaultBranch = "refs/heads/hardcoded-master";
         env.put(DD_GIT_DEFAULT_BRANCH, defaultBranch);
         jenkins.getGlobalNodeProperties().add(prop);
 
+        createLocallyAvailableGitRepo(jenkins);
+
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessUserSuppliedGitWithoutCommitInfo");
-        final URL gitZip = getClass().getClassLoader().getResource("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
-        if(gitZip != null) {
-            project.setScm(new ExtractResourceSCM(gitZip));
-        }
+
+        GitSCM git = new GitSCM(GitSCM.createRepoList("file:///tmp/git-repo/", null), Collections.singletonList(new BranchSpec("*/master")), null, null, Collections.singletonList(new LocalBranch("master")));
+        project.setScm(git);
+
         project.scheduleBuild2(0).get();
 
         clientStub.waitForTraces(1);
@@ -228,7 +253,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         env.put(GIT_REPOSITORY_URL, "not-valid-repo");
         env.put(GIT_BRANCH, "not-valid-branch");
         env.put(GIT_COMMIT, "not-valid-commit");
-        env.put(DD_GIT_REPOSITORY_URL, "https://github.com/johndoe/foobar.git");
+        env.put(DD_GIT_REPOSITORY_URL, "file:///tmp/git-repo/");
         env.put(DD_GIT_BRANCH, "master");
         env.put(DD_GIT_COMMIT_SHA, "401d997a6eede777602669ccaec059755c98161f");
         env.put(DD_GIT_COMMIT_MESSAGE, "hardcoded-message");
@@ -242,11 +267,13 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         env.put(DD_GIT_DEFAULT_BRANCH, defaultBranch);
         jenkins.getGlobalNodeProperties().add(prop);
 
+        createLocallyAvailableGitRepo(jenkins);
+
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessUserSuppliedGitWithCommitInfo");
-        final URL gitZip = getClass().getClassLoader().getResource("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
-        if(gitZip != null) {
-            project.setScm(new ExtractResourceSCM(gitZip));
-        }
+
+        GitSCM git = new GitSCM(GitSCM.createRepoList("file:///tmp/git-repo/", null), Collections.singletonList(new BranchSpec("*/master")), null, null, Collections.singletonList(new LocalBranch("master")));
+        project.setScm(git);
+
         project.scheduleBuild2(0).get();
 
         clientStub.waitForTraces(1);
@@ -265,19 +292,21 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get(CITags.GIT_COMMIT__SHA));
         assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get(CITags.GIT_COMMIT_SHA));
         assertEquals("master", meta.get(CITags.GIT_BRANCH));
-        assertEquals("https://github.com/johndoe/foobar.git", meta.get(CITags.GIT_REPOSITORY_URL));
+        assertEquals("file:///tmp/git-repo/", meta.get(CITags.GIT_REPOSITORY_URL));
         assertEquals("hardcoded-master", meta.get(CITags.GIT_DEFAULT_BRANCH));
     }
 
     @Test
     public void testUserSuppliedGitWithCommitInfoWebhook() throws Exception {
+        clientStub.configureForWebhooks();
+
         Jenkins jenkins = jenkinsRule.jenkins;
         final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
         EnvVars env = prop.getEnvVars();
         env.put(GIT_REPOSITORY_URL, "not-valid-repo");
         env.put(GIT_BRANCH, "not-valid-branch");
         env.put(GIT_COMMIT, "not-valid-commit");
-        env.put(DD_GIT_REPOSITORY_URL, "https://github.com/johndoe/foobar.git");
+        env.put(DD_GIT_REPOSITORY_URL, "file:///tmp/git-repo/");
         env.put(DD_GIT_BRANCH, "master");
         env.put(DD_GIT_COMMIT_SHA, "401d997a6eede777602669ccaec059755c98161f");
         env.put(DD_GIT_COMMIT_MESSAGE, "hardcoded-message");
@@ -291,11 +320,13 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         env.put(DD_GIT_DEFAULT_BRANCH, defaultBranch);
         jenkins.getGlobalNodeProperties().add(prop);
 
+        createLocallyAvailableGitRepo(jenkins);
+
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessUserSuppliedGitWithCommitInfoWebhook");
-        final URL gitZip = getClass().getClassLoader().getResource("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
-        if(gitZip != null) {
-            project.setScm(new ExtractResourceSCM(gitZip));
-        }
+
+        GitSCM git = new GitSCM(GitSCM.createRepoList("file:///tmp/git-repo/", null), Collections.singletonList(new BranchSpec("*/master")), null, null, Collections.singletonList(new LocalBranch("master")));
+        project.setScm(git);
+
         project.scheduleBuild2(0).get();
 
         clientStub.waitForWebhooks(1);
@@ -313,7 +344,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         assertEquals("hardcoded-committer-date", meta.getString("commit_time"));
         assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.getString("sha"));
         assertEquals("master", meta.getString("branch"));
-        assertEquals("https://github.com/johndoe/foobar.git", meta.getString("repository_url"));
+        assertEquals("file:///tmp/git-repo/", meta.getString("repository_url"));
         assertEquals("hardcoded-master", meta.getString("default_branch"));
     }
 
@@ -373,22 +404,26 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
     @Test
     public void testGitAlternativeRepoUrlWebhook() throws Exception {
+        clientStub.configureForWebhooks();
+
         Jenkins jenkins = jenkinsRule.jenkins;
         final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
         EnvVars env = prop.getEnvVars();
         env.put("GIT_BRANCH", "master");
         env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
-        env.put("GIT_URL_1", "https://github.com/johndoe/foobar.git");
+        env.put("GIT_URL_1", "file:///tmp/git-repo/");
         jenkins.getGlobalNodeProperties().add(prop);
 
+        createLocallyAvailableGitRepo(jenkins);
+
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessAltRepoUrlWebhook");
+
+        GitSCM git = new GitSCM(GitSCM.createRepoList("file:///tmp/git-repo/", null), Collections.singletonList(new BranchSpec("*/master")), null, null, Collections.singletonList(new LocalBranch("master")));
+        project.setScm(git);
+
         final FilePath ws = jenkins.getWorkspaceFor(project);
         env.put("NODE_NAME", "master");
         env.put("WORKSPACE", ws.getRemote());
-        InputStream gitZip = getClass().getClassLoader().getResourceAsStream("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip");
-        if(gitZip != null) {
-            ws.unzipFrom(gitZip);
-        }
 
         project.scheduleBuild2(0).get();
 
@@ -415,6 +450,8 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
     @Test
     public void testTracesDisabledWebhooks() throws Exception {
+        clientStub.configureForWebhooks();
+
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEnableCiVisibility(false);
 
@@ -447,6 +484,8 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
     @Test
     public void testCITagsOnWebhooks() throws Exception {
+        clientStub.configureForWebhooks();
+
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setGlobalJobTags("(.*?)_job, global_job_tag:$ENV_VAR");
         cfg.setGlobalTags("global_tag:$ENV_VAR");

@@ -25,7 +25,12 @@ import java.io.IOException;
 public class DatadogGlobalConfigurationTest {
 
     @ClassRule
-    public static JenkinsRule jenkinsRule = new JenkinsRule();
+    public static JenkinsRule jenkinsRule;
+
+    static {
+        jenkinsRule = new JenkinsRule();
+        jenkinsRule.timeout = 300; // default value of 180 is too small for all the test cases in this class
+    }
 
     @Rule public JenkinsConfiguredWithCodeRule r = new JenkinsConfiguredWithCodeRule();
 

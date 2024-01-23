@@ -27,14 +27,13 @@ package org.datadog.jenkins.plugins.datadog;
 
 import hudson.EnvVars;
 import hudson.ExtensionList;
-import hudson.XmlFile;
 import hudson.model.Computer;
 import hudson.model.Item;
 import hudson.model.Result;
 import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.model.User;
 import hudson.model.labels.LabelAtom;
-import hudson.util.LogTaskListener;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -53,11 +52,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.function.Function;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -68,21 +65,10 @@ import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
 import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
-import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
-import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
-import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
-import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
-import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
-import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
-import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
+import org.datadog.jenkins.plugins.datadog.model.DatadogPluginAction;
 import org.datadog.jenkins.plugins.datadog.steps.DatadogPipelineAction;
-import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
-import org.datadog.jenkins.plugins.datadog.traces.IsPipelineAction;
-import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
-import org.datadog.jenkins.plugins.datadog.traces.StepTraceDataAction;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.pipeline.StageStatus;
@@ -93,13 +79,14 @@ import org.jenkinsci.plugins.workflow.actions.NotExecutedNodeAction;
 import org.jenkinsci.plugins.workflow.actions.QueueItemAction;
 import org.jenkinsci.plugins.workflow.actions.StageAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
+import org.jenkinsci.plugins.workflow.actions.TimingAction;
 import org.jenkinsci.plugins.workflow.actions.WarningAction;
-import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
+import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
-import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 public class DatadogUtilities {
 
@@ -185,7 +172,7 @@ public class DatadogUtilities {
      * Pipeline extraTags if any are configured in the Job from DatadogPipelineAction.
      *
      * @param run - Current build
-     * @return A {@link HashMap} containing the key,value pairs of tags if any.
+     * @return A {@link Map} containing the key,value pairs of tags if any.
      */
     public static Map<String, Set<String>> getTagsFromPipelineAction(Run run) {
         // pipeline defined tags
@@ -193,25 +180,22 @@ public class DatadogUtilities {
         DatadogPipelineAction action = run.getAction(DatadogPipelineAction.class);
         if (action != null) {
             List<String> pipelineTags = action.getTags();
-            for (int i = 0; i < pipelineTags.size(); i++) {
-                String[] tagItem = pipelineTags.get(i).replaceAll(" ", "").split(":", 2);
+            for (String pipelineTag : pipelineTags) {
+                String[] tagItem = pipelineTag.replaceAll(" ", "").split(":", 2);
                 if (tagItem.length == 2) {
                     String tagName = tagItem[0];
                     String tagValue = tagItem[1];
-                    Set<String> tagValues = result.containsKey(tagName) ? result.get(tagName) : new HashSet<String>();
+                    Set<String> tagValues = result.computeIfAbsent(tagName, k -> new HashSet<>());
                     tagValues.add(tagValue.toLowerCase());
-                    result.put(tagName, tagValues);
                 } else if (tagItem.length == 1) {
                     String tagName = tagItem[0];
-                    Set<String> tagValues = result.containsKey(tagName) ? result.get(tagName) : new HashSet<String>();
+                    Set<String> tagValues = result.computeIfAbsent(tagName, k -> new HashSet<>());
                     tagValues.add(""); // no values
-                    result.put(tagName, tagValues);
                 } else {
                     logger.fine(String.format("Ignoring the tag %s. It is empty.", tagItem));
                 }
             }
         }
-
         return result;
     }
 
@@ -521,7 +505,7 @@ public class DatadogUtilities {
         }
 
         final DatadogGlobalConfiguration datadogGlobalConfig = getDatadogGlobalDescriptor();
-        if (datadogGlobalConfig != null){
+        if (datadogGlobalConfig != null) {
             if (datadogGlobalConfig.isUseAwsInstanceHostname()) {
                 try {
                     logger.fine("Attempting to resolve AWS instance ID for hostname");
@@ -543,11 +527,6 @@ public class DatadogUtilities {
                 logger.fine("Using hostname found in $HOSTNAME agent environment variable. Hostname: " + hostname);
                 return hostname;
             }
-        }
-
-        if (isValidHostname(hostname)) {
-            logger.fine("Using hostname found in $HOSTNAME controller environment variable. Hostname: " + hostname);
-            return hostname;
         }
 
         hostname = System.getenv("HOSTNAME");
@@ -605,25 +584,6 @@ public class DatadogUtilities {
         }
 
         return null;
-    }
-
-    /**
-     * Fetches the environment variables from the worker and returns the value
-     * of DD_CI_HOSTNAME if set.
-     *
-     * @param run - Current build
-     * @return the specified hostname or an empty Optional if not set
-     */
-    public static Optional<String> getHostnameFromWorkerEnv(Run run) {
-        try {
-            Map<String, String> env = run.getEnvironment(new LogTaskListener(logger, Level.INFO));
-            String envHostname = env.get(DatadogGlobalConfiguration.DD_CI_HOSTNAME);
-            if (StringUtils.isNotEmpty(envHostname)) {
-                return Optional.of(envHostname);
-            }
-        } catch (IOException | InterruptedException e) {
-        }
-        return Optional.empty();
     }
 
     /**
@@ -761,14 +721,6 @@ public class DatadogUtilities {
         return System.currentTimeMillis();
     }
 
-    public static String getFileName(XmlFile file) {
-        if (file == null || file.getFile() == null || file.getFile().getName().isEmpty()) {
-            return "unknown";
-        } else {
-            return file.getFile().getName();
-        }
-    }
-
     public static String getJenkinsUrl() {
         Jenkins jenkins = Jenkins.getInstance();
         if (jenkins == null) {
@@ -819,8 +771,8 @@ public class DatadogUtilities {
      * @param flowNode the flow node to evaluate
      * @return flag indicating if a flowNode is a Stage node.
      */
-    public static boolean isStageNode(BlockStartNode flowNode) {
-        if (flowNode == null) {
+    public static boolean isStageNode(FlowNode flowNode) {
+        if (!(flowNode instanceof BlockStartNode)) {
             return false;
         }
         if (flowNode.getAction(StageAction.class) != null) {
@@ -836,19 +788,22 @@ public class DatadogUtilities {
     }
 
     /**
-     * Returns true if a {@code FlowNode} is a Pipeline node.
-     *
-     * @param flowNode the flow node to evaluate
-     * @return flag indicating if a flowNode is a Pipeline node.
+     * Returns enclosing stage node for the given node.
+     * Never returns the node itself.
      */
-    public static boolean isPipelineNode(FlowNode flowNode) {
-        return flowNode instanceof FlowEndNode;
+    public static BlockStartNode getEnclosingStageNode(FlowNode node) {
+        for (BlockStartNode block : node.iterateEnclosingBlocks()) {
+            if (DatadogUtilities.isStageNode(block)) {
+                return block;
+            }
+        }
+        return null;
     }
 
     /**
      * Returns a normalized result for traces.
      *
-     * @param result (success, failure, error, aborted, not_build, canceled, skipped, unknown)
+     * @param result (success, failure, error, aborted, not_build, canceled, skipped, unstable, unknown)
      * @return the normalized result for the traces based on the jenkins result
      */
     public static String statusFromResult(String result) {
@@ -866,7 +821,7 @@ public class DatadogUtilities {
     }
 
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH")
-    public static void severe(Logger logger, Throwable e, String message){
+    public static void severe(Logger logger, Throwable e, String message) {
         if (e != null) {
             String stackTrace = ExceptionUtils.getStackTrace(e);
             message = (message != null ? message : "An unexpected error occurred: ") + stackTrace;
@@ -963,28 +918,18 @@ public class DatadogUtilities {
      */
     public static void cleanUpTraceActions(final Run<?, ?> run) {
         if (run != null) {
-            run.removeActions(BuildSpanAction.class);
-            run.removeActions(StepDataAction.class);
-            run.removeActions(CIGlobalTagsAction.class);
-            run.removeActions(GitCommitAction.class);
-            run.removeActions(GitRepositoryAction.class);
-            run.removeActions(PipelineNodeInfoAction.class);
-            run.removeActions(PipelineQueueInfoAction.class);
-            run.removeActions(StageBreakdownAction.class);
-            run.removeActions(IsPipelineAction.class);
-            run.removeActions(StepTraceDataAction.class);
+            // Each call to removeActions triggers persisting run data to disc.
+            // To avoid writing to disc multiple times, we only call removeActions once with the marker interface as the argument.
+            run.removeActions(DatadogPluginAction.class);
         }
     }
 
-    /**
-     * Check if a run is from a Jenkins pipeline.
-     * This action is added if the run is based on FlowNodes.
-     *
-     * @param run the current run.
-     * @return true if is a Jenkins pipeline.
-     */
-    public static boolean isPipeline(final Run<?, ?> run) {
-        return run != null && run.getAction(IsPipelineAction.class) != null;
+    public static void cleanUpTraceActions(FlowNode flowNode) {
+        if (flowNode != null) {
+            // Each call to removeActions triggers persisting node data to disc.
+            // To avoid writing to disc multiple times, we only call removeActions once with the marker interface as the argument.
+            flowNode.removeActions(DatadogPluginAction.class);
+        }
     }
 
     public static String getCatchErrorResult(BlockStartNode startNode) {
@@ -1007,6 +952,7 @@ public class DatadogUtilities {
 
     /**
      * Checks to see if event should be sent to client
+     *
      * @param eventName - the event to check
      * @return true if event should be sent to client
      */
@@ -1020,11 +966,12 @@ public class DatadogUtilities {
 
     /**
      * Creates inclusion list for events by looking at toggles and inclusion/exclusion string lists
+     *
      * @return list of event name strings that can be sent
      */
     private static List<String> createIncludeLists() {
         List<String> includedEvents = new ArrayList<String>(Arrays.asList(
-            DatadogGlobalConfiguration.DEFAULT_EVENTS.split(",")));
+                DatadogGlobalConfiguration.DEFAULT_EVENTS.split(",")));
 
         DatadogGlobalConfiguration cfg = getDatadogGlobalDescriptor();
         String includeEvents = cfg.getIncludeEvents();
@@ -1036,13 +983,13 @@ public class DatadogUtilities {
 
         if (cfg.isEmitSystemEvents()) {
             includedEvents.addAll(new ArrayList<String>(
-                Arrays.asList(DatadogGlobalConfiguration.SYSTEM_EVENTS.split(","))
+                    Arrays.asList(DatadogGlobalConfiguration.SYSTEM_EVENTS.split(","))
             ));
         }
 
         if (cfg.isEmitSecurityEvents()) {
             includedEvents.addAll(new ArrayList<String>(
-                Arrays.asList(DatadogGlobalConfiguration.SECURITY_EVENTS.split(","))
+                    Arrays.asList(DatadogGlobalConfiguration.SECURITY_EVENTS.split(","))
             ));
         }
 
@@ -1055,19 +1002,40 @@ public class DatadogUtilities {
     }
 
     /**
-     * Check if flowNode is the last node of the pipeline.
-     * @param flowNode flowNode to check
-     * @return true if flowNode is the last node of the pipeline
+     * Returns the {@code Throwable} of a certain {@code FlowNode}, if it has errors.
+     *
+     * @return throwable associated with a certain flowNode.
      */
-    public static boolean isLastNode(FlowNode flowNode) {
-        return flowNode instanceof FlowEndNode;
+    public static Throwable getErrorObj(FlowNode flowNode) {
+        final ErrorAction errorAction = flowNode.getAction(ErrorAction.class);
+        return (errorAction != null) ? errorAction.getError() : null;
     }
 
-    public static Long getNanosInQueue(BuildPipelineNode current) {
-        // If the concrete queue time for this node is not set
-        // we look for the queue time propagated by its children.
-        return Math.max(Math.max(current.getNanosInQueue(), current.getPropagatedNanosInQueue()), 0);
+    @Nullable
+    public static TaskListener getTaskListener(Run run) throws IOException {
+        if (run instanceof WorkflowRun) {
+            WorkflowRun workflowRun = (WorkflowRun) run;
+            FlowExecution execution = workflowRun.getExecution();
+            if (execution != null) {
+                FlowExecutionOwner owner = execution.getOwner();
+                return owner.getListener();
+            }
+        }
+        return null;
     }
 
+    /**
+     * Returns the startTime of a certain {@code FlowNode}, if it has time information.
+     * @return startTime of the flowNode in milliseconds.
+     */
+    public static long getTimeMillis(FlowNode flowNode) {
+        if (flowNode != null) {
+            TimingAction time = flowNode.getAction(TimingAction.class);
+            if(time != null) {
+                return time.getStartTime();
+            }
+        }
+        return -1L;
+    }
 }
 

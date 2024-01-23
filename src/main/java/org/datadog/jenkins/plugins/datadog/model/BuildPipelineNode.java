@@ -1,40 +1,26 @@
 package org.datadog.jenkins.plugins.datadog.model;
 
-import hudson.console.AnnotatedLargeText;
 import hudson.model.Run;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.traces.CITags;
-import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
-import org.datadog.jenkins.plugins.datadog.traces.StepTraceDataAction;
-import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
+import org.datadog.jenkins.plugins.datadog.model.node.DequeueAction;
+import org.datadog.jenkins.plugins.datadog.model.node.NodeInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.node.StatusAction;
+import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
+import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
-import org.jenkinsci.plugins.workflow.actions.ErrorAction;
-import org.jenkinsci.plugins.workflow.actions.LogAction;
-import org.jenkinsci.plugins.workflow.actions.TimingAction;
 import org.jenkinsci.plugins.workflow.actions.WarningAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
-import org.jenkinsci.plugins.workflow.graph.StepNode;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
 /**
  * Represent a stage of the Jenkins Pipeline.
  */
 public class BuildPipelineNode {
-
-    private static final Logger logger = Logger.getLogger(BuildPipelineNode.class.getName());
 
     public enum NodeType {
         PIPELINE("ci.pipeline", "pipeline"),
@@ -58,148 +44,137 @@ public class BuildPipelineNode {
         }
     }
 
-    private final BuildPipelineNodeKey key;
-    private final List<BuildPipelineNode> parents;
-    private final List<BuildPipelineNode> children;
-    private final String id;
-    private final String name;
+    private String id;
+    private String name;
     private String stageId;
     private String stageName;
 
     private NodeType type;
-    private boolean internal;
-    private boolean initial;
-    private Map<String, Object> args = new HashMap<>();
-    private Map<String, String> envVars = new HashMap<>();
+    private Map<String, Object> args;
     private String workspace;
     private String nodeName;
     private Set<String> nodeLabels;
     private String nodeHostname;
-    private long startTime;
     private long startTimeMicros;
-    private long endTime;
     private long endTimeMicros;
-    private long nanosInQueue = -1L;
-    private long propagatedNanosInQueue = -1L;
-    private String result;
+    private long nanosInQueue;
+    private String jenkinsResult;
+    private Status status;
 
-    // If the node is a `catchError` block, this field will contain the `stageResult` parameter
-    private String catchErrorResult;
     // Throwable of the node.
     // Although the error flag was true, this can be null.
     private Throwable errorObj;
     private String unstableMessage;
 
     //Tracing
-    private long spanId = -1L;
+    private long spanId;
+    private long parentSpanId = -1;
+    private long traceId;
 
-    public BuildPipelineNode(final String id, final String name) {
-        this(new BuildPipelineNodeKey(id, name));
-    }
+    public BuildPipelineNode(final Run<?, ?> run, final BlockStartNode startNode, final BlockEndNode<?> endNode) {
+        this(run, startNode);
 
-    public BuildPipelineNode(final BuildPipelineNodeKey key) {
-        this.key = key;
-        this.parents = new ArrayList<>();
-        this.children = new ArrayList<>();
-        this.id = key.id;
-        this.name = key.name;
-    }
+        this.type = NodeType.STAGE;
 
-    public BuildPipelineNode(final BlockEndNode endNode) {
-        final BlockStartNode startNode = endNode.getStartNode();
-        this.key = new BuildPipelineNodeKey(startNode.getId(), startNode.getDisplayName());
-        this.parents = new ArrayList<>();
-        this.children = new ArrayList<>();
-
-        this.id = startNode.getId();
-        this.name = startNode.getDisplayName();
-        if(DatadogUtilities.isPipelineNode(endNode)) {
-            // The pipeline node must be treated as Step.
-            // Only root span must have ci.pipeline.* tags.
-            // https://datadoghq.atlassian.net/browse/CIAPP-190
-            // The pipeline node is not the root span.
-            // In Jenkins, the build span is the root span, and
-            // the pipeline node span is a child of the build span.
-            this.type = NodeType.STEP;
-            this.internal = true;
-            this.initial = true;
-        } else if(DatadogUtilities.isStageNode(startNode)){
-            this.type = NodeType.STAGE;
-            this.internal = false;
-        } else{
-            this.type = NodeType.STEP;
-            this.internal = true;
+        this.startTimeMicros = TimeUnit.MILLISECONDS.toMicros(DatadogUtilities.getTimeMillis(startNode));
+        if (startTimeMicros < 0) {
+            throw new IllegalStateException("Step " + startNode.getId() + " (" + startNode.getDisplayName() + ") has no start time info");
         }
 
-        this.catchErrorResult = DatadogUtilities.getCatchErrorResult(startNode);
-        this.args = ArgumentsAction.getFilteredArguments(startNode);
+        this.endTimeMicros = TimeUnit.MILLISECONDS.toMicros(DatadogUtilities.getTimeMillis(endNode));
+        if (endTimeMicros < 0) {
+            throw new IllegalStateException("Step " + endNode.getId() + " (" + endNode.getDisplayName() + ") has no end time info");
+        }
 
-        if(endNode instanceof StepNode){
-            final StepData stepData = getStepData(startNode);
-            if(stepData != null) {
-                this.envVars = stepData.getEnvVars();
-                this.workspace = stepData.getWorkspace();
-                this.nodeName = stepData.getNodeName();
-                this.nodeHostname = stepData.getNodeHostname();
-                this.nodeLabels = stepData.getNodeLabels();
+        this.jenkinsResult = DatadogUtilities.getResultTag(endNode);
+        this.status = getStatus(startNode, jenkinsResult);
+        this.errorObj = DatadogUtilities.getErrorObj(endNode);
+        this.unstableMessage = getUnstableMessage(startNode);
+
+        NodeInfoAction nodeInfoAction = startNode.getAction(NodeInfoAction.class);
+        if (nodeInfoAction != null) {
+            this.nodeName = nodeInfoAction.getNodeName();
+            this.nodeHostname = nodeInfoAction.getNodeHostname();
+            this.nodeLabels = nodeInfoAction.getNodeLabels();
+            this.workspace = nodeInfoAction.getNodeWorkspace();
+        }
+    }
+
+    public BuildPipelineNode(final Run<?, ?> run, final StepAtomNode stepNode, final FlowNode nextNode) {
+        this(run, stepNode);
+
+        this.type = NodeType.STEP;
+
+        this.startTimeMicros = TimeUnit.MILLISECONDS.toMicros(DatadogUtilities.getTimeMillis(stepNode));
+        if (startTimeMicros < 0) {
+            throw new IllegalStateException("Step " + stepNode.getId() + " (" + stepNode.getDisplayName() + ") has no start time info");
+        }
+
+        this.endTimeMicros = TimeUnit.MILLISECONDS.toMicros(DatadogUtilities.getTimeMillis(nextNode));
+        if (endTimeMicros < 0) {
+            throw new IllegalStateException("Step " + nextNode.getId() + " (" + nextNode.getDisplayName() + ") has no time info");
+        }
+
+        this.jenkinsResult = DatadogUtilities.getResultTag(stepNode);
+        this.status = getStatus(stepNode, jenkinsResult);
+        this.errorObj = DatadogUtilities.getErrorObj(stepNode);
+        this.unstableMessage = getUnstableMessage(stepNode);
+
+        BlockStartNode enclosingStage = DatadogUtilities.getEnclosingStageNode(stepNode);
+        if (enclosingStage != null) {
+            NodeInfoAction enclosingStageInfoAction = enclosingStage.getAction(NodeInfoAction.class);
+            if (enclosingStageInfoAction != null) {
+                this.nodeName = enclosingStageInfoAction.getNodeName();
+                this.nodeHostname = enclosingStageInfoAction.getNodeHostname();
+                this.nodeLabels = enclosingStageInfoAction.getNodeLabels();
+                this.workspace = enclosingStageInfoAction.getNodeWorkspace();
+            }
+        }
+    }
+
+    private BuildPipelineNode(final Run<?, ?> run, FlowNode startNode) {
+        TraceInfoAction traceInfoAction = run.getAction(TraceInfoAction.class);
+        if (traceInfoAction != null) {
+            Long spanId = traceInfoAction.removeOrCreate(startNode.getId());
+            if (spanId != null) {
+                this.spanId = spanId;
+            }
+        } else {
+            throw new IllegalStateException("Step " + startNode.getId() + " (" + startNode.getDisplayName() + ") has no span info." +
+                    "It is possible that CI Visibility was enabled while this step was in progress");
+        }
+
+        BlockStartNode enclosingStage = DatadogUtilities.getEnclosingStageNode(startNode);
+        if (enclosingStage != null) {
+            this.stageId = enclosingStage.getId();
+            this.stageName = enclosingStage.getDisplayName();
+
+            Long parentSpanId = traceInfoAction.getOrCreate(enclosingStage.getId());
+            if (parentSpanId != null) {
+                this.parentSpanId = parentSpanId;
             }
         }
 
-        final FlowNodeQueueData queueData = getQueueData(startNode);
-        if(queueData != null) {
-            this.nanosInQueue = queueData.getNanosInQueue();
+        BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
+        if (buildSpanAction != null) {
+            TraceSpan.TraceSpanContext traceContext = buildSpanAction.getBuildSpanContext();
+            this.traceId = traceContext.getTraceId();
+            if (this.parentSpanId == -1) {
+                this.parentSpanId = traceContext.getSpanId();
+            }
+        } else {
+            throw new IllegalStateException("Step " + startNode.getId() + " (" + startNode.getDisplayName() + ") has no trace info." +
+                    "It is possible that CI Visibility was enabled while this step was in progress");
         }
 
-        this.startTime = getTime(startNode);
-        this.startTimeMicros = this.startTime * 1000;
-        this.endTime = getTime(endNode);
-        this.endTimeMicros = this.endTime * 1000;
-        this.result = DatadogUtilities.getResultTag(startNode);
-        this.errorObj = getErrorObj(endNode);
-        this.unstableMessage = getUnstableMessage(startNode);
-    }
-
-    public BuildPipelineNode(final StepAtomNode stepNode) {
-        this.key = new BuildPipelineNodeKey(stepNode.getId(), stepNode.getDisplayName());
-        this.parents = new ArrayList<>();
-        this.children = new ArrayList<>();
-        this.internal = false;
-        this.id = stepNode.getId();
-        this.name = stepNode.getDisplayName();
-        this.type = NodeType.STEP;
-        this.args = ArgumentsAction.getFilteredArguments(stepNode);
-
-        final StepData stepData = getStepData(stepNode);
-        if(stepData != null) {
-            this.envVars = stepData.getEnvVars();
-            this.workspace = stepData.getWorkspace();
-            this.nodeName = stepData.getNodeName();
-            this.nodeHostname = stepData.getNodeHostname();
-            this.nodeLabels = stepData.getNodeLabels();
+        DequeueAction queueInfoAction = startNode.getAction(DequeueAction.class);
+        if (queueInfoAction != null) {
+            this.nanosInQueue = queueInfoAction.getQueueTimeNanos();
         }
 
-        final StepTraceData stepTraceData = getStepTraceData(stepNode);
-        if(stepTraceData != null) {
-            this.spanId = stepTraceData.getSpanId();
-        }
-
-        final FlowNodeQueueData queueData = getQueueData(stepNode);
-        if(queueData != null) {
-            this.nanosInQueue = queueData.getNanosInQueue();
-        }
-
-        this.startTime = getTime(stepNode);
-        this.startTimeMicros = this.startTime * 1000;
-        this.endTime = -1L;
-        this.endTimeMicros = this.endTime * 1000;
-        this.result = DatadogUtilities.getResultTag(stepNode);
-        this.errorObj = getErrorObj(stepNode);
-        this.unstableMessage = getUnstableMessage(stepNode);
-    }
-
-
-    public BuildPipelineNodeKey getKey() {
-        return key;
+        this.id = startNode.getId();
+        this.name = startNode.getDisplayName();
+        this.args = ArgumentsAction.getFilteredArguments(startNode);
     }
 
     public String getId() {
@@ -214,32 +189,12 @@ public class BuildPipelineNode {
         return stageId;
     }
 
-    public void setStageId(String stageId) {
-        this.stageId = stageId;
-    }
-
     public String getStageName() {
         return stageName;
     }
 
-    public void setStageName(String stageName) {
-        this.stageName = stageName;
-    }
-
-    public boolean isInternal() {
-        return internal;
-    }
-
-    public boolean isInitial() {
-        return initial;
-    }
-
     public Map<String, Object> getArgs() {
         return args;
-    }
-
-    public Map<String, String> getEnvVars() {
-        return envVars;
     }
 
     public String getWorkspace() {
@@ -254,28 +209,8 @@ public class BuildPipelineNode {
         return nodeLabels;
     }
 
-    public void setNodeName(String propagatedNodeName) {
-        this.nodeName = propagatedNodeName;
-    }
-
-    public void setNodeLabels(final Set<String> propagatedNodeLabels) {
-        this.nodeLabels = propagatedNodeLabels;
-    }
-
     public String getNodeHostname() {
         return nodeHostname;
-    }
-
-    public void setNodeHostname(final String propagatedNodeHostname) {
-        this.nodeHostname = propagatedNodeHostname;
-    }
-
-    public long getStartTime() {
-        return startTime;
-    }
-
-    public long getEndTime() {
-        return endTime;
     }
 
     public long getStartTimeMicros() {
@@ -290,29 +225,12 @@ public class BuildPipelineNode {
         return nanosInQueue;
     }
 
-    public void setEndTime(long endTime) {
-        this.endTime = endTime;
-        this.endTimeMicros = TimeUnit.MILLISECONDS.toMicros(this.endTime);
+    public String getJenkinsResult() {
+        return jenkinsResult;
     }
 
-    public void setNanosInQueue(long nanosInQueue) {
-        this.nanosInQueue = nanosInQueue;
-    }
-
-    public long getPropagatedNanosInQueue() {
-        return propagatedNanosInQueue;
-    }
-
-    public void setPropagatedNanosInQueue(long propagatedNanosInQueue) {
-        this.propagatedNanosInQueue = propagatedNanosInQueue;
-    }
-
-    public String getResult() {
-        return result;
-    }
-
-    public void setResult(final String propagatedResult) {
-        this.result = propagatedResult;
+    public Status getStatus() {
+        return status;
     }
 
     public Throwable getErrorObj() {
@@ -324,245 +242,42 @@ public class BuildPipelineNode {
     }
 
     public boolean isError() {
-        return CITags.STATUS_ERROR.equalsIgnoreCase(this.result);
+        return status == Status.ERROR;
     }
 
     public boolean isUnstable() {
-        return CITags.STATUS_UNSTABLE.equalsIgnoreCase(this.result);
+        return status == Status.UNSTABLE;
     }
 
     public long getSpanId() {
         return spanId;
     }
 
-    public List<BuildPipelineNode> getParents(){ return parents; }
-
-    public List<BuildPipelineNode> getChildren() {
-        return children;
+    public long getParentSpanId() {
+        return parentSpanId;
     }
 
-    public BuildPipelineNode getChild(final BuildPipelineNodeKey id) {
-        if(children.isEmpty()) {
-            return null;
-        }
-
-        for(final BuildPipelineNode child : children) {
-            if(id.equals(child.getKey())){
-                return child;
-            }
-        }
-
-        return null;
+    public long getTraceId() {
+        return traceId;
     }
 
     public NodeType getType() {
         return type;
     }
 
-    public String getCatchErrorResult() {
-        return catchErrorResult;
-    }
-
-    // Used during the tree is being built in BuildPipeline class.
-    public void updateData(final BuildPipelineNode buildNode) {
-        this.stageName = buildNode.stageName;
-        this.stageId = buildNode.stageId;
-        this.type = buildNode.type;
-        this.internal = buildNode.internal;
-        this.initial = buildNode.initial;
-        this.args = buildNode.args;
-        this.envVars = buildNode.envVars;
-        this.workspace = buildNode.workspace;
-        this.nodeName = buildNode.nodeName;
-        this.nodeHostname = buildNode.nodeHostname;
-        this.nodeLabels = buildNode.nodeLabels;
-        this.startTime = buildNode.startTime;
-        this.startTimeMicros = buildNode.startTimeMicros;
-        this.endTime = buildNode.endTime;
-        this.endTimeMicros = buildNode.endTimeMicros;
-        this.nanosInQueue = buildNode.nanosInQueue;
-        this.result = buildNode.result;
-        this.catchErrorResult = buildNode.catchErrorResult;
-        this.errorObj = buildNode.errorObj;
-        this.unstableMessage = buildNode.unstableMessage;
-        this.parents.addAll(buildNode.parents);
-        this.spanId = buildNode.spanId;
-    }
-
-    public void addChild(final BuildPipelineNode child) {
-        children.add(child);
-        child.parents.add(this);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        BuildPipelineNode that = (BuildPipelineNode) o;
-        return Objects.equals(key, that.key);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(key);
-    }
-
-
-    /**
-     * Returns the startTime of a certain {@code FlowNode}, if it has time information.
-     * @param flowNode
-     * @return startTime of the flowNode in milliseconds.
-     */
-    private static long getTime(FlowNode flowNode) {
-        TimingAction time = flowNode.getAction(TimingAction.class);
-        if(time != null) {
-            return time.getStartTime();
-        }
-        return -1L;
-    }
-
-    /**
-     * Returns the accessor to the logs of a certain {@code FlowNode}, if it has logs.
-     * @param flowNode
-     * @return accessor to the flowNode logs.
-     */
-    private static AnnotatedLargeText getLogText(FlowNode flowNode) {
-        final LogAction logAction = flowNode.getAction(LogAction.class);
-        if(logAction != null) {
-            return logAction.getLogText();
-        }
-        return null;
-    }
-
-    /**
-     * Returns the {@code Throwable} of a certain {@code FlowNode}, if it has errors.
-     * @param flowNode
-     * @return throwable associated with a certain flowNode.
-     */
-    private static Throwable getErrorObj(FlowNode flowNode) {
-        final ErrorAction errorAction = flowNode.getAction(ErrorAction.class);
-        return (errorAction != null) ? errorAction.getError() : null;
+    private static Status getStatus(FlowNode node, String jenkinsResult) {
+        Status nodeStatus = Status.fromJenkinsResult(jenkinsResult);
+        StatusAction statusAction = node.getAction(StatusAction.class);
+        return statusAction != null ? Status.combine(nodeStatus, statusAction.getStatus()) : nodeStatus;
     }
 
     /**
      * Returns the error message for unstable pipelines
-     * @param flowNode
+     *
      * @return error message
      */
     private static String getUnstableMessage(FlowNode flowNode) {
         final WarningAction warningAction = flowNode.getAction(WarningAction.class);
         return (warningAction != null) ? warningAction.getMessage() : null;
-    }
-
-    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
-    private StepData getStepData(final FlowNode flowNode) {
-        final Run<?, ?> run = getRun(flowNode);
-        if(run == null) {
-            logger.fine("Unable to get StepData from flowNode '"+flowNode.getDisplayName()+"'. Run is null");
-            return null;
-        }
-
-        final StepDataAction stepDataAction = run.getAction(StepDataAction.class);
-        if(stepDataAction == null) {
-            logger.fine("Unable to get StepData from flowNode '"+flowNode.getDisplayName()+"'. StepDataAction is null");
-            return null;
-        }
-
-        return stepDataAction.get(run, flowNode);
-    }
-
-    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
-    private StepTraceData getStepTraceData(FlowNode flowNode) {
-        final Run<?, ?> run = getRun(flowNode);
-        if(run == null) {
-            logger.fine("Unable to get StepTraceData from flowNode '"+flowNode.getDisplayName()+"'. Run is null");
-            return null;
-        }
-
-        final StepTraceDataAction stepTraceDataAction = run.getAction(StepTraceDataAction.class);
-        if(stepTraceDataAction == null) {
-            logger.fine("Unable to get StepTraceData from flowNode '"+flowNode.getDisplayName()+"'. StepTraceDataAction is null");
-            return null;
-        }
-
-        return stepTraceDataAction.get(run, flowNode);
-    }
-
-    private FlowNodeQueueData getQueueData(FlowNode node) {
-        final Run<?, ?> run = getRun(node);
-        if(run == null) {
-            logger.fine("Unable to get QueueData from node '"+node.getDisplayName()+"'. Run is null");
-            return null;
-        }
-
-        PipelineQueueInfoAction pipelineQueueInfoAction = run.getAction(PipelineQueueInfoAction.class);
-        if (pipelineQueueInfoAction == null) {
-            logger.fine("Unable to get QueueInfoAction from node '"+node.getDisplayName()+"'. QueueInfoAction is null");
-            return null;
-        }
-
-        return pipelineQueueInfoAction.get(run, node.getId());
-    }
-
-    private Run<?, ?> getRun(final FlowNode node) {
-        if(node == null ||  node.getExecution() == null || node.getExecution().getOwner() == null) {
-            return null;
-        }
-
-        try {
-            return (Run<?, ?>) node.getExecution().getOwner().getExecutable();
-        } catch (Exception e){
-            return null;
-        }
-    }
-
-    public static class BuildPipelineNodeKey {
-        private final String id;
-        private final String name;
-
-        public BuildPipelineNodeKey(final String stageId, final String stageName) {
-            this.id = stageId;
-            this.name = stageName;
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            BuildPipelineNodeKey that = (BuildPipelineNodeKey) o;
-            return Objects.equals(id, that.id) &&
-                    Objects.equals(name, that.name);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(id, name);
-        }
-    }
-
-
-    static class BuildPipelineNodeComparator implements Comparator<BuildPipelineNode>, Serializable {
-
-        @Override
-        public int compare(BuildPipelineNode o1, BuildPipelineNode o2) {
-            if(o1.getStartTime() == -1L || o2.getStartTime() == -1L) {
-                return 0;
-            }
-
-            if(o1.getStartTime() < o2.getStartTime()) {
-                return -1;
-            } else if (o1.getStartTime() > o2.getStartTime()){
-                return 1;
-            }
-            return 0;
-        }
     }
 }
