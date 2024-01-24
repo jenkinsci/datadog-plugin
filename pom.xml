@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.42</version> <!-- or whatever the newest version available is -->
+    <version>4.2</version> <!-- or whatever the newest version available is -->
     <!--Check https://mvnrepository.com/artifact/org.jenkins-ci.plugins/plugin?repo=jenkins-releases-->
     <relativePath />
   </parent>
@@ -15,11 +15,12 @@
   <url>https://github.com/jenkinsci/datadog-plugin</url>
   <groupId>org.datadog.jenkins.plugins</groupId>
   <artifactId>datadog</artifactId>
-  <version>5.6.3-SNAPSHOT</version>
+  <version>4.0.0</version>
   <packaging>hpi</packaging>
 
   <properties>
-    <jenkins.version>2.346.1</jenkins.version>
+    <java.level>8</java.level>
+    <jenkins.version>2.346.2</jenkins.version>
     <hpi.compatibleSinceVersion>1.0.0</hpi.compatibleSinceVersion>
     <dd-trace-java.version>0.71.0</dd-trace-java.version>
     <!-- byte-buddy is needed until we bump to java 11: https://stackoverflow.com/questions/69929229/mockito-shipped-within-spring-boot-fails-to-attach-to-jvm-openjdk-11/72912290#72912290 -->
@@ -47,7 +48,7 @@
     <connection>scm:git:git://github.com/jenkinsci/datadog-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/datadog-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/datadog-plugin</url>
-    <tag>datadog-3.0.0</tag>
+    <tag>datadog-4.0.0</tag>
   </scm>
 
   <repositories>
@@ -246,6 +247,28 @@
           </execution>
         </executions>
     </plugin>
+      <plugin>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>display-info</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>display-info</goal>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <excludes>
+                    <exclude>org.apache.logging.log4j:*:(,2.17.0]</exclude>
+                  </excludes>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
