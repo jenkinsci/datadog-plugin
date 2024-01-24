@@ -271,6 +271,8 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
     @Test
     public void testUserSuppliedGitWithCommitInfoWebhook() throws Exception {
+        clientStub.configureForWebhooks();
+
         Jenkins jenkins = jenkinsRule.jenkins;
         final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
         EnvVars env = prop.getEnvVars();
@@ -373,6 +375,8 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
     @Test
     public void testGitAlternativeRepoUrlWebhook() throws Exception {
+        clientStub.configureForWebhooks();
+
         Jenkins jenkins = jenkinsRule.jenkins;
         final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
         EnvVars env = prop.getEnvVars();
@@ -447,6 +451,8 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
     @Test
     public void testCITagsOnWebhooks() throws Exception {
+        clientStub.configureForWebhooks();
+
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setGlobalJobTags("(.*?)_job, global_job_tag:$ENV_VAR");
         cfg.setGlobalTags("global_tag:$ENV_VAR");
