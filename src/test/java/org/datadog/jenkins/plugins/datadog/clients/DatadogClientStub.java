@@ -29,6 +29,7 @@ import hudson.model.Run;
 import hudson.util.Secret;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -236,6 +237,10 @@ public class DatadogClientStub implements DatadogClient {
         return this.agentHttpClient;
     }
 
+    public List<DatadogMetric> getMetrics() {
+        return Collections.unmodifiableList(this.metrics);
+    }
+
     public boolean assertMetric(String name, double value, String hostname, String[] tags) {
         DatadogMetric m = new DatadogMetric(name, value, hostname, Arrays.asList(tags));
         if (this.metrics.contains(m)) {
@@ -246,7 +251,7 @@ public class DatadogClientStub implements DatadogClient {
                 "metrics: {" + this.metrics.toString() + " }");
         return false;
     }
-    
+
     /*
      * Returns the value of the asserted metric if it exists.
      */

@@ -99,6 +99,11 @@ public class DatadogQueuePublisher extends PeriodicWork {
                 } else {
                     job_name = "unknown";
                 }
+
+                if (!DatadogUtilities.isJobTracked(job_name)) {
+                    continue;
+                }
+
                 TagsUtil.addTagToTags(job_tags, "job_name", job_name);
                 boolean isStuck = false;
                 boolean isBuildable = false;
