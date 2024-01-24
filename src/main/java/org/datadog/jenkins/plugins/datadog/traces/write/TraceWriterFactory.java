@@ -18,6 +18,7 @@ public class TraceWriterFactory {
         }
 
         TRACE_WRITER = new TraceWriter(client);
+        TRACE_WRITER.start();
     }
 
     @Nullable

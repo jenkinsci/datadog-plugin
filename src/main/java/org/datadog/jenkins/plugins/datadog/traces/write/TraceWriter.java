@@ -15,7 +15,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
-public class TraceWriter {
+public final class TraceWriter {
 
     private static final Logger logger = Logger.getLogger(TraceWriter.class.getName());
 
@@ -41,10 +41,17 @@ public class TraceWriter {
         this.queue = new ArrayBlockingQueue<>(getEnv(QUEUE_CAPACITY_ENV_VAR, DEFAULT_QUEUE_CAPACITY));
 
         this.poller = new Thread(this::runPollingLoop, "DD-Trace-Writer");
-        this.poller.start();
 
         this.pollerShutdownHook = new Thread(this::runShutdownHook, "DD-Trace-Writer-Shutdown-Hook");
         Runtime.getRuntime().addShutdownHook(pollerShutdownHook);
+    }
+
+    public void start() {
+        poller.start();
+    }
+
+    public void stop() {
+        poller.interrupt();
     }
 
     public void submitBuild(final BuildData buildData, final Run<?,?> run) throws InterruptedException, TimeoutException {
@@ -63,10 +70,6 @@ public class TraceWriter {
         if (!queue.offer(json, getEnv(SUBMIT_TIMEOUT_ENV_VAR, DEFAULT_SUBMIT_TIMEOUT_SECONDS), TimeUnit.SECONDS)) {
             throw new TimeoutException("Timed out while submitting span");
         }
-    }
-
-    public void stop() {
-        poller.interrupt();
     }
 
     private void runPollingLoop() {
