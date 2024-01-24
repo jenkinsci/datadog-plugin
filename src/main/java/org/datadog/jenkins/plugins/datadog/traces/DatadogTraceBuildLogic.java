@@ -84,8 +84,18 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
             buildSpan.putMeta(CITags.CI_PARAMETERS, DatadogUtilities.toJson(buildData.getBuildParameters()));
         }
 
+        // It seems like "built-in" node as the default value does not have much practical sense.
+        // It is done to preserve existing behavior (note that this logic is not applied to metrics - also to preserve the plugin's existing behavior).
+        // The mechanism before the changes was the following:
+        // - DatadogBuildListener#onInitialize created a BuildData instance
+        // - that BuildData had its nodeName populated from environment variables obtained from Run
+        // - the instance was persisted in an Action attached to Run, and was used to populate the node name of the pipeline span (always as the last fallback)
+        // For pipelines, the environment variables that Run#getEnvironment returns _at the beginning of the run_ always (!) contain NODE_NAME = "built-in"
+        // This is true regardless of whether the pipeline definition has a top-level agent block or not
+        // For freestyle projects the correct NODE_NAME seems to be available in the run's environment variables at every stage of the build
+        String nodeName = buildData.getNodeName("built-in");
         buildSpan.putMeta(CITags.WORKSPACE_PATH, buildData.getWorkspace(""));
-        buildSpan.putMeta(CITags.NODE_NAME, buildData.getNodeName(""));
+        buildSpan.putMeta(CITags.NODE_NAME, nodeName);
 
         final String nodeLabelsJson = DatadogUtilities.toJson(getNodeLabels(run, buildData.getNodeName("")));
         if(nodeLabelsJson != null && !nodeLabelsJson.isEmpty()){
@@ -95,7 +105,7 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
         }
 
         // If the NodeName == "master", we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
-        if(!DatadogUtilities.isMainNode(buildData.getNodeName(""))) {
+        if(!DatadogUtilities.isMainNode(nodeName)) {
             final String workerHostname = buildData.getHostname("");
             buildSpan.putMeta(CITags._DD_HOSTNAME, !workerHostname.isEmpty() ? workerHostname : HOSTNAME_NONE);
         }

@@ -729,9 +729,13 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
         final TraceSpan buildSpan = searchSpan(spans, "pipelineIntegrationQueueTimeOnStages");
         assertEquals(Double.valueOf(0), buildSpan.getMetrics().get(CITags.QUEUE_TIME));
+        assertEquals("built-in", buildSpan.getMeta().get(CITags.NODE_NAME));
+        assertEquals("[\"built-in\"]", buildSpan.getMeta().get(CITags.NODE_LABELS));
 
         final TraceSpan runStages = searchSpan(spans, "Run stages");
         assertEquals(Double.valueOf(0), runStages.getMetrics().get(CITags.QUEUE_TIME));
+        assertEquals("built-in", runStages.getMeta().get(CITags.NODE_NAME));
+        assertEquals("[\"built-in\"]", runStages.getMeta().get(CITags.NODE_LABELS));
 
         final TraceSpan stage1 = searchSpan(spans, "Stage 1");
         final Double stage1QueueTime = stage1.getMetrics().get(CITags.QUEUE_TIME);
