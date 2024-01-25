@@ -641,10 +641,6 @@ public class BuildData implements Serializable {
         return defaultIfNull(executorNumber, value);
     }
 
-    public String getJavaHome(String value) {
-        return defaultIfNull(javaHome, value);
-    }
-
     public String getWorkspace(String value) {
         return defaultIfNull(workspace, value);
     }
@@ -661,64 +657,32 @@ public class BuildData implements Serializable {
         return defaultIfNull(gitMessage, value);
     }
 
-    public void setGitMessage(String gitMessage) {
-        this.gitMessage = gitMessage;
-    }
-
     public String getGitAuthorName(final String value) {
         return defaultIfNull(gitAuthorName, value);
-    }
-
-    public void setGitAuthorName(String gitAuthorName) {
-        this.gitAuthorName = gitAuthorName;
     }
 
     public String getGitAuthorEmail(final String value) {
         return defaultIfNull(gitAuthorEmail, value);
     }
 
-    public void setGitAuthorEmail(String gitAuthorEmail) {
-        this.gitAuthorEmail = gitAuthorEmail;
-    }
-
     public String getGitCommitterName(final String value) {
         return defaultIfNull(gitCommitterName, value);
-    }
-
-    public void setGitCommitterName(String gitCommitterName) {
-        this.gitCommitterName = gitCommitterName;
     }
 
     public String getGitCommitterEmail(final String value) {
         return defaultIfNull(gitCommitterEmail, value);
     }
 
-    public void setGitCommitterEmail(String gitCommitterEmail) {
-        this.gitCommitterEmail = gitCommitterEmail;
-    }
-
     public String getGitAuthorDate(final String value) {
         return defaultIfNull(gitAuthorDate, value);
-    }
-
-    public void setGitAuthorDate(String gitAuthorDate) {
-        this.gitAuthorDate = gitAuthorDate;
     }
 
     public String getGitCommitterDate(final String value) {
         return defaultIfNull(gitCommitterDate, value);
     }
 
-    public void setGitCommitterDate(String gitCommitterDate) {
-        this.gitCommitterDate = gitCommitterDate;
-    }
-
     public String getGitDefaultBranch(String value) {
         return defaultIfNull(gitDefaultBranch, value);
-    }
-
-    public void setGitDefaultBranch(String gitDefaultBranch) {
-        this.gitDefaultBranch = gitDefaultBranch;
     }
 
     public String getGitTag(String value) {

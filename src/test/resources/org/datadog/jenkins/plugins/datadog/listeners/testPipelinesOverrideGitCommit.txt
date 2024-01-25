@@ -5,7 +5,7 @@ pipeline {
             steps {
                 withEnv(["GIT_COMMIT=ccccbbbb"]) {
                     git branch: 'master',
-                        url: 'file:///tmp/git-repo/'
+                        url: '$LOCAL_REPO_URL'
                 }
             }
         }
