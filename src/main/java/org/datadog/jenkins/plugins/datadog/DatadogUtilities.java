@@ -39,13 +39,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.Inet4Address;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -98,6 +97,7 @@ public class DatadogUtilities {
     /**
      * @return - The descriptor for the Datadog plugin. In this case the global configuration.
      */
+    @Nullable
     public static DatadogGlobalConfiguration getDatadogGlobalDescriptor() {
         try {
             return ExtensionList.lookupSingleton(DatadogGlobalConfiguration.class);
@@ -586,6 +586,14 @@ public class DatadogUtilities {
         return null;
     }
 
+    private static final Pattern VALID_HOSTNAME_RFC_1123_PATTERN = Pattern.compile("^(([a-zA-Z0-9]|"
+            + "[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*"
+            + "([A-Za-z0-9]|"
+            + "[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$");
+
+    private static final Collection<String> LOCAL_HOSTS = Arrays.asList("localhost", "localhost.localdomain",
+            "localhost6.localdomain6", "ip6-localhost");
+
     /**
      * Validator function to ensure that the hostname is valid. Also, fails on
      * empty String.
@@ -598,17 +606,14 @@ public class DatadogUtilities {
             return false;
         }
 
-        String[] localHosts = {"localhost", "localhost.localdomain",
-                "localhost6.localdomain6", "ip6-localhost"};
-        String VALID_HOSTNAME_RFC_1123_PATTERN = "^(([a-zA-Z0-9]|"
-                + "[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*"
-                + "([A-Za-z0-9]|"
-                + "[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$";
-        String host = hostname.toLowerCase();
-
         // Check if hostname is local
-        if (Arrays.asList(localHosts).contains(host)) {
+        if (LOCAL_HOSTS.contains(hostname.toLowerCase())) {
             logger.fine(String.format("Hostname: %s is local", hostname));
+            return false;
+        }
+
+        if (isPrivateIPv4Address(hostname)) {
+            logger.fine(String.format("Hostname: %s is a private IPv4 address", hostname));
             return false;
         }
 
@@ -619,12 +624,36 @@ public class DatadogUtilities {
             return false;
         }
 
-        // Check compliance with RFC 1123
-        Pattern r = Pattern.compile(VALID_HOSTNAME_RFC_1123_PATTERN);
-        Matcher m = r.matcher(hostname);
-
         // Final check: Hostname matches RFC1123?
+        Matcher m = VALID_HOSTNAME_RFC_1123_PATTERN.matcher(hostname);
         return m.find();
+    }
+
+    private static boolean isPrivateIPv4Address(String ipAddress) {
+        if (ipAddress == null || ipAddress.isEmpty()) {
+            return false;
+        }
+
+        String[] parts = ipAddress.split("\\.");
+        if (parts.length != 4) {
+            return false;
+        }
+
+        try {
+            int firstOctet = Integer.parseInt(parts[0]);
+            int secondOctet = Integer.parseInt(parts[1]);
+
+            if (firstOctet == 10) {
+                return true;
+            } else if (firstOctet == 172 && (secondOctet >= 16 && secondOctet <= 31)) {
+                return true;
+            } else if (firstOctet == 192 && secondOctet == 168) {
+                return true;
+            }
+            return false;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 
     public static Map<String, Set<String>> getComputerTags(Computer computer) {

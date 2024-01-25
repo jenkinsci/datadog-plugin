@@ -19,6 +19,7 @@ import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
@@ -44,7 +45,7 @@ public final class GitUtils {
      * @param gitClient the Git client used.
      * @return revCommit
      */
-    public static RevCommit searchRevCommit(final GitClient gitClient, final String gitCommit) {
+    public static RevCommit searchRevCommit(@Nullable final GitClient gitClient, final String gitCommit) {
         try {
             if (gitClient == null) {
                 LOGGER.fine("Unable to search RevCommit. GitClient is null");
@@ -64,7 +65,7 @@ public final class GitUtils {
      * @param gitClient The Git client to use to obtain the repository information
      * @return repositoryInfo
      */
-    public static RepositoryInfo searchRepositoryInfo(final GitClient gitClient) {
+    public static RepositoryInfo searchRepositoryInfo(@Nullable final GitClient gitClient) {
         try {
             if (gitClient == null) {
                 LOGGER.fine("Unable to search RevCommit. GitClient is null");
@@ -86,6 +87,7 @@ public final class GitUtils {
      * @param workspace the workspace to use to build the Git client
      * @return gitClient
      */
+    @Nullable
     public static GitClient newGitClient(final TaskListener listener, final EnvVars envVars, final FilePath workspace) {
         long start = System.currentTimeMillis();
         try {

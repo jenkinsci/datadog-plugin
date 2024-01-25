@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
+import javax.annotation.Nullable;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
@@ -89,21 +90,22 @@ public class DatadogSCMListener extends SCMListener {
                 return;
             }
 
+            logger.fine("Start DatadogSCMListener#onCheckout");
+
             if (isGit(scm)) {
                 EnvVars environment = build.getEnvironment(listener);
                 GitClient gitClient = GitUtils.newGitClient(listener, environment, workspace);
-                if (gitClient != null) {
-                    populateCommitInfo(build, gitClient);
-                    populateRepositoryInfo(build, gitClient, environment);
-                }
+                populateCommitInfo(build, gitClient);
+                populateRepositoryInfo(build, gitClient, environment);
+            } else {
+                logger.fine("Will not populate git commit and repository info for non-git SCM: "
+                        + (scm != null ? scm.getType() : null));
             }
 
             DatadogJobProperty prop = DatadogUtilities.getDatadogJobProperties(build);
             if (prop == null || !prop.isEmitSCMEvents()) {
                 return;
             }
-
-            logger.fine("Start DatadogSCMListener#onCheckout");
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();
@@ -146,7 +148,7 @@ public class DatadogSCMListener extends SCMListener {
         return scmType != null && scmType.toLowerCase().contains("git");
     }
 
-    private void populateCommitInfo(final Run<?, ?> run, final GitClient gitClient) {
+    private void populateCommitInfo(final Run<?, ?> run, @Nullable final GitClient gitClient) {
         long start = System.currentTimeMillis();
         try {
             GitCommitAction commitAction = run.getAction(GitCommitAction.class);
@@ -200,7 +202,7 @@ public class DatadogSCMListener extends SCMListener {
         }
     }
 
-    private void populateRepositoryInfo(final Run<?, ?> run, final GitClient gitClient, final EnvVars environment) {
+    private void populateRepositoryInfo(final Run<?, ?> run, @Nullable final GitClient gitClient, final EnvVars environment) {
         long start = System.currentTimeMillis();
         try {
             GitRepositoryAction repoAction = run.getAction(GitRepositoryAction.class);

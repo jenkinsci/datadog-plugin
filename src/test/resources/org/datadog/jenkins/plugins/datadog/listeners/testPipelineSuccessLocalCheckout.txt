@@ -5,7 +5,7 @@ pipeline {
             steps {
                 script {
                     git branch: 'master',
-                        url: 'file:///tmp/git-repo/'
+                        url: '$LOCAL_REPO_URL'
                 }
             }
         }

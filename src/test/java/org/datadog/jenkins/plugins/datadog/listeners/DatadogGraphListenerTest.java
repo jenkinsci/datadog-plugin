@@ -33,14 +33,19 @@ import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.triggers.SCMTrigger.SCMTriggerCause;
 import hudson.triggers.TimerTrigger.TimerTriggerCause;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
@@ -62,7 +67,9 @@ import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -74,11 +81,32 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
     @ClassRule
     public static JenkinsRule jenkinsRule;
 
+    private static FilePath localGitRepoPath;
+
     static {
         // to allow checkout from local git repositories - needed for some tests
         System.setProperty("hudson.plugins.git.GitSCM.ALLOW_LOCAL_CHECKOUT", "true");
+
         jenkinsRule = new JenkinsRule();
         jenkinsRule.timeout = 600; // default value of 180 is too small for all the test cases in this class
+    }
+
+    @BeforeClass
+    public static void setUp() {
+        localGitRepoPath = jenkinsRule.jenkins.getRootPath().child("tmp").child("git-repo");
+        try (InputStream gitZip = DatadogBuildListenerIT.class.getClassLoader().getResourceAsStream("org/datadog/jenkins/plugins/datadog/listeners/git/gitFolder.zip")) {
+            localGitRepoPath.deleteRecursive();
+            localGitRepoPath.mkdirs();
+            localGitRepoPath.unzipFrom(gitZip);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Could not create local git repo at " + localGitRepoPath.getRemote(), e);
+        }
+    }
+
+    @AfterClass
+    public static void tearDown() throws IOException, InterruptedException {
+        localGitRepoPath.deleteRecursive();
     }
 
     private DatadogGraphListener listener;
@@ -154,10 +182,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         windowsEnvVars.put("HOSTNAME", windowsHostname);
         jenkinsRule.createOnlineSlave(new LabelAtom("windows"), windowsEnvVars);
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineDefinition.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineDefinition.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
         WorkflowRun run = job.scheduleBuild2(0).get();
         BufferedReader br = new BufferedReader(run.getLogReader());
@@ -217,13 +242,10 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         EnvVars env = prop.getEnvVars();
         env.put("GIT_BRANCH", "master");
         env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
-        env.put("GIT_URL", "file:///tmp/git-repo/");
+        env.put("GIT_URL", "file://" + localGitRepoPath.getRemote());
 
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationSingleCommit");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineSuccessLocalCheckout.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineSuccessLocalCheckout.txt");
 
         job.setDefinition(new CpsFlowDefinition(definition, true));
         final FilePath ws = jenkins.getWorkspaceFor(job);
@@ -239,19 +261,16 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final List<TraceSpan> spans = clientStub.getSpans();
         assertEquals(3, spans.size());
         final TraceSpan buildSpan = spans.get(0);
-        assertGitVariablesOnSpan(buildSpan, "master");
+        assertGitVariablesOnSpan(buildSpan, "master", localGitRepoPath.getRemote());
     }
 
     @Test
     public void testIntegrationNonCIVisibilityEnvVars() throws Exception {
         Jenkins jenkins = jenkinsRule.jenkins;
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "testPipelineGitBranchEnv");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineGitBranchEnv.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineGitBranchEnv.txt");
 
-         String[] expectedTags = new String[]{
+        String[] expectedTags = new String[]{
                 "jenkins_url:" + DatadogUtilities.getJenkinsUrl(),
                 "user_id:anonymous",
                 "job:testPipelineGitBranchEnv",
@@ -274,13 +293,10 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         EnvVars env = prop.getEnvVars();
         env.put("GIT_BRANCH", "master");
         env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
-        env.put("GIT_URL", "file:///tmp/git-repo/");
+        env.put("GIT_URL", "file://" + localGitRepoPath.getRemote());
 
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationSingleCommitWebhooks");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineSuccessLocalCheckout.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineSuccessLocalCheckout.txt");
 
         job.setDefinition(new CpsFlowDefinition(definition, true));
         final FilePath ws = jenkins.getWorkspaceFor(job);
@@ -295,7 +311,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         clientStub.waitForWebhooks(3);
         final List<JSONObject> webhook = clientStub.getWebhooks();
         assertEquals(3, webhook.size());
-        assertGitVariablesOnWebhook(webhook.get(0), "master");
+        assertGitVariablesOnWebhook(webhook.get(0), "master", localGitRepoPath.getRemote());
     }
 
     @Test
@@ -305,15 +321,12 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         EnvVars env = prop.getEnvVars();
         env.put("GIT_BRANCH", "master");
         env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
-        env.put("GIT_URL", "file:///tmp/git-repo/");
+        env.put("GIT_URL", "file://" + localGitRepoPath.getRemote());
         final String defaultBranch = "refs/heads/hardcoded-master";
         env.put("DD_GIT_DEFAULT_BRANCH", defaultBranch);
 
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationSingleCommitDefaultBranchEnvVar");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineSuccessLocalCheckout.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineSuccessLocalCheckout.txt");
 
         job.setDefinition(new CpsFlowDefinition(definition, true));
         final FilePath ws = jenkins.getWorkspaceFor(job);
@@ -329,7 +342,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final List<TraceSpan> spans = clientStub.getSpans();
         assertEquals(3, spans.size());
         final TraceSpan buildSpan = spans.get(0);
-        assertGitVariablesOnSpan(buildSpan, "hardcoded-master");
+        assertGitVariablesOnSpan(buildSpan, "hardcoded-master", localGitRepoPath.getRemote());
     }
 
     @Test
@@ -339,13 +352,10 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         EnvVars env = prop.getEnvVars();
         env.put("GIT_BRANCH", "master");
         env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
-        env.put("GIT_URL", "file:///tmp/git-repo/");
+        env.put("GIT_URL", "file://" + localGitRepoPath.getRemote());
 
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationOverrideCommit");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelinesOverrideGitCommit.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelinesOverrideGitCommit.txt");
 
         job.setDefinition(new CpsFlowDefinition(definition, true));
         final FilePath ws = jenkins.getWorkspaceFor(job);
@@ -365,6 +375,27 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         }
     }
 
+    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\$([A-Z_]+)");
+
+    private String getPipelineDefinition(String file) throws IOException {
+        Map<String, String> replacements = Collections.singletonMap("LOCAL_REPO_URL", "file://" + localGitRepoPath.getRemote());
+
+        String pipelineDefinition;
+        try (InputStream is = DatadogGraphListenerTest.class.getResourceAsStream(file)) {
+            StringBuffer pipelineBuilder = new StringBuffer();
+            String pipelineTemplate = IOUtils.toString(is, StandardCharsets.UTF_8);
+            Matcher m = PLACEHOLDER_PATTERN.matcher(pipelineTemplate);
+            while (m.find()) {
+                String placeholder = m.group(1);
+                m.appendReplacement(pipelineBuilder, replacements.get(placeholder));
+            }
+            m.appendTail(pipelineBuilder);
+            pipelineDefinition = pipelineBuilder.toString();
+        }
+
+        return pipelineDefinition;
+    }
+
     @Test
     public void testIntegrationGitAlternativeRepoUrl() throws Exception {
         Jenkins jenkins = jenkinsRule.jenkins;
@@ -372,13 +403,10 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         EnvVars env = prop.getEnvVars();
         env.put("GIT_BRANCH", "master");
         env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
-        env.put("GIT_URL_1", "file:///tmp/git-repo/");
+        env.put("GIT_URL_1", "file://" + localGitRepoPath.getRemote());
 
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationAltRepoUrl");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelinesOverrideGitCommit.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelinesOverrideGitCommit.txt");
 
         job.setDefinition(new CpsFlowDefinition(definition, true));
         final FilePath ws = jenkins.getWorkspaceFor(job);
@@ -394,7 +422,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final List<TraceSpan> spans = clientStub.getSpans();
         assertEquals(5, spans.size());
         for(TraceSpan span : spans) {
-            assertEquals("file:///tmp/git-repo/", span.getMeta().get(CITags.GIT_REPOSITORY_URL));
+            assertEquals("file://" + localGitRepoPath.getRemote(), span.getMeta().get(CITags.GIT_REPOSITORY_URL));
         }
     }
 
@@ -407,13 +435,10 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         EnvVars env = prop.getEnvVars();
         env.put("GIT_BRANCH", "master");
         env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
-        env.put("GIT_URL_1", "file:///tmp/git-repo/");
+        env.put("GIT_URL_1", "file://" + localGitRepoPath.getRemote());
 
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationAltRepoUrlWebhooks");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelinesOverrideGitCommit.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelinesOverrideGitCommit.txt");
 
         job.setDefinition(new CpsFlowDefinition(definition, true));
         final FilePath ws = jenkins.getWorkspaceFor(job);
@@ -429,7 +454,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final List<JSONObject> webhooks = clientStub.getWebhooks();
         assertEquals(5, webhooks.size());
         for(JSONObject webhook : webhooks) {
-            assertEquals("file:///tmp/git-repo/", webhook.getJSONObject("git").get("repository_url"));
+            assertEquals("file://" + localGitRepoPath.getRemote(), webhook.getJSONObject("git").get("repository_url"));
         }
     }
 
@@ -438,16 +463,13 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         Jenkins jenkins = jenkinsRule.jenkins;
         final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
         EnvVars env = prop.getEnvVars();
-        env.put(DD_GIT_REPOSITORY_URL, "file:///tmp/git-repo/");
+        env.put(DD_GIT_REPOSITORY_URL, "file://" + localGitRepoPath.getRemote());
         env.put(DD_GIT_BRANCH, "master");
         env.put(DD_GIT_COMMIT_SHA, "401d997a6eede777602669ccaec059755c98161f");
         env.put(DD_GIT_TAG, "0.1.0");
 
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationUserSuppliedGitWithoutCommitInfo");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineSuccessLocalCheckout.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineSuccessLocalCheckout.txt");
 
         job.setDefinition(new CpsFlowDefinition(definition, true));
         final FilePath ws = jenkins.getWorkspaceFor(job);
@@ -463,7 +485,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final List<TraceSpan> spans = clientStub.getSpans();
         assertEquals(3, spans.size());
         final TraceSpan buildSpan = spans.get(0);
-        assertGitVariablesOnSpan(buildSpan, "master");
+        assertGitVariablesOnSpan(buildSpan, "master", localGitRepoPath.getRemote());
         final Map<String, String> meta = buildSpan.getMeta();
         assertEquals("0.1.0", meta.get(CITags.GIT_TAG));
     }
@@ -484,16 +506,13 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         Jenkins jenkins = jenkinsRule.jenkins;
         final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
         EnvVars env = prop.getEnvVars();
-        env.put(DD_GIT_REPOSITORY_URL, "file:///tmp/git-repo/");
+        env.put(DD_GIT_REPOSITORY_URL, "file://" + localGitRepoPath.getRemote());
         env.put(DD_GIT_BRANCH, "master");
         env.put(DD_GIT_COMMIT_SHA, "401d997a6eede777602669ccaec059755c98161f");
         env.put(DD_GIT_TAG, "0.1.0");
 
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationUserSuppliedGitWithoutCommitInfoWebhooks");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineSuccessLocalCheckout.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineSuccessLocalCheckout.txt");
 
         job.setDefinition(new CpsFlowDefinition(definition, true));
         final FilePath ws = jenkins.getWorkspaceFor(job);
@@ -509,7 +528,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final List<JSONObject> webhooks = clientStub.getWebhooks();
         assertEquals(3, webhooks.size());
         final JSONObject webhook = webhooks.get(0);
-        assertGitVariablesOnWebhook(webhook, "master");
+        assertGitVariablesOnWebhook(webhook, "master", localGitRepoPath.getRemote());
         assertEquals("0.1.0", webhook.getJSONObject("git").get("tag"));
     }
 
@@ -518,7 +537,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         Jenkins jenkins = jenkinsRule.jenkins;
         final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
         EnvVars env = prop.getEnvVars();
-        env.put(DD_GIT_REPOSITORY_URL, "file:///tmp/git-repo/");
+        env.put(DD_GIT_REPOSITORY_URL, "file://" + localGitRepoPath.getRemote());
         env.put(DD_GIT_BRANCH, "master");
         env.put(DD_GIT_COMMIT_SHA, "401d997a6eede777602669ccaec059755c98161f");
         env.put(DD_GIT_COMMIT_MESSAGE, "hardcoded-message");
@@ -531,10 +550,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final String defaultBranch = "refs/heads/hardcoded-master";
         env.put(DD_GIT_DEFAULT_BRANCH, defaultBranch);
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationUserSuppliedGitWithCommitInfo");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineSuccessLocalCheckout.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineSuccessLocalCheckout.txt");
 
         job.setDefinition(new CpsFlowDefinition(definition, true));
         final FilePath ws = jenkins.getWorkspaceFor(job);
@@ -561,7 +577,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get(CITags.GIT_COMMIT__SHA));
         assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get(CITags.GIT_COMMIT_SHA));
         assertEquals("master", meta.get(CITags.GIT_BRANCH));
-        assertEquals("file:///tmp/git-repo/", meta.get(CITags.GIT_REPOSITORY_URL));
+        assertEquals("file://" + localGitRepoPath.getRemote(), meta.get(CITags.GIT_REPOSITORY_URL));
         assertEquals("hardcoded-master", meta.get(CITags.GIT_DEFAULT_BRANCH));
     }
 
@@ -574,10 +590,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         env.put(DD_GIT_BRANCH, "master");
         env.put(DD_GIT_COMMIT_SHA, "401d997a6eede777602669ccaec059755c98161f");
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationRawRepositoryUrl");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineSuccess.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineSuccess.txt");
 
         job.setDefinition(new CpsFlowDefinition(definition, true));
         jenkins.getGlobalNodeProperties().add(prop);
@@ -603,10 +616,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         env.put(DD_GIT_BRANCH, "master");
         env.put(DD_GIT_COMMIT_SHA, "401d997a6eede777602669ccaec059755c98161f");
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationFilterSensitiveInfoRepoUrl");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineSuccess.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineSuccess.txt");
 
         job.setDefinition(new CpsFlowDefinition(definition, true));
         jenkins.getGlobalNodeProperties().add(prop);
@@ -626,10 +636,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
     @Test
     public void testStageNamePropagation() throws Exception{
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationStages");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineStages.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineStages.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
         new Thread(() -> {
             try {
@@ -664,10 +671,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         clientStub.configureForWebhooks();
 
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationStagesWebhook");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineStagesWebhook.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineStagesWebhook.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
         new Thread(() -> {
             try {
@@ -707,10 +711,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
     @Test
     public void testIntegrationPipelineQueueTimeOnStages() throws Exception {
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationQueueTimeOnStages");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineQueueOnStages.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineQueueOnStages.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
         // schedule build and wait for it to get queued
         new Thread(() -> {
@@ -815,10 +816,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         env.put("NODE_NAME", "testPipeline");
         jenkinsRule.jenkins.getGlobalNodeProperties().add(envProps);
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationQueueTimeOnPipeline");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineQueueOnPipeline.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineQueueOnPipeline.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
 
         // schedule build and wait for it to get queued
@@ -862,10 +860,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
     public void testIntegrationNoFailureTag() throws Exception {
         jenkinsRule.createOnlineSlave();
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationSuccess");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineSuccess.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineSuccess.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
         final WorkflowRun run = job.scheduleBuild2(0).get();
         String hostname = DatadogUtilities.getHostname(null);
@@ -968,10 +963,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
     @Test
     public void testIntegrationPipelineSkippedLogic() throws Exception {
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration-SkippedLogic");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineSkippedLogic.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineSkippedLogic.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
         job.scheduleBuild2(0).get();
 
@@ -989,10 +981,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         clientStub.configureForWebhooks();
 
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration-SkippedLogicWebhook");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineSkippedLogic.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineSkippedLogic.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
         job.scheduleBuild2(0).get();
 
@@ -1013,10 +1002,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
         jenkinsRule.createOnlineSlave();
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationSuccess-notraces");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineSuccess.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineSuccess.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
         job.scheduleBuild2(0).get();
         String hostname = DatadogUtilities.getHostname(null);
@@ -1076,10 +1062,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
     @Test
     public void testStagesNodeNames_complexPipelineStages01() throws Exception {
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "complexPipelineStages01");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineComplexStages01.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineComplexStages01.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
         // schedule build and wait for it to get queued
         new Thread(() -> {
@@ -1179,10 +1162,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
         jenkinsRule.createOnlineSlave(new LabelAtom("testGlobalTags"));
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration-GlobalTagsPropagation_job");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineGlobalTags.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineGlobalTags.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
         job.scheduleBuild2(0).get();
 
@@ -1215,10 +1195,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
     @Test
     public void testErrorPropagationOnStages() throws Exception {
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration-errorPropagationStages");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream(getFailingPipelineDefinitionName()),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition(getFailingPipelineDefinitionName());
         job.setDefinition(new CpsFlowDefinition(definition, true));
         job.scheduleBuild2(0).get();
 
@@ -1245,10 +1222,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         clientStub.configureForWebhooks();
 
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration-errorPropagationStagesWebhook");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream(getFailingPipelineDefinitionName()),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition(getFailingPipelineDefinitionName());
         job.setDefinition(new CpsFlowDefinition(definition, true));
         job.scheduleBuild2(0).get();
 
@@ -1281,10 +1255,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
     @Test
     public void testUnstablePropagationOnStages() throws Exception {
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration-unstablePropagationStages");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineUnstableOnStages.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineUnstableOnStages.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
         job.scheduleBuild2(0).get();
 
@@ -1311,10 +1282,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         clientStub.configureForWebhooks();
 
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration-unstablePropagationStagesWebhook");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineUnstableOnStages.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineUnstableOnStages.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
         job.scheduleBuild2(0).get();
 
@@ -1342,10 +1310,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         env.put("DD_CI_HOSTNAME", "testDDCiHostname");
         jenkinsRule.jenkins.getGlobalNodeProperties().add(envProps);
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationCustomHostname");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineOnWorkers.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineOnWorkers.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
 
         // schedule build and wait for it to get queued
@@ -1391,10 +1356,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         env.put("DD_CI_HOSTNAME", "testDDCiHostname");
         jenkinsRule.jenkins.getGlobalNodeProperties().add(envProps);
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationCustomHostnameWebhook");
-        String definition = IOUtils.toString(
-                this.getClass().getResourceAsStream("testPipelineOnWorkersWebhook.txt"),
-                "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineOnWorkersWebhook.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
 
         // schedule build and wait for it to get queued
@@ -1538,10 +1500,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
     public void testIsManualTrue() throws Exception {
         Jenkins jenkins = jenkinsRule.jenkins;
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationIsManualTrue");
-        String definition = IOUtils.toString(
-            this.getClass().getResourceAsStream("testPipelineSuccess.txt"),
-            "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineSuccess.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
         CauseAction causeAction = new CauseAction(new TimerTriggerCause(), new UserIdCause("johanna"));
         job.scheduleBuild2(0, causeAction).get();
@@ -1560,10 +1519,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         clientStub.configureForWebhooks();
         Jenkins jenkins = jenkinsRule.jenkins;
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationIsManualTrueWebhook");
-        String definition = IOUtils.toString(
-            this.getClass().getResourceAsStream("testPipelineSuccess.txt"),
-            "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineSuccess.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
         CauseAction causeAction = new CauseAction(new TimerTriggerCause(), new UserIdCause("johanna"));
         job.scheduleBuild2(0, causeAction).get();
@@ -1579,10 +1535,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
     public void testIsManualFalse() throws Exception {
         Jenkins jenkins = jenkinsRule.jenkins;
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationIsManualFalse");
-        String definition = IOUtils.toString(
-            this.getClass().getResourceAsStream("testPipelineSuccess.txt"),
-            "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineSuccess.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
         CauseAction causeAction = new CauseAction(new TimerTriggerCause(), new SCMTriggerCause("scm"));
         job.scheduleBuild2(0, causeAction).get();
@@ -1609,10 +1562,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         clientStub.configureForWebhooks();
         Jenkins jenkins = jenkinsRule.jenkins;
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationIsManualFalseWebhook");
-        String definition = IOUtils.toString(
-            this.getClass().getResourceAsStream("testPipelineSuccess.txt"),
-            "UTF-8"
-        );
+        String definition = getPipelineDefinition("testPipelineSuccess.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
         CauseAction causeAction = new CauseAction(new TimerTriggerCause(), new SCMTriggerCause("scm"));
         job.scheduleBuild2(0, causeAction).get();
@@ -1726,7 +1676,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
     private void givenPipeline(String name, String definitionPath) throws Exception {
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, name);
-        String definition = IOUtils.toString(this.getClass().getResourceAsStream(definitionPath), "UTF-8");
+        String definition = getPipelineDefinition(definitionPath);
         job.setDefinition(new CpsFlowDefinition(definition, true));
         job.scheduleBuild2(0).get();
     }

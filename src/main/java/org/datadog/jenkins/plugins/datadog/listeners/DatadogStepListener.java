@@ -138,11 +138,11 @@ public class DatadogStepListener implements StepListener {
             EnvVars envVars = stepContext.get(EnvVars.class);
             if (envVars != null) {
                 String ddHostname = envVars.get(DatadogGlobalConfiguration.DD_CI_HOSTNAME);
-                if (ddHostname != null) {
+                if (DatadogUtilities.isValidHostname(ddHostname)) {
                     return ddHostname;
                 }
                 String hostname = envVars.get("HOSTNAME");
-                if (hostname != null) {
+                if (DatadogUtilities.isValidHostname(hostname)) {
                     return hostname;
                 }
             }
@@ -153,7 +153,14 @@ public class DatadogStepListener implements StepListener {
         try {
             Computer computer = stepContext.get(Computer.class);
             if(computer != null) {
-                return computer.getHostName();
+                String computerHostName = computer.getHostName();
+                if (DatadogUtilities.isValidHostname(computerHostName)) {
+                    return computerHostName;
+                }
+                String computerNodeName = DatadogUtilities.getNodeName(computer);
+                if (DatadogUtilities.isMainNode(computerNodeName)) {
+                    return DatadogUtilities.getHostname(null);
+                }
             }
         } catch (Exception e){
             logger.fine("Unable to extract hostname from StepContext.");
