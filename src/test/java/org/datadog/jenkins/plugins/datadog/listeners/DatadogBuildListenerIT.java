@@ -46,6 +46,7 @@ import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
+import org.jetbrains.annotations.NotNull;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -140,12 +141,12 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         EnvVars env = prop.getEnvVars();
         env.put("GIT_BRANCH", "master");
         env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
-        env.put("GIT_URL", "file://" + localGitRepoPath.getRemote());
+        env.put("GIT_URL", toUrl(localGitRepoPath.getRemote()));
         jenkins.getGlobalNodeProperties().add(prop);
 
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccess");
 
-        GitSCM git = new GitSCM(GitSCM.createRepoList("file://" + localGitRepoPath.getRemote(), null), Collections.singletonList(new BranchSpec("*/master")), null, null, Collections.singletonList(new LocalBranch("master")));
+        GitSCM git = new GitSCM(GitSCM.createRepoList(toUrl(localGitRepoPath.getRemote()), null), Collections.singletonList(new BranchSpec("*/master")), null, null, Collections.singletonList(new LocalBranch("master")));
         project.setScm(git);
 
         final FilePath ws = jenkins.getWorkspaceFor(project);
@@ -190,6 +191,19 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         assertCleanupActions(run);
     }
 
+    @NotNull
+    private static String toUrl(String path) {
+        if (isRunningOnWindows()) {
+            return "file:///" + path.replace('\\', '/');
+        } else {
+            return "file://" + path;
+        }
+    }
+
+    private static boolean isRunningOnWindows() {
+        return System.getProperty("os.name").toLowerCase().contains("win");
+    }
+
     @Test
     public void testGitDefaultBranch() throws Exception {
         Jenkins jenkins = jenkinsRule.jenkins;
@@ -197,14 +211,14 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         EnvVars env = prop.getEnvVars();
         env.put("GIT_BRANCH", "master");
         env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
-        env.put("GIT_URL", "file://" + localGitRepoPath.getRemote());
+        env.put("GIT_URL", toUrl(localGitRepoPath.getRemote()));
         final String defaultBranch = "refs/heads/hardcoded-master";
         env.put("DD_GIT_DEFAULT_BRANCH", defaultBranch);
         jenkins.getGlobalNodeProperties().add(prop);
 
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessDefaultBranch");
 
-        GitSCM git = new GitSCM(GitSCM.createRepoList("file://" + localGitRepoPath.getRemote(), null), Collections.singletonList(new BranchSpec("*/master")), null, null, Collections.singletonList(new LocalBranch("master")));
+        GitSCM git = new GitSCM(GitSCM.createRepoList(toUrl(localGitRepoPath.getRemote()), null), Collections.singletonList(new BranchSpec("*/master")), null, null, Collections.singletonList(new LocalBranch("master")));
         project.setScm(git);
 
         project.scheduleBuild2(0).get();
@@ -226,7 +240,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         env.put(GIT_BRANCH, "not-valid-branch");
         env.put(GIT_COMMIT, "not-valid-commit");
 
-        env.put(DD_GIT_REPOSITORY_URL, "file://" + localGitRepoPath.getRemote());
+        env.put(DD_GIT_REPOSITORY_URL, toUrl(localGitRepoPath.getRemote()));
         env.put(DD_GIT_BRANCH, "master");
         env.put(DD_GIT_COMMIT_SHA, "401d997a6eede777602669ccaec059755c98161f");
         final String defaultBranch = "refs/heads/hardcoded-master";
@@ -235,7 +249,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessUserSuppliedGitWithoutCommitInfo");
 
-        GitSCM git = new GitSCM(GitSCM.createRepoList("file://" + localGitRepoPath.getRemote(), null), Collections.singletonList(new BranchSpec("*/master")), null, null, Collections.singletonList(new LocalBranch("master")));
+        GitSCM git = new GitSCM(GitSCM.createRepoList(toUrl(localGitRepoPath.getRemote()), null), Collections.singletonList(new BranchSpec("*/master")), null, null, Collections.singletonList(new LocalBranch("master")));
         project.setScm(git);
 
         project.scheduleBuild2(0).get();
@@ -256,7 +270,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         env.put(GIT_REPOSITORY_URL, "not-valid-repo");
         env.put(GIT_BRANCH, "not-valid-branch");
         env.put(GIT_COMMIT, "not-valid-commit");
-        env.put(DD_GIT_REPOSITORY_URL, "file://" + localGitRepoPath.getRemote());
+        env.put(DD_GIT_REPOSITORY_URL, toUrl(localGitRepoPath.getRemote()));
         env.put(DD_GIT_BRANCH, "master");
         env.put(DD_GIT_COMMIT_SHA, "401d997a6eede777602669ccaec059755c98161f");
         env.put(DD_GIT_COMMIT_MESSAGE, "hardcoded-message");
@@ -272,7 +286,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessUserSuppliedGitWithCommitInfo");
 
-        GitSCM git = new GitSCM(GitSCM.createRepoList("file://" + localGitRepoPath.getRemote(), null), Collections.singletonList(new BranchSpec("*/master")), null, null, Collections.singletonList(new LocalBranch("master")));
+        GitSCM git = new GitSCM(GitSCM.createRepoList(toUrl(localGitRepoPath.getRemote()), null), Collections.singletonList(new BranchSpec("*/master")), null, null, Collections.singletonList(new LocalBranch("master")));
         project.setScm(git);
 
         project.scheduleBuild2(0).get();
@@ -293,7 +307,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get(CITags.GIT_COMMIT__SHA));
         assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get(CITags.GIT_COMMIT_SHA));
         assertEquals("master", meta.get(CITags.GIT_BRANCH));
-        assertEquals("file://" + localGitRepoPath.getRemote(), meta.get(CITags.GIT_REPOSITORY_URL));
+        assertEquals(toUrl(localGitRepoPath.getRemote()), meta.get(CITags.GIT_REPOSITORY_URL));
         assertEquals("hardcoded-master", meta.get(CITags.GIT_DEFAULT_BRANCH));
     }
 
@@ -307,7 +321,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         env.put(GIT_REPOSITORY_URL, "not-valid-repo");
         env.put(GIT_BRANCH, "not-valid-branch");
         env.put(GIT_COMMIT, "not-valid-commit");
-        env.put(DD_GIT_REPOSITORY_URL, "file://" + localGitRepoPath.getRemote());
+        env.put(DD_GIT_REPOSITORY_URL, toUrl(localGitRepoPath.getRemote()));
         env.put(DD_GIT_BRANCH, "master");
         env.put(DD_GIT_COMMIT_SHA, "401d997a6eede777602669ccaec059755c98161f");
         env.put(DD_GIT_COMMIT_MESSAGE, "hardcoded-message");
@@ -323,7 +337,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessUserSuppliedGitWithCommitInfoWebhook");
 
-        GitSCM git = new GitSCM(GitSCM.createRepoList("file://" + localGitRepoPath.getRemote(), null), Collections.singletonList(new BranchSpec("*/master")), null, null, Collections.singletonList(new LocalBranch("master")));
+        GitSCM git = new GitSCM(GitSCM.createRepoList(toUrl(localGitRepoPath.getRemote()), null), Collections.singletonList(new BranchSpec("*/master")), null, null, Collections.singletonList(new LocalBranch("master")));
         project.setScm(git);
 
         project.scheduleBuild2(0).get();
@@ -343,7 +357,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         assertEquals("hardcoded-committer-date", meta.getString("commit_time"));
         assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.getString("sha"));
         assertEquals("master", meta.getString("branch"));
-        assertEquals("file://" + localGitRepoPath.getRemote(), meta.getString("repository_url"));
+        assertEquals(toUrl(localGitRepoPath.getRemote()), meta.getString("repository_url"));
         assertEquals("hardcoded-master", meta.getString("default_branch"));
     }
 
@@ -410,12 +424,12 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         EnvVars env = prop.getEnvVars();
         env.put("GIT_BRANCH", "master");
         env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
-        env.put("GIT_URL_1", "file://" + localGitRepoPath.getRemote());
+        env.put("GIT_URL_1", toUrl(localGitRepoPath.getRemote()));
         jenkins.getGlobalNodeProperties().add(prop);
 
         final FreeStyleProject project = jenkinsRule.createFreeStyleProject("buildIntegrationSuccessAltRepoUrlWebhook");
 
-        GitSCM git = new GitSCM(GitSCM.createRepoList("file://" + localGitRepoPath.getRemote(), null), Collections.singletonList(new BranchSpec("*/master")), null, null, Collections.singletonList(new LocalBranch("master")));
+        GitSCM git = new GitSCM(GitSCM.createRepoList(toUrl(localGitRepoPath.getRemote()), null), Collections.singletonList(new BranchSpec("*/master")), null, null, Collections.singletonList(new LocalBranch("master")));
         project.setScm(git);
 
         final FilePath ws = jenkins.getWorkspaceFor(project);

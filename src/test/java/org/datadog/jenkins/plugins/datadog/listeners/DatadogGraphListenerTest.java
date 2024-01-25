@@ -33,7 +33,6 @@ import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.triggers.SCMTrigger.SCMTriggerCause;
 import hudson.triggers.TimerTrigger.TimerTriggerCause;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -67,6 +66,7 @@ import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jetbrains.annotations.NotNull;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -242,7 +242,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         EnvVars env = prop.getEnvVars();
         env.put("GIT_BRANCH", "master");
         env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
-        env.put("GIT_URL", "file://" + localGitRepoPath.getRemote());
+        env.put("GIT_URL", toUrl(localGitRepoPath.getRemote()));
 
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationSingleCommit");
         String definition = getPipelineDefinition("testPipelineSuccessLocalCheckout.txt");
@@ -262,6 +262,15 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals(3, spans.size());
         final TraceSpan buildSpan = spans.get(0);
         assertGitVariablesOnSpan(buildSpan, "master", localGitRepoPath.getRemote());
+    }
+
+    @NotNull
+    private static String toUrl(String path) {
+        if (isRunningOnWindows()) {
+            return "file:///" + path.replace('\\', '/');
+        } else {
+            return "file://" + path;
+        }
     }
 
     @Test
@@ -293,7 +302,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         EnvVars env = prop.getEnvVars();
         env.put("GIT_BRANCH", "master");
         env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
-        env.put("GIT_URL", "file://" + localGitRepoPath.getRemote());
+        env.put("GIT_URL", toUrl(localGitRepoPath.getRemote()));
 
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationSingleCommitWebhooks");
         String definition = getPipelineDefinition("testPipelineSuccessLocalCheckout.txt");
@@ -321,7 +330,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         EnvVars env = prop.getEnvVars();
         env.put("GIT_BRANCH", "master");
         env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
-        env.put("GIT_URL", "file://" + localGitRepoPath.getRemote());
+        env.put("GIT_URL", toUrl(localGitRepoPath.getRemote()));
         final String defaultBranch = "refs/heads/hardcoded-master";
         env.put("DD_GIT_DEFAULT_BRANCH", defaultBranch);
 
@@ -352,7 +361,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         EnvVars env = prop.getEnvVars();
         env.put("GIT_BRANCH", "master");
         env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
-        env.put("GIT_URL", "file://" + localGitRepoPath.getRemote());
+        env.put("GIT_URL", toUrl(localGitRepoPath.getRemote()));
 
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationOverrideCommit");
         String definition = getPipelineDefinition("testPipelinesOverrideGitCommit.txt");
@@ -378,7 +387,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\$([A-Z_]+)");
 
     private String getPipelineDefinition(String file) throws IOException {
-        Map<String, String> replacements = Collections.singletonMap("LOCAL_REPO_URL", "file://" + localGitRepoPath.getRemote());
+        Map<String, String> replacements = Collections.singletonMap("LOCAL_REPO_URL", toUrl(localGitRepoPath.getRemote()));
 
         String pipelineDefinition;
         try (InputStream is = DatadogGraphListenerTest.class.getResourceAsStream(file)) {
@@ -403,7 +412,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         EnvVars env = prop.getEnvVars();
         env.put("GIT_BRANCH", "master");
         env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
-        env.put("GIT_URL_1", "file://" + localGitRepoPath.getRemote());
+        env.put("GIT_URL_1", toUrl(localGitRepoPath.getRemote()));
 
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationAltRepoUrl");
         String definition = getPipelineDefinition("testPipelinesOverrideGitCommit.txt");
@@ -422,7 +431,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final List<TraceSpan> spans = clientStub.getSpans();
         assertEquals(5, spans.size());
         for(TraceSpan span : spans) {
-            assertEquals("file://" + localGitRepoPath.getRemote(), span.getMeta().get(CITags.GIT_REPOSITORY_URL));
+            assertEquals(toUrl(localGitRepoPath.getRemote()), span.getMeta().get(CITags.GIT_REPOSITORY_URL));
         }
     }
 
@@ -435,7 +444,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         EnvVars env = prop.getEnvVars();
         env.put("GIT_BRANCH", "master");
         env.put("GIT_COMMIT", "401d997a6eede777602669ccaec059755c98161f");
-        env.put("GIT_URL_1", "file://" + localGitRepoPath.getRemote());
+        env.put("GIT_URL_1", toUrl(localGitRepoPath.getRemote()));
 
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationAltRepoUrlWebhooks");
         String definition = getPipelineDefinition("testPipelinesOverrideGitCommit.txt");
@@ -454,7 +463,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final List<JSONObject> webhooks = clientStub.getWebhooks();
         assertEquals(5, webhooks.size());
         for(JSONObject webhook : webhooks) {
-            assertEquals("file://" + localGitRepoPath.getRemote(), webhook.getJSONObject("git").get("repository_url"));
+            assertEquals(toUrl(localGitRepoPath.getRemote()), webhook.getJSONObject("git").get("repository_url"));
         }
     }
 
@@ -463,7 +472,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         Jenkins jenkins = jenkinsRule.jenkins;
         final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
         EnvVars env = prop.getEnvVars();
-        env.put(DD_GIT_REPOSITORY_URL, "file://" + localGitRepoPath.getRemote());
+        env.put(DD_GIT_REPOSITORY_URL, toUrl(localGitRepoPath.getRemote()));
         env.put(DD_GIT_BRANCH, "master");
         env.put(DD_GIT_COMMIT_SHA, "401d997a6eede777602669ccaec059755c98161f");
         env.put(DD_GIT_TAG, "0.1.0");
@@ -506,7 +515,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         Jenkins jenkins = jenkinsRule.jenkins;
         final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
         EnvVars env = prop.getEnvVars();
-        env.put(DD_GIT_REPOSITORY_URL, "file://" + localGitRepoPath.getRemote());
+        env.put(DD_GIT_REPOSITORY_URL, toUrl(localGitRepoPath.getRemote()));
         env.put(DD_GIT_BRANCH, "master");
         env.put(DD_GIT_COMMIT_SHA, "401d997a6eede777602669ccaec059755c98161f");
         env.put(DD_GIT_TAG, "0.1.0");
@@ -537,7 +546,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         Jenkins jenkins = jenkinsRule.jenkins;
         final EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
         EnvVars env = prop.getEnvVars();
-        env.put(DD_GIT_REPOSITORY_URL, "file://" + localGitRepoPath.getRemote());
+        env.put(DD_GIT_REPOSITORY_URL, toUrl(localGitRepoPath.getRemote()));
         env.put(DD_GIT_BRANCH, "master");
         env.put(DD_GIT_COMMIT_SHA, "401d997a6eede777602669ccaec059755c98161f");
         env.put(DD_GIT_COMMIT_MESSAGE, "hardcoded-message");
@@ -577,7 +586,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get(CITags.GIT_COMMIT__SHA));
         assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get(CITags.GIT_COMMIT_SHA));
         assertEquals("master", meta.get(CITags.GIT_BRANCH));
-        assertEquals("file://" + localGitRepoPath.getRemote(), meta.get(CITags.GIT_REPOSITORY_URL));
+        assertEquals(toUrl(localGitRepoPath.getRemote()), meta.get(CITags.GIT_REPOSITORY_URL));
         assertEquals("hardcoded-master", meta.get(CITags.GIT_DEFAULT_BRANCH));
     }
 
@@ -1248,7 +1257,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         return isRunningOnWindows() ? "testPipelineErrorOnStagesOnWindows.txt" : "testPipelineErrorOnStages.txt";
     }
 
-    private boolean isRunningOnWindows() {
+    private static boolean isRunningOnWindows() {
         return System.getProperty("os.name").toLowerCase().contains("win");
     }
 
