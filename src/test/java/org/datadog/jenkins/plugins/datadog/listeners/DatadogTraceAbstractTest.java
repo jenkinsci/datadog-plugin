@@ -18,7 +18,7 @@ import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 
 public abstract class DatadogTraceAbstractTest {
 
-    protected void assertGitVariablesOnSpan(TraceSpan span, String defaultBranch, String localGitRepoPath) {
+    protected void assertGitVariablesOnSpan(TraceSpan span, String defaultBranch, String gitRepoUrl) {
         final Map<String, String> meta = span.getMeta();
         assertEquals("Initial commit\n", meta.get(CITags.GIT_COMMIT_MESSAGE));
         assertEquals("John Doe", meta.get(CITags.GIT_COMMIT_AUTHOR_NAME));
@@ -30,11 +30,11 @@ public abstract class DatadogTraceAbstractTest {
         assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get(CITags.GIT_COMMIT__SHA));
         assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get(CITags.GIT_COMMIT_SHA));
         assertEquals("master", meta.get(CITags.GIT_BRANCH));
-        assertEquals("file://" + localGitRepoPath, meta.get(CITags.GIT_REPOSITORY_URL));
+        assertEquals(gitRepoUrl, meta.get(CITags.GIT_REPOSITORY_URL));
         assertEquals(defaultBranch, meta.get(CITags.GIT_DEFAULT_BRANCH));
     }
 
-    protected void assertGitVariablesOnWebhook(JSONObject webhook, String defaultBranch, String localGitRepoPath) {
+    protected void assertGitVariablesOnWebhook(JSONObject webhook, String defaultBranch, String gitRepoUrl) {
         JSONObject meta = webhook.getJSONObject("git");
         assertEquals("Initial commit\n", meta.get("message"));
         assertEquals("John Doe", meta.get("author_name"));
@@ -45,7 +45,7 @@ public abstract class DatadogTraceAbstractTest {
         assertEquals("2020-10-08T07:49:32.000Z", meta.get("commit_time"));
         assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get("sha"));
         assertEquals("master", meta.get("branch"));
-        assertEquals("file://" + localGitRepoPath, meta.get("repository_url"));
+        assertEquals(gitRepoUrl, meta.get("repository_url"));
         assertEquals(defaultBranch, meta.get("default_branch"));
     }
 

@@ -261,7 +261,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final List<TraceSpan> spans = clientStub.getSpans();
         assertEquals(3, spans.size());
         final TraceSpan buildSpan = spans.get(0);
-        assertGitVariablesOnSpan(buildSpan, "master", localGitRepoPath.getRemote());
+        assertGitVariablesOnSpan(buildSpan, "master", toUrl(localGitRepoPath.getRemote()));
     }
 
     @NotNull
@@ -320,7 +320,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         clientStub.waitForWebhooks(3);
         final List<JSONObject> webhook = clientStub.getWebhooks();
         assertEquals(3, webhook.size());
-        assertGitVariablesOnWebhook(webhook.get(0), "master", localGitRepoPath.getRemote());
+        assertGitVariablesOnWebhook(webhook.get(0), "master", toUrl(localGitRepoPath.getRemote()));
     }
 
     @Test
@@ -351,7 +351,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final List<TraceSpan> spans = clientStub.getSpans();
         assertEquals(3, spans.size());
         final TraceSpan buildSpan = spans.get(0);
-        assertGitVariablesOnSpan(buildSpan, "hardcoded-master", localGitRepoPath.getRemote());
+        assertGitVariablesOnSpan(buildSpan, "hardcoded-master", toUrl(localGitRepoPath.getRemote()));
     }
 
     @Test
@@ -494,7 +494,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final List<TraceSpan> spans = clientStub.getSpans();
         assertEquals(3, spans.size());
         final TraceSpan buildSpan = spans.get(0);
-        assertGitVariablesOnSpan(buildSpan, "master", localGitRepoPath.getRemote());
+        assertGitVariablesOnSpan(buildSpan, "master", toUrl(localGitRepoPath.getRemote()));
         final Map<String, String> meta = buildSpan.getMeta();
         assertEquals("0.1.0", meta.get(CITags.GIT_TAG));
     }
@@ -537,7 +537,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         final List<JSONObject> webhooks = clientStub.getWebhooks();
         assertEquals(3, webhooks.size());
         final JSONObject webhook = webhooks.get(0);
-        assertGitVariablesOnWebhook(webhook, "master", localGitRepoPath.getRemote());
+        assertGitVariablesOnWebhook(webhook, "master", toUrl(localGitRepoPath.getRemote()));
         assertEquals("0.1.0", webhook.getJSONObject("git").get("tag"));
     }
 

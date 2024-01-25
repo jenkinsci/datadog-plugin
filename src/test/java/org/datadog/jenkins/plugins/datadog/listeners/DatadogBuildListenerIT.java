@@ -161,7 +161,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         assertEquals(1, spans.size());
 
         final TraceSpan buildSpan = spans.get(0);
-        assertGitVariablesOnSpan(buildSpan, "master", localGitRepoPath.getRemote());
+        assertGitVariablesOnSpan(buildSpan, "master", toUrl(localGitRepoPath.getRemote()));
         final Map<String, String> meta = buildSpan.getMeta();
         final Map<String, Double> metrics = buildSpan.getMetrics();
         assertEquals(BuildPipelineNode.NodeType.PIPELINE.getBuildLevel(), meta.get(CITags._DD_CI_BUILD_LEVEL));
@@ -228,7 +228,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         assertEquals(1, spans.size());
 
         final TraceSpan buildSpan = spans.get(0);
-        assertGitVariablesOnSpan(buildSpan, "hardcoded-master", localGitRepoPath.getRemote());
+        assertGitVariablesOnSpan(buildSpan, "hardcoded-master", toUrl(localGitRepoPath.getRemote()));
     }
 
     @Test
@@ -259,7 +259,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         assertEquals(1, spans.size());
 
         final TraceSpan buildSpan = spans.get(0);
-        assertGitVariablesOnSpan(buildSpan, "hardcoded-master", localGitRepoPath.getRemote());
+        assertGitVariablesOnSpan(buildSpan, "hardcoded-master", toUrl(localGitRepoPath.getRemote()));
     }
 
     @Test
@@ -443,7 +443,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         assertEquals(1, webhooks.size());
 
         final JSONObject webhook = webhooks.get(0);
-        assertGitVariablesOnWebhook(webhook, "master", localGitRepoPath.getRemote());
+        assertGitVariablesOnWebhook(webhook, "master", toUrl(localGitRepoPath.getRemote()));
     }
 
     @Test
