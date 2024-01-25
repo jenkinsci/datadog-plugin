@@ -110,7 +110,7 @@ public class DatadogGraphListener implements GraphListener {
         TraceWriter traceWriter = TraceWriterFactory.getTraceWriter();
         if (traceWriter != null) {
             try {
-                traceWriter.submitPipeline(flowNode, run);
+                traceWriter.submitPipelineStep(flowNode, run);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 DatadogUtilities.severe(logger, e, "Interrupted while submitting pipeline trace for node " + flowNode.getDisplayName() + " in run " + (run != null ? run.getDisplayName() : "<null>"));

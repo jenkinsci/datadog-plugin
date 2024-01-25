@@ -33,25 +33,24 @@ public final class TraceWriter {
     private final TraceWriteStrategy traceWriteStrategy;
     private final BlockingQueue<JSONObject> queue;
     private final Thread poller;
-    private final Thread pollerShutdownHook;
 
     public TraceWriter(DatadogClient datadogClient) {
         this.traceWriteStrategy = datadogClient.createTraceWriteStrategy();
-
         this.queue = new ArrayBlockingQueue<>(getEnv(QUEUE_CAPACITY_ENV_VAR, DEFAULT_QUEUE_CAPACITY));
-
         this.poller = new Thread(this::runPollingLoop, "DD-Trace-Writer");
-
-        this.pollerShutdownHook = new Thread(this::runShutdownHook, "DD-Trace-Writer-Shutdown-Hook");
-        Runtime.getRuntime().addShutdownHook(pollerShutdownHook);
     }
 
     public void start() {
         poller.start();
     }
 
-    public void stop() {
+    public void stopAsynchronously() {
         poller.interrupt();
+    }
+
+    public void stopSynchronously() throws InterruptedException {
+        poller.interrupt();
+        poller.join(TimeUnit.SECONDS.toMillis(getEnv(STOP_TIMEOUT_ENV_VAR, DEFAULT_STOP_TIMEOUT_SECONDS)));
     }
 
     public void submitBuild(final BuildData buildData, final Run<?,?> run) throws InterruptedException, TimeoutException {
@@ -59,7 +58,7 @@ public final class TraceWriter {
         submit(buildJson);
     }
 
-    public void submitPipeline(FlowNode flowNode, Run<?, ?> run) throws InterruptedException, TimeoutException {
+    public void submitPipelineStep(FlowNode flowNode, Run<?, ?> run) throws InterruptedException, TimeoutException {
         Collection<JSONObject> nodeJsons = traceWriteStrategy.serialize(flowNode, run);
         for (JSONObject nodeJson : nodeJsons) {
             submit(nodeJson);
@@ -98,22 +97,6 @@ public final class TraceWriter {
             }
         }
         logger.info("Queue polling stopped, spans not flushed: " + queue.size());
-
-        try {
-            Runtime.getRuntime().removeShutdownHook(pollerShutdownHook);
-        } catch (IllegalStateException e) {
-            // JVM is being shutdown, the hook has already been called
-        }
-    }
-
-    private void runShutdownHook() {
-        stop();
-        try {
-            // delay JVM shutdown until remaining spans are sent (or until timeout)
-            poller.join(TimeUnit.SECONDS.toMillis(getEnv(STOP_TIMEOUT_ENV_VAR, DEFAULT_STOP_TIMEOUT_SECONDS)));
-        } catch (InterruptedException e) {
-            // ignore, should be impossible to end up here
-        }
     }
 
     private static int getEnv(String envVar, int defaultValue) {
