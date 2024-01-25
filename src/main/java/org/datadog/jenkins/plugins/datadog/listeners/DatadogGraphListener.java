@@ -179,7 +179,7 @@ public class DatadogGraphListener implements GraphListener {
 
             TraceWriter traceWriter = TraceWriterFactory.getTraceWriter();
             if (traceWriter != null) {
-                traceWriter.submitPipeline(pipelineNode, run);
+                traceWriter.submitPipelineStep(pipelineNode, run);
             }
 
         } catch (InterruptedException e) {
