@@ -25,6 +25,7 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.clients;
 
+import com.google.common.base.Objects;
 import hudson.util.Secret;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -126,10 +127,10 @@ public class DatadogApiClient implements DatadogClient {
     }
 
     private static boolean configurationChanged(String url, String logIntakeUrl, String webhookIntakeUrl, Secret apiKey){
-        return !instance.getUrl().equals(url) ||
-                !instance.getLogIntakeUrl().equals(logIntakeUrl) ||
-                !instance.getWebhookIntakeUrl().equals(webhookIntakeUrl) ||
-                !instance.getApiKey().equals(apiKey);
+        return !Objects.equal(instance.getUrl(), url) ||
+                !Objects.equal(instance.getLogIntakeUrl(), logIntakeUrl) ||
+                !Objects.equal(instance.getWebhookIntakeUrl(), webhookIntakeUrl) ||
+                !Objects.equal(instance.getApiKey(), apiKey);
     }
 
     private DatadogApiClient(String url, String logIntakeUrl, String webhookIntakeUrl, Secret apiKey) {
