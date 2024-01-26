@@ -75,9 +75,4 @@ public class CircuitBreaker<T> {
             fallback.accept(t);
         }
     }
-
-    public synchronized void reset() {
-        healthy = true;
-        healthCheckDelayMillis = minHealthCheckDelayMillis;
-    }
 }

@@ -2,10 +2,9 @@ package org.datadog.jenkins.plugins.datadog.traces.write;
 
 import hudson.model.Run;
 import java.io.IOException;
-import java.util.List;
+import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
@@ -13,19 +12,32 @@ import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogBaseBuildLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogBasePipelineLogic;
+import org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic;
+import org.datadog.jenkins.plugins.datadog.traces.DatadogTracePipelineLogic;
+import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookBuildLogic;
+import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookPipelineLogic;
 import org.datadog.jenkins.plugins.datadog.util.CircuitBreaker;
 
 public class TraceWriteStrategyImpl implements TraceWriteStrategy {
 
     private static final Logger logger = Logger.getLogger(TraceWriteStrategyImpl.class.getName());
 
+    private final Track track;
     private final DatadogBaseBuildLogic buildLogic;
     private final DatadogBasePipelineLogic pipelineLogic;
-    private final CircuitBreaker<List<JSONObject>> sendSpansCircuitBreaker;
+    private final CircuitBreaker<Collection<Payload>> sendSpansCircuitBreaker;
 
-    public TraceWriteStrategyImpl(DatadogBaseBuildLogic buildLogic, DatadogBasePipelineLogic pipelineLogic, Consumer<List<JSONObject>> spansSender) {
-        this.buildLogic = buildLogic;
-        this.pipelineLogic = pipelineLogic;
+    public TraceWriteStrategyImpl(Track track, Consumer<Collection<Payload>> spansSender) {
+        if (track == Track.APM) {
+            this.buildLogic = new DatadogTraceBuildLogic();
+            this.pipelineLogic = new DatadogTracePipelineLogic();
+        } else if (track == Track.WEBHOOK) {
+            this.buildLogic = new DatadogWebhookBuildLogic();
+            this.pipelineLogic = new DatadogWebhookPipelineLogic();
+        } else {
+            throw new IllegalArgumentException("Unexpected track value: " + track);
+        }
+        this.track = track;
         this.sendSpansCircuitBreaker = new CircuitBreaker<>(
                 spansSender,
                 this::logTransportBroken,
@@ -35,22 +47,24 @@ public class TraceWriteStrategyImpl implements TraceWriteStrategy {
 
     @Nullable
     @Override
-    public JSONObject serialize(final BuildData buildData, final Run<?, ?> run) {
-        return buildLogic.toJson(buildData, run);
+    public Payload serialize(final BuildData buildData, final Run<?, ?> run) {
+        JSONObject buildSpan = buildLogic.toJson(buildData, run);
+        return buildSpan != null ? new Payload(buildSpan, track) : null;
     }
 
-    @Nonnull
+    @Nullable
     @Override
-    public JSONObject serialize(BuildPipelineNode node, Run<?, ?> run) throws IOException, InterruptedException {
-        return pipelineLogic.toJson(node, run);
+    public Payload serialize(BuildPipelineNode node, Run<?, ?> run) throws IOException, InterruptedException {
+        JSONObject stepSpan = pipelineLogic.toJson(node, run);
+        return stepSpan != null ? new Payload(stepSpan, track) : null;
     }
 
     @Override
-    public void send(List<JSONObject> spans) {
-        sendSpansCircuitBreaker.accept(spans);
+    public void send(Collection<Payload> serializationResult) {
+        sendSpansCircuitBreaker.accept(serializationResult);
     }
 
-    private void logTransportBroken(List<net.sf.json.JSONObject> spans) {
+    private void logTransportBroken(Collection<Payload> spans) {
         logger.fine("Ignoring " + spans.size() + " because transport is broken");
     }
 

@@ -34,10 +34,10 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -49,14 +49,12 @@ import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic;
-import org.datadog.jenkins.plugins.datadog.traces.DatadogTracePipelineLogic;
-import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookBuildLogic;
-import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookPipelineLogic;
 import org.datadog.jenkins.plugins.datadog.traces.mapper.JsonTraceSpanMapper;
 import org.datadog.jenkins.plugins.datadog.traces.write.AgentTraceWriteStrategy;
+import org.datadog.jenkins.plugins.datadog.traces.write.Payload;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategyImpl;
+import org.datadog.jenkins.plugins.datadog.traces.write.Track;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.json.JSONArray;
@@ -528,8 +526,8 @@ public class DatadogAgentClient implements DatadogClient {
 
     @Override
     public TraceWriteStrategy createTraceWriteStrategy() {
-        TraceWriteStrategyImpl evpStrategy = new TraceWriteStrategyImpl(new DatadogWebhookBuildLogic(), new DatadogWebhookPipelineLogic(), this::sendSpansToWebhook);
-        TraceWriteStrategyImpl apmStrategy = new TraceWriteStrategyImpl(new DatadogTraceBuildLogic(), new DatadogTracePipelineLogic(), this::sendSpansToApm);
+        TraceWriteStrategyImpl evpStrategy = new TraceWriteStrategyImpl(Track.WEBHOOK, this::sendSpansToWebhook);
+        TraceWriteStrategyImpl apmStrategy = new TraceWriteStrategyImpl(Track.APM, this::sendSpansToApm);
         return new AgentTraceWriteStrategy(evpStrategy, apmStrategy, this::isEvpProxySupported);
     }
 
@@ -542,19 +540,7 @@ public class DatadogAgentClient implements DatadogClient {
     /**
      * Posts a given payload to the Agent EVP Proxy, so it is forwarded to the Webhook Intake.
      */
-    private void sendSpansToWebhook(List<net.sf.json.JSONObject> spans) {
-        for (net.sf.json.JSONObject span : spans) {
-            // webhook intake does not support batch requests
-            postWebhook(span.toString());
-        }
-    }
-
-    /**
-     * Posts a given payload to the Agent EVP Proxy, so it is forwarded to the Webhook Intake.
-     */
-    private void postWebhook(String payload) {
-        logger.fine("Sending webhook");
-
+    private void sendSpansToWebhook(Collection<Payload> spans) {
         DatadogGlobalConfiguration datadogGlobalDescriptor = DatadogUtilities.getDatadogGlobalDescriptor();
         String urlParameters = datadogGlobalDescriptor != null ? "?service=" + datadogGlobalDescriptor.getCiInstanceName() : "";
         String url = String.format("http://%s:%d/evp_proxy/v1/api/v2/webhook/%s", hostname, traceCollectionPort, urlParameters);
@@ -563,15 +549,29 @@ public class DatadogAgentClient implements DatadogClient {
         headers.put("X-Datadog-EVP-Subdomain", "webhook-intake");
         headers.put("DD-CI-PROVIDER-NAME", "jenkins");
 
-        byte[] body = payload.getBytes(StandardCharsets.UTF_8);
-        client.postAsynchronously(url, headers, "application/json", body);
+        for (Payload span : spans) {
+            if (span.getTrack() != Track.WEBHOOK) {
+                logger.severe("Expected webhook track, got " + span.getTrack() + ", dropping span");
+                continue;
+            }
+
+            byte[] body = span.getJson().toString().getBytes(StandardCharsets.UTF_8);
+
+            // webhook intake does not support batch requests
+            logger.fine("Sending webhook");
+            client.postAsynchronously(url, headers, "application/json", body);
+        }
     }
 
-    private void sendSpansToApm(List<net.sf.json.JSONObject> spans) {
+    private void sendSpansToApm(Collection<Payload> spans) {
         try {
             Map<String, net.sf.json.JSONArray> tracesById = new HashMap<>();
-            for (net.sf.json.JSONObject span : spans) {
-                tracesById.computeIfAbsent(span.getString(JsonTraceSpanMapper.TRACE_ID), k -> new net.sf.json.JSONArray()).add(span);
+            for (Payload span : spans) {
+                if (span.getTrack() != Track.APM) {
+                    logger.severe("Expected APM track, got " + span.getTrack() + ", dropping span");
+                    continue;
+                }
+                tracesById.computeIfAbsent(span.getJson().getString(JsonTraceSpanMapper.TRACE_ID), k -> new net.sf.json.JSONArray()).add(span.getJson());
             }
 
             final JSONArray jsonTraces = new JSONArray();
