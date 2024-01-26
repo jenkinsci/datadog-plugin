@@ -153,13 +153,17 @@ public class DatadogStepListener implements StepListener {
         try {
             Computer computer = stepContext.get(Computer.class);
             if(computer != null) {
+                String computerNodeName = DatadogUtilities.getNodeName(computer);
+                if (DatadogUtilities.isMainNode(computerNodeName)) {
+                    String masterHostname = DatadogUtilities.getHostname(null);
+                    if (DatadogUtilities.isValidHostname(masterHostname)) {
+                        return masterHostname;
+                    }
+                }
+
                 String computerHostName = computer.getHostName();
                 if (DatadogUtilities.isValidHostname(computerHostName)) {
                     return computerHostName;
-                }
-                String computerNodeName = DatadogUtilities.getNodeName(computer);
-                if (DatadogUtilities.isMainNode(computerNodeName)) {
-                    return DatadogUtilities.getHostname(null);
                 }
             }
         } catch (Exception e){

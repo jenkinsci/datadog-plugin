@@ -93,6 +93,7 @@ public class DatadogUtilities {
 
     private static final Integer MAX_HOSTNAME_LEN = 255;
     private static final String DATE_FORMAT_ISO8601 = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX";
+    private static final List<String> UNIX_OS = Arrays.asList("mac", "linux", "freebsd", "sunos");
 
     /**
      * @return - The descriptor for the Datadog plugin. In this case the global configuration.
@@ -489,8 +490,6 @@ public class DatadogUtilities {
      * @return a human readable String for the hostname.
      */
     public static String getHostname(EnvVars envVars) {
-        String[] UNIX_OS = {"mac", "linux", "freebsd", "sunos"};
-
         // Check hostname configuration from Jenkins
         String hostname = null;
         try {
@@ -537,7 +536,7 @@ public class DatadogUtilities {
 
         // Check OS specific unix commands
         String os = getOS();
-        if (Arrays.asList(UNIX_OS).contains(os)) {
+        if (UNIX_OS.contains(os)) {
             // Attempt to grab unix hostname
             try {
                 String[] cmd = {"/bin/hostname", "-f"};
