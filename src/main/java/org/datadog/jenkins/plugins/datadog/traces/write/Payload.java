@@ -3,19 +3,19 @@ package org.datadog.jenkins.plugins.datadog.traces.write;
 import javax.annotation.Nonnull;
 import net.sf.json.JSONObject;
 
-public class Span {
+public class Payload {
 
-    private final JSONObject payload;
+    private final JSONObject json;
     private final Track track;
 
-    public Span(@Nonnull JSONObject payload, @Nonnull Track track) {
-        this.payload = payload;
+    public Payload(@Nonnull JSONObject json, @Nonnull Track track) {
+        this.json = json;
         this.track = track;
     }
 
     @Nonnull
-    public JSONObject getPayload() {
-        return payload;
+    public JSONObject getJson() {
+        return json;
     }
 
     @Nonnull

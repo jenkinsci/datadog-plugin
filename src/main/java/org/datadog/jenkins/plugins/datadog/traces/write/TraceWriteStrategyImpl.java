@@ -2,7 +2,6 @@ package org.datadog.jenkins.plugins.datadog.traces.write;
 
 import hudson.model.Run;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -26,9 +25,9 @@ public class TraceWriteStrategyImpl implements TraceWriteStrategy {
     private final Track track;
     private final DatadogBaseBuildLogic buildLogic;
     private final DatadogBasePipelineLogic pipelineLogic;
-    private final CircuitBreaker<Collection<Span>> sendSpansCircuitBreaker;
+    private final CircuitBreaker<Collection<Payload>> sendSpansCircuitBreaker;
 
-    public TraceWriteStrategyImpl(Track track, Consumer<Collection<Span>> spansSender) {
+    public TraceWriteStrategyImpl(Track track, Consumer<Collection<Payload>> spansSender) {
         if (track == Track.APM) {
             this.buildLogic = new DatadogTraceBuildLogic();
             this.pipelineLogic = new DatadogTracePipelineLogic();
@@ -47,24 +46,24 @@ public class TraceWriteStrategyImpl implements TraceWriteStrategy {
     }
 
     @Override
-    public Span createSpan(final BuildData buildData, final Run<?, ?> run) {
+    public Payload serialize(final BuildData buildData, final Run<?, ?> run) {
         JSONObject buildSpan = buildLogic.finishBuildTrace(buildData, run);
-        return buildSpan != null ? new Span(buildSpan, track) : null;
+        return buildSpan != null ? new Payload(buildSpan, track) : null;
     }
 
     @Nonnull
     @Override
-    public Collection<Span> createSpan(FlowNode flowNode, Run<?, ?> run) {
+    public Collection<Payload> serialize(FlowNode flowNode, Run<?, ?> run) {
         Collection<JSONObject> stepSpans = pipelineLogic.execute(flowNode, run);
-        return stepSpans.stream().map(payload -> new Span(payload, track)).collect(Collectors.toList());
+        return stepSpans.stream().map(payload -> new Payload(payload, track)).collect(Collectors.toList());
     }
 
     @Override
-    public void send(Collection<Span> serializationResult) {
+    public void send(Collection<Payload> serializationResult) {
         sendSpansCircuitBreaker.accept(serializationResult);
     }
 
-    private void logTransportBroken(Collection<Span> spans) {
+    private void logTransportBroken(Collection<Payload> spans) {
         logger.fine("Ignoring " + spans.size() + " because transport is broken");
     }
 

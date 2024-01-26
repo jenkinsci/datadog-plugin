@@ -31,7 +31,7 @@ public final class TraceWriter {
     private static final int DEFAULT_BATCH_SIZE_LIMIT = 100;
 
     private final TraceWriteStrategy traceWriteStrategy;
-    private final BlockingQueue<Span> queue;
+    private final BlockingQueue<Payload> queue;
     private final Thread poller;
 
     public TraceWriter(DatadogClient datadogClient) {
@@ -54,18 +54,18 @@ public final class TraceWriter {
     }
 
     public void submitBuild(final BuildData buildData, final Run<?,?> run) throws InterruptedException, TimeoutException {
-        Span span = traceWriteStrategy.createSpan(buildData, run);
+        Payload span = traceWriteStrategy.serialize(buildData, run);
         submit(span);
     }
 
     public void submitPipelineStep(FlowNode flowNode, Run<?, ?> run) throws InterruptedException, TimeoutException {
-        Collection<Span> spans = traceWriteStrategy.createSpan(flowNode, run);
-        for (Span span : spans) {
+        Collection<Payload> spans = traceWriteStrategy.serialize(flowNode, run);
+        for (Payload span : spans) {
             submit(span);
         }
     }
 
-    private void submit(@Nullable Span span) throws InterruptedException, TimeoutException {
+    private void submit(@Nullable Payload span) throws InterruptedException, TimeoutException {
         if (span != null && !queue.offer(span, getEnv(SUBMIT_TIMEOUT_ENV_VAR, DEFAULT_SUBMIT_TIMEOUT_SECONDS), TimeUnit.SECONDS)) {
             throw new TimeoutException("Timed out while submitting span");
         }
@@ -75,14 +75,14 @@ public final class TraceWriter {
         long stopPollingAt = Long.MAX_VALUE;
         while (System.currentTimeMillis() < stopPollingAt) {
             try {
-                Span span = queue.poll(getEnv(POLLING_TIMEOUT_ENV_VAR, DEFAULT_POLLING_TIMEOUT_SECONDS), TimeUnit.SECONDS);
+                Payload span = queue.poll(getEnv(POLLING_TIMEOUT_ENV_VAR, DEFAULT_POLLING_TIMEOUT_SECONDS), TimeUnit.SECONDS);
                 if (span == null) {
                     // nothing to send
                     continue;
                 }
 
                 int batchSize = getEnv(BATCH_SIZE_LIMIT_ENV_VAR, DEFAULT_BATCH_SIZE_LIMIT);
-                List<Span> spans = new ArrayList<>(batchSize);
+                List<Payload> spans = new ArrayList<>(batchSize);
                 spans.add(span);
                 queue.drainTo(spans, batchSize - 1);
 

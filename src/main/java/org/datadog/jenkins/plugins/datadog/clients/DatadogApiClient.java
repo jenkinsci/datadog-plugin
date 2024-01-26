@@ -46,7 +46,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.traces.write.Span;
+import org.datadog.jenkins.plugins.datadog.traces.write.Payload;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategyImpl;
 import org.datadog.jenkins.plugins.datadog.traces.write.Track;
@@ -495,7 +495,7 @@ public class DatadogApiClient implements DatadogClient {
         return new TraceWriteStrategyImpl(Track.WEBHOOK, this::sendSpans);
     }
 
-    private void sendSpans(Collection<Span> spans) {
+    private void sendSpans(Collection<Payload> spans) {
         if (this.webhookIntakeConnectionBroken) {
             throw new RuntimeException("Your client is not initialized properly; webhook intake connection is broken.");
         }
@@ -508,13 +508,13 @@ public class DatadogApiClient implements DatadogClient {
         headers.put("DD-API-KEY", Secret.toString(apiKey));
         headers.put("DD-CI-PROVIDER-NAME", "jenkins");
 
-        for (Span span : spans) {
+        for (Payload span : spans) {
             if (span.getTrack() != Track.WEBHOOK) {
                 logger.severe("Expected webhook track, got " + span.getTrack() + ", dropping span");
                 continue;
             }
 
-            byte[] body = span.getPayload().toString().getBytes(StandardCharsets.UTF_8);
+            byte[] body = span.getJson().toString().getBytes(StandardCharsets.UTF_8);
 
             // webhook intake does not support batch requests
             logger.fine("Sending webhook");

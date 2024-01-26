@@ -51,7 +51,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.traces.mapper.JsonTraceSpanMapper;
 import org.datadog.jenkins.plugins.datadog.traces.write.AgentTraceWriteStrategy;
-import org.datadog.jenkins.plugins.datadog.traces.write.Span;
+import org.datadog.jenkins.plugins.datadog.traces.write.Payload;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategyImpl;
 import org.datadog.jenkins.plugins.datadog.traces.write.Track;
@@ -536,7 +536,7 @@ public class DatadogAgentClient implements DatadogClient {
     /**
      * Posts a given payload to the Agent EVP Proxy, so it is forwarded to the Webhook Intake.
      */
-    private void sendSpansToWebhook(Collection<Span> spans) {
+    private void sendSpansToWebhook(Collection<Payload> spans) {
         DatadogGlobalConfiguration datadogGlobalDescriptor = DatadogUtilities.getDatadogGlobalDescriptor();
         String urlParameters = datadogGlobalDescriptor != null ? "?service=" + datadogGlobalDescriptor.getCiInstanceName() : "";
         String url = String.format("http://%s:%d/evp_proxy/v1/api/v2/webhook/%s", hostname, traceCollectionPort, urlParameters);
@@ -545,13 +545,13 @@ public class DatadogAgentClient implements DatadogClient {
         headers.put("X-Datadog-EVP-Subdomain", "webhook-intake");
         headers.put("DD-CI-PROVIDER-NAME", "jenkins");
 
-        for (Span span : spans) {
+        for (Payload span : spans) {
             if (span.getTrack() != Track.WEBHOOK) {
                 logger.severe("Expected webhook track, got " + span.getTrack() + ", dropping span");
                 continue;
             }
 
-            byte[] body = span.getPayload().toString().getBytes(StandardCharsets.UTF_8);
+            byte[] body = span.getJson().toString().getBytes(StandardCharsets.UTF_8);
 
             // webhook intake does not support batch requests
             logger.fine("Sending webhook");
@@ -559,15 +559,15 @@ public class DatadogAgentClient implements DatadogClient {
         }
     }
 
-    private void sendSpansToApm(Collection<Span> spans) {
+    private void sendSpansToApm(Collection<Payload> spans) {
         try {
             Map<String, net.sf.json.JSONArray> tracesById = new HashMap<>();
-            for (Span span : spans) {
+            for (Payload span : spans) {
                 if (span.getTrack() != Track.APM) {
                     logger.severe("Expected APM track, got " + span.getTrack() + ", dropping span");
                     continue;
                 }
-                tracesById.computeIfAbsent(span.getPayload().getString(JsonTraceSpanMapper.TRACE_ID), k -> new net.sf.json.JSONArray()).add(span.getPayload());
+                tracesById.computeIfAbsent(span.getJson().getString(JsonTraceSpanMapper.TRACE_ID), k -> new net.sf.json.JSONArray()).add(span.getJson());
             }
 
             final JSONArray jsonTraces = new JSONArray();

@@ -9,10 +9,10 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 public interface TraceWriteStrategy {
     @Nullable
-    Span createSpan(BuildData buildData, Run<?, ?> run);
+    Payload serialize(BuildData buildData, Run<?, ?> run);
 
     @Nonnull
-    Collection<Span> createSpan(FlowNode flowNode, Run<?, ?> run);
+    Collection<Payload> serialize(FlowNode flowNode, Run<?, ?> run);
 
-    void send(Collection<Span> spans);
+    void send(Collection<Payload> spans);
 }

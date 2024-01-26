@@ -49,7 +49,7 @@ import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookBuildLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookPipelineLogic;
 import org.datadog.jenkins.plugins.datadog.traces.mapper.JsonTraceSpanMapper;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
-import org.datadog.jenkins.plugins.datadog.traces.write.Span;
+import org.datadog.jenkins.plugins.datadog.traces.write.Payload;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy;
 import org.datadog.jenkins.plugins.datadog.traces.write.Track;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
@@ -268,14 +268,14 @@ public class DatadogClientStub implements DatadogClient {
         private final Collection<JSONObject> webhooks = new LinkedBlockingQueue<>();
 
         @Override
-        public Span createSpan(BuildData buildData, Run<?, ?> run) {
+        public Payload serialize(BuildData buildData, Run<?, ?> run) {
             if (isWebhook) {
                 JSONObject json = new DatadogWebhookBuildLogic().finishBuildTrace(buildData, run);
                 if (json == null) {
                     return null;
                 }
                 webhooks.add(json);
-                return new Span(json, Track.WEBHOOK);
+                return new Payload(json, Track.WEBHOOK);
             } else {
                 TraceSpan span = new DatadogTraceBuildLogic().createSpan(buildData, run);
                 if (span == null) {
@@ -283,28 +283,28 @@ public class DatadogClientStub implements DatadogClient {
                 }
                 traces.add(span);
                 JSONObject json = new JsonTraceSpanMapper().map(span);
-                return new Span(json, Track.APM);
+                return new Payload(json, Track.APM);
             }
         }
 
         @Nonnull
         @Override
-        public Collection<Span> createSpan(FlowNode flowNode, Run<?, ?> run) {
+        public Collection<Payload> serialize(FlowNode flowNode, Run<?, ?> run) {
             if (isWebhook) {
                 Collection<JSONObject> jsons = new DatadogWebhookPipelineLogic().execute(flowNode, run);
                 webhooks.addAll(jsons);
-                return jsons.stream().map(payload -> new Span(payload, Track.WEBHOOK)).collect(Collectors.toList());
+                return jsons.stream().map(payload -> new Payload(payload, Track.WEBHOOK)).collect(Collectors.toList());
             } else {
                 Collection<TraceSpan> traceSpans = new DatadogTracePipelineLogic().collectTraces(flowNode, run);
                 traces.addAll(traceSpans);
                 JsonTraceSpanMapper mapper = new JsonTraceSpanMapper();
                 List<JSONObject> jsons = traceSpans.stream().map(mapper::map).collect(Collectors.toList());
-                return jsons.stream().map(payload -> new Span(payload, Track.APM)).collect(Collectors.toList());
+                return jsons.stream().map(payload -> new Payload(payload, Track.APM)).collect(Collectors.toList());
             }
         }
 
         @Override
-        public void send(Collection<Span> spans) {
+        public void send(Collection<Payload> spans) {
             // no op
         }
 

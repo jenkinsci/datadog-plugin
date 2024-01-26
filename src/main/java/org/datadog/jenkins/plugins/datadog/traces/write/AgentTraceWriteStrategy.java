@@ -47,24 +47,24 @@ public class AgentTraceWriteStrategy implements TraceWriteStrategy {
     }
 
     @Override
-    public Span createSpan(BuildData buildData, Run<?, ?> run) {
-        return getCurrentStrategy().createSpan(buildData, run);
+    public Payload serialize(BuildData buildData, Run<?, ?> run) {
+        return getCurrentStrategy().serialize(buildData, run);
     }
 
     @Nonnull
     @Override
-    public Collection<Span> createSpan(FlowNode flowNode, Run<?, ?> run) {
-        return getCurrentStrategy().createSpan(flowNode, run);
+    public Collection<Payload> serialize(FlowNode flowNode, Run<?, ?> run) {
+        return getCurrentStrategy().serialize(flowNode, run);
     }
 
     @Override
-    public void send(Collection<Span> spans) {
+    public void send(Collection<Payload> spans) {
         // we have to check the track for every span,
         // because the serialization strategy might've changed in between serialize() and send()
-        Map<Track, List<Span>> spansByTrack = spans.stream().collect(Collectors.groupingBy(Span::getTrack));
-        for (Map.Entry<Track, List<Span>> e : spansByTrack.entrySet()) {
+        Map<Track, List<Payload>> spansByTrack = spans.stream().collect(Collectors.groupingBy(Payload::getTrack));
+        for (Map.Entry<Track, List<Payload>> e : spansByTrack.entrySet()) {
             Track track = e.getKey();
-            List<Span> trackSpans = e.getValue();
+            List<Payload> trackSpans = e.getValue();
 
             if (track == Track.WEBHOOK) {
                 evpProxyStrategy.send(trackSpans);
