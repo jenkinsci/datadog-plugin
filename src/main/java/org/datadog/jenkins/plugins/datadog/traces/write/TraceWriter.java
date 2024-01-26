@@ -9,7 +9,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
-import net.sf.json.JSONObject;
+import javax.annotation.Nullable;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
@@ -31,7 +31,7 @@ public final class TraceWriter {
     private static final int DEFAULT_BATCH_SIZE_LIMIT = 100;
 
     private final TraceWriteStrategy traceWriteStrategy;
-    private final BlockingQueue<JSONObject> queue;
+    private final BlockingQueue<Span> queue;
     private final Thread poller;
 
     public TraceWriter(DatadogClient datadogClient) {
@@ -54,19 +54,19 @@ public final class TraceWriter {
     }
 
     public void submitBuild(final BuildData buildData, final Run<?,?> run) throws InterruptedException, TimeoutException {
-        JSONObject buildJson = traceWriteStrategy.serialize(buildData, run);
-        submit(buildJson);
+        Span span = traceWriteStrategy.createSpan(buildData, run);
+        submit(span);
     }
 
     public void submitPipelineStep(FlowNode flowNode, Run<?, ?> run) throws InterruptedException, TimeoutException {
-        Collection<JSONObject> nodeJsons = traceWriteStrategy.serialize(flowNode, run);
-        for (JSONObject nodeJson : nodeJsons) {
-            submit(nodeJson);
+        Collection<Span> spans = traceWriteStrategy.createSpan(flowNode, run);
+        for (Span span : spans) {
+            submit(span);
         }
     }
 
-    private void submit(JSONObject json) throws InterruptedException, TimeoutException {
-        if (!queue.offer(json, getEnv(SUBMIT_TIMEOUT_ENV_VAR, DEFAULT_SUBMIT_TIMEOUT_SECONDS), TimeUnit.SECONDS)) {
+    private void submit(@Nullable Span span) throws InterruptedException, TimeoutException {
+        if (span != null && !queue.offer(span, getEnv(SUBMIT_TIMEOUT_ENV_VAR, DEFAULT_SUBMIT_TIMEOUT_SECONDS), TimeUnit.SECONDS)) {
             throw new TimeoutException("Timed out while submitting span");
         }
     }
@@ -75,14 +75,14 @@ public final class TraceWriter {
         long stopPollingAt = Long.MAX_VALUE;
         while (System.currentTimeMillis() < stopPollingAt) {
             try {
-                JSONObject span = queue.poll(getEnv(POLLING_TIMEOUT_ENV_VAR, DEFAULT_POLLING_TIMEOUT_SECONDS), TimeUnit.SECONDS);
+                Span span = queue.poll(getEnv(POLLING_TIMEOUT_ENV_VAR, DEFAULT_POLLING_TIMEOUT_SECONDS), TimeUnit.SECONDS);
                 if (span == null) {
                     // nothing to send
                     continue;
                 }
 
                 int batchSize = getEnv(BATCH_SIZE_LIMIT_ENV_VAR, DEFAULT_BATCH_SIZE_LIMIT);
-                List<JSONObject> spans = new ArrayList<>(batchSize);
+                List<Span> spans = new ArrayList<>(batchSize);
                 spans.add(span);
                 queue.drainTo(spans, batchSize - 1);
 

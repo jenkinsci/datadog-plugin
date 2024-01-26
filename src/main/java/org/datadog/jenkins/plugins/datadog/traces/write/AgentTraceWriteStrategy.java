@@ -3,10 +3,12 @@ package org.datadog.jenkins.plugins.datadog.traces.write;
 import hudson.model.Run;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
-import net.sf.json.JSONObject;
+import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogAgentClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
@@ -27,6 +29,14 @@ public class AgentTraceWriteStrategy implements TraceWriteStrategy {
     private final TraceWriteStrategy evpProxyStrategy;
     private final TraceWriteStrategy apmStrategy;
     private final Supplier<Boolean> checkEvpProxySupport;
+    /**
+     * Whether the Agent supports EVP Proxy.
+     * <p>
+     * This value may change from {@code false} to {@code true} if the Agent that this Jenkins talks to gets updated
+     * (the Agent's support for EVP proxy is checked periodically).
+     * <p>
+     * We don't handle agent downgrades, so {@code true} to {@code false} change is not possible.
+     */
     private volatile boolean evpProxySupported = false;
     private volatile long lastEvpProxyCheckTimeMs = 0L;
 
@@ -37,32 +47,33 @@ public class AgentTraceWriteStrategy implements TraceWriteStrategy {
     }
 
     @Override
-    public JSONObject serialize(BuildData buildData, Run<?, ?> run) {
-        return getCurrentStrategy().serialize(buildData, run);
+    public Span createSpan(BuildData buildData, Run<?, ?> run) {
+        return getCurrentStrategy().createSpan(buildData, run);
+    }
+
+    @Nonnull
+    @Override
+    public Collection<Span> createSpan(FlowNode flowNode, Run<?, ?> run) {
+        return getCurrentStrategy().createSpan(flowNode, run);
     }
 
     @Override
-    public Collection<JSONObject> serialize(FlowNode flowNode, Run<?, ?> run) {
-        return getCurrentStrategy().serialize(flowNode, run);
-    }
-
-    @Override
-    public void send(List<JSONObject> spans) {
-        // we have to check serialized spans to know where to send them,
+    public void send(Collection<Span> spans) {
+        // we have to check the track for every span,
         // because the serialization strategy might've changed in between serialize() and send()
-        if (isWebhook(spans)) {
-            evpProxyStrategy.send(spans);
-        } else {
-            apmStrategy.send(spans);
-        }
-    }
+        Map<Track, List<Span>> spansByTrack = spans.stream().collect(Collectors.groupingBy(Span::getTrack));
+        for (Map.Entry<Track, List<Span>> e : spansByTrack.entrySet()) {
+            Track track = e.getKey();
+            List<Span> trackSpans = e.getValue();
 
-    private boolean isWebhook(List<JSONObject> spans) {
-        if (spans.isEmpty()) {
-            return false;
+            if (track == Track.WEBHOOK) {
+                evpProxyStrategy.send(trackSpans);
+            } else if (track == Track.APM) {
+                apmStrategy.send(trackSpans);
+            } else {
+                throw new IllegalArgumentException("Unexpected track value: " + track);
+            }
         }
-        JSONObject span = spans.iterator().next();
-        return span.get("level") != null;
     }
 
     private TraceWriteStrategy getCurrentStrategy() {

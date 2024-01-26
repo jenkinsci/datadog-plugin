@@ -28,9 +28,9 @@ package org.datadog.jenkins.plugins.datadog.clients;
 import hudson.util.Secret;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
@@ -45,10 +45,10 @@ import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookBuildLogic;
-import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookPipelineLogic;
+import org.datadog.jenkins.plugins.datadog.traces.write.Span;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategyImpl;
+import org.datadog.jenkins.plugins.datadog.traces.write.Track;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
@@ -102,14 +102,13 @@ public class DatadogApiClient implements DatadogClient {
     public static DatadogClient getInstance(String url, String logIntakeUrl, String webhookIntakeUrl, Secret apiKey){
         // If the configuration has not changed, return the current instance without validation
         // since we've already validated and/or errored about the data
-
-        DatadogApiClient newInstance = new DatadogApiClient(url, logIntakeUrl, webhookIntakeUrl, apiKey);
-        if (instance != null && instance.equals(newInstance)) {
+        if (instance != null && !configurationChanged(url, logIntakeUrl, webhookIntakeUrl, apiKey)) {
             if (DatadogApiClient.failedLastValidation) {
                 return null;
             }
             return instance;
         }
+        DatadogApiClient newInstance = new DatadogApiClient(url, logIntakeUrl, webhookIntakeUrl, apiKey);
         if (enableValidations) {
             synchronized (DatadogApiClient.class) {
                 DatadogApiClient.instance = newInstance;
@@ -124,6 +123,13 @@ public class DatadogApiClient implements DatadogClient {
             }
         }
         return newInstance;
+    }
+
+    private static boolean configurationChanged(String url, String logIntakeUrl, String webhookIntakeUrl, Secret apiKey){
+        return !instance.getUrl().equals(url) ||
+                !instance.getLogIntakeUrl().equals(logIntakeUrl) ||
+                !instance.getWebhookIntakeUrl().equals(webhookIntakeUrl) ||
+                !instance.getApiKey().equals(apiKey);
     }
 
     private DatadogApiClient(String url, String logIntakeUrl, String webhookIntakeUrl, Secret apiKey) {
@@ -485,24 +491,10 @@ public class DatadogApiClient implements DatadogClient {
 
     @Override
     public TraceWriteStrategy createTraceWriteStrategy() {
-        return new TraceWriteStrategyImpl(new DatadogWebhookBuildLogic(), new DatadogWebhookPipelineLogic(), this::sendSpans);
+        return new TraceWriteStrategyImpl(Track.WEBHOOK, this::sendSpans);
     }
 
-    private void sendSpans(List<net.sf.json.JSONObject> spans) {
-        for (JSONObject span : spans) {
-            // webhook intake does not support batch requests
-            postWebhook(span.toString());
-        }
-    }
-
-    /**
-     * Posts a given payload to the Datadog Webhook Intake, using the user configured apiKey.
-     *
-     * @param payload - A webhook payload.
-     */
-    private void postWebhook(String payload) {
-        logger.fine("Sending webhook");
-
+    private void sendSpans(Collection<Span> spans) {
         if (this.webhookIntakeConnectionBroken) {
             throw new RuntimeException("Your client is not initialized properly; webhook intake connection is broken.");
         }
@@ -515,7 +507,17 @@ public class DatadogApiClient implements DatadogClient {
         headers.put("DD-API-KEY", Secret.toString(apiKey));
         headers.put("DD-CI-PROVIDER-NAME", "jenkins");
 
-        byte[] body = payload.getBytes(StandardCharsets.UTF_8);
-        httpClient.postAsynchronously(url, headers, "application/json", body);
+        for (Span span : spans) {
+            if (span.getTrack() != Track.WEBHOOK) {
+                logger.severe("Expected webhook track, got " + span.getTrack() + ", dropping span");
+                continue;
+            }
+
+            byte[] body = span.getPayload().toString().getBytes(StandardCharsets.UTF_8);
+
+            // webhook intake does not support batch requests
+            logger.fine("Sending webhook");
+            httpClient.postAsynchronously(url, headers, "application/json", body);
+        }
     }
 }
