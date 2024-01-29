@@ -66,6 +66,8 @@ import org.json.JSONObject;
  */
 public class DatadogAgentClient implements DatadogClient {
 
+    private static final int PAYLOAD_SIZE_LIMIT = 5 * 1024 * 1024; // 5 MB
+
     private static volatile DatadogAgentClient instance = null;
     // Used to determine if the instance failed last validation last time, so
     // we do not keep retrying to create the instance and logging the same error
@@ -556,6 +558,10 @@ public class DatadogAgentClient implements DatadogClient {
             }
 
             byte[] body = span.getJson().toString().getBytes(StandardCharsets.UTF_8);
+            if (body.length > PAYLOAD_SIZE_LIMIT) {
+                logger.severe("Dropping span because payload size (" + body.length + ") exceeds the allowed limit of " + PAYLOAD_SIZE_LIMIT);
+                continue;
+            }
 
             // webhook intake does not support batch requests
             logger.fine("Sending webhook");
