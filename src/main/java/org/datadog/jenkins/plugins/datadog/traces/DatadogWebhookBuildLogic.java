@@ -6,26 +6,20 @@ import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeB
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
 
+import hudson.model.Run;
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
-import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
-import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
-import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
-
-import hudson.model.Run;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
 
 /**
  * Keeps the logic to send webhooks related to Jenkins Build.
@@ -35,46 +29,20 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
 
     private static final Logger logger = Logger.getLogger(DatadogWebhookBuildLogic.class.getName());
 
-    private final DatadogClient client;
-
-    public DatadogWebhookBuildLogic(final DatadogClient client) {
-        this.client = client;
-    }
-
     @Override
-    public void startBuildTrace(final BuildData buildData, Run run) {
+    public JSONObject finishBuildTrace(final BuildData buildData, final Run<?,?> run) {
         if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
-            logger.fine("CI Visibility is disabled");
-            return;
-        }
-
-        final StepTraceDataAction stepTraceDataAction = new StepTraceDataAction();
-        run.addAction(stepTraceDataAction);
-
-        final StageBreakdownAction stageBreakdownAction = new StageBreakdownAction();
-        run.addAction(stageBreakdownAction);
-
-        final PipelineQueueInfoAction pipelineQueueInfoAction = new PipelineQueueInfoAction();
-        run.addAction(pipelineQueueInfoAction);
-
-        final CIGlobalTagsAction ciGlobalTags = new CIGlobalTagsAction(buildData.getTagsForTraces());
-        run.addAction(ciGlobalTags);
-    }
-
-    @Override
-    public void finishBuildTrace(final BuildData buildData, final Run<?,?> run) {
-        if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
-            return;
+            return null;
         }
 
         final TraceSpan buildSpan = BuildSpanManager.get().get(buildData.getBuildTag(""));
         if(buildSpan == null) {
-            return;
+            return null;
         }
 
         final BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
         if(buildSpanAction == null) {
-            return;
+            return null;
         }
 
         // In this point of the execution, the BuildData stored within
@@ -285,7 +253,7 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
             payload.put("git", gitPayload);
         }
 
-        client.postWebhook(payload.toString());
+        return payload;
     }
 
 }

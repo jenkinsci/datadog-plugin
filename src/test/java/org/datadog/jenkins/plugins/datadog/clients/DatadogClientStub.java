@@ -26,27 +26,32 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.clients;
 
 import hudson.model.Run;
-import hudson.util.Secret;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.traces.DatadogBaseBuildLogic;
-import org.datadog.jenkins.plugins.datadog.traces.DatadogBasePipelineLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTracePipelineLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookBuildLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookPipelineLogic;
-import org.datadog.jenkins.plugins.datadog.transport.FakeTracesHttpClient;
+import org.datadog.jenkins.plugins.datadog.traces.mapper.JsonTraceSpanMapper;
+import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
+import org.datadog.jenkins.plugins.datadog.traces.write.Payload;
+import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy;
+import org.datadog.jenkins.plugins.datadog.traces.write.Track;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.junit.Assert;
 
@@ -56,91 +61,12 @@ public class DatadogClientStub implements DatadogClient {
     public List<DatadogMetric> serviceChecks;
     public List<DatadogEventStub> events;
     public List<JSONObject> logLines;
-    public List<JSONObject> webhooks;
-
-    private List<CountDownLatch> webhookLatches;
-
-    public FakeTracesHttpClient agentHttpClient;
-
-    public DatadogBaseBuildLogic traceBuildLogic;
-    public DatadogBasePipelineLogic tracePipelineLogic;
-
 
     public DatadogClientStub() {
         this.metrics = new ArrayList<>();
         this.serviceChecks = new ArrayList<>();
         this.events = new ArrayList<>();
         this.logLines = new ArrayList<>();
-        this.webhooks = new ArrayList<>();
-        this.webhookLatches = new ArrayList<>();
-        this.agentHttpClient = new FakeTracesHttpClient();
-        this.traceBuildLogic = new DatadogTraceBuildLogic(this.agentHttpClient);
-        this.tracePipelineLogic = new DatadogTracePipelineLogic(this.agentHttpClient);
-    }
-
-    @Override
-    public void setUrl(String url) {
-        // noop
-    }
-
-    @Override
-    public void setLogIntakeUrl(String logIntakeUrl) {
-        // noop
-    }
-
-    @Override
-    public void setWebhookIntakeUrl(String webhookIntakeUrl) {
-        // noop
-    }
-
-    @Override
-    public void setApiKey(Secret apiKey) {
-        // noop
-    }
-
-    @Override
-    public void setHostname(String hostname) {
-        // noop
-    }
-
-    @Override
-    public void setPort(Integer port) {
-        // noop
-    }
-
-    @Override
-    public void setLogCollectionPort(Integer logCollectionPort) {
-
-    }
-
-    @Override
-    public boolean isDefaultIntakeConnectionBroken() {
-        return false;
-    }
-
-    @Override
-    public void setDefaultIntakeConnectionBroken(boolean defaultIntakeConnectionBroken) {
-        // noop
-    }
-
-    @Override
-    public boolean isLogIntakeConnectionBroken() {
-        return false;
-    }
-
-    @Override
-    public void setLogIntakeConnectionBroken(boolean logIntakeConnectionBroken) {
-        // noop
-    }
-
-    @Override
-    public boolean isWebhookIntakeConnectionBroken() {
-        return false;
-    }
-
-    @Override
-    public void setWebhookIntakeConnectionBroken(boolean webhookIntakeConnectionBroken) {
-        // noop
     }
 
     @Override
@@ -196,44 +122,6 @@ public class DatadogClientStub implements DatadogClient {
         JSONObject payload = JSONObject.fromObject(payloadLogs);
         this.logLines.add(payload);
         return true;
-    }
-
-    @Override
-    public boolean postWebhook(String webhook) {
-        synchronized (webhookLatches) {
-            JSONObject payload = JSONObject.fromObject(webhook);
-            webhooks.add(payload);
-            for(final CountDownLatch latch : webhookLatches) {
-                if(webhooks.size() >= latch.getCount()) {
-                    while (latch.getCount() > 0) {
-                        latch.countDown();
-                    }
-                }
-            }
-        }
-        return true;
-    }
-
-    @Override
-    public boolean startBuildTrace(BuildData buildData, Run<?, ?> run) {
-        this.traceBuildLogic.startBuildTrace(buildData, run);
-        return true;
-    }
-
-    @Override
-    public boolean finishBuildTrace(BuildData buildData, Run<?, ?> run) {
-        this.traceBuildLogic.finishBuildTrace(buildData, run);
-        return true;
-    }
-
-    @Override
-    public boolean sendPipelineTrace(Run<?, ?> run, FlowNode flowNode) {
-        this.tracePipelineLogic.execute(run, flowNode);
-        return true;
-    }
-
-    public FakeTracesHttpClient agentHttpClient(){
-        return this.agentHttpClient;
     }
 
     public boolean assertMetric(String name, double value, String hostname, String[] tags) {
@@ -372,24 +260,112 @@ public class DatadogClientStub implements DatadogClient {
         return tags;
     }
 
+    private final StubTraceWriteStrategy traceWriteStrategy = new StubTraceWriteStrategy();
+
+    private static final class StubTraceWriteStrategy implements TraceWriteStrategy {
+        private volatile boolean isWebhook = false;
+        private final Collection<TraceSpan> traces = new LinkedBlockingQueue<>();
+        private final Collection<JSONObject> webhooks = new LinkedBlockingQueue<>();
+
+        @Override
+        public Payload serialize(BuildData buildData, Run<?, ?> run) {
+            if (isWebhook) {
+                JSONObject json = new DatadogWebhookBuildLogic().finishBuildTrace(buildData, run);
+                if (json == null) {
+                    return null;
+                }
+                webhooks.add(json);
+                return new Payload(json, Track.WEBHOOK);
+            } else {
+                TraceSpan span = new DatadogTraceBuildLogic().createSpan(buildData, run);
+                if (span == null) {
+                    return null;
+                }
+                traces.add(span);
+                JSONObject json = new JsonTraceSpanMapper().map(span);
+                return new Payload(json, Track.APM);
+            }
+        }
+
+        @Nonnull
+        @Override
+        public Collection<Payload> serialize(FlowNode flowNode, Run<?, ?> run) {
+            if (isWebhook) {
+                Collection<JSONObject> jsons = new DatadogWebhookPipelineLogic().execute(flowNode, run);
+                webhooks.addAll(jsons);
+                return jsons.stream().map(payload -> new Payload(payload, Track.WEBHOOK)).collect(Collectors.toList());
+            } else {
+                Collection<TraceSpan> traceSpans = new DatadogTracePipelineLogic().collectTraces(flowNode, run);
+                traces.addAll(traceSpans);
+                JsonTraceSpanMapper mapper = new JsonTraceSpanMapper();
+                List<JSONObject> jsons = traceSpans.stream().map(mapper::map).collect(Collectors.toList());
+                return jsons.stream().map(payload -> new Payload(payload, Track.APM)).collect(Collectors.toList());
+            }
+        }
+
+        @Override
+        public void send(Collection<Payload> spans) {
+            // no op
+        }
+
+        public void configureForWebhooks() {
+            isWebhook = true;
+        }
+    }
+
     public void configureForWebhooks() {
-        traceBuildLogic = new DatadogWebhookBuildLogic(this);
-        tracePipelineLogic = new DatadogWebhookPipelineLogic(this);
+        traceWriteStrategy.configureForWebhooks();
+    }
+
+    @Override
+    public TraceWriteStrategy createTraceWriteStrategy() {
+        return traceWriteStrategy;
     }
 
     public boolean waitForWebhooks(final int number) throws InterruptedException {
-        final CountDownLatch latch = new CountDownLatch(number);
-        synchronized (webhookLatches) {
-            if (webhooks.size() >= number) {
+        long timeout = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(10);
+        while (System.currentTimeMillis() < timeout) {
+            if (traceWriteStrategy.webhooks.size() >= number) {
                 return true;
             }
-            webhookLatches.add(latch);
+            Thread.sleep(100L);
         }
-        return latch.await(10, TimeUnit.SECONDS);
+        if (traceWriteStrategy.webhooks.size() < number) {
+            throw new AssertionError("Failed while waiting for " + number + " webhooks, got  " + traceWriteStrategy.webhooks.size() + ": " + traceWriteStrategy.webhooks);
+        } else {
+            return true;
+        }
+    }
+
+    public boolean waitForTraces(int number) throws InterruptedException {
+        long timeout = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(10);
+        while (System.currentTimeMillis() < timeout) {
+            if (traceWriteStrategy.traces.size() >= number) {
+                return true;
+            }
+            Thread.sleep(100L);
+        }
+        if (traceWriteStrategy.traces.size() < number) {
+            throw new AssertionError("Failed while waiting for " + number + " traces, got  " + traceWriteStrategy.traces.size() + ": " + traceWriteStrategy.traces);
+        } else {
+            return true;
+        }
     }
 
     public List<JSONObject> getWebhooks() {
-        return this.webhooks;
+        return new ArrayList<>(traceWriteStrategy.webhooks);
     }
 
+    public List<TraceSpan> getSpans() {
+        ArrayList<TraceSpan> spans = new ArrayList<>(traceWriteStrategy.traces);
+        Collections.sort(spans, (span1, span2) -> {
+            if(span1.getStartNano() < span2.getStartNano()){
+                return -1;
+            } else if (span1.getStartNano() > span2.getStartNano()) {
+                return 1;
+            }
+            return 0;
+        });
+        return spans;
+    }
 }

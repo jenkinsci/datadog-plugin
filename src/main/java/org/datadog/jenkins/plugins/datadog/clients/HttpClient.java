@@ -2,7 +2,6 @@ package org.datadog.jenkins.plugins.datadog.clients;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -19,7 +18,6 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.transport.HttpMessage;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.ProxyConfiguration;
@@ -204,6 +202,13 @@ public class HttpClient {
         }
     }
 
+    public <T> T put(String url, Map<String, String> headers, String contentType, byte[] body, Function<String, T> responseParser) throws ExecutionException, InterruptedException, TimeoutException {
+        return executeSynchronously(
+                requestSupplier(url, HttpMethod.PUT, headers, contentType, body),
+                retryPolicyFactory.create(),
+                responseParser);
+    }
+
     public <T> T post(String url, Map<String, String> headers, String contentType, byte[] body, Function<String, T> responseParser) throws ExecutionException, InterruptedException, TimeoutException {
         return executeSynchronously(
                 requestSupplier(url, HttpMethod.POST, headers, contentType, body),
@@ -217,22 +222,6 @@ public class HttpClient {
                         url,
                         HttpMethod.POST,
                         headers,
-                        contentType,
-                        body),
-                retryPolicyFactory.create()
-        );
-    }
-
-    public void sendAsynchronously(HttpMessage message) {
-        String url = message.getURL().toString();
-        HttpMethod httpMethod = HttpMethod.fromString(message.getMethod().name());
-        String contentType = message.getContentType();
-        byte[] body = message.getPayload();
-        executeAsynchronously(
-                requestSupplier(
-                        url,
-                        httpMethod,
-                        Collections.emptyMap(),
                         contentType,
                         body),
                 retryPolicyFactory.create()

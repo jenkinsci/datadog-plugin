@@ -8,24 +8,20 @@ import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeB
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
 
-import java.util.Collections;
+import hudson.model.Result;
+import hudson.model.Run;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-
+import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
-import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
-import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
+import org.datadog.jenkins.plugins.datadog.traces.mapper.JsonTraceSpanMapper;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
-import org.datadog.jenkins.plugins.datadog.transport.HttpClient;
-
-import hudson.model.Result;
-import hudson.model.Run;
 
 /**
  * Keeps the logic to send traces related to Jenkins Build.
@@ -35,52 +31,28 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
 
     private static final Logger logger = Logger.getLogger(DatadogTraceBuildLogic.class.getName());
 
-    private final HttpClient agentHttpClient;
-
-    public DatadogTraceBuildLogic(final HttpClient agentHttpClient) {
-        this.agentHttpClient = agentHttpClient;
-    }
+    private final JsonTraceSpanMapper jsonTraceSpanMapper = new JsonTraceSpanMapper();
 
     @Override
-    public void startBuildTrace(final BuildData buildData, Run run) {
-        if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
-            logger.fine("CI Visibility is disabled");
-            return;
-        }
-
-        // Traces
-        if(this.agentHttpClient == null) {
-            logger.severe("Unable to send build traces. Tracer is null");
-            return;
-        }
-
-        final StepTraceDataAction stepTraceDataAction = new StepTraceDataAction();
-        run.addAction(stepTraceDataAction);
-
-        final StageBreakdownAction stageBreakdownAction = new StageBreakdownAction();
-        run.addAction(stageBreakdownAction);
-
-        final PipelineQueueInfoAction pipelineQueueInfoAction = new PipelineQueueInfoAction();
-        run.addAction(pipelineQueueInfoAction);
-
-        final CIGlobalTagsAction ciGlobalTags = new CIGlobalTagsAction(buildData.getTagsForTraces());
-        run.addAction(ciGlobalTags);
+    public JSONObject finishBuildTrace(final BuildData buildData, final Run<?,?> run) {
+        TraceSpan span = createSpan(buildData, run);
+        return span != null ? jsonTraceSpanMapper.map(span) : null;
     }
 
-    @Override
-    public void finishBuildTrace(final BuildData buildData, final Run<?,?> run) {
+    // hook for tests
+    public TraceSpan createSpan(final BuildData buildData, final Run<?,?> run) {
         if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
-            return;
+            return null;
         }
 
         final TraceSpan buildSpan = BuildSpanManager.get().get(buildData.getBuildTag(""));
         if(buildSpan == null) {
-            return;
+            return null;
         }
 
         final BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
         if(buildSpanAction == null) {
-            return;
+            return null;
         }
 
         // In this point of the execution, the BuildData stored within
@@ -263,7 +235,8 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
         // When the root span starts, we don't have the propagated queue time yet. We need to wait till the
         // end of the pipeline execution and do it in the endTime, adjusting all child spans if needed.
         buildSpan.setEndNano(TimeUnit.MICROSECONDS.toNanos(endTimeMicros - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue)));
-        agentHttpClient.send(Collections.singletonList(buildSpan));
+
+        return buildSpan;
     }
 
 }

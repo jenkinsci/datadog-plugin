@@ -1,13 +1,11 @@
 package org.datadog.jenkins.plugins.datadog.traces.message;
 
-import org.datadog.jenkins.plugins.datadog.traces.IdGenerator;
-import org.datadog.jenkins.plugins.datadog.transport.PayloadMessage;
-
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import org.datadog.jenkins.plugins.datadog.traces.IdGenerator;
 
-public class TraceSpan implements PayloadMessage {
+public class TraceSpan {
 
     public static final String PRIORITY_SAMPLING_KEY = "_sampling_priority_v1";
 
@@ -111,11 +109,6 @@ public class TraceSpan implements PayloadMessage {
 
     public boolean isError() {
         return error;
-    }
-
-    @Override
-    public PayloadMessage.Type getMessageType() {
-        return PayloadMessage.Type.TRACE;
     }
 
     public static class TraceSpanContext implements Serializable {

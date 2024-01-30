@@ -25,10 +25,11 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.clients;
 
-import hudson.model.Run;
+import com.google.common.base.Objects;
 import hudson.util.Secret;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,25 +46,27 @@ import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookBuildLogic;
-import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookPipelineLogic;
+import org.datadog.jenkins.plugins.datadog.traces.write.Payload;
+import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy;
+import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategyImpl;
+import org.datadog.jenkins.plugins.datadog.traces.write.Track;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
-import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 /**
  * This class is used to collect all methods that has to do with transmitting
  * data to Datadog.
  */
-public class DatadogHttpClient implements DatadogClient {
+public class DatadogApiClient implements DatadogClient {
 
-    private static volatile DatadogHttpClient instance = null;
+    private static final int PAYLOAD_SIZE_LIMIT = 5 * 1024 * 1024; // 5 MB
+
+    private static volatile DatadogApiClient instance = null;
     // Used to determine if the instance failed last validation last time, so
     // we do not keep retrying to create the instance and logging the same error
     private static boolean failedLastValidation = false;
 
-    private static final Logger logger = Logger.getLogger(DatadogHttpClient.class.getName());
+    private static final Logger logger = Logger.getLogger(DatadogApiClient.class.getName());
 
     private static final String EVENT = "v1/events";
     private static final String METRIC = "v1/series";
@@ -80,15 +83,13 @@ public class DatadogHttpClient implements DatadogClient {
     @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL")
     public static boolean enableValidations = true;
 
-    private String url = null;
-    private String logIntakeUrl = null;
-    private String webhookIntakeUrl = null;
-    private Secret apiKey = null;
+    private final String url;
+    private final String logIntakeUrl;
+    private final String webhookIntakeUrl;
+    private final Secret apiKey;
     private boolean defaultIntakeConnectionBroken = false;
     private boolean logIntakeConnectionBroken = false;
     private boolean webhookIntakeConnectionBroken = false;
-    private DatadogWebhookBuildLogic webhookBuildLogic;
-    private DatadogWebhookPipelineLogic webhookPipelineLogic;
 
     private final HttpClient httpClient;
 
@@ -104,23 +105,22 @@ public class DatadogHttpClient implements DatadogClient {
     public static DatadogClient getInstance(String url, String logIntakeUrl, String webhookIntakeUrl, Secret apiKey){
         // If the configuration has not changed, return the current instance without validation
         // since we've already validated and/or errored about the data
-
-        DatadogHttpClient newInstance = new DatadogHttpClient(url, logIntakeUrl, webhookIntakeUrl, apiKey);
-        if (instance != null && instance.equals(newInstance)) {
-            if (DatadogHttpClient.failedLastValidation) {
+        if (instance != null && !configurationChanged(url, logIntakeUrl, webhookIntakeUrl, apiKey)) {
+            if (DatadogApiClient.failedLastValidation) {
                 return null;
             }
             return instance;
         }
+        DatadogApiClient newInstance = new DatadogApiClient(url, logIntakeUrl, webhookIntakeUrl, apiKey);
         if (enableValidations) {
-            synchronized (DatadogHttpClient.class) {
-                DatadogHttpClient.instance = newInstance;
+            synchronized (DatadogApiClient.class) {
+                DatadogApiClient.instance = newInstance;
                 try {
                     newInstance.validateConfiguration();
-                    DatadogHttpClient.failedLastValidation = false;
+                    DatadogApiClient.failedLastValidation = false;
                 } catch(IllegalArgumentException e){
                     logger.severe(e.getMessage());
-                    DatadogHttpClient.failedLastValidation = true;
+                    DatadogApiClient.failedLastValidation = true;
                     return null;
                 }
             }
@@ -128,13 +128,18 @@ public class DatadogHttpClient implements DatadogClient {
         return newInstance;
     }
 
-    private DatadogHttpClient(String url, String logIntakeUrl, String webhookIntakeUrl, Secret apiKey) {
+    private static boolean configurationChanged(String url, String logIntakeUrl, String webhookIntakeUrl, Secret apiKey){
+        return !Objects.equal(instance.getUrl(), url) ||
+                !Objects.equal(instance.getLogIntakeUrl(), logIntakeUrl) ||
+                !Objects.equal(instance.getWebhookIntakeUrl(), webhookIntakeUrl) ||
+                !Objects.equal(instance.getApiKey(), apiKey);
+    }
+
+    private DatadogApiClient(String url, String logIntakeUrl, String webhookIntakeUrl, Secret apiKey) {
         this.url = url;
         this.apiKey = apiKey;
         this.logIntakeUrl = logIntakeUrl;
         this.webhookIntakeUrl = webhookIntakeUrl;
-        this.webhookBuildLogic = new DatadogWebhookBuildLogic(this);
-        this.webhookPipelineLogic = new DatadogWebhookPipelineLogic(this);
         this.httpClient = new HttpClient(HTTP_TIMEOUT_MS);
     }
 
@@ -152,11 +157,11 @@ public class DatadogHttpClient implements DatadogClient {
             try {
                 boolean logConnection = validateLogIntakeConnection();
                 if (!logConnection) {
-                    instance.setLogIntakeConnectionBroken(true);
+                    this.logIntakeConnectionBroken = true;
                     logger.warning("Connection broken, please double check both your Log Intake URL and Key");
                 }
             } catch (IOException e) {
-                instance.setLogIntakeConnectionBroken(true);
+                this.logIntakeConnectionBroken = true;
                 logger.warning("Connection broken, please double check both your Log Intake URL and Key: " + e);
             }
         }
@@ -168,18 +173,18 @@ public class DatadogHttpClient implements DatadogClient {
             try {
                 boolean webhookConnection = validateWebhookIntakeConnection();
                 if (!webhookConnection) {
-                    instance.setWebhookIntakeConnectionBroken(true);
+                    this.webhookIntakeConnectionBroken = true;
                     logger.warning("Connection broken, please double check both your Webhook Intake URL and Key");
                 }
             } catch (IOException e) {
-                instance.setWebhookIntakeConnectionBroken(true);
+                this.webhookIntakeConnectionBroken = true;
                 logger.warning("Connection broken, please double check both your Webhook Intake URL and Key: " + e);
             }
         }
 
         boolean intakeConnection = validateDefaultIntakeConnection(httpClient, url, apiKey);
         if (!intakeConnection) {
-            instance.setDefaultIntakeConnectionBroken(true);
+            this.defaultIntakeConnectionBroken = true;
             throw new IllegalArgumentException("Connection broken, please double check both your API URL and Key");
         }
     }
@@ -189,11 +194,11 @@ public class DatadogHttpClient implements DatadogClient {
         if (object == this) {
             return true;
         }
-        if (!(object instanceof DatadogHttpClient)) {
+        if (!(object instanceof DatadogApiClient)) {
             return false;
         }
 
-        DatadogHttpClient newInstance = (DatadogHttpClient) object;
+        DatadogApiClient newInstance = (DatadogApiClient) object;
 
         return StringUtils.equals(getLogIntakeUrl(), newInstance.getLogIntakeUrl())
             && StringUtils.equals(getWebhookIntakeUrl(), newInstance.getWebhookIntakeUrl())
@@ -214,86 +219,21 @@ public class DatadogHttpClient implements DatadogClient {
         return url;
     }
 
-    @Override
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
     public String getLogIntakeUrl() {
         return logIntakeUrl;
-    }
-
-    @Override
-    public void setLogIntakeUrl(String logIntakeUrl) {
-        this.logIntakeUrl = logIntakeUrl;
     }
 
     public String getWebhookIntakeUrl() {
         return webhookIntakeUrl;
     }
 
-    @Override
-    public void setWebhookIntakeUrl(String webhookIntakeUrl) {
-        this.webhookIntakeUrl = webhookIntakeUrl;
-    }
-
     public Secret getApiKey() {
         return apiKey;
     }
 
-    @Override
-    public void setApiKey(Secret apiKey) {
-        this.apiKey = apiKey;
-    }
-
-    @Override
-    public void setHostname(String hostname) {
-        // noop
-    }
-
-    @Override
-    public void setPort(Integer port) {
-        // noop
-    }
-
-    @Override
-    public void setLogCollectionPort(Integer logCollectionPort) {
-        // noop
-    }
-
-    @Override
-    public boolean isDefaultIntakeConnectionBroken() {
-        return defaultIntakeConnectionBroken;
-    }
-
-    @Override
-    public void setDefaultIntakeConnectionBroken(boolean defaultIntakeConnectionBroken) {
-        this.defaultIntakeConnectionBroken = defaultIntakeConnectionBroken;
-    }
-
-    @Override
-    public boolean isLogIntakeConnectionBroken() {
-        return logIntakeConnectionBroken;
-    }
-
-    @Override
-    public void setLogIntakeConnectionBroken(boolean logIntakeConnectionBroken) {
-        this.logIntakeConnectionBroken = logIntakeConnectionBroken;
-    }
-
-    @Override
-    public boolean isWebhookIntakeConnectionBroken() {
-        return webhookIntakeConnectionBroken;
-    }
-
-    @Override
-    public void setWebhookIntakeConnectionBroken(boolean webhookIntakeConnectionBroken) {
-        this.webhookIntakeConnectionBroken = webhookIntakeConnectionBroken;
-    }
-
     public boolean event(DatadogEvent event) {
         logger.fine("Sending event");
-        if(this.isDefaultIntakeConnectionBroken()){
+        if(this.defaultIntakeConnectionBroken){
             logger.severe("Your client is not initialized properly");
             return false;
         }
@@ -319,7 +259,7 @@ public class DatadogHttpClient implements DatadogClient {
 
     @Override
     public boolean incrementCounter(String name, String hostname, Map<String, Set<String>> tags) {
-        if(this.isDefaultIntakeConnectionBroken()){
+        if(this.defaultIntakeConnectionBroken){
             logger.severe("Your client is not initialized properly");
             return false;
         }
@@ -449,7 +389,7 @@ public class DatadogHttpClient implements DatadogClient {
      */
     @SuppressFBWarnings("REC_CATCH_EXCEPTION")
     private void postApi(final JSONObject payload, final String type) throws IOException {
-        if (this.isDefaultIntakeConnectionBroken()) {
+        if (this.defaultIntakeConnectionBroken) {
             throw new IOException("HTTP client is not initialized properly");
         }
 
@@ -470,7 +410,7 @@ public class DatadogHttpClient implements DatadogClient {
      * @return a boolean to signify the success or failure of the HTTP POST request.
      */
     public boolean sendLogs(String payload) {
-        if(this.isLogIntakeConnectionBroken()){
+        if(this.logIntakeConnectionBroken){
             logger.severe("Your client is not initialized properly");
             return false;
         }
@@ -506,40 +446,6 @@ public class DatadogHttpClient implements DatadogClient {
         }
     }
 
-    /**
-     * Posts a given payload to the Datadog Webhook Intake, using the user configured apiKey.
-     *
-     * @param payload - A webhooks payload.
-     * @return a boolean to signify the success or failure of the HTTP POST request.
-     */
-    @SuppressFBWarnings("REC_CATCH_EXCEPTION")
-    @Override
-    public boolean postWebhook(String payload) {
-        logger.fine("Sending webhook");
-        if(this.isWebhookIntakeConnectionBroken()){
-            logger.severe("Your client is not initialized properly; webhook intake connection is broken.");
-            return false;
-        }
-
-        DatadogGlobalConfiguration datadogGlobalDescriptor = DatadogUtilities.getDatadogGlobalDescriptor();
-        String urlParameters = datadogGlobalDescriptor != null ? "?service=" + datadogGlobalDescriptor.getCiInstanceName() : "";
-        String url = getWebhookIntakeUrl() + urlParameters;
-
-        Map<String, String> headers = new HashMap<>();
-        headers.put("DD-API-KEY", Secret.toString(apiKey));
-        headers.put("DD-CI-PROVIDER-NAME", "jenkins");
-
-        byte[] body = payload.getBytes(StandardCharsets.UTF_8);
-
-        try {
-            httpClient.postAsynchronously(url, headers, "application/json", body);
-            return true;
-        } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "Failed to post webhook");
-            return false;
-        }
-    }
-
     public static boolean validateDefaultIntakeConnection(HttpClient client, String validatedUrl, Secret apiKey) {
         String urlParameters = "?api_key=" + Secret.toString(apiKey);
         String url = validatedUrl + VALIDATE + urlParameters;
@@ -557,14 +463,14 @@ public class DatadogHttpClient implements DatadogClient {
         }
     }
 
-    public boolean validateLogIntakeConnection() throws IOException {
+    private boolean validateLogIntakeConnection() throws IOException {
         return postLogs("{\"message\":\"[datadog-plugin] Check connection\", " +
                 "\"ddsource\":\"Jenkins\", \"service\":\"Jenkins\", " +
                 "\"hostname\":\""+DatadogUtilities.getHostname(null)+"\"}");
     }
 
     @SuppressFBWarnings("DLS_DEAD_LOCAL_STORE")
-    public boolean validateWebhookIntakeConnection() throws IOException {
+    private boolean validateWebhookIntakeConnection() throws IOException {
         String url = getWebhookIntakeUrl();
 
         Map<String, String> headers = new HashMap<>();
@@ -587,50 +493,38 @@ public class DatadogHttpClient implements DatadogClient {
     }
 
     @Override
-    public boolean startBuildTrace(BuildData buildData, Run run) {
-        if(this.isWebhookIntakeConnectionBroken()){
-            logger.severe("Unable to start build trace; your client is not initialized properly.");
-            return false;
-        }
-        try {
-            logger.fine("Started build trace");
-            this.webhookBuildLogic.startBuildTrace(buildData, run);
-            return true;
-        } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "Failed to start build trace");
-            return false;
-        }
+    public TraceWriteStrategy createTraceWriteStrategy() {
+        return new TraceWriteStrategyImpl(Track.WEBHOOK, this::sendSpans);
     }
 
-    @Override
-    public boolean finishBuildTrace(BuildData buildData, Run<?, ?> run) {
-        if(this.isWebhookIntakeConnectionBroken()){
-            logger.severe("Unable to finish build trace; your client is not initialized properly.");
-            return false;
+    private void sendSpans(Collection<Payload> spans) {
+        if (this.webhookIntakeConnectionBroken) {
+            throw new RuntimeException("Your client is not initialized properly; webhook intake connection is broken.");
         }
-        try {
-            logger.fine("Finished build trace");
-            this.webhookBuildLogic.finishBuildTrace(buildData, run);
-            return true;
-        } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "Failed to finish build trace");
-            return false;
-        }
-    }
 
-    @Override
-    public boolean sendPipelineTrace(Run<?, ?> run, FlowNode flowNode) {
-        if(this.isWebhookIntakeConnectionBroken()){
-            logger.severe("Unable to send pipeline trace; your client is not initialized properly");
-            return false;
-        }
-        try {
-            logger.fine("Send pipeline traces.");
-            this.webhookPipelineLogic.execute(run, flowNode);
-            return true;
-        } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "Failed to send pipeline trace");
-            return false;
+        DatadogGlobalConfiguration datadogGlobalDescriptor = DatadogUtilities.getDatadogGlobalDescriptor();
+        String urlParameters = datadogGlobalDescriptor != null ? "?service=" + datadogGlobalDescriptor.getCiInstanceName() : "";
+        String url = getWebhookIntakeUrl() + urlParameters;
+
+        Map<String, String> headers = new HashMap<>();
+        headers.put("DD-API-KEY", Secret.toString(apiKey));
+        headers.put("DD-CI-PROVIDER-NAME", "jenkins");
+
+        for (Payload span : spans) {
+            if (span.getTrack() != Track.WEBHOOK) {
+                logger.severe("Expected webhook track, got " + span.getTrack() + ", dropping span");
+                continue;
+            }
+
+            byte[] body = span.getJson().toString().getBytes(StandardCharsets.UTF_8);
+            if (body.length > PAYLOAD_SIZE_LIMIT) {
+                logger.severe("Dropping span because payload size (" + body.length + ") exceeds the allowed limit of " + PAYLOAD_SIZE_LIMIT);
+                continue;
+            }
+
+            // webhook intake does not support batch requests
+            logger.fine("Sending webhook");
+            httpClient.postAsynchronously(url, headers, "application/json", body);
         }
     }
 }

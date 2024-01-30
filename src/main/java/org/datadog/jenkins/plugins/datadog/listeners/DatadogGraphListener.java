@@ -65,6 +65,8 @@ import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
 import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
 import org.datadog.jenkins.plugins.datadog.model.StageData;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
+import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriter;
+import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.gitclient.GitClient;
@@ -105,13 +107,22 @@ public class DatadogGraphListener implements GraphListener {
             }
         }
 
-        //APM Traces
+        TraceWriter traceWriter = TraceWriterFactory.getTraceWriter();
+        if (traceWriter != null) {
+            try {
+                traceWriter.submitPipelineStep(flowNode, run);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                DatadogUtilities.severe(logger, e, "Interrupted while submitting pipeline trace for node " + flowNode.getDisplayName() + " in run " + (run != null ? run.getDisplayName() : "<null>"));
+            } catch (Exception e) {
+                DatadogUtilities.severe(logger, e, "Error while submitting pipeline trace for node " + flowNode.getDisplayName() + " in run " + (run != null ? run.getDisplayName() : "<null>"));
+            }
+        }
+
         DatadogClient client = ClientFactory.getClient();
         if (client == null){
             return;
         }
-
-        client.sendPipelineTrace(run, flowNode);
 
         if (!isMonitored(flowNode)) {
             return;

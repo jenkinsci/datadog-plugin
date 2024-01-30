@@ -9,28 +9,28 @@ import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.filterSens
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 
+import hudson.model.Run;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
-
+import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
+import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
 import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
+import org.datadog.jenkins.plugins.datadog.traces.mapper.JsonTraceSpanMapper;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
-import org.datadog.jenkins.plugins.datadog.transport.HttpClient;
-import org.datadog.jenkins.plugins.datadog.transport.PayloadMessage;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
-
-import hudson.model.Run;
 
 
 /**
@@ -39,23 +39,19 @@ import hudson.model.Run;
  */
 public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
 
-    private static final Logger logger = Logger.getLogger(DatadogTracePipelineLogic.class.getName());
+    private final JsonTraceSpanMapper jsonTraceSpanMapper = new JsonTraceSpanMapper();
 
-    private final HttpClient agentHttpClient;
-
-    public DatadogTracePipelineLogic(HttpClient agentHttpClient) {
-        this.agentHttpClient = agentHttpClient;
+    @Nonnull
+    @Override
+    public Collection<JSONObject> execute(FlowNode flowNode, Run run) {
+        Collection<TraceSpan> traces = collectTraces(flowNode, run);
+        return traces.stream().map(jsonTraceSpanMapper::map).collect(Collectors.toList());
     }
 
-    @Override
-    public void execute(Run run, FlowNode flowNode) {
+    // hook for tests
+    public Collection<TraceSpan> collectTraces(FlowNode flowNode, Run run) {
         if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
-            return;
-        }
-
-        if(this.agentHttpClient == null) {
-            logger.severe("Unable to send pipeline traces. Tracer is null");
-            return;
+            return Collections.emptySet();
         }
 
         final IsPipelineAction isPipelineAction = run.getAction(IsPipelineAction.class);
@@ -65,40 +61,34 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
 
         final BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
         if(buildSpanAction == null) {
-            return;
+            return Collections.emptySet();
         }
 
         final BuildData buildData = buildSpanAction.getBuildData();
         if(!DatadogUtilities.isLastNode(flowNode)){
             updateCIGlobalTags(run);
-            return;
+            return Collections.emptySet();
         }
 
         final TraceSpan.TraceSpanContext traceSpanContext = buildSpanAction.getBuildSpanContext();
         final BuildPipelineNode root = buildPipelineTree((FlowEndNode) flowNode);
 
-        final List<PayloadMessage> spanBuffer = new ArrayList<>();
-        collectTraces(run, spanBuffer, buildData, root, traceSpanContext);
-
         try {
-            if(!spanBuffer.isEmpty()) {
-                this.agentHttpClient.send(spanBuffer);
-            }
-        } catch (Exception e){
-            logger.severe("Unable to send traces. Exception:" + e);
+            return collectTraces(run, buildData, root, traceSpanContext);
         } finally {
             // Explicit removal of InvisibleActions used to collect Traces when the Run finishes.
             cleanUpTraceActions(run);
         }
     }
 
-    private void collectTraces(final Run run, final List<PayloadMessage> spanBuffer, final BuildData buildData, final BuildPipelineNode current, final TraceSpan.TraceSpanContext parentSpanContext) {
+    private Collection<TraceSpan> collectTraces(final Run<?, ?> run, final BuildData buildData, final BuildPipelineNode current, final TraceSpan.TraceSpanContext parentSpanContext) {
         if(!isTraceable(current)) {
+            Collection<TraceSpan> traces = new ArrayList<>();
             // If the current node is not traceable, we continue with its children
             for(final BuildPipelineNode child : current.getChildren()) {
-                collectTraces(run, spanBuffer, buildData, child, parentSpanContext);
+                traces.addAll(collectTraces(run, buildData, child, parentSpanContext));
             }
-            return;
+            return traces;
         }
 
         // If the root span has propagated queue time, we need to adjust all startTime and endTime from Jenkins pipelines spans
@@ -136,8 +126,9 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
             }
         }
 
+        Collection<TraceSpan> traces = new ArrayList<>();
         for(final BuildPipelineNode child : current.getChildren()) {
-            collectTraces(run, spanBuffer, buildData, child, span.context());
+            traces.addAll(collectTraces(run, buildData, child, span.context()));
         }
 
         //Logs
@@ -145,7 +136,8 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
 
         span.setEndNano(fixedEndTimeNanos);
 
-        spanBuffer.add(span);
+        traces.add(span);
+        return traces;
     }
 
     private Map<String, Long> buildTraceMetrics(BuildPipelineNode current) {
