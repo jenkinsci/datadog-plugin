@@ -44,6 +44,8 @@ public abstract class DatadogBaseBuildLogic {
                 return Collections.emptySet();
             }
 
+            // First examine PipelineNodeInfoAction associated with the build.
+            // The action is populated in step listener based on environment and executor data available for pipeline steps.
             final PipelineNodeInfoAction pipelineNodeInfoAction = run.getAction(PipelineNodeInfoAction.class);
             if(pipelineNodeInfoAction != null) {
                 return pipelineNodeInfoAction.getNodeLabels();

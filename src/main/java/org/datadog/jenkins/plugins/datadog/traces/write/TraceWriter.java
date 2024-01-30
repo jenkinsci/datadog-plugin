@@ -13,7 +13,7 @@ import javax.annotation.Nullable;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 
 public final class TraceWriter {
 
@@ -58,8 +58,8 @@ public final class TraceWriter {
         submit(span);
     }
 
-    public void submitPipelineStep(BuildPipelineNode node, Run<?, ?> run) throws InterruptedException, TimeoutException, IOException {
-        Payload span = traceWriteStrategy.serialize(node, run);
+    public void submitPipelineStep(PipelineStepData stepData, Run<?, ?> run) throws InterruptedException, TimeoutException, IOException {
+        Payload span = traceWriteStrategy.serialize(stepData, run);
         submit(span);
     }
 

@@ -19,7 +19,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 import org.datadog.jenkins.plugins.datadog.model.Status;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
@@ -31,7 +31,7 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
 
     @Nonnull
     @Override
-    public JSONObject toJson(BuildPipelineNode current, Run<?, ?> run) throws IOException, InterruptedException {
+    public JSONObject toJson(PipelineStepData current, Run<?, ?> run) throws IOException, InterruptedException {
         BuildData buildData = new BuildData(run, DatadogUtilities.getTaskListener(run));
 
         JSONObject payload = new JSONObject();

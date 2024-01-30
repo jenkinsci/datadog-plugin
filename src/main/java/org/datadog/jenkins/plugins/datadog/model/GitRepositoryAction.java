@@ -6,6 +6,7 @@ import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 import java.util.Objects;
+import javax.annotation.Nullable;
 import org.datadog.jenkins.plugins.datadog.util.DatadogActionConverter;
 
 /**
@@ -28,6 +29,7 @@ public class GitRepositoryAction extends DatadogPluginAction {
         this.branch = branch;
     }
 
+    @Nullable
     public String getRepositoryURL() {
         return repositoryURL;
     }
@@ -36,6 +38,7 @@ public class GitRepositoryAction extends DatadogPluginAction {
         this.repositoryURL = repositoryURL;
     }
 
+    @Nullable
     public String getDefaultBranch() {
         return defaultBranch;
     }
@@ -44,6 +47,7 @@ public class GitRepositoryAction extends DatadogPluginAction {
         this.defaultBranch = defaultBranch;
     }
 
+    @Nullable
     public String getBranch() {
         return branch;
     }

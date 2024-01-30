@@ -388,10 +388,22 @@ public class BuildData implements Serializable {
         this.promotedJobFullName = envVars.get("PROMOTED_JOB_FULL_NAME");
     }
 
-
     /**
      * Populate git commit related information in the BuildData instance.
-     * @param run
+     * The data is retrieved from {@link GitRepositoryAction} and {@link GitCommitAction} that are associated with the build.
+     * The actions are populated from two main sources:
+     * <ol>
+     *     <li>Environment variables of specific pipeline steps:
+     *     pipeline object has its own set of env variables, but it is minimal;
+     *     the whole set of env variables
+     *     (including those that are set by Jenkins Git Plugin or manually by the pipeline authors)
+     *     is only available for individual pipeline steps.
+     *     That is why in {@link org.datadog.jenkins.plugins.datadog.listeners.DatadogStepListener}
+     *     we examine the full set of env vars to see if we can extract any git-related info</li>
+     *     <li>Git repositories that were checked out during pipeline execution:
+     *     {@link org.datadog.jenkins.plugins.datadog.listeners.DatadogSCMListener} is notified of every source-code checkout.
+     *     If the checked out repo is a git repository, we create a git client and examine repository metadata</li>
+     * </ol>
      */
     private void populateGitVariables(Run<?,?> run) {
         GitRepositoryAction gitRepositoryAction = run.getAction(GitRepositoryAction.class);
@@ -404,7 +416,6 @@ public class BuildData implements Serializable {
     /**
      * Populate the information related to the commit (message, author and committer) based on the GitCommitAction
      * only if the user has not set the value manually.
-     * @param gitCommitAction
      */
     private void populateCommitInfo(GitCommitAction gitCommitAction) {
         if(gitCommitAction != null) {

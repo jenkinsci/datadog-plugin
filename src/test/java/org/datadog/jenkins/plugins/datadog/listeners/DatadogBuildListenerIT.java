@@ -43,7 +43,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
-import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.jetbrains.annotations.NotNull;
@@ -154,7 +154,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         env.put("WORKSPACE", ws.getRemote());
 
         FreeStyleBuild run = project.scheduleBuild2(0).get();
-        final String buildPrefix = BuildPipelineNode.NodeType.PIPELINE.getTagName();
+        final String buildPrefix = PipelineStepData.StepType.PIPELINE.getTagName();
 
         clientStub.waitForTraces(1);
         final List<TraceSpan> spans = clientStub.getSpans();
@@ -164,8 +164,8 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         assertGitVariablesOnSpan(buildSpan, "master", toUrl(localGitRepoPath.getRemote()));
         final Map<String, String> meta = buildSpan.getMeta();
         final Map<String, Double> metrics = buildSpan.getMetrics();
-        assertEquals(BuildPipelineNode.NodeType.PIPELINE.getBuildLevel(), meta.get(CITags._DD_CI_BUILD_LEVEL));
-        assertEquals(BuildPipelineNode.NodeType.PIPELINE.getBuildLevel(), meta.get(CITags._DD_CI_LEVEL));
+        assertEquals(PipelineStepData.StepType.PIPELINE.getBuildLevel(), meta.get(CITags._DD_CI_BUILD_LEVEL));
+        assertEquals(PipelineStepData.StepType.PIPELINE.getBuildLevel(), meta.get(CITags._DD_CI_LEVEL));
         assertEquals(ORIGIN_CIAPP_PIPELINE, meta.get(CITags._DD_ORIGIN));
         assertEquals("jenkins.build", buildSpan.getOperationName());
         assertEquals(SAMPLE_SERVICE_NAME, buildSpan.getServiceName());

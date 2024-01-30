@@ -1,6 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.util.git;
 
 import java.io.Serializable;
+import javax.annotation.Nullable;
 
 public class RepositoryInfo implements Serializable {
 
@@ -16,14 +17,17 @@ public class RepositoryInfo implements Serializable {
         this.branch = branch;
     }
 
+    @Nullable
     public String getRepoUrl() {
         return repoUrl;
     }
 
+    @Nullable
     public String getDefaultBranch() {
         return defaultBranch;
     }
 
+    @Nullable
     public String getBranch() {
         return branch;
     }

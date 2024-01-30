@@ -1,7 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.toJson;
-import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.NodeType.PIPELINE;
+import static org.datadog.jenkins.plugins.datadog.model.PipelineStepData.StepType.PIPELINE;
 import static org.datadog.jenkins.plugins.datadog.traces.CITags.Values.ORIGIN_CIAPP_PIPELINE;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.filterSensitiveInfo;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
@@ -19,7 +19,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 import org.datadog.jenkins.plugins.datadog.model.Status;
 import org.datadog.jenkins.plugins.datadog.traces.mapper.JsonTraceSpanMapper;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
@@ -36,14 +36,14 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
 
     @Nonnull
     @Override
-    public JSONObject toJson(BuildPipelineNode flowNode, Run<?, ?> run) throws IOException, InterruptedException {
+    public JSONObject toJson(PipelineStepData flowNode, Run<?, ?> run) throws IOException, InterruptedException {
         TraceSpan span = toSpan(flowNode, run);
         return jsonTraceSpanMapper.map(span);
     }
 
     // hook for tests
     @Nonnull
-    public TraceSpan toSpan(BuildPipelineNode current, Run<?, ?> run) throws IOException, InterruptedException {
+    public TraceSpan toSpan(PipelineStepData current, Run<?, ?> run) throws IOException, InterruptedException {
         BuildData buildData = new BuildData(run, DatadogUtilities.getTaskListener(run));
 
         // If the root span has propagated queue time, we need to adjust all startTime and endTime from Jenkins pipelines spans
@@ -88,13 +88,13 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
         return span;
     }
 
-    private Map<String, Long> buildTraceMetrics(BuildPipelineNode current) {
+    private Map<String, Long> buildTraceMetrics(PipelineStepData current) {
         final Map<String, Long> metrics = new HashMap<>();
         metrics.put(CITags.QUEUE_TIME, TimeUnit.NANOSECONDS.toSeconds(current.getNanosInQueue()));
         return metrics;
     }
 
-    private Map<String, Object> buildTraceTags(final Run<?, ?> run, final BuildPipelineNode current, final BuildData buildData) {
+    private Map<String, Object> buildTraceTags(final Run<?, ?> run, final PipelineStepData current, final BuildData buildData) {
         final String prefix = current.getType().getTagName();
         final String buildLevel = current.getType().getBuildLevel();
 
@@ -219,8 +219,8 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
         tags.put(PIPELINE.getTagName() + CITags._ID, buildData.getBuildTag(""));
 
         // Propagate Stage Name
-        if(!BuildPipelineNode.NodeType.STAGE.equals(current.getType()) && current.getStageName() != null) {
-            tags.put(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME, current.getStageName());
+        if(!PipelineStepData.StepType.STAGE.equals(current.getType()) && current.getStageName() != null) {
+            tags.put(PipelineStepData.StepType.STAGE.getTagName() + CITags._NAME, current.getStageName());
         }
 
         // CI Tags propagation

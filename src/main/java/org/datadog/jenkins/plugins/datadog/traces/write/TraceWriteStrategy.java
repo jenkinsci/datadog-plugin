@@ -5,14 +5,14 @@ import java.io.IOException;
 import java.util.Collection;
 import javax.annotation.Nullable;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 
 public interface TraceWriteStrategy {
     @Nullable
     Payload serialize(BuildData buildData, Run<?, ?> run);
 
     @Nullable
-    Payload serialize(BuildPipelineNode node, Run<?, ?> run) throws IOException, InterruptedException;
+    Payload serialize(PipelineStepData stepData, Run<?, ?> run) throws IOException, InterruptedException;
 
     void send(Collection<Payload> spans);
 }

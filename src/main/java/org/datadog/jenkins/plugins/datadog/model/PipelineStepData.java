@@ -18,11 +18,11 @@ import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 /**
- * Represent a stage of the Jenkins Pipeline.
+ * Represents a step in a Jenkins Pipeline.
  */
-public class BuildPipelineNode {
+public class PipelineStepData {
 
-    public enum NodeType {
+    public enum StepType {
         PIPELINE("ci.pipeline", "pipeline"),
         STAGE("ci.stage", "stage"),
         STEP("ci.job", "job");
@@ -30,7 +30,7 @@ public class BuildPipelineNode {
         private final String tagName;
         private final String buildLevel;
 
-        NodeType(final String tagName, final String buildLevel) {
+        StepType(final String tagName, final String buildLevel) {
             this.tagName = tagName;
             this.buildLevel = buildLevel;
         }
@@ -49,7 +49,7 @@ public class BuildPipelineNode {
     private String stageId;
     private String stageName;
 
-    private NodeType type;
+    private StepType type;
     private Map<String, Object> args;
     private String workspace;
     private String nodeName;
@@ -71,10 +71,10 @@ public class BuildPipelineNode {
     private long parentSpanId = -1;
     private long traceId;
 
-    public BuildPipelineNode(final Run<?, ?> run, final BlockStartNode startNode, final BlockEndNode<?> endNode) {
+    public PipelineStepData(final Run<?, ?> run, final BlockStartNode startNode, final BlockEndNode<?> endNode) {
         this(run, startNode);
 
-        this.type = NodeType.STAGE;
+        this.type = StepType.STAGE;
 
         this.startTimeMicros = TimeUnit.MILLISECONDS.toMicros(DatadogUtilities.getTimeMillis(startNode));
         if (startTimeMicros < 0) {
@@ -100,10 +100,10 @@ public class BuildPipelineNode {
         }
     }
 
-    public BuildPipelineNode(final Run<?, ?> run, final StepAtomNode stepNode, final FlowNode nextNode) {
+    public PipelineStepData(final Run<?, ?> run, final StepAtomNode stepNode, final FlowNode nextNode) {
         this(run, stepNode);
 
-        this.type = NodeType.STEP;
+        this.type = StepType.STEP;
 
         this.startTimeMicros = TimeUnit.MILLISECONDS.toMicros(DatadogUtilities.getTimeMillis(stepNode));
         if (startTimeMicros < 0) {
@@ -132,9 +132,14 @@ public class BuildPipelineNode {
         }
     }
 
-    private BuildPipelineNode(final Run<?, ?> run, FlowNode startNode) {
+    private PipelineStepData(final Run<?, ?> run, FlowNode startNode) {
         TraceInfoAction traceInfoAction = run.getAction(TraceInfoAction.class);
         if (traceInfoAction != null) {
+            /*
+             * Use "remove-or-create" semantics:
+             * - if the ID is there in the action, remove it since it is no longer needed (we're about to submit this node and be done with it)
+             * - if the ID is not there, create a new one on the spot without saving it in the action (IDs are initialized lazily, if the node's ID is not there, it means the node had no children that needed to know its ID)
+             */
             Long spanId = traceInfoAction.removeOrCreate(startNode.getId());
             if (spanId != null) {
                 this.spanId = spanId;
@@ -144,6 +149,10 @@ public class BuildPipelineNode {
                     "It is possible that CI Visibility was enabled while this step was in progress");
         }
 
+        /*
+         * Find node's parent: iterate over the blocks that contain it, starting with the innermost,
+         * until we find a block that is included in the trace (a block that corresponds to a stage).
+         */
         BlockStartNode enclosingStage = DatadogUtilities.getEnclosingStageNode(startNode);
         if (enclosingStage != null) {
             this.stageId = enclosingStage.getId();
@@ -159,6 +168,11 @@ public class BuildPipelineNode {
         if (buildSpanAction != null) {
             TraceSpan.TraceSpanContext traceContext = buildSpanAction.getBuildSpanContext();
             this.traceId = traceContext.getTraceId();
+
+            /*
+             * If we didn't find this node's parent previously,
+             * then it is a top-level stage, so its parent will be the span that correspond to the build as a whole.
+             */
             if (this.parentSpanId == -1) {
                 this.parentSpanId = traceContext.getSpanId();
             }
@@ -261,7 +275,7 @@ public class BuildPipelineNode {
         return traceId;
     }
 
-    public NodeType getType() {
+    public StepType getType() {
         return type;
     }
 

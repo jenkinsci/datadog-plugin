@@ -19,7 +19,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 import org.datadog.jenkins.plugins.datadog.traces.mapper.JsonTraceSpanMapper;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
@@ -58,8 +58,8 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
             return null;
         }
 
-        final String prefix = BuildPipelineNode.NodeType.PIPELINE.getTagName();
-        final String buildLevel = BuildPipelineNode.NodeType.PIPELINE.getBuildLevel();
+        final String prefix = PipelineStepData.StepType.PIPELINE.getTagName();
+        final String buildLevel = PipelineStepData.StepType.PIPELINE.getBuildLevel();
         final long endTimeMicros = buildData.getEndTime(0L) * 1000;
 
         buildSpan.setServiceName(DatadogUtilities.getDatadogGlobalDescriptor().getCiInstanceName());
@@ -90,9 +90,9 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
         // - DatadogBuildListener#onInitialize created a BuildData instance
         // - that BuildData had its nodeName populated from environment variables obtained from Run
         // - the instance was persisted in an Action attached to Run, and was used to populate the node name of the pipeline span (always as the last fallback)
-        // For pipelines, the environment variables that Run#getEnvironment returns _at the beginning of the run_ always (!) contain NODE_NAME = "built-in"
-        // This is true regardless of whether the pipeline definition has a top-level agent block or not
-        // For freestyle projects the correct NODE_NAME seems to be available in the run's environment variables at every stage of the build
+        // For pipelines, the environment variables that Run#getEnvironment returns at the beginning of the run always (!) contain NODE_NAME = "built-in" (when invoked at the end of the run, the env will have a different set of variables).
+        // This is true regardless of whether the pipeline definition has a top-level agent block or not.
+        // For freestyle projects the correct NODE_NAME seems to be available in the run's environment variables at every stage of the build's lifecycle.
         String nodeName = buildData.getNodeName("built-in");
         buildSpan.putMeta(CITags.WORKSPACE_PATH, buildData.getWorkspace(""));
         buildSpan.putMeta(CITags.NODE_NAME, nodeName);

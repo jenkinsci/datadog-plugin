@@ -9,7 +9,7 @@ import javax.annotation.Nullable;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogBaseBuildLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogBasePipelineLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic;
@@ -54,8 +54,8 @@ public class TraceWriteStrategyImpl implements TraceWriteStrategy {
 
     @Nullable
     @Override
-    public Payload serialize(BuildPipelineNode node, Run<?, ?> run) throws IOException, InterruptedException {
-        JSONObject stepSpan = pipelineLogic.toJson(node, run);
+    public Payload serialize(PipelineStepData stepData, Run<?, ?> run) throws IOException, InterruptedException {
+        JSONObject stepSpan = pipelineLogic.toJson(stepData, run);
         return stepSpan != null ? new Payload(stepSpan, track) : null;
     }
 

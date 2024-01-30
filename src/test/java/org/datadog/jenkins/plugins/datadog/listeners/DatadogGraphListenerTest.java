@@ -52,7 +52,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
-import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
@@ -661,18 +661,18 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals(6, spans.size());
 
         final TraceSpan stage1 = searchSpan(spans, "Stage 1");
-        final String stage1Name = stage1.getMeta().get(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME);
+        final String stage1Name = stage1.getMeta().get(PipelineStepData.StepType.STAGE.getTagName() + CITags._NAME);
         assertTrue(stage1Name != null && !stage1Name.isEmpty());
 
         final TraceSpan stepStage1 = searchFirstChild(spans, stage1);
-        assertEquals(stage1Name, stepStage1.getMeta().get(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));
+        assertEquals(stage1Name, stepStage1.getMeta().get(PipelineStepData.StepType.STAGE.getTagName() + CITags._NAME));
 
         final TraceSpan stage2 = searchSpan(spans, "Stage 2");
-        final String stage2Name = stage2.getMeta().get(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME);
+        final String stage2Name = stage2.getMeta().get(PipelineStepData.StepType.STAGE.getTagName() + CITags._NAME);
         assertTrue(stage2Name != null && !stage2Name.isEmpty());
 
         final TraceSpan stepStage2 = searchFirstChild(spans, stage2);
-        assertEquals(stage2Name, stepStage2.getMeta().get(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));
+        assertEquals(stage2Name, stepStage2.getMeta().get(PipelineStepData.StepType.STAGE.getTagName() + CITags._NAME));
     }
 
     @Test
@@ -885,9 +885,9 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         clientStub.assertMetric("jenkins.job.stage_duration", hostname, tags);
         clientStub.assertMetric("jenkins.job.stage_pause_duration", 0, hostname, tags);
 
-        final String buildPrefix = BuildPipelineNode.NodeType.PIPELINE.getTagName();
-        final String stagePrefix = BuildPipelineNode.NodeType.STAGE.getTagName();
-        final String stepPrefix = BuildPipelineNode.NodeType.STEP.getTagName();
+        final String buildPrefix = PipelineStepData.StepType.PIPELINE.getTagName();
+        final String stagePrefix = PipelineStepData.StepType.STAGE.getTagName();
+        final String stepPrefix = PipelineStepData.StepType.STEP.getTagName();
 
         clientStub.waitForTraces(3);
         final List<TraceSpan> spans = clientStub.getSpans();
@@ -914,8 +914,8 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals("success", buildSpanMeta.get(CITags.JENKINS_RESULT));
         assertEquals("jenkins-pipelineIntegrationSuccess-1", buildSpanMeta.get(CITags.JENKINS_TAG));
         assertEquals("false", buildSpanMeta.get(CITags._DD_CI_INTERNAL));
-        assertEquals(BuildPipelineNode.NodeType.PIPELINE.getBuildLevel(), buildSpanMeta.get(CITags._DD_CI_BUILD_LEVEL));
-        assertEquals(BuildPipelineNode.NodeType.PIPELINE.getBuildLevel(), buildSpanMeta.get(CITags._DD_CI_LEVEL));
+        assertEquals(PipelineStepData.StepType.PIPELINE.getBuildLevel(), buildSpanMeta.get(CITags._DD_CI_BUILD_LEVEL));
+        assertEquals(PipelineStepData.StepType.PIPELINE.getBuildLevel(), buildSpanMeta.get(CITags._DD_CI_LEVEL));
         assertNotNull(buildSpanMeta.get(CITags._DD_CI_STAGES));
         assertTrue(buildSpanMeta.get(CITags._DD_CI_STAGES).contains("{\"name\":\"test\",\"duration\""));
 
@@ -935,10 +935,10 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         checkHostNameTag(stageSpanMeta);
         assertEquals("false", stageSpanMeta.get(CITags._DD_CI_INTERNAL));
         assertEquals("4", stageSpanMeta.get(stagePrefix + CITags._NUMBER));
-        assertEquals(BuildPipelineNode.NodeType.STAGE.getBuildLevel(), stageSpanMeta.get(CITags._DD_CI_BUILD_LEVEL));
-        assertEquals(BuildPipelineNode.NodeType.STAGE.getBuildLevel(), stageSpanMeta.get(CITags._DD_CI_LEVEL));
-        assertEquals("jenkins-pipelineIntegrationSuccess-1", stageSpanMeta.get(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._ID));
-        assertEquals("pipelineIntegrationSuccess", stageSpanMeta.get(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._NAME));
+        assertEquals(PipelineStepData.StepType.STAGE.getBuildLevel(), stageSpanMeta.get(CITags._DD_CI_BUILD_LEVEL));
+        assertEquals(PipelineStepData.StepType.STAGE.getBuildLevel(), stageSpanMeta.get(CITags._DD_CI_LEVEL));
+        assertEquals("jenkins-pipelineIntegrationSuccess-1", stageSpanMeta.get(PipelineStepData.StepType.PIPELINE.getTagName() + CITags._ID));
+        assertEquals("pipelineIntegrationSuccess", stageSpanMeta.get(PipelineStepData.StepType.PIPELINE.getTagName() + CITags._NAME));
         assertNotNull(stageSpan.getMetrics().get(CITags.QUEUE_TIME));
 
         final TraceSpan stepSpan = spans.get(2);
@@ -959,11 +959,11 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         checkHostNameTag(stepSpanMeta);
         assertEquals("false", stepSpanMeta.get(CITags._DD_CI_INTERNAL));
         assertEquals("5", stepSpanMeta.get(stepPrefix + CITags._NUMBER));
-        assertEquals(BuildPipelineNode.NodeType.STEP.getBuildLevel(), stepSpanMeta.get(CITags._DD_CI_BUILD_LEVEL));
-        assertEquals(BuildPipelineNode.NodeType.STEP.getBuildLevel(), stepSpanMeta.get(CITags._DD_CI_LEVEL));
-        assertEquals("jenkins-pipelineIntegrationSuccess-1", stepSpanMeta.get(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._ID));
-        assertEquals("pipelineIntegrationSuccess", stepSpanMeta.get(BuildPipelineNode.NodeType.PIPELINE.getTagName() + CITags._NAME));
-        assertEquals("test", stepSpanMeta.get(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME));
+        assertEquals(PipelineStepData.StepType.STEP.getBuildLevel(), stepSpanMeta.get(CITags._DD_CI_BUILD_LEVEL));
+        assertEquals(PipelineStepData.StepType.STEP.getBuildLevel(), stepSpanMeta.get(CITags._DD_CI_LEVEL));
+        assertEquals("jenkins-pipelineIntegrationSuccess-1", stepSpanMeta.get(PipelineStepData.StepType.PIPELINE.getTagName() + CITags._ID));
+        assertEquals("pipelineIntegrationSuccess", stepSpanMeta.get(PipelineStepData.StepType.PIPELINE.getTagName() + CITags._NAME));
+        assertEquals("test", stepSpanMeta.get(PipelineStepData.StepType.STAGE.getTagName() + CITags._NAME));
         assertNotNull(stepSpan.getMetrics().get(CITags.QUEUE_TIME));
 
         assertCleanupActions(run);

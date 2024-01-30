@@ -43,8 +43,10 @@ import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.Metrics;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.model.DatadogPluginAction;
+import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 import org.datadog.jenkins.plugins.datadog.model.Status;
+import org.datadog.jenkins.plugins.datadog.model.TraceInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.node.NodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.node.StatusAction;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriter;
@@ -146,6 +148,36 @@ public class DatadogGraphListener implements GraphListener {
         }
     }
 
+    /**
+     * This is the method responsible for tracing pipeline steps.
+     * The start and finish of every pipeline step is reported to pipeline "graph" listeners as an instance of {@code FlowNode}.
+     * The nodes in a pipeline graph can be divided into two categories:
+     * <ol>
+     *  <li>Atomic steps. Since these steps are "atomic", we only receive one event for such steps ({@link StepAtomNode}) that is emitted before the step starts</li>
+     *  <li>Block steps. Blocks are compound steps that can contain atomic steps or other blocks. For every block we receive two events: {@link BlockStartNode} and {@link BlockEndNode} that correspond to the start and end of the block respectively.</li>
+     * </ol>
+     *
+     * We trace all atomic steps, but not all blocks.
+     * We only trace those blocks that conform to our stage definition in {@link DatadogUtilities#isStageNode(FlowNode)}.
+     *
+     * <p>
+     * When a step that we trace finishes, we do the following:
+     * <ul>
+     *  <li>Create a domain object that contains traced data ({@link PipelineStepData})</li>
+     *  <li>Propagate step status to its parents (if needed)</li>
+     *  <li>Submit step data for serialization and dispatch</li>
+     * </ul>
+     *
+     * When gathering traced data, children steps will need to know certain information about their parent
+     * (first and foremost, the parent's span ID for creating parent-child links in Datadog - see {@link TraceInfoAction}),
+     * and parent steps will need to know certain information about their children
+     * (for example, if a children execution finished with an error, this error might need to be propagated to parent).
+     * This information is stored in various children of {@link DatadogPluginAction}.
+     * Those actions that store data relevant for a specific step are attached to {@link FlowNode}.
+     * Those that store data relevant for the pipeline as a whole are attached to {@link WorkflowRun}.
+     * These actions are persisted to disk along with the rest of the pipeline/node state,
+     * so it is important to make sure that they contain as little data as possible, and that they are removed once no longer needed.
+     */
     private void processNode(WorkflowRun run, FlowNode flowNode) {
         try {
             List<FlowNode> parents = flowNode.getParents();
@@ -174,12 +206,12 @@ public class DatadogGraphListener implements GraphListener {
 
     private void processNode(WorkflowRun run, FlowNode node, FlowNode nextNode) {
         try {
-            BuildPipelineNode pipelineNode = buildPipelineNode(run, node, nextNode);
+            PipelineStepData stepData = buildStepData(run, node, nextNode);
             propagateStatus(node, nextNode);
 
             TraceWriter traceWriter = TraceWriterFactory.getTraceWriter();
             if (traceWriter != null) {
-                traceWriter.submitPipelineStep(pipelineNode, run);
+                traceWriter.submitPipelineStep(stepData, run);
             }
 
         } catch (InterruptedException e) {
@@ -251,14 +283,14 @@ public class DatadogGraphListener implements GraphListener {
         }
     }
 
-    private BuildPipelineNode buildPipelineNode(WorkflowRun run, FlowNode node, FlowNode nextNode) {
+    private PipelineStepData buildStepData(WorkflowRun run, FlowNode node, FlowNode nextNode) {
         long start = System.currentTimeMillis();
         try {
             if (node instanceof StepAtomNode) {
-                return new BuildPipelineNode(run, (StepAtomNode) node, nextNode);
+                return new PipelineStepData(run, (StepAtomNode) node, nextNode);
             } else if (node instanceof BlockEndNode) {
                 BlockEndNode<?> endNode = (BlockEndNode<?>) node;
-                return new BuildPipelineNode(run, endNode.getStartNode(), endNode);
+                return new PipelineStepData(run, endNode.getStartNode(), endNode);
             } else {
                 throw new IllegalArgumentException("Unexpected flow node type: " + node);
             }

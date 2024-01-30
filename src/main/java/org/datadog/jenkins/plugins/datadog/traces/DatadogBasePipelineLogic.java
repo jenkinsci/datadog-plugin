@@ -8,7 +8,7 @@ import java.util.Set;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 
@@ -21,14 +21,18 @@ public abstract class DatadogBasePipelineLogic {
     protected static final String CI_PROVIDER = "jenkins";
     protected static final String HOSTNAME_NONE = "none";
 
-    public abstract JSONObject toJson(BuildPipelineNode current, Run<?, ?> run) throws IOException, InterruptedException;
+    public abstract JSONObject toJson(PipelineStepData current, Run<?, ?> run) throws IOException, InterruptedException;
 
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
-    protected Set<String> getNodeLabels(Run run, BuildPipelineNode current, String nodeName) {
+    protected Set<String> getNodeLabels(Run run, PipelineStepData current, String nodeName) {
         final PipelineNodeInfoAction pipelineNodeInfoAction = run.getAction(PipelineNodeInfoAction.class);
         if (current.getNodeLabels() != null && !current.getNodeLabels().isEmpty()) {
+            // First examine if current step has info about the node it was executed on.
             return current.getNodeLabels();
+
         } else if (pipelineNodeInfoAction != null && !pipelineNodeInfoAction.getNodeLabels().isEmpty()) {
+            // Examine PipelineNodeInfoAction associated with the pipeline.
+            // The action is populated in step listener based on environment and executor data available for pipeline steps.
             return pipelineNodeInfoAction.getNodeLabels();
         }
 
@@ -51,7 +55,7 @@ public abstract class DatadogBasePipelineLogic {
         return Collections.emptySet();
     }
 
-    protected String getNodeName(BuildPipelineNode current, BuildData buildData) {
+    protected String getNodeName(PipelineStepData current, BuildData buildData) {
         if (current.getNodeName() != null) {
             return current.getNodeName();
         }
@@ -61,20 +65,20 @@ public abstract class DatadogBasePipelineLogic {
         // - DatadogBuildListener#onInitialize created a BuildData instance
         // - that BuildData had its nodeName populated from environment variables obtained from Run
         // - the instance was persisted in an Action attached to Run, and was used to populate the node name of the pipeline span (always as the last fallback)
-        // For pipelines, the environment variables that Run#getEnvironment returns _at the beginning of the run_ always (!) contain NODE_NAME = "built-in"
-        // This is true regardless of whether the pipeline definition has a top-level agent block or not
-        // For freestyle projects the correct NODE_NAME seems to be available in the run's environment variables at every stage of the build
+        // For pipelines, the environment variables that Run#getEnvironment returns at the beginning of the run always (!) contain NODE_NAME = "built-in" (when invoked at the end of the run, the env will have a different set of variables).
+        // This is true regardless of whether the pipeline definition has a top-level agent block or not.
+        // For freestyle projects the correct NODE_NAME seems to be available in the run's environment variables at every stage of the build's lifecycle.
         return buildData.getNodeName("built-in");
     }
 
-    protected String getNodeHostname(BuildPipelineNode current, BuildData buildData) {
+    protected String getNodeHostname(PipelineStepData current, BuildData buildData) {
         if (current.getNodeHostname() != null) {
             return current.getNodeHostname();
         }
         return buildData.getHostname("");
     }
 
-    protected String buildOperationName(BuildPipelineNode current) {
+    protected String buildOperationName(PipelineStepData current) {
         return CI_PROVIDER + "." + current.getType().name().toLowerCase();
     }
 }

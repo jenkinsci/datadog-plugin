@@ -236,6 +236,18 @@ public class DatadogStepListener implements StepListener {
         }
     }
 
+    /**
+     * Examine the step's environment to see if it contains any variables that hold git-related data.
+     * It could be variables that are set manually by the pipeline authors (such variables will have {@code DD_} prefix),
+     * or variables that are automatically set by the Jenkins Git Plugin.
+     * <p>
+     * Whatever data we manage to extract, we save in {@link GitCommitAction} that is associated with the pipeline.
+     * It'll later be used to populate git tags both in the pipeline span, and in the spans that correspond to other pipeline steps.
+     * <p>
+     * The reason we examine step environment, rather than checking the pipeline environment (even though the pipeline has its own copy of {@link EnvVars})
+     * is that the pipeline env is minimal and misses many env vars, including the ones that are set manually,
+     * while the step env contains much more data.
+     */
     private static void updateGitData(Run<?, ?> run, Map<String, String> envVars) {
         GitCommitAction commitAction = run.getAction(GitCommitAction.class);
         if (commitAction != null) {

@@ -27,6 +27,7 @@ package org.datadog.jenkins.plugins.datadog;
 
 import hudson.EnvVars;
 import hudson.ExtensionList;
+import hudson.model.Actionable;
 import hudson.model.Computer;
 import hudson.model.Item;
 import hudson.model.Result;
@@ -628,7 +629,7 @@ public class DatadogUtilities {
         return m.find();
     }
 
-    private static boolean isPrivateIPv4Address(String ipAddress) {
+    static boolean isPrivateIPv4Address(String ipAddress) {
         if (ipAddress == null || ipAddress.isEmpty()) {
             return false;
         }
@@ -640,7 +641,21 @@ public class DatadogUtilities {
 
         try {
             int firstOctet = Integer.parseInt(parts[0]);
+            if (!isWithinIPv4OctetRange(firstOctet)) {
+                return false;
+            }
             int secondOctet = Integer.parseInt(parts[1]);
+            if (!isWithinIPv4OctetRange(secondOctet)) {
+                return false;
+            }
+            int thirdOctet = Integer.parseInt(parts[2]);
+            if (!isWithinIPv4OctetRange(thirdOctet)) {
+                return false;
+            }
+            int fourthOctet = Integer.parseInt(parts[3]);
+            if (!isWithinIPv4OctetRange(fourthOctet)) {
+                return false;
+            }
 
             if (firstOctet == 10) {
                 return true;
@@ -653,6 +668,10 @@ public class DatadogUtilities {
         } catch (NumberFormatException e) {
             return false;
         }
+    }
+
+    private static boolean isWithinIPv4OctetRange(int number) {
+        return number >= 0 && number <= 255;
     }
 
     public static Map<String, Set<String>> getComputerTags(Computer computer) {
@@ -942,21 +961,13 @@ public class DatadogUtilities {
     /**
      * Removes all actions related to traces for Jenkins pipelines.
      *
-     * @param run the current run.
+     * @param actionable a domain object that can contain actions, such as run or flow node.
      */
-    public static void cleanUpTraceActions(final Run<?, ?> run) {
-        if (run != null) {
-            // Each call to removeActions triggers persisting run data to disc.
+    public static void cleanUpTraceActions(final Actionable actionable) {
+        if (actionable != null) {
+            // Each call to removeActions triggers persisting data to disc.
             // To avoid writing to disc multiple times, we only call removeActions once with the marker interface as the argument.
-            run.removeActions(DatadogPluginAction.class);
-        }
-    }
-
-    public static void cleanUpTraceActions(FlowNode flowNode) {
-        if (flowNode != null) {
-            // Each call to removeActions triggers persisting node data to disc.
-            // To avoid writing to disc multiple times, we only call removeActions once with the marker interface as the argument.
-            flowNode.removeActions(DatadogPluginAction.class);
+            actionable.removeActions(DatadogPluginAction.class);
         }
     }
 

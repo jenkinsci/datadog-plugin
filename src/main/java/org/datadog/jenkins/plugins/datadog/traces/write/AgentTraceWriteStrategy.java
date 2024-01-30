@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogAgentClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 
 /**
  * Trace write strategy that can dynamically switch from using APM track to using EVP Proxy.
@@ -55,8 +55,8 @@ public class AgentTraceWriteStrategy implements TraceWriteStrategy {
 
     @Nullable
     @Override
-    public Payload serialize(BuildPipelineNode node, Run<?, ?> run) throws IOException, InterruptedException  {
-        return getCurrentStrategy().serialize(node, run);
+    public Payload serialize(PipelineStepData stepData, Run<?, ?> run) throws IOException, InterruptedException  {
+        return getCurrentStrategy().serialize(stepData, run);
     }
 
     @Override

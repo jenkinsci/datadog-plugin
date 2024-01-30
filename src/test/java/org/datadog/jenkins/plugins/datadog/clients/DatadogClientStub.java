@@ -46,7 +46,7 @@ import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
+import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTracePipelineLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookBuildLogic;
@@ -306,16 +306,16 @@ public class DatadogClientStub implements DatadogClient {
 
         @Nullable
         @Override
-        public Payload serialize(BuildPipelineNode node, Run<?, ?> run) throws IOException, InterruptedException {
+        public Payload serialize(PipelineStepData stepData, Run<?, ?> run) throws IOException, InterruptedException {
             if (isWebhook) {
-                JSONObject json = new DatadogWebhookPipelineLogic().toJson(node, run);
+                JSONObject json = new DatadogWebhookPipelineLogic().toJson(stepData, run);
                 if (json == null) {
                     return null;
                 }
                 webhooks.add(json);
                 return new Payload(json, Track.WEBHOOK);
             } else {
-                TraceSpan span = new DatadogTracePipelineLogic().toSpan(node, run);
+                TraceSpan span = new DatadogTracePipelineLogic().toSpan(stepData, run);
                 if (span == null) {
                     return null;
                 }
