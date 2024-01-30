@@ -31,6 +31,7 @@ import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.node.NodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
 import org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils;
+import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.flow.StepListener;
@@ -133,6 +134,7 @@ public class DatadogStepListener implements StepListener {
      * @param stepContext
      * @return hostname of the remote node.
      */
+    @SuppressFBWarnings("REC_CATCH_EXCEPTION")
     private static String getNodeHostname(final StepContext stepContext) {
         try {
             EnvVars envVars = stepContext.get(EnvVars.class);

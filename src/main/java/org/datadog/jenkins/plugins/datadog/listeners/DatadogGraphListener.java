@@ -51,6 +51,7 @@ import org.datadog.jenkins.plugins.datadog.model.node.NodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.node.StatusAction;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriter;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
+import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.actions.TimingAction;
@@ -73,6 +74,7 @@ public class DatadogGraphListener implements GraphListener {
 
     private static final Logger logger = Logger.getLogger(DatadogGraphListener.class.getName());
 
+    @SuppressFBWarnings("REC_CATCH_EXCEPTION")
     @Override
     public void onNewHead(FlowNode flowNode) {
         WorkflowRun run = getRun(flowNode);

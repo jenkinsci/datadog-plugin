@@ -96,6 +96,9 @@ public class PipelineQueueInfoAction extends DatadogPluginAction {
                     case "propagatedQueueTimeMillis":
                         propagatedQueueTimeMillis = (long) context.convertAnother(null, long.class);
                         break;
+                    default:
+                        // unknown tag, could be something serialized by a different version of the plugin
+                        break;
                 }
                 reader.moveUp();
             }

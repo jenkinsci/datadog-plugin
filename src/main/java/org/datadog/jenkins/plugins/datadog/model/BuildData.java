@@ -44,6 +44,7 @@ import hudson.model.ItemGroup;
 import hudson.model.Job;
 import hudson.model.ParameterValue;
 import hudson.model.ParametersAction;
+import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.StringParameterValue;
 import hudson.model.TaskListener;
@@ -135,7 +136,7 @@ public class BuildData implements Serializable {
     private String traceId;
     private String spanId;
 
-    public BuildData(Run run, @Nullable TaskListener listener) throws IOException, InterruptedException {
+    public BuildData(Run<?, ?> run, @Nullable TaskListener listener) throws IOException, InterruptedException {
         if (run == null) {
             return;
         }
@@ -180,8 +181,14 @@ public class BuildData implements Serializable {
         }
 
         // Set Result and completed status
-        this.result = run.getResult() == null ? null : run.getResult().toString();
-        this.isCompleted = run.getResult() != null && run.getResult().completeBuild;
+        Result runResult = run.getResult();
+        if (runResult != null) {
+            this.result = runResult.toString();
+            this.isCompleted = runResult.completeBuild;
+        } else {
+            this.result = null;
+            this.isCompleted = false;
+        }
 
         // Set Build Number
         this.buildNumber = String.valueOf(run.getNumber());

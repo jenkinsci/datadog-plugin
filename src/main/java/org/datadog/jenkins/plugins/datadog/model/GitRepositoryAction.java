@@ -117,6 +117,9 @@ public class GitRepositoryAction extends DatadogPluginAction {
                     case "branch":
                         gitRepositoryAction.setBranch((String) context.convertAnother(null, String.class));
                         break;
+                    default:
+                        // unknown tag, could be something serialized by a different version of the plugin
+                        break;
                 }
                 reader.moveUp();
             }
