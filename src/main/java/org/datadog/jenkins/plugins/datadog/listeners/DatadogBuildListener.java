@@ -279,7 +279,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             Map<String, Set<String>> tags = buildData.getTags();
             String hostname = buildData.getHostname(DatadogUtilities.getHostname(null));
             metrics.gauge("jenkins.job.duration", buildData.getDuration(0L) / 1000, hostname, tags);
-            logger.fine(String.format("[%s]: Duration: %s", buildData.getJobName(null), toTimeString(buildData.getDuration(0L))));
+            logger.fine(String.format("[%s]: Duration: %s", buildData.getJobName(), toTimeString(buildData.getDuration(0L))));
 
             if (run instanceof WorkflowRun) {
                 RunExt extRun = getRunExtForRun((WorkflowRun) run);
@@ -288,11 +288,11 @@ public class DatadogBuildListener extends RunListener<Run> {
                     pauseDuration += stage.getPauseDurationMillis();
                 }
                 metrics.gauge("jenkins.job.pause_duration", pauseDuration / 1000, hostname, tags);
-                logger.fine(String.format("[%s]: Pause Duration: %s", buildData.getJobName(null), toTimeString(pauseDuration)));
+                logger.fine(String.format("[%s]: Pause Duration: %s", buildData.getJobName(), toTimeString(pauseDuration)));
                 long buildDuration = run.getDuration() - pauseDuration;
                 metrics.gauge("jenkins.job.build_duration", buildDuration / 1000, hostname, tags);
                 logger.fine(
-                        String.format("[%s]: Build Duration (without pause): %s", buildData.getJobName(null), toTimeString(buildDuration)));
+                        String.format("[%s]: Build Duration (without pause): %s", buildData.getJobName(), toTimeString(buildDuration)));
             }
 
             // Submit counter
@@ -322,24 +322,24 @@ public class DatadogBuildListener extends RunListener<Run> {
                 long leadTime = run.getDuration() + mttr;
 
                 metrics.gauge("jenkins.job.leadtime", leadTime / 1000, hostname, tags);
-                logger.fine(String.format("[%s]: Lead time: %s", buildData.getJobName(null), toTimeString(leadTime)));
+                logger.fine(String.format("[%s]: Lead time: %s", buildData.getJobName(), toTimeString(leadTime)));
                 if (cycleTime > 0) {
                     metrics.gauge("jenkins.job.cycletime", cycleTime / 1000, hostname, tags);
-                    logger.fine(String.format("[%s]: Cycle Time: %s", buildData.getJobName(null), toTimeString(cycleTime)));
+                    logger.fine(String.format("[%s]: Cycle Time: %s", buildData.getJobName(), toTimeString(cycleTime)));
                 }
                 if (mttr > 0) {
                     metrics.gauge("jenkins.job.mttr", mttr / 1000, hostname, tags);
-                    logger.fine(String.format("[%s]: MTTR: %s", buildData.getJobName(null), toTimeString(mttr)));
+                    logger.fine(String.format("[%s]: MTTR: %s", buildData.getJobName(), toTimeString(mttr)));
                 }
             } else {
                 long feedbackTime = run.getDuration();
                 long mtbf = getMeanTimeBetweenFailure(run);
 
                 metrics.gauge("jenkins.job.feedbacktime", feedbackTime / 1000, hostname, tags);
-                logger.fine(String.format("[%s]: Feedback Time: %s", buildData.getJobName(null), toTimeString(feedbackTime)));
+                logger.fine(String.format("[%s]: Feedback Time: %s", buildData.getJobName(), toTimeString(feedbackTime)));
                 if (mtbf > 0) {
                     metrics.gauge("jenkins.job.mtbf", mtbf / 1000, hostname, tags);
-                    logger.fine(String.format("[%s]: MTBF: %s", buildData.getJobName(null), toTimeString(mtbf)));
+                    logger.fine(String.format("[%s]: MTBF: %s", buildData.getJobName(), toTimeString(mtbf)));
                 }
             }
 
@@ -422,7 +422,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             if (buildData.isCompleted()) {
                 String result = buildData.getResult(null);
                 String number = buildData.getBuildNumber("unknown");
-                String jobName = buildData.getJobName("unknown");
+                String jobName = buildData.getJobName();
 
                 // Build title
                 // eg: `job_name build #1 aborted on hostname`

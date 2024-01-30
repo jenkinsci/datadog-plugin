@@ -181,12 +181,10 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
             buildSpan.putMeta(CITags.GIT_TAG, gitTag);
         }
 
-        buildSpan.setResourceName(buildData.getBaseJobName(""));
-        buildSpan.putMeta(prefix + CITags._NAME, buildData.getBaseJobName(""));
+        buildSpan.setResourceName(buildData.getJobName());
+        buildSpan.putMeta(prefix + CITags._NAME, buildData.getJobName());
 
-        final String fullJobName = buildData.getJobName("");
-        final String gitRef = gitBranch != null ? gitBranch : gitTag;
-        final Map<String, String> configurations = JobNameConfigurationParser.getConfigurations(fullJobName, gitRef);
+        final Map<String, String> configurations = buildData.getBuildConfigurations();
         if(!configurations.isEmpty()){
             for(Map.Entry<String, String> entry : configurations.entrySet()) {
                 buildSpan.putMeta(prefix + CITags._CONFIGURATION + "." + entry.getKey(), entry.getValue());

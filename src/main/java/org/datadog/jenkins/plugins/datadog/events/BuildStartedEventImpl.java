@@ -40,7 +40,7 @@ public class BuildStartedEventImpl extends AbstractDatadogBuildEvent {
 
         String buildNumber = buildData.getBuildNumber("unknown");
         String userId = buildData.getUserId();
-        String jobName = buildData.getJobName("unknown");
+        String jobName = buildData.getJobName();
         String buildUrl = buildData.getBuildUrl("unknown");
 
         // Build title

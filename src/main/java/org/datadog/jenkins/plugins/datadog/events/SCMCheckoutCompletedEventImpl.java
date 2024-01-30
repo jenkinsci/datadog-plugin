@@ -35,7 +35,7 @@ public class SCMCheckoutCompletedEventImpl extends AbstractDatadogBuildEvent {
         super(buildData);
 
         String buildNumber = buildData.getBuildNumber("unknown");
-        String jobName = buildData.getJobName("unknown");
+        String jobName = buildData.getJobName();
         String buildUrl = buildData.getBuildUrl("unknown");
         String branch = buildData.getBranch("unknown");
         String nodeName = buildData.getNodeName("unknown");

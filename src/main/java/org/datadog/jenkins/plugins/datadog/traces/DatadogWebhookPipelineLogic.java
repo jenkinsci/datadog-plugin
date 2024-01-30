@@ -68,7 +68,7 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
         payload.put("status", status.toTag());
 
         payload.put("pipeline_unique_id", buildData.getBuildTag(""));
-        payload.put("pipeline_name", buildData.getBaseJobName(""));
+        payload.put("pipeline_name", buildData.getJobName());
 
         String url = buildData.getBuildUrl("");
         if (StringUtils.isNotBlank(url)) {
