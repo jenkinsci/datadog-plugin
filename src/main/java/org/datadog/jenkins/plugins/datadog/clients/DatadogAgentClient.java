@@ -586,7 +586,7 @@ public class DatadogAgentClient implements DatadogClient {
             }
             byte[] payload = jsonTraces.toString().getBytes(StandardCharsets.UTF_8);
 
-            String tracesUrl = String.format("http://%s:%d/v0.3/traces", hostname, port);
+            String tracesUrl = String.format("http://%s:%d/v0.3/traces", hostname, traceCollectionPort);
             client.put(tracesUrl, Collections.emptyMap(), "application/json", payload, Function.identity());
 
         } catch (InterruptedException e) {
