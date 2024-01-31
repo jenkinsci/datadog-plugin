@@ -1,6 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.traces.write;
 
 import hudson.model.Run;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -8,10 +9,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogAgentClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 
 /**
  * Trace write strategy that can dynamically switch from using APM track to using EVP Proxy.
@@ -46,15 +47,16 @@ public class AgentTraceWriteStrategy implements TraceWriteStrategy {
         this.checkEvpProxySupport = checkEvpProxySupport;
     }
 
+    @Nullable
     @Override
     public Payload serialize(BuildData buildData, Run<?, ?> run) {
         return getCurrentStrategy().serialize(buildData, run);
     }
 
-    @Nonnull
+    @Nullable
     @Override
-    public Collection<Payload> serialize(FlowNode flowNode, Run<?, ?> run) {
-        return getCurrentStrategy().serialize(flowNode, run);
+    public Payload serialize(PipelineStepData stepData, Run<?, ?> run) throws IOException, InterruptedException  {
+        return getCurrentStrategy().serialize(stepData, run);
     }
 
     @Override

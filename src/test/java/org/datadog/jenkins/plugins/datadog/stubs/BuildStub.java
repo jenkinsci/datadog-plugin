@@ -1,10 +1,11 @@
 package org.datadog.jenkins.plugins.datadog.stubs;
 
 import hudson.EnvVars;
-import hudson.model.*;
-
-import javax.annotation.Nonnull;
+import hudson.model.Build;
+import hudson.model.Result;
+import hudson.model.TaskListener;
 import java.io.IOException;
+import javax.annotation.Nonnull;
 
 public class BuildStub extends Build<ProjectStub, BuildStub> {
 
@@ -16,12 +17,12 @@ public class BuildStub extends Build<ProjectStub, BuildStub> {
     private BuildStub previousBuiltBuild;
     private BuildStub previousNotFailedBuild;
 
-    public BuildStub(ProjectStub project, Result result, EnvVars envVars, BuildStub previousSuccessfulBuild,
+    public BuildStub(@Nonnull ProjectStub project, Result result, EnvVars envVars, BuildStub previousSuccessfulBuild,
                      long duration, int number, BuildStub previousBuiltBuild, long timestamp, BuildStub previousNotFailedBuild)
             throws IOException {
         this(project);
         this.result = result;
-        this.envVars = envVars;
+        this.envVars = envVars != null ? envVars : new EnvVars();
         this.previousSuccessfulBuild = previousSuccessfulBuild;
         this.duration = duration;
         this.number = number;
@@ -30,7 +31,7 @@ public class BuildStub extends Build<ProjectStub, BuildStub> {
         this.previousNotFailedBuild = previousNotFailedBuild;
     }
 
-    protected BuildStub(ProjectStub project) throws IOException {
+    protected BuildStub(@Nonnull ProjectStub project) throws IOException {
         super(project);
     }
 
@@ -42,6 +43,7 @@ public class BuildStub extends Build<ProjectStub, BuildStub> {
         return this.result;
     }
 
+    @Nonnull
     public EnvVars getEnvironment(@Nonnull TaskListener listener) throws IOException, InterruptedException {
         return this.envVars;
     }
@@ -58,6 +60,7 @@ public class BuildStub extends Build<ProjectStub, BuildStub> {
         return this.number;
     }
 
+    @Nonnull
     public ProjectStub getParent() {
         return project;
     }

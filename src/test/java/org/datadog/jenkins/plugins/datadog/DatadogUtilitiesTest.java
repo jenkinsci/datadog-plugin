@@ -25,6 +25,8 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
@@ -67,55 +69,55 @@ public class DatadogUtilitiesTest {
 
     @Test
     public void testCstrToList(){
-        Assert.assertTrue(DatadogUtilities.cstrToList(null).isEmpty());
-        Assert.assertTrue(DatadogUtilities.cstrToList("").isEmpty());
-        Assert.assertTrue(DatadogUtilities.cstrToList(" , ").isEmpty());
+        assertTrue(DatadogUtilities.cstrToList(null).isEmpty());
+        assertTrue(DatadogUtilities.cstrToList("").isEmpty());
+        assertTrue(DatadogUtilities.cstrToList(" , ").isEmpty());
 
         List<String> items = new ArrayList<>();
         items.add("item1");
-        Assert.assertTrue(DatadogUtilities.cstrToList("item1").equals(items));
-        Assert.assertTrue(DatadogUtilities.cstrToList(" item1 ").equals(items));
-        Assert.assertTrue(DatadogUtilities.cstrToList(" , item1 , ").equals(items));
+        assertTrue(DatadogUtilities.cstrToList("item1").equals(items));
+        assertTrue(DatadogUtilities.cstrToList(" item1 ").equals(items));
+        assertTrue(DatadogUtilities.cstrToList(" , item1 , ").equals(items));
 
         items = new ArrayList<>();
         items.add("item1");
         items.add("item2");
-        Assert.assertTrue(DatadogUtilities.cstrToList("item1,item2").equals(items));
-        Assert.assertTrue(DatadogUtilities.cstrToList("  item1 , item2 ").equals(items));
-        Assert.assertTrue(DatadogUtilities.cstrToList(" , item1 , item2 , ").equals(items));
+        assertTrue(DatadogUtilities.cstrToList("item1,item2").equals(items));
+        assertTrue(DatadogUtilities.cstrToList("  item1 , item2 ").equals(items));
+        assertTrue(DatadogUtilities.cstrToList(" , item1 , item2 , ").equals(items));
     }
 
     @Test
     public void testLinesToList(){
-        Assert.assertTrue(DatadogUtilities.linesToList(null).isEmpty());
-        Assert.assertTrue(DatadogUtilities.linesToList("").isEmpty());
+        assertTrue(DatadogUtilities.linesToList(null).isEmpty());
+        assertTrue(DatadogUtilities.linesToList("").isEmpty());
 
         List<String> items = new ArrayList<>();
         items.add("item1");
-        Assert.assertTrue(DatadogUtilities.linesToList("item1").equals(items));
-        Assert.assertTrue(DatadogUtilities.linesToList(" item1 ").equals(items));
-        Assert.assertTrue(DatadogUtilities.linesToList(" \n item1 \n ").equals(items));
+        assertTrue(DatadogUtilities.linesToList("item1").equals(items));
+        assertTrue(DatadogUtilities.linesToList(" item1 ").equals(items));
+        assertTrue(DatadogUtilities.linesToList(" \n item1 \n ").equals(items));
 
         items = new ArrayList<>();
         items.add("item1");
         items.add("item2");
-        Assert.assertTrue(DatadogUtilities.linesToList("item1\nitem2").equals(items));
-        Assert.assertTrue(DatadogUtilities.linesToList("  item1 \n item2 ").equals(items));
-        Assert.assertTrue(DatadogUtilities.linesToList(" \n item1 \n item2 \n ").equals(items));
+        assertTrue(DatadogUtilities.linesToList("item1\nitem2").equals(items));
+        assertTrue(DatadogUtilities.linesToList("  item1 \n item2 ").equals(items));
+        assertTrue(DatadogUtilities.linesToList(" \n item1 \n item2 \n ").equals(items));
     }
 
 
     @Test
     public void isStageNodeTest() {
-        Assert.assertFalse(DatadogUtilities.isStageNode(null));
+        assertFalse(DatadogUtilities.isStageNode(null));
         BlockStartNode node = mock(BlockStartNode.class);
-        Assert.assertFalse(DatadogUtilities.isStageNode(node));
+        assertFalse(DatadogUtilities.isStageNode(node));
 
         when(node.getAction(LabelAction.class)).thenReturn(mock(LabelAction.class));
-        Assert.assertTrue(DatadogUtilities.isStageNode(node));
+        assertTrue(DatadogUtilities.isStageNode(node));
 
         when(node.getAction(ThreadNameAction.class)).thenReturn(mock(ThreadNameAction.class));
-        Assert.assertFalse(DatadogUtilities.isStageNode(node));
+        assertFalse(DatadogUtilities.isStageNode(node));
     }
 
     @Test
@@ -211,6 +213,30 @@ public class DatadogUtilitiesTest {
             hostname = DatadogUtilities.getHostname(null);
             Assert.assertNotEquals("test", hostname);
         }
+    }
+
+    @Test
+    public void testIsPrivateIPv4Address() {
+        assertFalse(DatadogUtilities.isPrivateIPv4Address(null));
+        assertFalse(DatadogUtilities.isPrivateIPv4Address(""));
+        assertFalse(DatadogUtilities.isPrivateIPv4Address("google.com"));
+        assertFalse(DatadogUtilities.isPrivateIPv4Address("my.subdomain.domain.com"));
+        assertFalse(DatadogUtilities.isPrivateIPv4Address("123.456.789.012"));
+        assertFalse(DatadogUtilities.isPrivateIPv4Address("10.0.my-domain.com"));
+        assertTrue(DatadogUtilities.isPrivateIPv4Address("10.0.0.1"));
+        assertFalse(DatadogUtilities.isPrivateIPv4Address("10.0.0.1.1"));
+        assertFalse(DatadogUtilities.isPrivateIPv4Address("10.0.0.1.org"));
+        assertTrue(DatadogUtilities.isPrivateIPv4Address("10.255.255.255"));
+        assertFalse(DatadogUtilities.isPrivateIPv4Address("10.255.255.256"));
+        assertFalse(DatadogUtilities.isPrivateIPv4Address("10.255.256.255"));
+        assertFalse(DatadogUtilities.isPrivateIPv4Address("10.-1.255.255"));
+        assertTrue(DatadogUtilities.isPrivateIPv4Address("172.16.0.1"));
+        assertTrue(DatadogUtilities.isPrivateIPv4Address("172.31.0.1"));
+        assertFalse(DatadogUtilities.isPrivateIPv4Address("172.15.0.1"));
+        assertFalse(DatadogUtilities.isPrivateIPv4Address("172.32.0.1"));
+        assertTrue(DatadogUtilities.isPrivateIPv4Address("192.168.0.1"));
+        assertTrue(DatadogUtilities.isPrivateIPv4Address("192.168.255.255"));
+        assertFalse(DatadogUtilities.isPrivateIPv4Address("192.167.255.255"));
     }
 
 }

@@ -1,9 +1,16 @@
 package org.datadog.jenkins.plugins.datadog.traces.message;
 
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.converters.MarshallingContext;
+import com.thoughtworks.xstream.converters.UnmarshallingContext;
+import com.thoughtworks.xstream.io.HierarchicalStreamReader;
+import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import org.datadog.jenkins.plugins.datadog.traces.IdGenerator;
+import org.datadog.jenkins.plugins.datadog.util.DatadogActionConverter;
 
 public class TraceSpan {
 
@@ -111,6 +118,15 @@ public class TraceSpan {
         return error;
     }
 
+    @Override
+    public String toString() {
+        return "TraceSpan{" +
+                "operationName='" + operationName + '\'' +
+                ", serviceName='" + serviceName + '\'' +
+                ", resourceName='" + resourceName + '\'' +
+                '}';
+    }
+
     public static class TraceSpanContext implements Serializable {
 
         private static final long serialVersionUID = 1L;
@@ -141,6 +157,54 @@ public class TraceSpan {
 
         public long getSpanId() {
             return spanId;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            TraceSpanContext that = (TraceSpanContext) o;
+            return traceId == that.traceId && parentId == that.parentId && spanId == that.spanId;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(traceId, parentId, spanId);
+        }
+
+        @Override
+        public String toString() {
+            return "TraceSpanContext{" +
+                    "traceId=" + traceId +
+                    ", parentId=" + parentId +
+                    ", spanId=" + spanId +
+                    '}';
+        }
+
+        public static final class ConverterImpl extends DatadogActionConverter {
+            public ConverterImpl(XStream xs) {
+            }
+
+            @Override
+            public boolean canConvert(Class type) {
+                return TraceSpanContext.class == type;
+            }
+
+            @Override
+            public void marshal(Object source, HierarchicalStreamWriter writer, MarshallingContext context) {
+                TraceSpanContext traceSpanContext = (TraceSpanContext) source;
+                writeField("traceId", traceSpanContext.traceId, writer, context);
+                writeField("parentId", traceSpanContext.parentId, writer, context);
+                writeField("spanId", traceSpanContext.spanId, writer, context);
+            }
+
+            @Override
+            public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
+                long traceId = readField(reader, context, long.class);
+                long parentId = readField(reader, context, long.class);
+                long spanId = readField(reader, context, long.class);
+                return new TraceSpanContext(traceId, parentId, spanId);
+            }
         }
     }
 }

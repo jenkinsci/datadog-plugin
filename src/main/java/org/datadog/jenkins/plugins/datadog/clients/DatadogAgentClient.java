@@ -142,11 +142,15 @@ public class DatadogAgentClient implements DatadogClient {
     }
 
     protected DatadogAgentClient(String hostname, Integer port, Integer logCollectionPort, Integer traceCollectionPort) {
+        this(hostname, port, logCollectionPort, traceCollectionPort, HTTP_TIMEOUT_EVP_PROXY_MS);
+    }
+
+    protected DatadogAgentClient(String hostname, Integer port, Integer logCollectionPort, Integer traceCollectionPort, long evpProxyTimeoutMillis) {
         this.hostname = hostname;
         this.port = port;
         this.logCollectionPort = logCollectionPort;
         this.traceCollectionPort = traceCollectionPort;
-        this.client = new HttpClient(HTTP_TIMEOUT_EVP_PROXY_MS);
+        this.client = new HttpClient(evpProxyTimeoutMillis);
     }
 
     public static ConnectivityResult checkConnectivity(final String host, final int port) {

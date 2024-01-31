@@ -1,14 +1,15 @@
 package org.datadog.jenkins.plugins.datadog.traces.write;
 
 import hudson.model.Run;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogBaseBuildLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogBasePipelineLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic;
@@ -16,7 +17,6 @@ import org.datadog.jenkins.plugins.datadog.traces.DatadogTracePipelineLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookBuildLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookPipelineLogic;
 import org.datadog.jenkins.plugins.datadog.util.CircuitBreaker;
-import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 public class TraceWriteStrategyImpl implements TraceWriteStrategy {
 
@@ -45,17 +45,18 @@ public class TraceWriteStrategyImpl implements TraceWriteStrategy {
         );
     }
 
+    @Nullable
     @Override
     public Payload serialize(final BuildData buildData, final Run<?, ?> run) {
-        JSONObject buildSpan = buildLogic.finishBuildTrace(buildData, run);
+        JSONObject buildSpan = buildLogic.toJson(buildData, run);
         return buildSpan != null ? new Payload(buildSpan, track) : null;
     }
 
-    @Nonnull
+    @Nullable
     @Override
-    public Collection<Payload> serialize(FlowNode flowNode, Run<?, ?> run) {
-        Collection<JSONObject> stepSpans = pipelineLogic.execute(flowNode, run);
-        return stepSpans.stream().map(payload -> new Payload(payload, track)).collect(Collectors.toList());
+    public Payload serialize(PipelineStepData stepData, Run<?, ?> run) throws IOException, InterruptedException {
+        JSONObject stepSpan = pipelineLogic.toJson(stepData, run);
+        return stepSpan != null ? new Payload(stepSpan, track) : null;
     }
 
     @Override

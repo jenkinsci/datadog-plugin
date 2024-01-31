@@ -1,31 +1,101 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
-import hudson.model.InvisibleAction;
-import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.converters.MarshallingContext;
+import com.thoughtworks.xstream.converters.UnmarshallingContext;
+import com.thoughtworks.xstream.io.HierarchicalStreamReader;
+import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
+import java.util.Objects;
+import org.datadog.jenkins.plugins.datadog.model.DatadogPluginAction;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
-
-import java.io.Serializable;
+import org.datadog.jenkins.plugins.datadog.util.DatadogActionConverter;
 
 /**
  * Keeps build span propagation
  */
-public class BuildSpanAction extends InvisibleAction implements Serializable {
+public class BuildSpanAction extends DatadogPluginAction {
 
     private static final long serialVersionUID = 1L;
 
-    private final BuildData buildData;
     private final TraceSpan.TraceSpanContext buildSpanContext;
+    private volatile String buildUrl;
 
-    public BuildSpanAction(final BuildData buildData, final TraceSpan.TraceSpanContext buildSpanContext){
-       this.buildData = buildData;
+    public BuildSpanAction(final TraceSpan.TraceSpanContext buildSpanContext){
        this.buildSpanContext = buildSpanContext;
     }
 
-    public BuildData getBuildData() {
-        return buildData;
+    public BuildSpanAction(TraceSpan.TraceSpanContext buildSpanContext, String buildUrl) {
+        this.buildSpanContext = buildSpanContext;
+        this.buildUrl = buildUrl;
     }
 
     public TraceSpan.TraceSpanContext getBuildSpanContext() {
         return buildSpanContext;
+    }
+
+    public String getBuildUrl() {
+        return buildUrl;
+    }
+
+    public BuildSpanAction setBuildUrl(String buildUrl) {
+        this.buildUrl = buildUrl;
+        return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        BuildSpanAction that = (BuildSpanAction) o;
+        return Objects.equals(buildSpanContext, that.buildSpanContext) && Objects.equals(buildUrl, that.buildUrl);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(buildSpanContext, buildUrl);
+    }
+
+    @Override
+    public String toString() {
+        return "BuildSpanAction{" +
+                "buildSpanContext=" + buildSpanContext +
+                ", buildUrl=" + buildUrl +
+                '}';
+    }
+
+    public static final class ConverterImpl extends DatadogActionConverter {
+        public ConverterImpl(XStream xs) {
+        }
+
+        @Override
+        public boolean canConvert(Class type) {
+            return BuildSpanAction.class == type;
+        }
+
+        @Override
+        public void marshal(Object source, HierarchicalStreamWriter writer, MarshallingContext context) {
+            BuildSpanAction action = (BuildSpanAction) source;
+            writeField("spanContext", action.buildSpanContext, writer, context);
+            if (action.buildUrl != null) {
+                writeField("buildUrl", action.buildUrl, writer, context);
+            }
+        }
+
+        @Override
+        public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
+            TraceSpan.TraceSpanContext spanContext = readField(reader, context, TraceSpan.TraceSpanContext.class);
+
+            String buildUrl = null;
+            while (reader.hasMoreChildren()) {
+                reader.moveDown();
+                String fieldName = reader.getNodeName();
+                if ("buildUrl".equals(fieldName)) {
+                    buildUrl = (String) context.convertAnother(null, String.class);
+                }
+                reader.moveUp();
+            }
+
+            return new BuildSpanAction(spanContext, buildUrl);
+        }
     }
 }
