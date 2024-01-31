@@ -37,6 +37,7 @@ import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isUserSuppli
 
 import com.cloudbees.plugins.credentials.CredentialsParameterValue;
 import hudson.EnvVars;
+import hudson.matrix.MatrixProject;
 import hudson.model.BooleanParameterValue;
 import hudson.model.Cause;
 import hudson.model.CauseAction;
@@ -63,11 +64,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import jenkins.branch.MultiBranchProject;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.traces.BuildConfigurationParser;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
@@ -88,7 +92,7 @@ public class BuildData implements Serializable {
     private String charsetName;
     private String nodeName;
     private String jobName;
-    private String baseJobName;
+    private Map<String, String> buildConfigurations;
     private String buildTag;
     private String jenkinsUrl;
     private String executorNumber;
@@ -231,11 +235,8 @@ public class BuildData implements Serializable {
         // Save charset canonical name
         this.charsetName = run.getCharset().name();
 
-        String baseJobName = getBaseJobName(run, envVars);
-        this.baseJobName = normalizeJobName(baseJobName);
-
-        String jobNameWithConfiguration = getJobName(run, envVars);
-        this.jobName = normalizeJobName(jobNameWithConfiguration);
+        this.jobName = normalizeJobName(getJobName(run, envVars));
+        this.buildConfigurations = BuildConfigurationParser.parseConfigurations(run);
 
         // Set Jenkins Url
         String jenkinsUrl = DatadogUtilities.getJenkinsUrl();
@@ -276,49 +277,50 @@ public class BuildData implements Serializable {
         return mergedVars;
     }
 
-    private static String getBaseJobName(Run run, EnvVars envVars) {
+    @Nonnull
+    private static String getJobName(Run<?, ?> run, EnvVars envVars) {
         Job<?, ?> job = run.getParent();
-        if (job != null) {
-            ItemGroup<?> jobParent = job.getParent();
-            if (jobParent != null) {
-                try {
-                    String jobParentFullName = jobParent.getFullName();
-                    if (StringUtils.isNotBlank(jobParentFullName)) {
-                        return jobParentFullName;
-                    }
-                } catch (NullPointerException e) {
-                    // this is possible if data is not mocked properly in unit tests
-                }
-            }
-        }
-        if (envVars != null) {
-            String envJobBaseName = envVars.get("JOB_BASE_NAME");
-            if (StringUtils.isNotBlank(envJobBaseName)) {
-                return envJobBaseName;
-            }
-        }
-        return getJobName(run, envVars);
-    }
+        ItemGroup<?> jobParent = job.getParent();
+        if (jobParent instanceof MultiBranchProject || jobParent instanceof MatrixProject) {
+            // For certain builds the job name is too specific,
+            // and we have to use job's parent to get a name that is generic enough:
 
-    private static String getJobName(Run run, EnvVars envVars) {
-        Job<?, ?> job = run.getParent();
-        if (job != null) {
-            try {
-                String jobFullName = job.getFullName();
-                if (StringUtils.isNotBlank(jobFullName)) {
-                    return jobFullName;
-                }
-            } catch (NullPointerException e) {
-                // this is possible if data is not mocked properly in unit tests
+            // 1. In case of multi-branch projects (Multibranch Pipelines and Organization Folders)
+            // job corresponds to a specific branch.
+            // We don't want pipeline names to contain branches,
+            // instead we want the same pipeline executed on different branches to have the same name.
+            // So instead of the job (which corresponds to a specific branch)
+            // we use its parent (which encapsulates all branches for that pipeline).
+
+            // 2. In case of matrix projects job corresponds to a specific combination of parameters (MatrixConfiguration).
+            // We use matrix configuration parent, which is the matrix project, to get the project name
+
+            // We don't want to follow this logic for other cases,
+            // because job parent can be a folder, in which case we will use folder name as pipeline name, which is incorrect.
+            String jobParentName = jobParent.getFullName();
+            if (StringUtils.isNotBlank(jobParentName)) {
+                return jobParentName;
             }
         }
+
+        String jobName = job.getFullName();
+        if (StringUtils.isNotBlank(jobName)) {
+            return jobName;
+        }
+
         if (envVars != null) {
             String envJobName = envVars.get("JOB_NAME");
             if (StringUtils.isNotBlank(envJobName)) {
                 return envJobName;
             }
         }
+
         return "unknown";
+    }
+
+    @Nonnull
+    private static String normalizeJobName(@Nonnull String jobName) {
+        return jobName.replaceAll("»", "/").replaceAll(" ", "");
     }
 
     private void populateBuildParameters(Run<?,?> run) {
@@ -526,7 +528,7 @@ public class BuildData implements Serializable {
             //noop
         }
         allTags = TagsUtil.merge(allTags, tags);
-        allTags = TagsUtil.addTagToTags(allTags, "job", getJobName("unknown"));
+        allTags = TagsUtil.addTagToTags(allTags, "job", getJobName());
 
         if (nodeName != null) {
             allTags = TagsUtil.addTagToTags(allTags, "node", getNodeName("unknown"));
@@ -570,12 +572,14 @@ public class BuildData implements Serializable {
         }
     }
 
-    public String getJobName(String value) {
-        return defaultIfNull(jobName, value);
+    @Nonnull
+    public String getJobName() {
+        return jobName;
     }
 
-    public String getBaseJobName(String value) {
-        return defaultIfNull(baseJobName, value);
+    @Nonnull
+    public Map<String, String> getBuildConfigurations() {
+        return buildConfigurations;
     }
 
     public String getResult(String value) {
@@ -868,12 +872,4 @@ public class BuildData implements Serializable {
             return new JSONObject();
         }
     }
-
-    private static String normalizeJobName(String jobName) {
-        if (jobName == null) {
-            return null;
-        }
-        return jobName.replaceAll("»", "/").replaceAll(" ", "");
-    }
-
 }

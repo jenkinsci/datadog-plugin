@@ -50,9 +50,9 @@ public class BuildAbortedEventTest {
     @Test
     public void testWithNothingSet() throws IOException, InterruptedException {
         Jenkins jenkins = mock(Jenkins.class);
-        when(jenkins.getFullName()).thenReturn(null);
+        when(jenkins.getFullName()).thenReturn("");
 
-        ProjectStub job = new ProjectStub(jenkins,null);
+        ProjectStub job = new ProjectStub(jenkins,"");
 
         Run run = new BuildStub(job, null, null, null, 0L, 0, null, 0L, null);
 

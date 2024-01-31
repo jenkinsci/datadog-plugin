@@ -86,7 +86,7 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
 
         payload.put("pipeline_id", buildData.getBuildTag(""));
         payload.put("unique_id", buildData.getBuildTag(""));
-        payload.put("name", buildData.getBaseJobName(""));
+        payload.put("name", buildData.getJobName());
 
         // User
         {
@@ -132,9 +132,7 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
             tagsPayload.add(prefix + CITags._RESULT + ":" + status);
 
             // Configurations
-            final String fullJobName = buildData.getJobName("");
-            final String gitRef = gitBranch != null ? gitBranch : gitTag;
-            final Map<String, String> configurations = JobNameConfigurationParser.getConfigurations(fullJobName, gitRef);
+            final Map<String, String> configurations = buildData.getBuildConfigurations();
             if(!configurations.isEmpty()){
                 for(Map.Entry<String, String> entry : configurations.entrySet()) {
                     tagsPayload.add(prefix + CITags._CONFIGURATION + "." + entry.getKey() + ":" + entry.getValue());

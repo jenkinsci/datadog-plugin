@@ -74,7 +74,7 @@ public class DatadogWriter {
             payload.put("ddsource", "jenkins");
             payload.put("service", "jenkins");
             payload.put("timestamp", System.currentTimeMillis());
-            payload.put(PipelineStepData.StepType.PIPELINE.getTagName() + CITags._NAME, this.buildData.getBaseJobName(""));
+            payload.put(PipelineStepData.StepType.PIPELINE.getTagName() + CITags._NAME, this.buildData.getJobName());
 
             // Get Datadog Client Instance
             DatadogClient client = ClientFactory.getClient();

@@ -215,7 +215,7 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
         }
 
         // Propagate Pipeline Name
-        tags.put(PIPELINE.getTagName() + CITags._NAME, buildData.getBaseJobName(""));
+        tags.put(PIPELINE.getTagName() + CITags._NAME, buildData.getJobName());
         tags.put(PIPELINE.getTagName() + CITags._ID, buildData.getBuildTag(""));
 
         // Propagate Stage Name
