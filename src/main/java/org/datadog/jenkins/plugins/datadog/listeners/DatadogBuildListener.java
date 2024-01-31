@@ -105,7 +105,11 @@ public class DatadogBuildListener extends RunListener<Run> {
             BuildData buildData;
             try {
                 buildData = new BuildData(run, null);
-            } catch (IOException | InterruptedException e) {
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                DatadogUtilities.severe(logger, e, "Interrupted while trying to parse initialized build data");
+                return;
+            } catch (IOException e) {
                 DatadogUtilities.severe(logger, e, "Failed to parse initialized build data");
                 return;
             }
@@ -189,7 +193,11 @@ public class DatadogBuildListener extends RunListener<Run> {
             BuildData buildData;
             try {
                 buildData = new BuildData(run, listener);
-            } catch (IOException | InterruptedException e) {
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                DatadogUtilities.severe(logger, e, "Interrupted while trying to parse started build data");
+                return;
+            } catch (IOException e) {
                 DatadogUtilities.severe(logger, e, "Failed to parse started build data");
                 return;
             }
@@ -224,7 +232,18 @@ public class DatadogBuildListener extends RunListener<Run> {
             // Submit counter
             client.incrementCounter("jenkins.job.started", hostname, tags);
 
+            // APM Traces
+            if (DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
+                TraceWriter traceWriter = TraceWriterFactory.getTraceWriter();
+                if (traceWriter != null) {
+                    traceWriter.submitBuild(buildData, run);
+                }
+            }
+
             logger.fine("End DatadogBuildListener#onStarted");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            DatadogUtilities.severe(logger, e, "Interrupted while trying to process build start");
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to process build start");
         }
@@ -372,7 +391,11 @@ public class DatadogBuildListener extends RunListener<Run> {
             BuildData buildData;
             try {
                 buildData = new BuildData(run, null);
-            } catch (IOException | InterruptedException e) {
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                DatadogUtilities.severe(logger, e, "Interrupted while trying to parse finalized build data");
+                return;
+            } catch (IOException e) {
                 DatadogUtilities.severe(logger, e, "Failed to parse finalized build data");
                 return;
             }
@@ -413,7 +436,11 @@ public class DatadogBuildListener extends RunListener<Run> {
             BuildData buildData;
             try {
                 buildData = new BuildData(run, null);
-            } catch (IOException | InterruptedException | NullPointerException e) {
+            } catch (InterruptedException e){
+                Thread.currentThread().interrupt();
+                DatadogUtilities.severe(logger, e, "Interrupted while trying to parse deleted build data");
+                return;
+            } catch (IOException | NullPointerException e) {
                 DatadogUtilities.severe(logger, e, "Failed to parse deleted build data");
                 return;
             }

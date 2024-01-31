@@ -74,6 +74,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.traces.BuildConfigurationParser;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
+import org.datadog.jenkins.plugins.datadog.traces.CITags;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
@@ -137,6 +138,17 @@ public class BuildData implements Serializable {
     private Long millisInQueue;
     private Long propagatedMillisInQueue;
 
+    /**
+     * Monotonically increasing "version" of the build data.
+     * As the pipeline progresses, it can be reported to the backend more than once:
+     * <ul>
+     * <li>when it starts executing</li>
+     * <li>when git info or node info become available</li>
+     * <li>when it finishes.</li>
+     * </ul>
+     * The backend needs version to determine the relative order of these multiple events.
+     */
+    private Integer version;
     private String traceId;
     private String spanId;
 
@@ -149,11 +161,13 @@ public class BuildData implements Serializable {
         this.tags = DatadogUtilities.getBuildTags(run, envVars);
 
         this.buildUrl = envVars.get("BUILD_URL");
-        if (buildUrl == null) {
-            BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
-            if (buildSpanAction != null) {
+
+        BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
+        if (buildSpanAction != null) {
+            if (buildUrl == null) {
                 buildUrl = buildSpanAction.getBuildUrl();
             }
+            version = buildSpanAction.getAndIncrementVersion();
         }
 
         // Populate instance using environment variables.
@@ -162,18 +176,6 @@ public class BuildData implements Serializable {
         // Populate instance using Git info if possible.
         // Set all Git commit related variables.
         populateGitVariables(run);
-
-        // Populate instance using run instance
-        // Set StartTime, EndTime and Duration
-        this.startTime = run.getStartTimeInMillis();
-        long durationInMs = run.getDuration();
-        if (durationInMs == 0 && run.getStartTimeInMillis() != 0) {
-            durationInMs = System.currentTimeMillis() - run.getStartTimeInMillis();
-        }
-        this.duration = durationInMs;
-        if (durationInMs != 0 && run.getStartTimeInMillis() != 0) {
-            this.endTime = run.getStartTimeInMillis() + durationInMs;
-        }
 
         // Set Jenkins Url
         this.jenkinsUrl = DatadogUtilities.getJenkinsUrl();
@@ -189,9 +191,24 @@ public class BuildData implements Serializable {
         if (runResult != null) {
             this.result = runResult.toString();
             this.isCompleted = runResult.completeBuild;
+        } else if (run.isBuilding() && !run.hasntStartedYet()) {
+            // #isBuilding() includes queued runs, so we check #hasntStartedYet() as well
+            this.result = CITags.STATUS_RUNNING;
+            this.isCompleted = false;
         } else {
             this.result = null;
             this.isCompleted = false;
+        }
+
+        // Set StartTime, EndTime and Duration
+        this.startTime = run.getStartTimeInMillis();
+        long durationInMs = run.getDuration();
+        if (durationInMs == 0 && startTime != 0) {
+            durationInMs = System.currentTimeMillis() - startTime;
+        }
+        this.duration = durationInMs;
+        if (duration != 0 && startTime != 0 && isCompleted) {
+            this.endTime = startTime + duration;
         }
 
         // Set Build Number
@@ -645,6 +662,10 @@ public class BuildData implements Serializable {
 
     public Long getPropagatedMillisInQueue(Long value) {
         return defaultIfNull(propagatedMillisInQueue, value);
+    }
+
+    public Integer getVersion() {
+        return version;
     }
 
     public String getBuildTag(String value) {

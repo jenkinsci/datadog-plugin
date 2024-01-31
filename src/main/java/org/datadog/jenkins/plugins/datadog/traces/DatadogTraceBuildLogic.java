@@ -48,6 +48,11 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
             return null;
         }
 
+        if (CITags.STATUS_RUNNING.equals(buildData.getResult(null))) {
+            // APM track does not support in-progress pipelines
+            return null;
+        }
+
         final TraceSpan buildSpan = BuildSpanManager.get().get(buildData.getBuildTag(""));
         if(buildSpan == null) {
             return null;

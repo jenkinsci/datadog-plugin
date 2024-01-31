@@ -48,18 +48,6 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
             return null;
         }
 
-        final long startTimeMillis = buildData.getStartTime(0L);
-        // If the build is a Jenkins Pipeline, the queue time is included in the root duration.
-        // We need to adjust the endTime of the root subtracting the queue time reported by its children.
-        // The propagated queue time is set DatadogTracePipelineLogic#updateBuildData method.
-        // The queue time reported by DatadogBuildListener#onStarted method is not included in the root duration.
-        final long propagatedMillisInQueue = Math.max(buildData.getPropagatedMillisInQueue(-1L), 0);
-        // Although the queue time happens before the startTime, we cannot remove it from the startTime
-        // because there is no API to do it at the end of the trace. Additionally, we cannot create the root
-        // at the end of the build, because we would lose the logs correlation.
-        // When the root starts, we don't have the propagated queue time yet. We need to wait till the
-        // end of the pipeline execution and do it in the endTime, adjusting all children if needed.
-        final long endTimeMillis = buildData.getEndTime(0L) - propagatedMillisInQueue;
         final String jenkinsResult = buildData.getResult("");
         final String status = statusFromResult(jenkinsResult);
         final String prefix = PipelineStepData.StepType.PIPELINE.getTagName();
@@ -72,10 +60,30 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
                 .orElse(normalizeTag(rawGitBranch));
 
         JSONObject payload = new JSONObject();
+        payload.put("version", buildData.getVersion());
         payload.put("level", PipelineStepData.StepType.PIPELINE.getBuildLevel());
         payload.put("url", buildData.getBuildUrl(""));
+
+        final long startTimeMillis = buildData.getStartTime(0L);
         payload.put("start", DatadogUtilities.toISO8601(new Date(startTimeMillis)));
-        payload.put("end", DatadogUtilities.toISO8601(new Date(endTimeMillis)));
+
+        Long endTime = buildData.getEndTime(null);
+        // there are valid cases where endTime is null (in-progress pipelines), and the backend allows for this
+        if (endTime != null) {
+            // If the build is a Jenkins Pipeline, the queue time is included in the root duration.
+            // We need to adjust the endTime of the root subtracting the queue time reported by its children.
+            // The propagated queue time is set DatadogTracePipelineLogic#updateBuildData method.
+            // The queue time reported by DatadogBuildListener#onStarted method is not included in the root duration.
+            final long propagatedMillisInQueue = Math.max(buildData.getPropagatedMillisInQueue(-1L), 0);
+            // Although the queue time happens before the startTime, we cannot remove it from the startTime
+            // because there is no API to do it at the end of the trace. Additionally, we cannot create the root
+            // at the end of the build, because we would lose the logs correlation.
+            // When the root starts, we don't have the propagated queue time yet. We need to wait till the
+            // end of the pipeline execution and do it in the endTime, adjusting all children if needed.
+            final long endTimeMillis = endTime - propagatedMillisInQueue;
+            payload.put("end", DatadogUtilities.toISO8601(new Date(endTimeMillis)));
+        }
+
         payload.put("partial_retry", false);
         payload.put("queue_time", getMillisInQueue(buildData));
         payload.put("status", status);
