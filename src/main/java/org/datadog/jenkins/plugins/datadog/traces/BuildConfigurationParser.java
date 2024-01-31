@@ -18,7 +18,7 @@ public class BuildConfigurationParser {
     private static final Logger logger = Logger.getLogger(DatadogBuildListener.class.getName());
 
     /**
-     * Extract the configuration values from a {@link MatrixProject} run ({@see https://plugins.jenkins.io/matrix-project/}).
+     * Extract the configuration values from a {@link MatrixProject} run (https://plugins.jenkins.io/matrix-project/).
      * <p>
      * It is possible to create a "Multi-configuration" project in Jenkins.
      * For these projects a matrix of build parameters can be configured.
