@@ -7,7 +7,8 @@ import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 import java.util.Objects;
 import javax.annotation.Nullable;
-import org.datadog.jenkins.plugins.datadog.util.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
 
 /**
  * Keeps the Git repository related information.
@@ -78,18 +79,19 @@ public class GitRepositoryAction extends DatadogPluginAction {
                 '}';
     }
 
-    public static final class ConverterImpl extends DatadogActionConverter {
+    public static final class ConverterImpl extends DatadogActionConverter<GitRepositoryAction> {
         public ConverterImpl(XStream xs) {
+            super(new ConverterV1());
+        }
+    }
+
+    public static final class ConverterV1 extends VersionedConverter<GitRepositoryAction> {
+        public ConverterV1() {
+            super(1);
         }
 
         @Override
-        public boolean canConvert(Class type) {
-            return GitRepositoryAction.class == type;
-        }
-
-        @Override
-        public void marshal(Object source, HierarchicalStreamWriter writer, MarshallingContext context) {
-            GitRepositoryAction action = (GitRepositoryAction) source;
+        public void marshal(GitRepositoryAction action, HierarchicalStreamWriter writer, MarshallingContext context) {
             if (action.repositoryURL != null) {
                 writeField("repositoryURL", action.repositoryURL, writer, context);
             }
@@ -102,7 +104,7 @@ public class GitRepositoryAction extends DatadogPluginAction {
         }
 
         @Override
-        public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
+        public GitRepositoryAction unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
             GitRepositoryAction gitRepositoryAction = new GitRepositoryAction();
             while (reader.hasMoreChildren()) {
                 reader.moveDown();

@@ -6,7 +6,8 @@ import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 import java.util.Objects;
-import org.datadog.jenkins.plugins.datadog.util.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
 
 public class EnqueueAction extends QueueInfoAction {
 
@@ -40,23 +41,24 @@ public class EnqueueAction extends QueueInfoAction {
         return "EnqueueAction{timestampNanos=" + timestampNanos + '}';
     }
 
-    public static final class ConverterImpl extends DatadogActionConverter {
+    public static final class ConverterImpl extends DatadogActionConverter<EnqueueAction> {
         public ConverterImpl(XStream xs) {
+            super(new ConverterV1());
+        }
+    }
+
+    public static final class ConverterV1 extends VersionedConverter<EnqueueAction> {
+        public ConverterV1() {
+            super(1);
         }
 
         @Override
-        public boolean canConvert(Class type) {
-            return EnqueueAction.class == type;
-        }
-
-        @Override
-        public void marshal(Object source, HierarchicalStreamWriter writer, MarshallingContext context) {
-            EnqueueAction action = (EnqueueAction) source;
+        public void marshal(EnqueueAction action, HierarchicalStreamWriter writer, MarshallingContext context) {
             writeField("timestampNanos", action.timestampNanos, writer, context);
         }
 
         @Override
-        public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
+        public EnqueueAction unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
             long timestampNanos = readField(reader, context, long.class);
             return new EnqueueAction(timestampNanos);
         }

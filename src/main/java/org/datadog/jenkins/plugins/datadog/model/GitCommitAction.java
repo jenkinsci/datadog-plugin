@@ -6,7 +6,8 @@ import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 import java.util.Objects;
-import org.datadog.jenkins.plugins.datadog.util.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
 
 /**
  * Keeps the Git commit related information.
@@ -140,18 +141,19 @@ public class GitCommitAction extends DatadogPluginAction {
                 '}';
     }
 
-    public static final class ConverterImpl extends DatadogActionConverter {
+    public static final class ConverterImpl extends DatadogActionConverter<GitCommitAction> {
         public ConverterImpl(XStream xs) {
+            super(new ConverterV1());
+        }
+    }
+
+    public static final class ConverterV1 extends VersionedConverter<GitCommitAction> {
+        public ConverterV1() {
+            super(1);
         }
 
         @Override
-        public boolean canConvert(Class type) {
-            return GitCommitAction.class == type;
-        }
-
-        @Override
-        public void marshal(Object source, HierarchicalStreamWriter writer, MarshallingContext context) {
-            GitCommitAction action = (GitCommitAction) source;
+        public void marshal(GitCommitAction action, HierarchicalStreamWriter writer, MarshallingContext context) {
             if (action.tag != null) {
                 writeField("tag", action.tag, writer, context);
             }
@@ -182,7 +184,7 @@ public class GitCommitAction extends DatadogPluginAction {
         }
 
         @Override
-        public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
+        public GitCommitAction unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
             String tag = null;
             String commit = null;
             String message = null;

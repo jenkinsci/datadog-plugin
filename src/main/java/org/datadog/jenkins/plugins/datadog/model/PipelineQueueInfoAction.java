@@ -6,7 +6,8 @@ import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 import java.util.Objects;
-import org.datadog.jenkins.plugins.datadog.util.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
 
 public class PipelineQueueInfoAction extends DatadogPluginAction {
 
@@ -61,18 +62,19 @@ public class PipelineQueueInfoAction extends DatadogPluginAction {
                 '}';
     }
 
-    public static final class ConverterImpl extends DatadogActionConverter {
+    public static final class ConverterImpl extends DatadogActionConverter<PipelineQueueInfoAction> {
         public ConverterImpl(XStream xs) {
+            super(new ConverterV1());
+        }
+    }
+
+    public static final class ConverterV1 extends VersionedConverter<PipelineQueueInfoAction> {
+        public ConverterV1() {
+            super(1);
         }
 
         @Override
-        public boolean canConvert(Class type) {
-            return PipelineQueueInfoAction.class == type;
-        }
-
-        @Override
-        public void marshal(Object source, HierarchicalStreamWriter writer, MarshallingContext context) {
-            PipelineQueueInfoAction action = (PipelineQueueInfoAction) source;
+        public void marshal(PipelineQueueInfoAction action, HierarchicalStreamWriter writer, MarshallingContext context) {
             if (action.queueTimeMillis != -1) {
                 writeField("queueTimeMillis", action.queueTimeMillis, writer, context);
             }
@@ -82,7 +84,7 @@ public class PipelineQueueInfoAction extends DatadogPluginAction {
         }
 
         @Override
-        public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
+        public PipelineQueueInfoAction unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
             long queueTimeMillis = -1;
             long propagatedQueueTimeMillis = -1;
 

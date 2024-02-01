@@ -8,7 +8,8 @@ import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 import java.util.Objects;
 import org.datadog.jenkins.plugins.datadog.model.DatadogPluginAction;
 import org.datadog.jenkins.plugins.datadog.model.Status;
-import org.datadog.jenkins.plugins.datadog.util.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
 
 public class StatusAction extends DatadogPluginAction {
 
@@ -51,24 +52,25 @@ public class StatusAction extends DatadogPluginAction {
         return Objects.hash(status, propagate);
     }
 
-    public static final class ConverterImpl extends DatadogActionConverter {
+    public static final class ConverterImpl extends DatadogActionConverter<StatusAction> {
         public ConverterImpl(XStream xs) {
+            super(new ConverterV1());
+        }
+    }
+
+    public static final class ConverterV1 extends VersionedConverter<StatusAction> {
+        public ConverterV1() {
+            super(1);
         }
 
         @Override
-        public boolean canConvert(Class type) {
-            return StatusAction.class == type;
-        }
-
-        @Override
-        public void marshal(Object source, HierarchicalStreamWriter writer, MarshallingContext context) {
-            StatusAction action = (StatusAction) source;
+        public void marshal(StatusAction action, HierarchicalStreamWriter writer, MarshallingContext context) {
             writeField("status", action.status, writer, context);
             writeField("propagate", action.propagate, writer, context);
         }
 
         @Override
-        public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
+        public StatusAction unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
             Status status = readField(reader, context, Status.class);
             boolean propagate = readField(reader, context, boolean.class);
             return new StatusAction(status, propagate);

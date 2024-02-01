@@ -11,7 +11,8 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.datadog.jenkins.plugins.datadog.traces.IdGenerator;
-import org.datadog.jenkins.plugins.datadog.util.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
 
 /**
  * This action stores mapping between IDs of {@link org.jenkinsci.plugins.workflow.graph.FlowNode}
@@ -78,23 +79,24 @@ public class TraceInfoAction extends DatadogPluginAction {
                 '}';
     }
 
-    public static final class ConverterImpl extends DatadogActionConverter {
+    public static final class ConverterImpl extends DatadogActionConverter<TraceInfoAction> {
         public ConverterImpl(XStream xs) {
+            super(new ConverterV1());
+        }
+    }
+
+    public static final class ConverterV1 extends VersionedConverter<TraceInfoAction> {
+        public ConverterV1() {
+            super(1);
         }
 
         @Override
-        public boolean canConvert(Class type) {
-            return TraceInfoAction.class == type;
-        }
-
-        @Override
-        public void marshal(Object source, HierarchicalStreamWriter writer, MarshallingContext context) {
-            TraceInfoAction action = (TraceInfoAction) source;
+        public void marshal(TraceInfoAction action, HierarchicalStreamWriter writer, MarshallingContext context) {
             writeField("infoByFlowNodeId", action.spanIdByNodeId, writer, context);
         }
 
         @Override
-        public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
+        public TraceInfoAction unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
             Map<String, Long> infoByFlowNodeId = readField(reader, context, Map.class);
             return new TraceInfoAction(infoByFlowNodeId);
         }

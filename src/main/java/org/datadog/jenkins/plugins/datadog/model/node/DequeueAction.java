@@ -6,7 +6,8 @@ import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 import java.util.Objects;
-import org.datadog.jenkins.plugins.datadog.util.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
 
 public class DequeueAction extends QueueInfoAction {
 
@@ -40,24 +41,25 @@ public class DequeueAction extends QueueInfoAction {
         return "DequeueAction{queueTimeNanos=" + queueTimeNanos + '}';
     }
 
-    public static final class ConverterImpl extends DatadogActionConverter {
+    public static final class ConverterImpl extends DatadogActionConverter<DequeueAction> {
         public ConverterImpl(XStream xs) {
+            super(new ConverterV1());
+        }
+    }
+
+    public static final class ConverterV1 extends VersionedConverter<DequeueAction> {
+        public ConverterV1() {
+            super(1);
         }
 
         @Override
-        public boolean canConvert(Class type) {
-            return DequeueAction.class == type;
-        }
-
-        @Override
-        public void marshal(Object source, HierarchicalStreamWriter writer, MarshallingContext context) {
-            DequeueAction action = (DequeueAction) source;
+        public void marshal(DequeueAction action, HierarchicalStreamWriter writer, MarshallingContext context) {
             writeField("queueTimeNanos", action.queueTimeNanos, writer, context);
             context.convertAnother(action.queueTimeNanos);
         }
 
         @Override
-        public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
+        public DequeueAction unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
             long queueTimeNanos = readField(reader, context, long.class);
             return new DequeueAction(queueTimeNanos);
         }
