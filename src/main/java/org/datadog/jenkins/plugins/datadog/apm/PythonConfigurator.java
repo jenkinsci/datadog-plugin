@@ -1,28 +1,26 @@
-package org.datadog.jenkins.plugins.datadog.tracer;
+package org.datadog.jenkins.plugins.datadog.apm;
 
 import hudson.FilePath;
 import hudson.model.Node;
+import hudson.model.TaskListener;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 final class PythonConfigurator implements TracerConfigurator {
-
-    private static final Logger LOGGER = Logger.getLogger(PythonConfigurator.class.getName());
 
     private static final int GET_PIP_VERSION_TIMEOUT_MILLIS = 30_000;
     private static final int INSTALL_TRACER_TIMEOUT_MILLIS = 300_000;
     private static final int SHOW_TRACER_PACKAGE_DETAILS_TIMEOUT_MILLIS = 300_000;
 
     @Override
-    public Map<String, String> configure(DatadogTracerJobProperty<?> tracerConfig, Node node, FilePath workspacePath, Map<String, String> envs) throws Exception {
-        String pipVersion = workspacePath.act(new ShellCommandCallable(GET_PIP_VERSION_TIMEOUT_MILLIS, "pip", "-V"));
-        LOGGER.log(Level.FINE, "Got pip version " + pipVersion + " from " + workspacePath + " on " + node);
+    public Map<String, String> configure(DatadogTracerJobProperty<?> tracerConfig, Node node, FilePath workspacePath, Map<String, String> envs, TaskListener listener) throws Exception {
+        String pipVersion = workspacePath.act(new ShellCommandCallable(Collections.emptyMap(), GET_PIP_VERSION_TIMEOUT_MILLIS, "pip", "-V"));
+        listener.getLogger().println("[datadog] Configuring DD Python tracer: got pip version " + pipVersion + " from " + workspacePath + " on " + node);
 
-        String installTracerOutput = workspacePath.act(new ShellCommandCallable(INSTALL_TRACER_TIMEOUT_MILLIS, "pip", "install", "-U", "ddtrace"));
-        LOGGER.log(Level.FINE, "Tracer installed in " + workspacePath + " on " + node + "; output: " + installTracerOutput);
+        String installTracerOutput = workspacePath.act(new ShellCommandCallable(Collections.emptyMap(), INSTALL_TRACER_TIMEOUT_MILLIS, "pip", "install", "-U", "ddtrace"));
+        listener.getLogger().println("[datadog] Configuring DD Python tracer: tracer installed in " + workspacePath + " on " + node + "; output: " + installTracerOutput);
 
         String tracerLocation = getTracerLocation(workspacePath);
 
@@ -33,7 +31,7 @@ final class PythonConfigurator implements TracerConfigurator {
     }
 
     private static String getTracerLocation(FilePath workspacePath) throws IOException, InterruptedException {
-        String getTracerLocationOutput = workspacePath.act(new ShellCommandCallable(SHOW_TRACER_PACKAGE_DETAILS_TIMEOUT_MILLIS, "pip", "show", "ddtrace"));
+        String getTracerLocationOutput = workspacePath.act(new ShellCommandCallable(Collections.emptyMap(), SHOW_TRACER_PACKAGE_DETAILS_TIMEOUT_MILLIS, "pip", "show", "ddtrace"));
         for (String line : getTracerLocationOutput.split("\n")) {
             if (line.contains("Location")) {
                 return line.substring(line.indexOf(':') + 2);

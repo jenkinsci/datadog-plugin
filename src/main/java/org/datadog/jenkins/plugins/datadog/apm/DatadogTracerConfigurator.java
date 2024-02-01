@@ -1,4 +1,4 @@
-package org.datadog.jenkins.plugins.datadog.tracer;
+package org.datadog.jenkins.plugins.datadog.apm;
 
 import hudson.FilePath;
 import hudson.model.AbstractBuild;
@@ -7,6 +7,7 @@ import hudson.model.InvisibleAction;
 import hudson.model.Job;
 import hudson.model.Node;
 import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.model.TopLevelItem;
 import hudson.util.Secret;
 import java.net.MalformedURLException;
@@ -18,15 +19,12 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 
 public class DatadogTracerConfigurator {
-
-    private static final Logger LOGGER = Logger.getLogger(DatadogTracerConfigurator.class.getName());
 
     private final Map<TracerLanguage, TracerConfigurator> configurators;
 
@@ -39,7 +37,7 @@ public class DatadogTracerConfigurator {
         configurators.put(TracerLanguage.PYTHON, new PythonConfigurator());
     }
 
-    public Map<String, String> configure(Run<?, ?> run, Node node, Map<String, String> envs) {
+    public Map<String, String> configure(Run<?, ?> run, Node node, Map<String, String> envs, TaskListener listener) {
         Job<?, ?> job = run.getParent();
         DatadogTracerJobProperty<?> tracerConfig = job.getProperty(DatadogTracerJobProperty.class);
         if (tracerConfig == null || !tracerConfig.isOn()) {
@@ -55,29 +53,30 @@ public class DatadogTracerConfigurator {
 
         DatadogGlobalConfiguration datadogConfig = DatadogUtilities.getDatadogGlobalDescriptor();
         if (datadogConfig == null) {
-            LOGGER.log(Level.WARNING, "Cannot set up tracer: Datadog config not found");
+            listener.error("[datadog] Cannot set up tracer: Datadog config not found");
             return Collections.emptyMap();
         }
 
         TopLevelItem topLevelItem = getTopLevelItem(run);
         FilePath workspacePath = node.getWorkspaceFor(topLevelItem);
         if (workspacePath == null) {
-            throw new IllegalStateException("Cannot find workspace path for " + topLevelItem + " on " + node);
+            listener.error("[datadog] Cannot find workspace path for " + topLevelItem + " on " + node);
+            return Collections.emptyMap();
         }
 
         Map<String, String> variables = new HashMap<>(getCommonEnvVariables(datadogConfig, tracerConfig));
         for (TracerLanguage language : languages) {
             TracerConfigurator tracerConfigurator = configurators.get(language);
             if (tracerConfigurator == null) {
-                LOGGER.log(Level.WARNING, "Cannot find tracer configurator for " + language);
+                listener.error("[datadog] Cannot find tracer configurator for " + language);
                 continue;
             }
 
             try {
-                Map<String, String> languageVariables = tracerConfigurator.configure(tracerConfig, node, workspacePath, envs);
+                Map<String, String> languageVariables = tracerConfigurator.configure(tracerConfig, node, workspacePath, envs, listener);
                 variables.putAll(languageVariables);
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "Error while configuring " + language + " Datadog Tracer for run " + run + " and node " + node, e);
+                ExceptionUtils.printRootCauseStackTrace(e, listener.error("[datadog] Error while configuring " + language + " Datadog Tracer for run " + run + " and node " + node));
                 return Collections.emptyMap();
             }
         }

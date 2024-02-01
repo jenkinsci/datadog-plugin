@@ -11,6 +11,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -19,10 +20,12 @@ public class ShellCommandExecutor {
   private static final int NORMAL_TERMINATION_TIMEOUT_MILLIS = 3000;
 
   private final File executionFolder;
+  private final Map<String, String> environment;
   private final long timeoutMillis;
 
-  public ShellCommandExecutor(File executionFolder, long timeoutMillis) {
+  public ShellCommandExecutor(File executionFolder, Map<String, String> environment, long timeoutMillis) {
     this.executionFolder = executionFolder;
+    this.environment = environment;
     this.timeoutMillis = timeoutMillis;
   }
 
@@ -83,6 +86,7 @@ public class ShellCommandExecutor {
       throws IOException, TimeoutException, InterruptedException {
     ProcessBuilder processBuilder = new ProcessBuilder(command);
     processBuilder.directory(executionFolder);
+    processBuilder.environment().putAll(environment);
 
     Process p = processBuilder.start();
 

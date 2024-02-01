@@ -1,4 +1,4 @@
-package org.datadog.jenkins.plugins.datadog.tracer;
+package org.datadog.jenkins.plugins.datadog.apm;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
@@ -19,7 +19,7 @@ public class DatadogTracerStepEnvironmentContributor extends StepEnvironmentCont
         Run<?, ?> run = stepContext.get(Run.class);
         Node node = stepContext.get(Node.class);
         if (run != null && node != null) {
-            Map<String, String> additionalEnvVars = DatadogTracerConfigurator.INSTANCE.configure(run, node, envs);
+            Map<String, String> additionalEnvVars = DatadogTracerConfigurator.INSTANCE.configure(run, node, envs, listener);
             envs.putAll(additionalEnvVars);
         }
     }

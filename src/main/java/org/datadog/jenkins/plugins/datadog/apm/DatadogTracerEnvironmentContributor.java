@@ -1,4 +1,4 @@
-package org.datadog.jenkins.plugins.datadog.tracer;
+package org.datadog.jenkins.plugins.datadog.apm;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
@@ -27,7 +27,7 @@ public class DatadogTracerEnvironmentContributor extends EnvironmentContributor 
         }
 
         Node node = executor.getOwner().getNode();
-        Map<String, String> additionalEnvVars = DatadogTracerConfigurator.INSTANCE.configure(run, node, envs);
+        Map<String, String> additionalEnvVars = DatadogTracerConfigurator.INSTANCE.configure(run, node, envs, listener);
         envs.putAll(additionalEnvVars);
     }
 }

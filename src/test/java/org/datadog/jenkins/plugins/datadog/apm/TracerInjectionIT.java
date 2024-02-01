@@ -1,4 +1,4 @@
-package org.datadog.jenkins.plugins.datadog.tracer;
+package org.datadog.jenkins.plugins.datadog.apm;
 
 import hudson.FilePath;
 import hudson.model.FreeStyleBuild;
@@ -250,7 +250,7 @@ public class TracerInjectionIT {
             projectWorkspace = jenkinsRule.jenkins.getWorkspaceFor(item);
         }
 
-        URL mavenProjectUrl = TracerInjectionIT.class.getResource("/org/datadog/jenkins/plugins/datadog/tracer/test-maven-project");
+        URL mavenProjectUrl = TracerInjectionIT.class.getResource("/org/datadog/jenkins/plugins/datadog/apm/test-maven-project");
         File mavenProject = new File(mavenProjectUrl.getFile());
         FilePath mavenProjectPath = new FilePath(mavenProject);
         mavenProjectPath.copyRecursiveTo(projectWorkspace);
