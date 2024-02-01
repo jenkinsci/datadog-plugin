@@ -28,6 +28,7 @@ package org.datadog.jenkins.plugins.datadog.listeners;
 import com.cloudbees.workflow.rest.external.StageNodeExt;
 import hudson.EnvVars;
 import hudson.model.*;
+import java.nio.charset.Charset;
 import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent.AlertType;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent.Priority;
@@ -82,7 +83,7 @@ public class DatadogBuildListenerTest {
         envVars.put("GIT_BRANCH", "test-branch");
 
         workflowRun = mock(WorkflowRun.class);
-
+        when(workflowRun.getCharset()).thenReturn(Charset.defaultCharset());
     }
 
     @Test

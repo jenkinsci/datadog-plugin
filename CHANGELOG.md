@@ -1,5 +1,14 @@
 Changes
 =======
+## 6.0.0 / 2024-01-31
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.6.2...datadog-6.0.0
+
+Reworking CI Visibility logic: changing how the plugin's internal state is stored, and how pipeline steps are submitted to Datadog.
+
+* [Fixed] Update job name calculation logic to correctly set names for builds that live inside folders. See [#383](https://github.com/jenkinsci/datadog-plugin/pull/383).
+* [Fixed] Optimise memory consumption, CPU usage and disk writes. See [#381](https://github.com/jenkinsci/datadog-plugin/pull/381).
+* [Fixed] Rework CI Visibility spans batching. See [#379](https://github.com/jenkinsci/datadog-plugin/pull/379).
+
 ## 5.6.2 / 2024-01-08
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.6.1...datadog-5.6.2

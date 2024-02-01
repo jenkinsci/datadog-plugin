@@ -26,7 +26,6 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.listeners;
 
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.cleanUpTraceActions;
-import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.isPipeline;
 import static org.datadog.jenkins.plugins.datadog.traces.TracerConstants.SPAN_ID_ENVVAR_KEY;
 import static org.datadog.jenkins.plugins.datadog.traces.TracerConstants.TRACE_ID_ENVVAR_KEY;
 
@@ -58,11 +57,15 @@ import org.datadog.jenkins.plugins.datadog.events.BuildAbortedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildFinishedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildStartedEventImpl;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
+import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
+import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.TraceInfoAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
-
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
-import org.datadog.jenkins.plugins.datadog.traces.StepDataAction;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
+import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriter;
+import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 
@@ -110,20 +113,14 @@ public class DatadogBuildListener extends RunListener<Run> {
             final TraceSpan buildSpan = new TraceSpan("jenkins.build", TimeUnit.MILLISECONDS.toNanos(buildData.getStartTime(0L)));
             BuildSpanManager.get().put(buildData.getBuildTag(""), buildSpan);
 
-            // The buildData object is stored in the BuildSpanAction to be updated
-            // by the information that will be calculated when the pipeline listeners
-            // were executed. This is needed because if the user build is based on
-            // Jenkins Pipelines, there are many information that is missing when the
-            // root span is created, such as Git info (this is calculated in an inner step
-            // of the pipeline)
-            final BuildSpanAction buildSpanAction = new BuildSpanAction(buildData, buildSpan.context());
+            final BuildSpanAction buildSpanAction = new BuildSpanAction(buildSpan.context());
             run.addAction(buildSpanAction);
 
-            final StepDataAction stepDataAction = new StepDataAction();
-            run.addAction(stepDataAction);
+            run.addAction(new GitCommitAction());
+            run.addAction(new GitRepositoryAction());
+            run.addAction(new TraceInfoAction());
+            run.addAction(new PipelineQueueInfoAction());
 
-            // Traces
-            client.startBuildTrace(buildData, run);
             logger.fine("End DatadogBuildListener#onInitialize");
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to process build initialization");
@@ -140,7 +137,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             logger.fine("Start DatadogBuildListener#setUpEnvironment");
 
             final BuildSpanAction buildSpanAction = build.getAction(BuildSpanAction.class);
-            if(buildSpanAction == null || buildSpanAction.getBuildData() == null) {
+            if(buildSpanAction == null || buildSpanAction.getBuildSpanContext() == null) {
                 return new Environment() {
                 };
             }
@@ -209,15 +206,16 @@ public class DatadogBuildListener extends RunListener<Run> {
             Queue queue = getQueue();
             Queue.Item item = queue.getItem(run.getQueueId());
             Map<String, Set<String>> tags = buildData.getTags();
-            String hostname = buildData.getHostname("unknown");
+            String hostname = buildData.getHostname(DatadogUtilities.getHostname(null));
             try (Metrics metrics = client.metrics()) {
                 long waitingMs = (DatadogUtilities.currentTimeMillis() - item.getInQueueSince());
                 metrics.gauge("jenkins.job.waiting", TimeUnit.MILLISECONDS.toSeconds(waitingMs), hostname, tags);
 
-                final BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
-                if(buildSpanAction != null && buildSpanAction.getBuildData() != null) {
-                    buildSpanAction.getBuildData().setMillisInQueue(waitingMs);
+                PipelineQueueInfoAction queueInfoAction = run.getAction(PipelineQueueInfoAction.class);
+                if (queueInfoAction != null) {
+                    queueInfoAction.setQueueTimeMillis(waitingMs);
                 }
+
             } catch (NullPointerException e) {
                 logger.warning("Unable to compute 'waiting' metric. " +
                         "item.getInQueueSince() unavailable, possibly due to worker instance provisioning");
@@ -279,9 +277,9 @@ public class DatadogBuildListener extends RunListener<Run> {
 
             // Send a metric
             Map<String, Set<String>> tags = buildData.getTags();
-            String hostname = buildData.getHostname("unknown");
+            String hostname = buildData.getHostname(DatadogUtilities.getHostname(null));
             metrics.gauge("jenkins.job.duration", buildData.getDuration(0L) / 1000, hostname, tags);
-            logger.fine(String.format("[%s]: Duration: %s", buildData.getJobName(null), toTimeString(buildData.getDuration(0L))));
+            logger.fine(String.format("[%s]: Duration: %s", buildData.getJobName(), toTimeString(buildData.getDuration(0L))));
 
             if (run instanceof WorkflowRun) {
                 RunExt extRun = getRunExtForRun((WorkflowRun) run);
@@ -290,11 +288,11 @@ public class DatadogBuildListener extends RunListener<Run> {
                     pauseDuration += stage.getPauseDurationMillis();
                 }
                 metrics.gauge("jenkins.job.pause_duration", pauseDuration / 1000, hostname, tags);
-                logger.fine(String.format("[%s]: Pause Duration: %s", buildData.getJobName(null), toTimeString(pauseDuration)));
+                logger.fine(String.format("[%s]: Pause Duration: %s", buildData.getJobName(), toTimeString(pauseDuration)));
                 long buildDuration = run.getDuration() - pauseDuration;
                 metrics.gauge("jenkins.job.build_duration", buildDuration / 1000, hostname, tags);
                 logger.fine(
-                        String.format("[%s]: Build Duration (without pause): %s", buildData.getJobName(null), toTimeString(buildDuration)));
+                        String.format("[%s]: Build Duration (without pause): %s", buildData.getJobName(), toTimeString(buildDuration)));
             }
 
             // Submit counter
@@ -324,24 +322,24 @@ public class DatadogBuildListener extends RunListener<Run> {
                 long leadTime = run.getDuration() + mttr;
 
                 metrics.gauge("jenkins.job.leadtime", leadTime / 1000, hostname, tags);
-                logger.fine(String.format("[%s]: Lead time: %s", buildData.getJobName(null), toTimeString(leadTime)));
+                logger.fine(String.format("[%s]: Lead time: %s", buildData.getJobName(), toTimeString(leadTime)));
                 if (cycleTime > 0) {
                     metrics.gauge("jenkins.job.cycletime", cycleTime / 1000, hostname, tags);
-                    logger.fine(String.format("[%s]: Cycle Time: %s", buildData.getJobName(null), toTimeString(cycleTime)));
+                    logger.fine(String.format("[%s]: Cycle Time: %s", buildData.getJobName(), toTimeString(cycleTime)));
                 }
                 if (mttr > 0) {
                     metrics.gauge("jenkins.job.mttr", mttr / 1000, hostname, tags);
-                    logger.fine(String.format("[%s]: MTTR: %s", buildData.getJobName(null), toTimeString(mttr)));
+                    logger.fine(String.format("[%s]: MTTR: %s", buildData.getJobName(), toTimeString(mttr)));
                 }
             } else {
                 long feedbackTime = run.getDuration();
                 long mtbf = getMeanTimeBetweenFailure(run);
 
                 metrics.gauge("jenkins.job.feedbacktime", feedbackTime / 1000, hostname, tags);
-                logger.fine(String.format("[%s]: Feedback Time: %s", buildData.getJobName(null), toTimeString(feedbackTime)));
+                logger.fine(String.format("[%s]: Feedback Time: %s", buildData.getJobName(), toTimeString(feedbackTime)));
                 if (mtbf > 0) {
                     metrics.gauge("jenkins.job.mtbf", mtbf / 1000, hostname, tags);
-                    logger.fine(String.format("[%s]: MTBF: %s", buildData.getJobName(null), toTimeString(mtbf)));
+                    logger.fine(String.format("[%s]: MTBF: %s", buildData.getJobName(), toTimeString(mtbf)));
                 }
             }
 
@@ -365,9 +363,8 @@ public class DatadogBuildListener extends RunListener<Run> {
             }
             logger.fine("Start DatadogBuildListener#onFinalized");
 
-            // Get Datadog Client Instance
-            DatadogClient client = getDatadogClient();
-            if (client == null) {
+            TraceWriter traceWriter = TraceWriterFactory.getTraceWriter();
+            if (traceWriter == null) {
                 return;
             }
 
@@ -381,23 +378,19 @@ public class DatadogBuildListener extends RunListener<Run> {
             }
 
             // APM Traces
-            client.finishBuildTrace(buildData, run);
+            traceWriter.submitBuild(buildData, run);
             logger.fine("End DatadogBuildListener#onFinalized");
 
             BuildSpanManager.get().remove(buildData.getBuildTag(""));
 
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            DatadogUtilities.severe(logger, e, "Interrupted while processing build finalization");
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to process build finalization");
         } finally {
-            // If the run belongs to a Jenkins pipeline (based on FlowNodes),
-            // the `onFinalized` method is executed before processing the last node.
-            // This means we cannot clean up trace actions at this point if the run is a Jenkins pipeline.
-            // The trace actions will be removed after last FlowNode has been processed.
-            // (See DatadogTracePipelineLogic.execute(...) method)
-            if(!isPipeline(run)) {
-                // Explicit removal of InvisibleActions used to collect Traces when the Run finishes.
-                cleanUpTraceActions(run);
-            }
+            // Explicit removal of InvisibleActions used to collect Traces when the Run finishes.
+            cleanUpTraceActions(run);
         }
     }
 
@@ -429,7 +422,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             if (buildData.isCompleted()) {
                 String result = buildData.getResult(null);
                 String number = buildData.getBuildNumber("unknown");
-                String jobName = buildData.getJobName("unknown");
+                String jobName = buildData.getJobName();
 
                 // Build title
                 // eg: `job_name build #1 aborted on hostname`
@@ -441,7 +434,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             }
 
             // Get the list of global tags to apply
-            String hostname = buildData.getHostname("unknown");
+            String hostname = buildData.getHostname(DatadogUtilities.getHostname(null));
 
             // Send an event
             final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent(BuildAbortedEventImpl.BUILD_ABORTED_EVENT_NAME);

@@ -1,0 +1,13 @@
+pipeline {
+    agent any
+    stages {
+        stage('test'){
+            steps {
+                script {
+                    git branch: 'master',
+                        url: '$LOCAL_REPO_URL'
+                }
+            }
+        }
+    }
+}

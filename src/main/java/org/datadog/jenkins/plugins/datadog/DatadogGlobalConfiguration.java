@@ -44,13 +44,14 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
+import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
-import org.datadog.jenkins.plugins.datadog.clients.DatadogHttpClient;
+import org.datadog.jenkins.plugins.datadog.clients.DatadogApiClient;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogAgentClient;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration;
@@ -445,7 +446,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             throws IOException, ServletException {
         Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
         final Secret secret = findSecret(targetApiKey, targetCredentialsApiKey);
-        if (DatadogHttpClient.validateDefaultIntakeConnection(new HttpClient(60_000), targetApiURL, secret)) {
+        if (DatadogApiClient.validateDefaultIntakeConnection(new HttpClient(60_000), targetApiURL, secret)) {
             return FormValidation.ok("Great! Your API key is valid.");
         } else {
             return FormValidation.error("Hmmm, your API key seems to be invalid.");
@@ -839,9 +840,9 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             if(client == null) {
                 return false;
             }
-            client.setDefaultIntakeConnectionBroken(false);
-            client.setLogIntakeConnectionBroken(false);
-            client.setWebhookIntakeConnectionBroken(false);
+
+            TraceWriterFactory.onDatadogClientUpdate(client);
+
             // Persist global configuration information
             save();
             return true;

@@ -29,6 +29,7 @@ import hudson.util.Secret;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
 
 public class ClientFactory {
     private static DatadogClient testClient;
@@ -36,6 +37,7 @@ public class ClientFactory {
     public static void setTestClient(DatadogClient testClient){
         // Only used for tests
         ClientFactory.testClient = testClient;
+        TraceWriterFactory.onDatadogClientUpdate(testClient);
     }
 
     public static DatadogClient getClient(DatadogClient.ClientType type, String apiUrl, String logIntakeUrl,
@@ -47,7 +49,7 @@ public class ClientFactory {
         }
         switch(type){
             case HTTP:
-                return DatadogHttpClient.getInstance(apiUrl, logIntakeUrl, webhookIntakeUrl, apiKey);
+                return DatadogApiClient.getInstance(apiUrl, logIntakeUrl, webhookIntakeUrl, apiKey);
             case DSD:
                 return DatadogAgentClient.getInstance(host, port, logCollectionPort, traceCollectionPort);
             default:
