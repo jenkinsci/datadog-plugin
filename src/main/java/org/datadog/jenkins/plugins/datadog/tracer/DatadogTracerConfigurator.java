@@ -9,10 +9,6 @@ import hudson.model.Node;
 import hudson.model.Run;
 import hudson.model.TopLevelItem;
 import hudson.util.Secret;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -111,11 +107,11 @@ public class DatadogTracerConfigurator {
         variables.put("DD_ENV", "ci");
         variables.put("DD_SERVICE", tracerConfig.getServiceName());
 
-        DatadogClient.ClientType clientType = DatadogClient.ClientType.valueOf(datadogConfig.getReportWith());
+        DatadogClient.ClientType clientType = datadogConfig.getClientType();
         switch (clientType) {
             case HTTP:
                 variables.put("DD_CIVISIBILITY_AGENTLESS_ENABLED", "true");
-                variables.put("DD_SITE", getSite(datadogConfig.getTargetApiURL()));
+                variables.put("DD_SITE", datadogConfig.getDatadogSite());
                 variables.put("DD_API_KEY", Secret.toString(datadogConfig.getUsedApiKey()));
                 break;
             case DSD:
@@ -132,24 +128,6 @@ public class DatadogTracerConfigurator {
         }
 
         return variables;
-    }
-
-    private static String getSite(String apiUrl) {
-        // what users configure for Pipelines looks like "https://api.datadoghq.com/api/"
-        // while what the tracer needs "datadoghq.com"
-        try {
-            URI uri = new URL(apiUrl).toURI();
-            String host = uri.getHost();
-            if (host == null) {
-                throw new IllegalArgumentException("Cannot find host in Datadog API URL: " + uri);
-            }
-
-            String[] parts = host.split("\\.");
-            return (parts.length >= 2 ? parts[parts.length - 2] + "." : "") + parts[parts.length - 1];
-
-        } catch (MalformedURLException | URISyntaxException e) {
-            throw new IllegalArgumentException("Cannot parse Datadog API URL", e);
-        }
     }
 
     private static String getAgentPort(Integer traceCollectionPort) {

@@ -42,6 +42,7 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -343,12 +344,39 @@ public class DatadogBuildListener extends RunListener<Run> {
                 }
             }
 
+            // print a link to pipelines in Datadog to the build's log
+            printPipelineExecutionsLink(buildData, listener);
+
             logger.fine("End DatadogBuildListener#onCompleted");
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to process build completion");
         }
     }
 
+    private static void printPipelineExecutionsLink(BuildData buildData, TaskListener listener) throws IOException {
+        listener.getLogger().print("This pipeline is tracked with the Datadog Jenkins plugin");
+
+        DatadogGlobalConfiguration datadogConfiguration = DatadogUtilities.getDatadogGlobalDescriptor();
+        if (datadogConfiguration == null || !datadogConfiguration.getEnableCiVisibility()) {
+            listener.getLogger().println(".");
+            return;
+        }
+
+        String datadogSite = datadogConfiguration.getDatadogSite();
+        if (datadogSite == null) {
+            // Cannot detect Datadog site.
+            // Either URL is not set, or the plugin is configured to send data to Datadog Agent
+            listener.getLogger().println(".");
+            return;
+        }
+
+        String query = String.format("ci_level:pipeline @ci.pipeline.name:%s", buildData.getJobName());
+        String urlEncodedQuery = URLEncoder.encode(query, "UTF-8");
+        String link = String.format("https://app.%s/ci/pipeline-executions?query=%s", datadogSite, urlEncodedQuery);
+        listener.getLogger().print(" (");
+        listener.hyperlink(link, "view Pipeline Executions");
+        listener.getLogger().println(").");
+    }
 
     /**
      * Called when a build is finalized.
