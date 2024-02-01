@@ -1,9 +1,10 @@
 package org.datadog.jenkins.plugins.datadog.apm;
 
+import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.InvisibleAction;
+import hudson.model.Computer;
 import hudson.model.Job;
 import hudson.model.Node;
 import hudson.model.Run;
@@ -19,10 +20,12 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Nonnull;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.model.DatadogPluginAction;
 
 public class DatadogTracerConfigurator {
 
@@ -37,16 +40,17 @@ public class DatadogTracerConfigurator {
         configurators.put(TracerLanguage.PYTHON, new PythonConfigurator());
     }
 
-    public Map<String, String> configure(Run<?, ?> run, Node node, Map<String, String> envs, TaskListener listener) {
+    public Map<String, String> configure(Run<?, ?> run, Computer computer, Node node, EnvVars envs, TaskListener listener) {
         Job<?, ?> job = run.getParent();
         DatadogTracerJobProperty<?> tracerConfig = job.getProperty(DatadogTracerJobProperty.class);
         if (tracerConfig == null || !tracerConfig.isOn()) {
             return Collections.emptyMap();
         }
 
+        String nodeHostname = DatadogUtilities.getNodeHostname(envs, computer);
         Collection<TracerLanguage> languages = tracerConfig.getLanguages();
         for (ConfigureTracerAction action : run.getActions(ConfigureTracerAction.class)) {
-            if (action.node == node && languages.equals(action.languages)) {
+            if (nodeHostname != null && nodeHostname.equals(action.nodeHostname) && action.languages.containsAll(languages)) {
                 return action.variables;
             }
         }
@@ -80,7 +84,7 @@ public class DatadogTracerConfigurator {
                 return Collections.emptyMap();
             }
         }
-        run.addAction(new ConfigureTracerAction(node, languages, variables));
+        run.addAction(new ConfigureTracerAction(nodeHostname, languages, variables));
         return variables;
     }
 
@@ -159,13 +163,13 @@ public class DatadogTracerConfigurator {
         }
     }
 
-    private static final class ConfigureTracerAction extends InvisibleAction {
-        private final Node node;
+    private static final class ConfigureTracerAction extends DatadogPluginAction {
+        private final String nodeHostname;
         private final Collection<TracerLanguage> languages;
         private final Map<String, String> variables;
 
-        private ConfigureTracerAction(Node node, Collection<TracerLanguage> languages, Map<String, String> variables) {
-            this.node = node;
+        private ConfigureTracerAction(String nodeHostname, @Nonnull Collection<TracerLanguage> languages, Map<String, String> variables) {
+            this.nodeHostname = nodeHostname;
             this.languages = languages;
             this.variables = variables;
         }

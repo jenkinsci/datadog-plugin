@@ -22,7 +22,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
-import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
+import javax.annotation.Nullable;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
@@ -136,43 +136,19 @@ public class DatadogStepListener implements StepListener {
      */
     @SuppressFBWarnings("REC_CATCH_EXCEPTION")
     private static String getNodeHostname(final StepContext stepContext) {
+        return DatadogUtilities.getNodeHostname(getSafely(stepContext, EnvVars.class), getSafely(stepContext, Computer.class));
+    }
+
+    @Nullable
+    private static <T> T getSafely(final StepContext stepContext, final Class<T> type) {
         try {
-            EnvVars envVars = stepContext.get(EnvVars.class);
-            if (envVars != null) {
-                String ddHostname = envVars.get(DatadogGlobalConfiguration.DD_CI_HOSTNAME);
-                if (DatadogUtilities.isValidHostname(ddHostname)) {
-                    return ddHostname;
-                }
-                String hostname = envVars.get("HOSTNAME");
-                if (DatadogUtilities.isValidHostname(hostname)) {
-                    return hostname;
-                }
-            }
-        } catch (Exception e){
-            logger.fine("Unable to extract environment variables from StepContext.");
+            return stepContext.get(type);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        } catch (Exception e) {
+            return null;
         }
-
-        try {
-            Computer computer = stepContext.get(Computer.class);
-            if(computer != null) {
-                String computerNodeName = DatadogUtilities.getNodeName(computer);
-                if (DatadogUtilities.isMainNode(computerNodeName)) {
-                    String masterHostname = DatadogUtilities.getHostname(null);
-                    if (DatadogUtilities.isValidHostname(masterHostname)) {
-                        return masterHostname;
-                    }
-                }
-
-                String computerHostName = computer.getHostName();
-                if (DatadogUtilities.isValidHostname(computerHostName)) {
-                    return computerHostName;
-                }
-            }
-        } catch (Exception e){
-            logger.fine("Unable to extract hostname from StepContext.");
-        }
-
-        return null;
     }
 
     /**
