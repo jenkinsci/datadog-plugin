@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
@@ -52,11 +53,11 @@ public class TraceWriteStrategyImpl implements TraceWriteStrategy {
         return buildSpan != null ? new Payload(buildSpan, track) : null;
     }
 
-    @Nullable
+    @Nonnull
     @Override
     public Payload serialize(PipelineStepData stepData, Run<?, ?> run) throws IOException, InterruptedException {
         JSONObject stepSpan = pipelineLogic.toJson(stepData, run);
-        return stepSpan != null ? new Payload(stepSpan, track) : null;
+        return new Payload(stepSpan, track);
     }
 
     @Override

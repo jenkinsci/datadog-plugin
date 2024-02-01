@@ -5,11 +5,12 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import javax.annotation.Nonnull;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 
 
@@ -21,6 +22,7 @@ public abstract class DatadogBasePipelineLogic {
     protected static final String CI_PROVIDER = "jenkins";
     protected static final String HOSTNAME_NONE = "none";
 
+    @Nonnull
     public abstract JSONObject toJson(PipelineStepData current, Run<?, ?> run) throws IOException, InterruptedException;
 
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")

@@ -41,6 +41,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
@@ -56,6 +57,7 @@ import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.traces.write.Payload;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy;
 import org.datadog.jenkins.plugins.datadog.traces.write.Track;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 
 public class DatadogClientStub implements DatadogClient {
@@ -304,21 +306,15 @@ public class DatadogClientStub implements DatadogClient {
             }
         }
 
-        @Nullable
+        @Nonnull
         @Override
-        public Payload serialize(PipelineStepData stepData, Run<?, ?> run) throws IOException, InterruptedException {
+        public @NotNull Payload serialize(PipelineStepData stepData, Run<?, ?> run) throws IOException, InterruptedException {
             if (isWebhook) {
                 JSONObject json = new DatadogWebhookPipelineLogic().toJson(stepData, run);
-                if (json == null) {
-                    return null;
-                }
                 webhooks.add(json);
                 return new Payload(json, Track.WEBHOOK);
             } else {
                 TraceSpan span = new DatadogTracePipelineLogic().toSpan(stepData, run);
-                if (span == null) {
-                    return null;
-                }
                 traces.add(span);
                 JSONObject json = new JsonTraceSpanMapper().map(span);
                 return new Payload(json, Track.APM);
