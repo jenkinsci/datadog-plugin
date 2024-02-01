@@ -68,7 +68,7 @@ public class ClientFactory {
             return null;
         }
 
-        String reportWith = descriptor.getReportWith();
+        DatadogClient.ClientType clientType = descriptor.getClientType();
         String targetApiURL = descriptor.getTargetApiURL();
         String targetLogIntakeURL = descriptor.getTargetLogIntakeURL();
         String targetWebhookIntakeURL = descriptor.getTargetWebhookIntakeURL();
@@ -78,7 +78,7 @@ public class ClientFactory {
         Integer targetLogCollectionPort = descriptor.getTargetLogCollectionPort();
         Integer targetTraceCollectionPort = descriptor.getTargetTraceCollectionPort();
         String ciInstanceName = descriptor.getCiInstanceName();
-        return ClientFactory.getClient(DatadogClient.ClientType.valueOf(reportWith), targetApiURL, targetLogIntakeURL, targetWebhookIntakeURL,
+        return ClientFactory.getClient(clientType, targetApiURL, targetLogIntakeURL, targetWebhookIntakeURL,
                 targetApiKey, targetHost, targetPort, targetLogCollectionPort, targetTraceCollectionPort, ciInstanceName);
     }
 }

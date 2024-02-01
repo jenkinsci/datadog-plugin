@@ -27,51 +27,52 @@ package org.datadog.jenkins.plugins.datadog;
 
 import static hudson.Util.fixEmptyAndTrim;
 
-import hudson.Extension;
-import hudson.model.AbstractProject;
-import hudson.util.FormValidation;
-import hudson.util.Secret;
-import hudson.util.FormValidation.Kind;
-import hudson.util.ListBoxModel;
-import hudson.model.Item;
-import hudson.security.ACL;
-
-import jenkins.model.GlobalConfiguration;
-import jenkins.model.Jenkins;
-
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
-import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
-import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
-import org.jenkinsci.plugins.plaincredentials.StringCredentials;
-
-import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.math.NumberUtils;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
-import org.datadog.jenkins.plugins.datadog.clients.DatadogApiClient;
-import org.datadog.jenkins.plugins.datadog.clients.DatadogAgentClient;
-import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
-import org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.interceptor.RequirePOST;
-import org.kohsuke.stapler.AncestorInPath;
-
-import javax.management.InvalidAttributeValueException;
-import javax.servlet.ServletException;
+import hudson.Extension;
+import hudson.model.AbstractProject;
+import hudson.model.Item;
+import hudson.security.ACL;
+import hudson.util.FormValidation;
+import hudson.util.FormValidation.Kind;
+import hudson.util.ListBoxModel;
+import hudson.util.Secret;
 import java.io.IOException;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import javax.management.InvalidAttributeValueException;
+import javax.servlet.ServletException;
+import jenkins.model.GlobalConfiguration;
+import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
+import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.clients.DatadogAgentClient;
+import org.datadog.jenkins.plugins.datadog.clients.DatadogApiClient;
+import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
+import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
+import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
+import org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
+import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 @Extension
 public class DatadogGlobalConfiguration extends GlobalConfiguration {
@@ -833,7 +834,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.setUsedApiKey(apiKeySecret);
 
             //When form is saved....
-            DatadogClient client = ClientFactory.getClient(DatadogClient.ClientType.valueOf(this.getReportWith()), this.getTargetApiURL(),
+            DatadogClient client = ClientFactory.getClient(getClientType(), this.getTargetApiURL(),
                 this.getTargetLogIntakeURL(), this.getTargetWebhookIntakeURL(), this.getUsedApiKey(), this.getTargetHost(),
                 this.getTargetPort(), this.getTargetLogCollectionPort(), this.getTargetTraceCollectionPort(), this.getCiInstanceName());
                 // ...reinitialize the DatadogClient
@@ -868,6 +869,10 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      */
     public String getReportWith() {
         return reportWith;
+    }
+
+    public DatadogClient.ClientType getClientType() {
+        return DatadogClient.ClientType.valueOf(reportWith);
     }
 
     /**
@@ -1552,5 +1557,35 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         }
 
         return FormValidation.ok("Your filtering configuration looks good!");
+    }
+
+    @Nullable
+    public String getDatadogSite() {
+        DatadogClient.ClientType clientType = getClientType();
+        if (clientType == DatadogClient.ClientType.HTTP) {
+            String targetApiURL = getTargetApiURL();
+            return getDatadogSite(targetApiURL);
+        } else {
+            // plugin is configured to report to Datadog agent,
+            // and we have no way of knowing which Datadog site the agent connects to
+            return null;
+        }
+    }
+
+    // taget API URL looks like "https://api.datadoghq.com/api/"
+    private static String getDatadogSite(String apiUrl) {
+        try {
+            URI uri = new URL(apiUrl).toURI();
+            String host = uri.getHost();
+            if (host == null) {
+                throw new IllegalArgumentException("Cannot find host in Datadog API URL: " + uri);
+            }
+
+            String[] parts = host.split("\\.");
+            return (parts.length >= 2 ? parts[parts.length - 2] + "." : "") + parts[parts.length - 1];
+
+        } catch (MalformedURLException | URISyntaxException e) {
+            throw new IllegalArgumentException("Cannot parse Datadog API URL", e);
+        }
     }
 }
