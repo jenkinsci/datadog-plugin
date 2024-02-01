@@ -26,24 +26,21 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog;
 
 import com.timgroup.statsd.ServiceCheck;
-import hudson.model.Run;
-import hudson.util.Secret;
 import java.util.Map;
 import java.util.Set;
 import org.datadog.jenkins.plugins.datadog.clients.Metrics;
-import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy;
 
 public interface DatadogClient {
 
-    public static enum ClientType {
+    enum ClientType {
         HTTP,
         DSD;
 
-        private ClientType() { }
+        ClientType() { }
     }
 
-    public static enum Status {
+    enum Status {
         OK(0),
         WARNING(1),
         CRITICAL(2),
@@ -51,7 +48,7 @@ public interface DatadogClient {
 
         private final int val;
 
-        private Status(int val) {
+        Status(int val) {
             this.val = val;
         }
 
@@ -64,39 +61,13 @@ public interface DatadogClient {
         }
     }
 
-    public void setUrl(String url);
-
-    public void setLogIntakeUrl(String logIntakeUrl);
-
-    public void setWebhookIntakeUrl(String webhookIntakeUrl);
-
-    public void setApiKey(Secret apiKey);
-
-    public void setHostname(String hostname);
-
-    public void setPort(Integer port);
-
-    public void setLogCollectionPort(Integer logCollectionPort);
-
-    public boolean isDefaultIntakeConnectionBroken();
-
-    public void setDefaultIntakeConnectionBroken(boolean defaultIntakeConnectionBroken);
-
-    public boolean isLogIntakeConnectionBroken();
-
-    public boolean isWebhookIntakeConnectionBroken();
-
-    public void setLogIntakeConnectionBroken(boolean logIntakeConnectionBroken);
-
-    public void setWebhookIntakeConnectionBroken(boolean webhookIntakeConnectionBroken);
-
     /**
      * Sends an event to the Datadog API, including the event payload.
      *
      * @param event - a DatadogEvent object
      * @return a boolean to signify the success or failure of the HTTP POST request.
      */
-    public boolean event(DatadogEvent event);
+    boolean event(DatadogEvent event);
 
     /**
      * Increment a counter for the given metrics.
@@ -107,14 +78,14 @@ public interface DatadogClient {
      * @param tags     - metric tags
      * @return a boolean to signify the success or failure of increment submission.
      */
-    public boolean incrementCounter(String name, String hostname, Map<String, Set<String>> tags);
+    boolean incrementCounter(String name, String hostname, Map<String, Set<String>> tags);
 
     /**
      * Submit all your counters as rate with 10 seconds intervals.
      */
-    public void flushCounters();
+    void flushCounters();
 
-    public Metrics metrics();
+    Metrics metrics();
 
     /**
      * Sends a service check to the Datadog API, including the check name, and status.
@@ -125,45 +96,15 @@ public interface DatadogClient {
      * @param tags     - A Map containing the tags to submit.
      * @return a boolean to signify the success or failure of the HTTP POST request.
      */
-    public boolean serviceCheck(String name, Status status, String hostname, Map<String, Set<String>> tags);
+    boolean serviceCheck(String name, Status status, String hostname, Map<String, Set<String>> tags);
 
     /**
      * Send log message.
      * @param payload log payload to submit JSON object as String
      * @return a boolean to signify the success or failure of the request.
      */
-    public boolean sendLogs(String payload);
+    boolean sendLogs(String payload);
 
-    /**
-     * Send a webhook payload to the webhooks intake.
-     *
-     * @param payload - A webhooks payload.
-     * @return a boolean to signify the success or failure of the HTTP POST request.
-     */
-    public boolean postWebhook(String payload);
-
-    /**
-     * Start the trace of a certain Jenkins build.
-     * @param buildData build data to use in the pipeline trace
-     * @param run a particular execution of a Jenkins build
-     * @return a boolean to signify the success or failure of the request.
-     */
-    boolean startBuildTrace(BuildData buildData, Run<?, ?> run);
-
-    /**
-     * Finish the trace of a certain Jenkins build.
-     * @param buildData build data to use in the pipeline trace
-     * @param run the run to create a pipeline trace for
-     * @return a boolean to signify the success or failure of the request.
-     */
-    boolean finishBuildTrace(BuildData buildData, Run<?, ?> run);
-
-    /**
-     * Send all traces related to a certain Jenkins pipeline.
-     * @param run a particular execution of a Jenkins build
-     * @param flowNode current flowNode
-     * @return a boolean to signify the success or failure of the request.
-     */
-    boolean sendPipelineTrace(Run<?, ?> run, FlowNode flowNode);
+    TraceWriteStrategy createTraceWriteStrategy();
 
 }

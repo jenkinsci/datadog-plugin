@@ -1,36 +1,29 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
-import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.cleanUpTraceActions;
-import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.statusFromResult;
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.toJson;
-import static org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode.NodeType.PIPELINE;
+import static org.datadog.jenkins.plugins.datadog.model.PipelineStepData.StepType.PIPELINE;
 import static org.datadog.jenkins.plugins.datadog.traces.CITags.Values.ORIGIN_CIAPP_PIPELINE;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.filterSensitiveInfo;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 
+import hudson.model.Run;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
-
+import javax.annotation.Nonnull;
+import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
-import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
+import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
+import org.datadog.jenkins.plugins.datadog.model.Status;
+import org.datadog.jenkins.plugins.datadog.traces.mapper.JsonTraceSpanMapper;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
-import org.datadog.jenkins.plugins.datadog.transport.HttpClient;
-import org.datadog.jenkins.plugins.datadog.transport.PayloadMessage;
-import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
-import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
-import org.jenkinsci.plugins.workflow.graph.FlowNode;
-
-import hudson.model.Run;
+import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 
 /**
@@ -39,67 +32,19 @@ import hudson.model.Run;
  */
 public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
 
-    private static final Logger logger = Logger.getLogger(DatadogTracePipelineLogic.class.getName());
+    private final JsonTraceSpanMapper jsonTraceSpanMapper = new JsonTraceSpanMapper();
 
-    private final HttpClient agentHttpClient;
-
-    public DatadogTracePipelineLogic(HttpClient agentHttpClient) {
-        this.agentHttpClient = agentHttpClient;
-    }
-
+    @Nonnull
     @Override
-    public void execute(Run run, FlowNode flowNode) {
-        if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
-            return;
-        }
-
-        if(this.agentHttpClient == null) {
-            logger.severe("Unable to send pipeline traces. Tracer is null");
-            return;
-        }
-
-        final IsPipelineAction isPipelineAction = run.getAction(IsPipelineAction.class);
-        if(isPipelineAction == null) {
-            run.addAction(new IsPipelineAction());
-        }
-
-        final BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
-        if(buildSpanAction == null) {
-            return;
-        }
-
-        final BuildData buildData = buildSpanAction.getBuildData();
-        if(!DatadogUtilities.isLastNode(flowNode)){
-            updateCIGlobalTags(run);
-            return;
-        }
-
-        final TraceSpan.TraceSpanContext traceSpanContext = buildSpanAction.getBuildSpanContext();
-        final BuildPipelineNode root = buildPipelineTree((FlowEndNode) flowNode);
-
-        final List<PayloadMessage> spanBuffer = new ArrayList<>();
-        collectTraces(run, spanBuffer, buildData, root, traceSpanContext);
-
-        try {
-            if(!spanBuffer.isEmpty()) {
-                this.agentHttpClient.send(spanBuffer);
-            }
-        } catch (Exception e){
-            logger.severe("Unable to send traces. Exception:" + e);
-        } finally {
-            // Explicit removal of InvisibleActions used to collect Traces when the Run finishes.
-            cleanUpTraceActions(run);
-        }
+    public JSONObject toJson(PipelineStepData flowNode, Run<?, ?> run) throws IOException, InterruptedException {
+        TraceSpan span = toSpan(flowNode, run);
+        return jsonTraceSpanMapper.map(span);
     }
 
-    private void collectTraces(final Run run, final List<PayloadMessage> spanBuffer, final BuildData buildData, final BuildPipelineNode current, final TraceSpan.TraceSpanContext parentSpanContext) {
-        if(!isTraceable(current)) {
-            // If the current node is not traceable, we continue with its children
-            for(final BuildPipelineNode child : current.getChildren()) {
-                collectTraces(run, spanBuffer, buildData, child, parentSpanContext);
-            }
-            return;
-        }
+    // hook for tests
+    @Nonnull
+    public TraceSpan toSpan(PipelineStepData current, Run<?, ?> run) throws IOException, InterruptedException {
+        BuildData buildData = new BuildData(run, DatadogUtilities.getTaskListener(run));
 
         // If the root span has propagated queue time, we need to adjust all startTime and endTime from Jenkins pipelines spans
         // because this time will be subtracted in the root span. See DatadogTraceBuildLogic#finishBuildTrace method.
@@ -108,8 +53,8 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
         final long fixedEndTimeNanos = TimeUnit.MICROSECONDS.toNanos(current.getEndTimeMicros() - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue));
 
         // At this point, the current node is traceable.
-        final TraceSpan.TraceSpanContext spanContext = new TraceSpan.TraceSpanContext(parentSpanContext.getTraceId(), parentSpanContext.getSpanId(), current.getSpanId());
-        final TraceSpan span = new TraceSpan(buildOperationName(current), fixedStartTimeNanos + DatadogUtilities.getNanosInQueue(current), spanContext);
+        final TraceSpan.TraceSpanContext spanContext = new TraceSpan.TraceSpanContext(current.getTraceId(), current.getParentSpanId(), current.getSpanId());
+        final TraceSpan span = new TraceSpan(buildOperationName(current), fixedStartTimeNanos + current.getNanosInQueue(), spanContext);
         span.setServiceName(DatadogUtilities.getDatadogGlobalDescriptor().getCiInstanceName());
         span.setResourceName(current.getName());
         span.setType("ci");
@@ -136,63 +81,60 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
             }
         }
 
-        for(final BuildPipelineNode child : current.getChildren()) {
-            collectTraces(run, spanBuffer, buildData, child, span.context());
-        }
-
         //Logs
         //NOTE: Implement sendNodeLogs
 
         span.setEndNano(fixedEndTimeNanos);
-
-        spanBuffer.add(span);
+        return span;
     }
 
-    private Map<String, Long> buildTraceMetrics(BuildPipelineNode current) {
+    private Map<String, Long> buildTraceMetrics(PipelineStepData current) {
         final Map<String, Long> metrics = new HashMap<>();
-        metrics.put(CITags.QUEUE_TIME, TimeUnit.NANOSECONDS.toSeconds(DatadogUtilities.getNanosInQueue(current)));
+        metrics.put(CITags.QUEUE_TIME, TimeUnit.NANOSECONDS.toSeconds(current.getNanosInQueue()));
         return metrics;
     }
 
-    private Map<String, Object> buildTraceTags(final Run run, final BuildPipelineNode current, final BuildData buildData) {
+    private Map<String, Object> buildTraceTags(final Run<?, ?> run, final PipelineStepData current, final BuildData buildData) {
         final String prefix = current.getType().getTagName();
         final String buildLevel = current.getType().getBuildLevel();
-        final Map<String, String> envVars = current.getEnvVars();
 
         final Map<String, Object> tags = new HashMap<>();
         tags.put(CITags.CI_PROVIDER_NAME, CI_PROVIDER);
         tags.put(CITags._DD_ORIGIN, ORIGIN_CIAPP_PIPELINE);
         tags.put(prefix + CITags._NAME, current.getName());
         tags.put(prefix + CITags._NUMBER, current.getId());
-        final String status = statusFromResult(current.getResult());
-        tags.put(prefix + CITags._RESULT, status);
-        tags.put(CITags.STATUS, status);
+        Status status = current.getStatus();
+        tags.put(prefix + CITags._RESULT, status.toTag());
+        tags.put(CITags.STATUS, status.toTag());
 
         // Pipeline Parameters
         if(!buildData.getBuildParameters().isEmpty()) {
-            tags.put(CITags.CI_PARAMETERS, toJson(buildData.getBuildParameters()));
+            tags.put(CITags.CI_PARAMETERS, DatadogUtilities.toJson(buildData.getBuildParameters()));
         }
 
-        final String url = envVars.get("BUILD_URL") != null ? envVars.get("BUILD_URL") : buildData.getBuildUrl("");
+        String url = buildData.getBuildUrl("");
         if(StringUtils.isNotBlank(url)) {
             tags.put(prefix + CITags._URL, url + "execution/node/"+current.getId()+"/");
         }
 
-        final String workspace = current.getWorkspace() != null ? current.getWorkspace() : buildData.getWorkspace("");
+        final String workspace = firstNonNull(current.getWorkspace(), buildData.getWorkspace(""));
         tags.put(CITags.WORKSPACE_PATH, workspace);
 
-        tags.put(CITags._DD_CI_INTERNAL, current.isInternal());
-        if(!current.isInternal()) {
-            tags.put(CITags._DD_CI_BUILD_LEVEL, buildLevel);
-            tags.put(CITags._DD_CI_LEVEL, buildLevel);
+        tags.put(CITags._DD_CI_INTERNAL, false);
+        tags.put(CITags._DD_CI_BUILD_LEVEL, buildLevel);
+        tags.put(CITags._DD_CI_LEVEL, buildLevel);
+
+        String jenkinsResult = current.getJenkinsResult();
+        if (jenkinsResult != null) {
+            tags.put(CITags.JENKINS_RESULT, jenkinsResult.toLowerCase());
         }
-        tags.put(CITags.JENKINS_RESULT, current.getResult().toLowerCase());
+
         tags.put(CITags.ERROR, String.valueOf(current.isError() || current.isUnstable()));
 
         //Git Info
-        final String rawGitBranch = GitUtils.resolveGitBranch(envVars, buildData);
-        String gitBranch = null;
-        String gitTag = null;
+        String rawGitBranch = buildData.getBranch("");
+        String gitBranch;
+        String gitTag;
         if(rawGitBranch != null && !rawGitBranch.isEmpty()) {
             gitBranch = normalizeBranch(rawGitBranch);
             if(gitBranch != null) {
@@ -207,7 +149,7 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
 
         // If the user set DD_GIT_TAG manually,
         // we override the git.tag value.
-        gitTag = GitUtils.resolveGitTag(envVars, buildData);
+        gitTag = buildData.getGitTag("");
         if(StringUtils.isNotEmpty(gitTag)){
             tags.put(CITags.GIT_TAG, gitTag);
         }
@@ -216,40 +158,36 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
         // If we could not detect a valid commit, that means that the GIT_COMMIT environment variable
         // was overridden by the user at top level, so we set the content what we have (despite it's not valid).
         // We will show a logger.warning at the end of the pipeline.
-        final String gitCommit = GitUtils.resolveGitCommit(envVars, buildData);
+        String gitCommit = buildData.getGitCommit("");
         if(gitCommit != null && !gitCommit.isEmpty()) {
             tags.put(CITags.GIT_COMMIT__SHA, gitCommit); //Maintain retrocompatibility
             tags.put(CITags.GIT_COMMIT_SHA, gitCommit);
         }
 
-        final String gitRepoUrl = GitUtils.resolveGitRepositoryUrl(envVars, buildData);
+        String gitRepoUrl = buildData.getGitUrl("");
         if (gitRepoUrl != null && !gitRepoUrl.isEmpty()) {
             tags.put(CITags.GIT_REPOSITORY_URL, filterSensitiveInfo(gitRepoUrl));
         }
 
         // User info
-        final String user = envVars.get("USER") != null ? envVars.get("USER") : buildData.getUserId();
+        String user = buildData.getUserId();
         tags.put(CITags.USER_NAME, user);
 
         // Node info
-        final String nodeName = getNodeName(run, current, buildData);
+        final String nodeName = getNodeName(current, buildData);
         tags.put(CITags.NODE_NAME, nodeName);
 
-        final String nodeLabels = toJson(getNodeLabels(run, current, nodeName));
-        if(!nodeLabels.isEmpty()){
+        final String nodeLabels = DatadogUtilities.toJson(getNodeLabels(run, current, nodeName));
+        if(nodeLabels != null && !nodeLabels.isEmpty()){
             tags.put(CITags.NODE_LABELS, nodeLabels);
+        } else {
+            tags.put(CITags.NODE_LABELS, "[]");
         }
 
         // If the NodeName == "master", we don't set _dd.hostname. It will be overridden by the Datadog Agent. (Traces are only available using Datadog Agent)
         if(!DatadogUtilities.isMainNode(nodeName)) {
-            final String workerHostname = getNodeHostname(run, current);
-            // If the worker hostname is equals to controller hostname but the node name is not "master"
-            // then we could not detect the worker hostname properly. We set _dd.hostname to 'none' explicitly.
-            if(buildData.getHostname("").equalsIgnoreCase(workerHostname)) {
-                tags.put(CITags._DD_HOSTNAME, HOSTNAME_NONE);
-            } else {
-                tags.put(CITags._DD_HOSTNAME, (workerHostname != null) ? workerHostname : HOSTNAME_NONE);
-            }
+            final String workerHostname = getNodeHostname(current, buildData);
+            tags.put(CITags._DD_HOSTNAME, !workerHostname.isEmpty() ? workerHostname : HOSTNAME_NONE);
         }
 
         // Arguments
@@ -277,24 +215,24 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
         }
 
         // Propagate Pipeline Name
-        tags.put(PIPELINE.getTagName() + CITags._NAME, buildData.getBaseJobName(""));
+        tags.put(PIPELINE.getTagName() + CITags._NAME, buildData.getJobName());
         tags.put(PIPELINE.getTagName() + CITags._ID, buildData.getBuildTag(""));
 
         // Propagate Stage Name
-        if(!BuildPipelineNode.NodeType.STAGE.equals(current.getType()) && current.getStageName() != null) {
-            tags.put(BuildPipelineNode.NodeType.STAGE.getTagName() + CITags._NAME, current.getStageName());
+        if(!PipelineStepData.StepType.STAGE.equals(current.getType()) && current.getStageName() != null) {
+            tags.put(PipelineStepData.StepType.STAGE.getTagName() + CITags._NAME, current.getStageName());
         }
 
         // CI Tags propagation
-        final CIGlobalTagsAction ciGlobalTagsAction = run.getAction(CIGlobalTagsAction.class);
-        if(ciGlobalTagsAction != null) {
-            final Map<String, String> globalTags = ciGlobalTagsAction.getTags();
-            for(Map.Entry<String, String> globalTagEntry : globalTags.entrySet()) {
-                tags.put(globalTagEntry.getKey(), globalTagEntry.getValue());
-            }
-        }
+        Map<String, String> globalTags = new HashMap<>(buildData.getTagsForTraces());
+        globalTags.putAll(TagsUtil.convertTagsToMapSingleValues(DatadogUtilities.getTagsFromPipelineAction(run)));
+        tags.putAll(globalTags);
 
         return tags;
+    }
+
+    private <T> T firstNonNull(T first, T second) {
+        return first != null ? first : second;
     }
 
 }

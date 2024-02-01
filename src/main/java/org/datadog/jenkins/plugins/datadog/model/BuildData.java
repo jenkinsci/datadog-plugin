@@ -33,14 +33,11 @@ import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_C
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_NAME;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_MESSAGE;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_BRANCH;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isCommitInfoAlreadyCreated;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isRepositoryInfoAlreadyCreated;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isUserSuppliedGit;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidRepositoryURL;
 
 import com.cloudbees.plugins.credentials.CredentialsParameterValue;
 import hudson.EnvVars;
+import hudson.matrix.MatrixProject;
 import hudson.model.BooleanParameterValue;
 import hudson.model.Cause;
 import hudson.model.CauseAction;
@@ -48,6 +45,7 @@ import hudson.model.ItemGroup;
 import hudson.model.Job;
 import hudson.model.ParameterValue;
 import hudson.model.ParametersAction;
+import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.StringParameterValue;
 import hudson.model.TaskListener;
@@ -66,16 +64,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import jenkins.branch.MultiBranchProject;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
+import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.traces.BuildConfigurationParser;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
-import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
-import org.jenkinsci.plugins.gitclient.GitClient;
+import org.jenkinsci.plugins.workflow.cps.EnvActionImpl;
 
 public class BuildData implements Serializable {
 
@@ -90,7 +92,7 @@ public class BuildData implements Serializable {
     private String charsetName;
     private String nodeName;
     private String jobName;
-    private String baseJobName;
+    private Map<String, String> buildConfigurations;
     private String buildTag;
     private String jenkinsUrl;
     private String executorNumber;
@@ -138,68 +140,103 @@ public class BuildData implements Serializable {
     private String traceId;
     private String spanId;
 
-    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
-    public BuildData(Run run, TaskListener listener) throws IOException, InterruptedException {
+    public BuildData(Run<?, ?> run, @Nullable TaskListener listener) throws IOException, InterruptedException {
         if (run == null) {
             return;
         }
-        EnvVars envVars;
-        if(listener != null){
-            envVars = run.getEnvironment(listener);
-        }else{
-            envVars = run.getEnvironment(new LogTaskListener(LOGGER, Level.INFO));
-        }
+        EnvVars envVars = getEnvVars(run, listener);
 
-        setTags(DatadogUtilities.getBuildTags(run, envVars));
+        this.tags = DatadogUtilities.getBuildTags(run, envVars);
+
+        this.buildUrl = envVars.get("BUILD_URL");
+        if (buildUrl == null) {
+            BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
+            if (buildSpanAction != null) {
+                buildUrl = buildSpanAction.getBuildUrl();
+            }
+        }
 
         // Populate instance using environment variables.
         populateEnvVariables(envVars);
 
         // Populate instance using Git info if possible.
         // Set all Git commit related variables.
-        if(isGit(envVars)){
-            populateGitVariables(run, listener, envVars);
-        }
+        populateGitVariables(run);
 
         // Populate instance using run instance
         // Set StartTime, EndTime and Duration
-        long startTimeInMs = run.getStartTimeInMillis();
-        setStartTime(startTimeInMs);
+        this.startTime = run.getStartTimeInMillis();
         long durationInMs = run.getDuration();
-        if (durationInMs == 0 && startTimeInMs != 0) {
-            durationInMs = System.currentTimeMillis() - startTimeInMs;
+        if (durationInMs == 0 && run.getStartTimeInMillis() != 0) {
+            durationInMs = System.currentTimeMillis() - run.getStartTimeInMillis();
         }
-        setDuration(durationInMs);
-        if (durationInMs != 0 && startTimeInMs != 0) {
-            Long endTimeInMs = startTimeInMs + durationInMs;
-            setEndTime(endTimeInMs);
+        this.duration = durationInMs;
+        if (durationInMs != 0 && run.getStartTimeInMillis() != 0) {
+            this.endTime = run.getStartTimeInMillis() + durationInMs;
         }
 
         // Set Jenkins Url
-        setJenkinsUrl(DatadogUtilities.getJenkinsUrl());
+        this.jenkinsUrl = DatadogUtilities.getJenkinsUrl();
         // Set UserId
-        setUserId(getUserId(run));
+        this.userId = getUserId(run);
         // Set UserEmail
         if(StringUtils.isEmpty(getUserEmail(""))){
-            setUserEmail(getUserEmailByUserId(getUserId()));
+            this.userEmail = getUserEmailByUserId(getUserId());
         }
 
         // Set Result and completed status
-        setResult(run.getResult() == null ? null : run.getResult().toString());
-        setCompleted(run.getResult() != null && run.getResult().completeBuild);
+        Result runResult = run.getResult();
+        if (runResult != null) {
+            this.result = runResult.toString();
+            this.isCompleted = runResult.completeBuild;
+        } else {
+            this.result = null;
+            this.isCompleted = false;
+        }
 
         // Set Build Number
-        setBuildNumber(String.valueOf(run.getNumber()));
-        // Set Hostname
-        setHostname(DatadogUtilities.getHostname(envVars));
+        this.buildNumber = String.valueOf(run.getNumber());
+
+        final PipelineNodeInfoAction pipelineInfo = run.getAction(PipelineNodeInfoAction.class);
+        if (pipelineInfo != null && pipelineInfo.getNodeName() != null) {
+            this.nodeName = pipelineInfo.getNodeName();
+        } else {
+            this.nodeName = envVars.get("NODE_NAME");
+        }
+
+        if (pipelineInfo != null && pipelineInfo.getNodeHostname() != null) {
+            // using the hostname determined during a pipeline step execution
+            // (this option is only available for pipelines, and not for freestyle builds)
+            this.hostname = pipelineInfo.getNodeHostname();
+        } else if (DatadogUtilities.isMainNode(nodeName)) {
+            // the job is run on the master node, checking plugin config and locally available info.
+            // (nodeName == null) condition is there to preserve existing behavior
+            this.hostname = DatadogUtilities.getHostname(envVars);
+        } else if (envVars.containsKey(DatadogGlobalConfiguration.DD_CI_HOSTNAME)) {
+            // the job is run on an agent node, querying DD_CI_HOSTNAME set explicitly on agent
+            this.hostname = envVars.get(DatadogGlobalConfiguration.DD_CI_HOSTNAME);
+        } else {
+            // the job is run on an agent node, querying HOSTNAME set implicitly on agent
+            this.hostname = envVars.get("HOSTNAME");
+        }
+
+        if (pipelineInfo != null && pipelineInfo.getWorkspace() != null) {
+            this.workspace = pipelineInfo.getWorkspace();
+        } else {
+            this.workspace = envVars.get("WORKSPACE");
+        }
+
+        PipelineQueueInfoAction action = run.getAction(PipelineQueueInfoAction.class);
+        if (action != null) {
+            this.millisInQueue = action.getQueueTimeMillis();
+            this.propagatedMillisInQueue = action.getPropagatedQueueTimeMillis();
+        }
+
         // Save charset canonical name
-        setCharset(run.getCharset());
+        this.charsetName = run.getCharset().name();
 
-        String baseJobName = getBaseJobName(run, envVars);
-        setBaseJobName(normalizeJobName(baseJobName));
-
-        String jobNameWithConfiguration = getJobName(run, envVars);
-        setJobName(normalizeJobName(jobNameWithConfiguration));
+        this.jobName = normalizeJobName(getJobName(run, envVars));
+        this.buildConfigurations = BuildConfigurationParser.parseConfigurations(run);
 
         // Set Jenkins Url
         String jenkinsUrl = DatadogUtilities.getJenkinsUrl();
@@ -207,7 +244,7 @@ public class BuildData implements Serializable {
                 && !envVars.get("JENKINS_URL").isEmpty()) {
             jenkinsUrl = envVars.get("JENKINS_URL");
         }
-        setJenkinsUrl(jenkinsUrl);
+        this.jenkinsUrl = jenkinsUrl;
 
         // Build parameters
         populateBuildParameters(run);
@@ -215,98 +252,75 @@ public class BuildData implements Serializable {
         // Set Tracing IDs
         final TraceSpan buildSpan = BuildSpanManager.get().get(getBuildTag(""));
         if(buildSpan !=null) {
-            setTraceId(Long.toUnsignedString(buildSpan.context().getTraceId()));
-            setSpanId(Long.toUnsignedString(buildSpan.context().getSpanId()));
-        }
-
-        BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
-        if (buildSpanAction != null) {
-            getMissingGitValuesFrom(buildSpanAction.getBuildData());
+            this.traceId = Long.toUnsignedString(buildSpan.context().getTraceId());
+            this.spanId = Long.toUnsignedString(buildSpan.context().getSpanId());
         }
     }
 
-    private static String getBaseJobName(Run run, EnvVars envVars) {
-        Job<?, ?> job = run.getParent();
-        if (job != null) {
-            ItemGroup<?> jobParent = job.getParent();
-            if (jobParent != null) {
-                try {
-                    String jobParentFullName = jobParent.getFullName();
-                    if (StringUtils.isNotBlank(jobParentFullName)) {
-                        return jobParentFullName;
-                    }
-                } catch (NullPointerException e) {
-                    // this is possible if data is not mocked properly in unit tests
-                }
-            }
+    private static EnvVars getEnvVars(Run run, TaskListener listener) throws IOException, InterruptedException {
+        EnvVars mergedVars = new EnvVars();
+
+        List<EnvActionImpl> envActions = run.getActions(EnvActionImpl.class);
+        for (EnvActionImpl envAction : envActions) {
+            EnvVars environment = envAction.getEnvironment();
+            mergedVars.putAll(environment);
         }
-        if (envVars != null) {
-            String envJobBaseName = envVars.get("JOB_BASE_NAME");
-            if (StringUtils.isNotBlank(envJobBaseName)) {
-                return envJobBaseName;
-            }
+
+        Map<String, String> envVars;
+        if(listener != null){
+            envVars = run.getEnvironment(listener);
+        }else{
+            envVars = run.getEnvironment(new LogTaskListener(LOGGER, Level.INFO));
         }
-        return getJobName(run, envVars);
+        mergedVars.putAll(envVars);
+
+        return mergedVars;
     }
 
-    private static String getJobName(Run run, EnvVars envVars) {
+    @Nonnull
+    private static String getJobName(Run<?, ?> run, EnvVars envVars) {
         Job<?, ?> job = run.getParent();
-        if (job != null) {
-            try {
-                String jobFullName = job.getFullName();
-                if (StringUtils.isNotBlank(jobFullName)) {
-                    return jobFullName;
-                }
-            } catch (NullPointerException e) {
-                // this is possible if data is not mocked properly in unit tests
+        ItemGroup<?> jobParent = job.getParent();
+        if (jobParent instanceof MultiBranchProject || jobParent instanceof MatrixProject) {
+            // For certain builds the job name is too specific,
+            // and we have to use job's parent to get a name that is generic enough:
+
+            // 1. In case of multi-branch projects (Multibranch Pipelines and Organization Folders)
+            // job corresponds to a specific branch.
+            // We don't want pipeline names to contain branches,
+            // instead we want the same pipeline executed on different branches to have the same name.
+            // So instead of the job (which corresponds to a specific branch)
+            // we use its parent (which encapsulates all branches for that pipeline).
+
+            // 2. In case of matrix projects job corresponds to a specific combination of parameters (MatrixConfiguration).
+            // We use matrix configuration parent, which is the matrix project, to get the project name
+
+            // We don't want to follow this logic for other cases,
+            // because job parent can be a folder, in which case we will use folder name as pipeline name, which is incorrect.
+            String jobParentName = jobParent.getFullName();
+            if (StringUtils.isNotBlank(jobParentName)) {
+                return jobParentName;
             }
         }
+
+        String jobName = job.getFullName();
+        if (StringUtils.isNotBlank(jobName)) {
+            return jobName;
+        }
+
         if (envVars != null) {
             String envJobName = envVars.get("JOB_NAME");
             if (StringUtils.isNotBlank(envJobName)) {
                 return envJobName;
             }
         }
+
         return "unknown";
     }
 
-    private void getMissingGitValuesFrom(BuildData previousData) {
-        if (branch == null) {
-            branch = previousData.branch;
-        }
-        if (gitUrl == null) {
-            gitUrl = previousData.gitUrl;
-        }
-        if (gitCommit == null) {
-            gitCommit = previousData.gitCommit;
-        }
-        if (gitMessage == null) {
-            gitMessage = previousData.gitMessage;
-        }
-        if (gitAuthorName == null) {
-            gitAuthorName = previousData.gitAuthorName;
-        }
-        if (gitAuthorEmail == null) {
-            gitAuthorEmail = previousData.gitAuthorEmail;
-        }
-        if (gitAuthorDate == null) {
-            gitAuthorDate = previousData.gitAuthorDate;
-        }
-        if (gitCommitterName == null) {
-            gitCommitterName = previousData.gitCommitterName;
-        }
-        if (gitCommitterEmail == null) {
-            gitCommitterEmail = previousData.gitCommitterEmail;
-        }
-        if (gitCommitterDate == null) {
-            gitCommitterDate = previousData.gitCommitterDate;
-        }
-        if (gitDefaultBranch == null) {
-            gitDefaultBranch = previousData.gitDefaultBranch;
-        }
-        if (gitTag == null) {
-            gitTag = previousData.gitTag;
-        }
+    @Nonnull
+    private static String normalizeJobName(@Nonnull String jobName) {
+        return jobName.replaceAll("»", "/").replaceAll(" ", "");
     }
 
     private void populateBuildParameters(Run<?,?> run) {
@@ -342,106 +356,75 @@ public class BuildData implements Serializable {
         if (envVars == null) {
             return;
         }
-        setBuildId(envVars.get("BUILD_ID"));
-        setBuildUrl(envVars.get("BUILD_URL"));
-        setNodeName(envVars.get("NODE_NAME"));
+        this.buildId = envVars.get("BUILD_ID");
 
         String envBuildTag = envVars.get("BUILD_TAG");
         if (StringUtils.isNotBlank(envBuildTag)) {
-            setBuildTag(envBuildTag);
+            this.buildTag = envBuildTag;
         } else {
-            setBuildTag("jenkins-" + envVars.get("JOB_NAME") + "-" + envVars.get("BUILD_NUMBER"));
+            this.buildTag = "jenkins-" + envVars.get("JOB_NAME") + "-" + envVars.get("BUILD_NUMBER");
         }
 
-        setExecutorNumber(envVars.get("EXECUTOR_NUMBER"));
-        setJavaHome(envVars.get("JAVA_HOME"));
-        setWorkspace(envVars.get("WORKSPACE"));
+        this.executorNumber = envVars.get("EXECUTOR_NUMBER");
+        this.javaHome = envVars.get("JAVA_HOME");
         if (isGit(envVars)) {
-            setBranch(GitUtils.resolveGitBranch(envVars, null));
-            setGitUrl(GitUtils.resolveGitRepositoryUrl(envVars, null));
-            setGitCommit(GitUtils.resolveGitCommit(envVars, null));
-            setGitTag(GitUtils.resolveGitTag(envVars, null));
+            this.branch = GitUtils.resolveGitBranch(envVars);
+            this.gitUrl = GitUtils.resolveGitRepositoryUrl(envVars);
+            this.gitCommit = GitUtils.resolveGitCommit(envVars);
+            this.gitTag = GitUtils.resolveGitTag(envVars);
 
             // Git data supplied by the user has prevalence. We set them first.
             // Only the data that has not been set will be updated later.
             // If any value is not provided, we maintained the original value if any.
-            setGitMessage(envVars.get(DD_GIT_COMMIT_MESSAGE, this.gitMessage));
-            setGitAuthorName(envVars.get(DD_GIT_COMMIT_AUTHOR_NAME, this.gitAuthorName));
-            setGitAuthorEmail(envVars.get(DD_GIT_COMMIT_AUTHOR_EMAIL, this.gitAuthorEmail));
-            setGitAuthorDate(envVars.get(DD_GIT_COMMIT_AUTHOR_DATE, this.gitAuthorDate));
-            setGitCommitterName(envVars.get(DD_GIT_COMMIT_COMMITTER_NAME, this.gitCommitterName));
-            setGitCommitterEmail(envVars.get(DD_GIT_COMMIT_COMMITTER_EMAIL, this.gitCommitterEmail));
-            setGitCommitterDate(envVars.get(DD_GIT_COMMIT_COMMITTER_DATE, this.gitCommitterDate));
+            this.gitMessage = envVars.get(DD_GIT_COMMIT_MESSAGE, this.gitMessage);
+            this.gitAuthorName = envVars.get(DD_GIT_COMMIT_AUTHOR_NAME, this.gitAuthorName);
+            this.gitAuthorEmail = envVars.get(DD_GIT_COMMIT_AUTHOR_EMAIL, this.gitAuthorEmail);
+            this.gitAuthorDate = envVars.get(DD_GIT_COMMIT_AUTHOR_DATE, this.gitAuthorDate);
+            this.gitCommitterName = envVars.get(DD_GIT_COMMIT_COMMITTER_NAME, this.gitCommitterName);
+            this.gitCommitterEmail = envVars.get(DD_GIT_COMMIT_COMMITTER_EMAIL, this.gitCommitterEmail);
+            this.gitCommitterDate = envVars.get(DD_GIT_COMMIT_COMMITTER_DATE, this.gitCommitterDate);
 
         } else if (envVars.get("CVS_BRANCH") != null) {
-            setBranch(envVars.get("CVS_BRANCH"));
+            this.branch = envVars.get("CVS_BRANCH");
         }
-        setPromotedUrl(envVars.get("PROMOTED_URL"));
-        setPromotedJobName(envVars.get("PROMOTED_JOB_NAME"));
-        setPromotedNumber(envVars.get("PROMOTED_NUMBER"));
-        setPromotedId(envVars.get("PROMOTED_ID"));
-        setPromotedTimestamp(envVars.get("PROMOTED_TIMESTAMP"));
-        setPromotedUserName(envVars.get("PROMOTED_USER_NAME"));
-        setPromotedUserId(envVars.get("PROMOTED_USER_ID"));
-        setPromotedJobFullName(envVars.get("PROMOTED_JOB_FULL_NAME"));
+        this.promotedUrl = envVars.get("PROMOTED_URL");
+        this.promotedJobName = envVars.get("PROMOTED_JOB_NAME");
+        this.promotedNumber = envVars.get("PROMOTED_NUMBER");
+        this.promotedId = envVars.get("PROMOTED_ID");
+        this.promotedTimestamp = envVars.get("PROMOTED_TIMESTAMP");
+        this.promotedUserName = envVars.get("PROMOTED_USER_NAME");
+        this.promotedUserId = envVars.get("PROMOTED_USER_ID");
+        this.promotedJobFullName = envVars.get("PROMOTED_JOB_FULL_NAME");
     }
-
 
     /**
      * Populate git commit related information in the BuildData instance.
-     * @param run
-     * @param listener
-     * @param envVars
+     * The data is retrieved from {@link GitRepositoryAction} and {@link GitCommitAction} that are associated with the build.
+     * The actions are populated from two main sources:
+     * <ol>
+     *     <li>Environment variables of specific pipeline steps:
+     *     pipeline object has its own set of env variables, but it is minimal;
+     *     the whole set of env variables
+     *     (including those that are set by Jenkins Git Plugin or manually by the pipeline authors)
+     *     is only available for individual pipeline steps.
+     *     That is why in {@link org.datadog.jenkins.plugins.datadog.listeners.DatadogStepListener}
+     *     we examine the full set of env vars to see if we can extract any git-related info</li>
+     *     <li>Git repositories that were checked out during pipeline execution:
+     *     {@link org.datadog.jenkins.plugins.datadog.listeners.DatadogSCMListener} is notified of every source-code checkout.
+     *     If the checked out repo is a git repository, we create a git client and examine repository metadata</li>
+     * </ol>
      */
-    private void populateGitVariables(Run<?,?> run, TaskListener listener, EnvVars envVars) {
-        // First we obtain the actions to check if the Git information was already calculated.
-        // If so, we want to use this information to avoid creating a new Git client instance
-        // to calculate the same information.
-
-        boolean commitInfoAlreadyCreated = isCommitInfoAlreadyCreated(run, this.gitCommit);
-        boolean repositoryInfoAlreadyCreated = isRepositoryInfoAlreadyCreated(run, this.gitUrl);
-
+    private void populateGitVariables(Run<?,?> run) {
         GitRepositoryAction gitRepositoryAction = run.getAction(GitRepositoryAction.class);
-        if(repositoryInfoAlreadyCreated){
-            this.gitDefaultBranch = gitRepositoryAction.getDefaultBranch();
-        }
+        populateRepositoryInfo(gitRepositoryAction);
 
-        final GitCommitAction gitCommitAction = run.getAction(GitCommitAction.class);
-        if(commitInfoAlreadyCreated){
-            populateCommitInfo(gitCommitAction);
-        }
-
-        // If all Git info was already calculated, we finish the method here.
-        if(repositoryInfoAlreadyCreated && commitInfoAlreadyCreated) {
-            return;
-        }
-
-        // At this point, there is some Git information that we need to calculate.
-        // We use the same Git client instance to calculate all git information
-        // because creating a Git client is a very expensive operation.
-        // Create a new Git client is a very expensive operation.
-        // Avoid creating Git clients as much as possible.
-        if(!isValidCommit(gitCommit) && !isValidRepositoryURL(this.gitUrl)) {
-            return;
-        }
-
-        final GitClient gitClient = GitUtils.newGitClient(run, listener, envVars, this.nodeName, this.workspace);
-        if(isValidCommit(this.gitCommit)){
-            populateCommitInfo(GitUtils.buildGitCommitAction(run, gitClient, this.gitCommit));
-        }
-
-        if(isValidRepositoryURL(this.gitUrl)){
-            gitRepositoryAction = GitUtils.buildGitRepositoryAction(run, gitClient, envVars, this.gitUrl);
-            if(gitRepositoryAction != null) {
-                this.gitDefaultBranch = gitRepositoryAction.getDefaultBranch();
-            }
-        }
+        GitCommitAction gitCommitAction = run.getAction(GitCommitAction.class);
+        populateCommitInfo(gitCommitAction);
     }
 
     /**
      * Populate the information related to the commit (message, author and committer) based on the GitCommitAction
      * only if the user has not set the value manually.
-     * @param gitCommitAction
      */
     private void populateCommitInfo(GitCommitAction gitCommitAction) {
         if(gitCommitAction != null) {
@@ -449,32 +432,67 @@ public class BuildData implements Serializable {
             // the user supplied the value manually
             // via environment variables.
 
+            String existingCommit = getGitCommit("");
+            if (!existingCommit.isEmpty() && !existingCommit.equals(gitCommitAction.getCommit())) {
+                // user-supplied commit is different
+                return;
+            }
+
+            if(existingCommit.isEmpty()){
+                this.gitCommit = gitCommitAction.getCommit();
+            }
+
+            if(getGitTag("").isEmpty()){
+                this.gitTag = gitCommitAction.getTag();
+            }
+
             if(getGitMessage("").isEmpty()){
-                setGitMessage(gitCommitAction.getMessage());
+                this.gitMessage = gitCommitAction.getMessage();
             }
 
             if(getGitAuthorName("").isEmpty()){
-                setGitAuthorName(gitCommitAction.getAuthorName());
+                this.gitAuthorName = gitCommitAction.getAuthorName();
             }
 
             if(getGitAuthorEmail("").isEmpty()) {
-                setGitAuthorEmail(gitCommitAction.getAuthorEmail());
+                this.gitAuthorEmail = gitCommitAction.getAuthorEmail();
             }
 
             if(getGitAuthorDate("").isEmpty()){
-                setGitAuthorDate(gitCommitAction.getAuthorDate());
+                this.gitAuthorDate = gitCommitAction.getAuthorDate();
             }
 
             if(getGitCommitterName("").isEmpty()){
-                setGitCommitterName(gitCommitAction.getCommitterName());
+                this.gitCommitterName = gitCommitAction.getCommitterName();
             }
 
             if(getGitCommitterEmail("").isEmpty()){
-                setGitCommitterEmail(gitCommitAction.getCommitterEmail());
+                this.gitCommitterEmail = gitCommitAction.getCommitterEmail();
             }
 
             if(getGitCommitterDate("").isEmpty()){
-                setGitCommitterDate(gitCommitAction.getCommitterDate());
+                this.gitCommitterDate = gitCommitAction.getCommitterDate();
+            }
+        }
+    }
+
+    private void populateRepositoryInfo(GitRepositoryAction gitRepositoryAction) {
+        if (gitRepositoryAction != null) {
+            if (gitUrl != null && !gitUrl.isEmpty() && !gitUrl.equals(gitRepositoryAction.getRepositoryURL())) {
+                // user-supplied URL is different
+                return;
+            }
+
+            if (gitUrl == null || gitUrl.isEmpty()) {
+                gitUrl = gitRepositoryAction.getRepositoryURL();
+            }
+
+            if (gitDefaultBranch == null || gitDefaultBranch.isEmpty()) {
+                gitDefaultBranch = gitRepositoryAction.getDefaultBranch();
+            }
+
+            if (branch == null || branch.isEmpty()) {
+                this.branch = gitRepositoryAction.getBranch();
             }
         }
     }
@@ -510,7 +528,7 @@ public class BuildData implements Serializable {
             //noop
         }
         allTags = TagsUtil.merge(allTags, tags);
-        allTags = TagsUtil.addTagToTags(allTags, "job", getJobName("unknown"));
+        allTags = TagsUtil.addTagToTags(allTags, "job", getJobName());
 
         if (nodeName != null) {
             allTags = TagsUtil.addTagToTags(allTags, "node", getNodeName("unknown"));
@@ -554,38 +572,23 @@ public class BuildData implements Serializable {
         }
     }
 
-    public String getJobName(String value) {
-        return defaultIfNull(jobName, value);
+    @Nonnull
+    public String getJobName() {
+        return jobName;
     }
 
-    public void setJobName(String jobName) {
-        this.jobName = jobName;
-    }
-
-    public String getBaseJobName(String value) {
-        return defaultIfNull(baseJobName, value);
-    }
-
-    public void setBaseJobName(String baseJobName) {
-        this.baseJobName = baseJobName;
+    @Nonnull
+    public Map<String, String> getBuildConfigurations() {
+        return buildConfigurations;
     }
 
     public String getResult(String value) {
         return defaultIfNull(result, value);
     }
 
-    public void setResult(String result) {
-        this.result = result;
-    }
-
     public boolean isCompleted() {
         return isCompleted;
     }
-
-    public void setCompleted(boolean completed) {
-        this.isCompleted = completed;
-    }
-
 
     public String getHostname(String value) {
         return defaultIfNull(hostname, value);
@@ -599,10 +602,6 @@ public class BuildData implements Serializable {
         return defaultIfNull(buildUrl, value);
     }
 
-    public void setBuildUrl(String buildUrl) {
-        this.buildUrl = buildUrl;
-    }
-
     public Charset getCharset() {
         if (charsetName != null) {
             // Will throw an exception if there is an issue with
@@ -610,12 +609,6 @@ public class BuildData implements Serializable {
             return Charset.forName(charsetName);
         }
         return Charset.defaultCharset();
-    }
-
-    public void setCharset(Charset charset) {
-        if (charset != null) {
-            this.charsetName = charset.name();
-        }
     }
 
     public Map<String, String> getBuildParameters() {
@@ -626,80 +619,36 @@ public class BuildData implements Serializable {
         return defaultIfNull(nodeName, value);
     }
 
-    public void setNodeName(String nodeName) {
-        this.nodeName = nodeName;
-    }
-
     public String getBranch(String value) {
         return defaultIfNull(branch, value);
-    }
-
-    public void setBranch(String branch) {
-        this.branch = branch;
     }
 
     public String getBuildNumber(String value) {
         return defaultIfNull(buildNumber, value);
     }
 
-    public void setBuildNumber(String buildNumber) {
-        this.buildNumber = buildNumber;
-    }
-
     public Long getDuration(Long value) {
         return defaultIfNull(duration, value);
-    }
-
-    public void setDuration(Long duration) {
-        this.duration = duration;
     }
 
     public Long getEndTime(Long value) {
         return defaultIfNull(endTime, value);
     }
 
-    public void setEndTime(Long endTime) {
-        this.endTime = endTime;
-    }
-
     public Long getStartTime(Long value) {
         return defaultIfNull(startTime, value);
-    }
-
-    public void setStartTime(Long startTime) {
-        this.startTime = startTime;
     }
 
     public Long getMillisInQueue(Long value) {
         return defaultIfNull(millisInQueue, value);
     }
 
-    public void setMillisInQueue(Long millisInQueue) {
-        this.millisInQueue = millisInQueue;
-    }
-
     public Long getPropagatedMillisInQueue(Long value) {
         return defaultIfNull(propagatedMillisInQueue, value);
     }
 
-    public void setPropagatedMillisInQueue(Long propagatedMillisInQueue) {
-        this.propagatedMillisInQueue = propagatedMillisInQueue;
-    }
-
-    public String getBuildId(String value) {
-        return defaultIfNull(buildId, value);
-    }
-
-    public void setBuildId(String buildId) {
-        this.buildId = buildId;
-    }
-
     public String getBuildTag(String value) {
         return defaultIfNull(buildTag, value);
-    }
-
-    public void setBuildTag(String buildTag) {
-        this.buildTag = buildTag;
     }
 
     public String getJenkinsUrl(String value) {
@@ -714,184 +663,56 @@ public class BuildData implements Serializable {
         return defaultIfNull(executorNumber, value);
     }
 
-    public void setExecutorNumber(String executorNumber) {
-        this.executorNumber = executorNumber;
-    }
-
-    public String getJavaHome(String value) {
-        return defaultIfNull(javaHome, value);
-    }
-
-    public void setJavaHome(String javaHome) {
-        this.javaHome = javaHome;
-    }
-
     public String getWorkspace(String value) {
         return defaultIfNull(workspace, value);
-    }
-
-    public void setWorkspace(String workspace) {
-        this.workspace = workspace;
     }
 
     public String getGitUrl(String value) {
         return defaultIfNull(gitUrl, value);
     }
 
-    public void setGitUrl(String gitUrl) {
-        this.gitUrl = gitUrl;
-    }
-
     public String getGitCommit(String value) {
         return defaultIfNull(gitCommit, value);
-    }
-
-    public void setGitCommit(String gitCommit) {
-        this.gitCommit = gitCommit;
     }
 
     public String getGitMessage(String value) {
         return defaultIfNull(gitMessage, value);
     }
 
-    public void setGitMessage(String gitMessage) {
-        this.gitMessage = gitMessage;
-    }
-
     public String getGitAuthorName(final String value) {
         return defaultIfNull(gitAuthorName, value);
-    }
-
-    public void setGitAuthorName(String gitAuthorName) {
-        this.gitAuthorName = gitAuthorName;
     }
 
     public String getGitAuthorEmail(final String value) {
         return defaultIfNull(gitAuthorEmail, value);
     }
 
-    public void setGitAuthorEmail(String gitAuthorEmail) {
-        this.gitAuthorEmail = gitAuthorEmail;
-    }
-
     public String getGitCommitterName(final String value) {
         return defaultIfNull(gitCommitterName, value);
-    }
-
-    public void setGitCommitterName(String gitCommitterName) {
-        this.gitCommitterName = gitCommitterName;
     }
 
     public String getGitCommitterEmail(final String value) {
         return defaultIfNull(gitCommitterEmail, value);
     }
 
-    public void setGitCommitterEmail(String gitCommitterEmail) {
-        this.gitCommitterEmail = gitCommitterEmail;
-    }
-
     public String getGitAuthorDate(final String value) {
         return defaultIfNull(gitAuthorDate, value);
-    }
-
-    public void setGitAuthorDate(String gitAuthorDate) {
-        this.gitAuthorDate = gitAuthorDate;
     }
 
     public String getGitCommitterDate(final String value) {
         return defaultIfNull(gitCommitterDate, value);
     }
 
-    public void setGitCommitterDate(String gitCommitterDate) {
-        this.gitCommitterDate = gitCommitterDate;
-    }
-
     public String getGitDefaultBranch(String value) {
         return defaultIfNull(gitDefaultBranch, value);
-    }
-
-    public void setGitDefaultBranch(String gitDefaultBranch) {
-        this.gitDefaultBranch = gitDefaultBranch;
     }
 
     public String getGitTag(String value) {
         return defaultIfNull(gitTag, value);
     }
 
-    public void setGitTag(String gitTag) {
-        this.gitTag = gitTag;
-    }
-
-    public String getPromotedUrl(String value) {
-        return defaultIfNull(promotedUrl, value);
-    }
-
-    public void setPromotedUrl(String promotedUrl) {
-        this.promotedUrl = promotedUrl;
-    }
-
-    public String getPromotedJobName(String value) {
-        return defaultIfNull(promotedJobName, value);
-    }
-
-    public void setPromotedJobName(String promotedJobName) {
-        this.promotedJobName = promotedJobName;
-    }
-
-    public String getPromotedNumber(String value) {
-        return defaultIfNull(promotedNumber, value);
-    }
-
-    public void setPromotedNumber(String promotedNumber) {
-        this.promotedNumber = promotedNumber;
-    }
-
-    public String getPromotedId(String value) {
-        return defaultIfNull(promotedId, value);
-    }
-
-    public void setPromotedId(String promotedId) {
-        this.promotedId = promotedId;
-    }
-
-    public String getPromotedTimestamp(String value) {
-        return defaultIfNull(promotedTimestamp, value);
-    }
-
-    public void setPromotedTimestamp(String promotedTimestamp) {
-        this.promotedTimestamp = promotedTimestamp;
-    }
-
-    public String getPromotedUserName(String value) {
-        return defaultIfNull(promotedUserName, value);
-    }
-
-    public void setPromotedUserName(String promotedUserName) {
-        this.promotedUserName = promotedUserName;
-    }
-
-    public String getPromotedUserId(String value) {
-        return defaultIfNull(promotedUserId, value);
-    }
-
-    public void setPromotedUserId(String promotedUserId) {
-        this.promotedUserId = promotedUserId;
-    }
-
-    public String getPromotedJobFullName(String value) {
-        return defaultIfNull(promotedJobFullName, value);
-    }
-
-    public void setPromotedJobFullName(String promotedJobFullName) {
-        this.promotedJobFullName = promotedJobFullName;
-    }
-
     public String getUserId() {
         return userId;
-    }
-
-    public void setUserId(String userId) {
-        this.userId = userId;
     }
 
     private String getUserId(Run run) {
@@ -970,18 +791,6 @@ public class BuildData implements Serializable {
             DatadogUtilities.severe(LOGGER, ex, "Failed to obtain the user email associated with the user " + userId);
             return null;
         }
-    }
-
-    public void setUserEmail(final String userEmail) {
-        this.userEmail = userEmail;
-    }
-
-    public void setTraceId(String traceId) {
-        this.traceId = traceId;
-    }
-
-    public void setSpanId(String spanId) {
-        this.spanId = spanId;
     }
 
     public JSONObject addLogAttributes(){
@@ -1063,12 +872,4 @@ public class BuildData implements Serializable {
             return new JSONObject();
         }
     }
-
-    private static String normalizeJobName(String jobName) {
-        if (jobName == null) {
-            return null;
-        }
-        return jobName.replaceAll("»", "/").replaceAll(" ", "");
-    }
-
 }

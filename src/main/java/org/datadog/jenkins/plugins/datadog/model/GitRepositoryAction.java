@@ -1,54 +1,129 @@
 package org.datadog.jenkins.plugins.datadog.model;
 
-import hudson.model.InvisibleAction;
-
-import java.io.Serializable;
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.converters.MarshallingContext;
+import com.thoughtworks.xstream.converters.UnmarshallingContext;
+import com.thoughtworks.xstream.io.HierarchicalStreamReader;
+import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
+import java.util.Objects;
+import javax.annotation.Nullable;
+import org.datadog.jenkins.plugins.datadog.util.DatadogActionConverter;
 
 /**
  * Keeps the Git repository related information.
  */
-public class GitRepositoryAction extends InvisibleAction implements Serializable {
+public class GitRepositoryAction extends DatadogPluginAction {
 
     private static final long serialVersionUID = 1L;
 
-    private final String repositoryURL;
-    private final String defaultBranch;
+    private volatile String repositoryURL;
+    private volatile String defaultBranch;
+    private volatile String branch;
 
-    private GitRepositoryAction(final Builder builder) {
-        this.repositoryURL = builder.repositoryURL;
-        this.defaultBranch = builder.defaultBranch;
+    public GitRepositoryAction() {
     }
 
-    public String getRepositoryURL(){
+    public GitRepositoryAction(String repositoryURL, String defaultBranch, String branch) {
+        this.repositoryURL = repositoryURL;
+        this.defaultBranch = defaultBranch;
+        this.branch = branch;
+    }
+
+    @Nullable
+    public String getRepositoryURL() {
         return repositoryURL;
     }
 
+    public void setRepositoryURL(String repositoryURL) {
+        this.repositoryURL = repositoryURL;
+    }
+
+    @Nullable
     public String getDefaultBranch() {
         return defaultBranch;
     }
 
-    public static Builder newBuilder() {
-        return new Builder();
+    public void setDefaultBranch(String defaultBranch) {
+        this.defaultBranch = defaultBranch;
     }
 
-    public static class Builder {
-        private String repositoryURL;
-        private String defaultBranch;
+    @Nullable
+    public String getBranch() {
+        return branch;
+    }
 
-        private Builder(){}
+    public void setBranch(String branch) {
+        this.branch = branch;
+    }
 
-        public Builder withRepositoryURL(final String repositoryURL) {
-            this.repositoryURL = repositoryURL;
-            return this;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        GitRepositoryAction that = (GitRepositoryAction) o;
+        return Objects.equals(repositoryURL, that.repositoryURL) && Objects.equals(defaultBranch, that.defaultBranch) && Objects.equals(branch, that.branch);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(repositoryURL, defaultBranch, branch);
+    }
+
+    @Override
+    public String toString() {
+        return "GitRepositoryAction{" +
+                "repositoryURL='" + repositoryURL + '\'' +
+                ", defaultBranch='" + defaultBranch + '\'' +
+                ", branch='" + branch + '\'' +
+                '}';
+    }
+
+    public static final class ConverterImpl extends DatadogActionConverter {
+        public ConverterImpl(XStream xs) {
         }
 
-        public Builder withDefaultBranch(final String defaultBranch) {
-            this.defaultBranch = defaultBranch;
-            return this;
+        @Override
+        public boolean canConvert(Class type) {
+            return GitRepositoryAction.class == type;
         }
 
-        public GitRepositoryAction build(){
-            return new GitRepositoryAction(this);
+        @Override
+        public void marshal(Object source, HierarchicalStreamWriter writer, MarshallingContext context) {
+            GitRepositoryAction action = (GitRepositoryAction) source;
+            if (action.repositoryURL != null) {
+                writeField("repositoryURL", action.repositoryURL, writer, context);
+            }
+            if (action.defaultBranch != null) {
+                writeField("defaultBranch", action.defaultBranch, writer, context);
+            }
+            if (action.branch != null) {
+                writeField("branch", action.branch, writer, context);
+            }
+        }
+
+        @Override
+        public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
+            GitRepositoryAction gitRepositoryAction = new GitRepositoryAction();
+            while (reader.hasMoreChildren()) {
+                reader.moveDown();
+                String fieldName = reader.getNodeName();
+                switch (fieldName) {
+                    case "repositoryURL":
+                        gitRepositoryAction.setRepositoryURL((String) context.convertAnother(null, String.class));
+                        break;
+                    case "defaultBranch":
+                        gitRepositoryAction.setDefaultBranch((String) context.convertAnother(null, String.class));
+                        break;
+                    case "branch":
+                        gitRepositoryAction.setBranch((String) context.convertAnother(null, String.class));
+                        break;
+                    default:
+                        // unknown tag, could be something serialized by a different version of the plugin
+                        break;
+                }
+                reader.moveUp();
+            }
+            return gitRepositoryAction;
         }
     }
 }
