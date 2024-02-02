@@ -8,7 +8,8 @@ import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 import java.util.Objects;
 import org.datadog.jenkins.plugins.datadog.model.DatadogPluginAction;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
-import org.datadog.jenkins.plugins.datadog.util.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
 
 /**
  * Keeps build span propagation
@@ -63,18 +64,22 @@ public class BuildSpanAction extends DatadogPluginAction {
                 '}';
     }
 
-    public static final class ConverterImpl extends DatadogActionConverter {
+    public static final class ConverterImpl extends DatadogActionConverter<BuildSpanAction> {
         public ConverterImpl(XStream xs) {
+            super(new ConverterV1());
+        }
+    }
+
+    public static final class ConverterV1 extends VersionedConverter<BuildSpanAction> {
+
+        private static final int VERSION = 1;
+
+        public ConverterV1() {
+            super(VERSION);
         }
 
         @Override
-        public boolean canConvert(Class type) {
-            return BuildSpanAction.class == type;
-        }
-
-        @Override
-        public void marshal(Object source, HierarchicalStreamWriter writer, MarshallingContext context) {
-            BuildSpanAction action = (BuildSpanAction) source;
+        public void marshal(BuildSpanAction action, HierarchicalStreamWriter writer, MarshallingContext context) {
             writeField("spanContext", action.buildSpanContext, writer, context);
             if (action.buildUrl != null) {
                 writeField("buildUrl", action.buildUrl, writer, context);
@@ -82,7 +87,7 @@ public class BuildSpanAction extends DatadogPluginAction {
         }
 
         @Override
-        public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
+        public BuildSpanAction unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
             TraceSpan.TraceSpanContext spanContext = readField(reader, context, TraceSpan.TraceSpanContext.class);
 
             String buildUrl = null;
