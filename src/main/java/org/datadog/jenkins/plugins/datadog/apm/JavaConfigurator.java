@@ -14,11 +14,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.logging.Logger;
 import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
 import org.datadog.jenkins.plugins.datadog.apm.signature.SignatureVerifier;
 
 final class JavaConfigurator implements TracerConfigurator {
+
+    private static final Logger LOGGER = Logger.getLogger(DatadogTracerConfigurator.class.getName());
 
     private static final String TRACER_DISTRIBUTION_URL_ENV_VAR = "DATADOG_JENKINS_PLUGIN_TRACER_DISTRIBUTION_URL";
     private static final String DEFAULT_TRACER_DISTRIBUTION_URL = "https://dtdg.co/latest-java-tracer";
@@ -98,7 +101,12 @@ final class JavaConfigurator implements TracerConfigurator {
     private <T> T getSetting(DatadogTracerJobProperty<?> tracerConfig, String envVariableName, T defaultValue, Function<String, T> parser) {
         String envVariable = getEnvVariable(tracerConfig, envVariableName);
         if (envVariable != null) {
-            return parser.apply(envVariable);
+            try {
+                return parser.apply(envVariable);
+            } catch (Exception e) {
+                LOGGER.fine("Variable " + envVariableName + " has value which could not be parsed. " +
+                        "Will use default value " + defaultValue);
+            }
         }
         return defaultValue;
     }
@@ -111,7 +119,7 @@ final class JavaConfigurator implements TracerConfigurator {
                 return envVariable;
             }
         }
-        return System.getenv(TRACER_JAR_CACHE_TTL_ENV_VAR);
+        return System.getenv(name);
     }
 
     private String validateUserSuppliedTracerUrl(String distributionUrl) {
