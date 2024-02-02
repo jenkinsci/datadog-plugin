@@ -286,6 +286,11 @@ public class DatadogClientStub implements DatadogClient {
         @Nullable
         @Override
         public Payload serialize(BuildData buildData, Run<?, ?> run) {
+            if (!buildData.isCompleted()) {
+                // ignore in-progress pipeline events for now
+                return null;
+            }
+
             if (isWebhook) {
                 JSONObject json = new DatadogWebhookBuildLogic().toJson(buildData, run);
                 if (json == null) {
