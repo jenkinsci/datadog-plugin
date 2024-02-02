@@ -31,18 +31,17 @@ import hudson.model.PeriodicWork;
 import hudson.model.Queue;
 import hudson.model.Queue.Task;
 import hudson.model.Run;
-
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.Metrics;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
-
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
 /**
  * This class registers a {@link PeriodicWork} with Jenkins to run periodically in order to enable
@@ -84,21 +83,9 @@ public class DatadogQueuePublisher extends PeriodicWork {
             for (Queue.Item item : items) {
                 Map<String, Set<String>> job_tags = DatadogUtilities.getTagsFromGlobalTags();
                 job_tags = TagsUtil.addTagToTags(job_tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
-                
-                String job_name;
+
                 Task task = item.task;
-                if (task instanceof FreeStyleProject) {
-                    job_name = task.getFullDisplayName();
-                } else if (task instanceof ExecutorStepExecution.PlaceholderTask) {
-                    Run<?, ?> run = ((ExecutorStepExecution.PlaceholderTask) task).runForDisplay();
-                    if (run != null) {
-                        job_name = run.getParent().getFullName();
-                    } else {
-                        job_name = "unknown";
-                    }
-                } else {
-                    job_name = "unknown";
-                }
+                String job_name = getJobName(task);
 
                 if (!DatadogUtilities.isJobTracked(job_name)) {
                     continue;
@@ -144,5 +131,22 @@ public class DatadogQueuePublisher extends PeriodicWork {
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to compute and send queue metrics");
         }
+    }
+
+    private static String getJobName(Task task) {
+        if (task instanceof FreeStyleProject) {
+            return task.getFullDisplayName();
+        }
+        if (task instanceof ExecutorStepExecution.PlaceholderTask) {
+            Run<?, ?> run = ((ExecutorStepExecution.PlaceholderTask) task).runForDisplay();
+            if (run != null) {
+                return run.getParent().getFullName();
+            }
+        }
+        if (task instanceof WorkflowJob) {
+            WorkflowJob workflowJob = (WorkflowJob) task;
+            return workflowJob.getFullName();
+        }
+        return "unknown";
     }
 }

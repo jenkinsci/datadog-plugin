@@ -19,6 +19,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogMetric;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -48,7 +49,27 @@ public class DatadogQueuePublisherTest {
         
         jenkins.jenkins.getQueue().schedule(project);
 
-        // set all the computers offline so they can't execute any buils, filling up the queue 
+        // set all the computers offline so they can't execute any buils, filling up the queue
+        for (Computer computer: jenkins.jenkins.getComputers()){
+            computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
+        }
+
+        final String[] expectedTags = new String[2];
+        expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
+        expectedTags[1] = "job_name:" + displayName;
+        queuePublisher.doRun();
+        client.assertMetric("jenkins.queue.job.in_queue", 1, hostname, expectedTags);
+    }
+
+    @Test
+    public void testQueuePipeline() throws Exception {
+        String hostname = DatadogUtilities.getHostname(null);
+        final WorkflowJob project = jenkins.createProject(WorkflowJob.class);
+        String displayName = project.getDisplayName();
+
+        project.scheduleBuild(10000, new Cause.RemoteCause("host", "0"));
+
+        // set all the computers offline so they can't execute any builds, filling up the queue
         for (Computer computer: jenkins.jenkins.getComputers()){
             computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
         }
