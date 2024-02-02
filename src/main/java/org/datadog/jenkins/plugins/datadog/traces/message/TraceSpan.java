@@ -189,8 +189,11 @@ public class TraceSpan {
         }
 
         public static final class ConverterV1 extends VersionedConverter<TraceSpanContext> {
+
+            private static final int VERSION = 1;
+
             public ConverterV1() {
-                super(1);
+                super(VERSION);
             }
 
             @Override

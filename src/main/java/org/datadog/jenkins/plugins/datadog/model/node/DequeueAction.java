@@ -48,8 +48,11 @@ public class DequeueAction extends QueueInfoAction {
     }
 
     public static final class ConverterV1 extends VersionedConverter<DequeueAction> {
+
+        private static final int VERSION = 1;
+
         public ConverterV1() {
-            super(1);
+            super(VERSION);
         }
 
         @Override

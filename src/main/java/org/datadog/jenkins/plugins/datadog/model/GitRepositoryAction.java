@@ -86,8 +86,11 @@ public class GitRepositoryAction extends DatadogPluginAction {
     }
 
     public static final class ConverterV1 extends VersionedConverter<GitRepositoryAction> {
+
+        private static final int VERSION = 1;
+
         public ConverterV1() {
-            super(1);
+            super(VERSION);
         }
 
         @Override

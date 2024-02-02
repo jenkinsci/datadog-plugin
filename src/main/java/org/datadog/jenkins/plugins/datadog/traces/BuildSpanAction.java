@@ -71,8 +71,11 @@ public class BuildSpanAction extends DatadogPluginAction {
     }
 
     public static final class ConverterV1 extends VersionedConverter<BuildSpanAction> {
+
+        private static final int VERSION = 1;
+
         public ConverterV1() {
-            super(1);
+            super(VERSION);
         }
 
         @Override

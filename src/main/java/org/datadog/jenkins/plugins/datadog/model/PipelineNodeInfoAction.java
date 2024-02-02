@@ -71,8 +71,11 @@ public class PipelineNodeInfoAction extends DatadogPluginAction {
     }
 
     public static final class ConverterV1 extends VersionedConverter<PipelineNodeInfoAction> {
+
+        private static final int VERSION = 1;
+
         public ConverterV1() {
-            super(1);
+            super(VERSION);
         }
 
         @Override

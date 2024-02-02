@@ -69,8 +69,11 @@ public class PipelineQueueInfoAction extends DatadogPluginAction {
     }
 
     public static final class ConverterV1 extends VersionedConverter<PipelineQueueInfoAction> {
+
+        private static final int VERSION = 1;
+
         public ConverterV1() {
-            super(1);
+            super(VERSION);
         }
 
         @Override
