@@ -1,5 +1,8 @@
 package org.datadog.jenkins.plugins.datadog.publishers;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import hudson.model.Cause;
 import hudson.model.Computer;
 import hudson.model.FreeStyleProject;
@@ -9,9 +12,13 @@ import hudson.model.Queue;
 import hudson.model.StringParameterValue;
 import hudson.slaves.OfflineCause;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
+import org.datadog.jenkins.plugins.datadog.clients.DatadogMetric;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -72,6 +79,35 @@ public class DatadogQueuePublisherTest {
         expectedTags[1] = "job_name:" + displayName;
         queuePublisher.doRun();
         client.assertMetric("jenkins.queue.job.in_queue", 1, hostname, expectedTags);
+    }
+
+    @Test
+    public void testQueueMetricsJobFiltering() throws Exception {
+        DatadogGlobalConfiguration globalConfiguration = DatadogUtilities.getDatadogGlobalDescriptor();
+        assertNotNull(globalConfiguration);
+
+        String previousExcludedPattern = globalConfiguration.getExcluded();
+        try {
+            String filteredJobName = "filtered-project";
+            globalConfiguration.setExcluded(filteredJobName);
+
+            final FreeStyleProject project = jenkins.createFreeStyleProject("filtered-project");
+            project.getBuildersList().add(new SleepBuilder(10000));
+
+            jenkins.jenkins.getQueue().schedule(project);
+
+            // set all the computers offline so they can't execute any builds, filling up the queue
+            for (Computer computer: jenkins.jenkins.getComputers()){
+                computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
+            }
+
+            queuePublisher.doRun();
+
+            List<DatadogMetric> filteredJobMetrics = client.getMetrics().stream().filter(metric -> metric.getTags().contains("job_name:" + filteredJobName)).collect(Collectors.toList());
+            assertEquals("Did not expect any metrics for filtered job, found: " + filteredJobMetrics, 0, filteredJobMetrics.size());
+        } finally {
+            globalConfiguration.setExcluded(previousExcludedPattern);
+        }
     }
     
     @Test
@@ -150,7 +186,7 @@ public class DatadogQueuePublisherTest {
         client.assertMetric("jenkins.queue.job.buildable", 1, hostname, expectedTags1);
         client.assertMetric("jenkins.queue.job.buildable", 1, hostname, expectedTags2);
     }
-    
+
     @Test
     public void testAllQueueMetrics() throws Exception {
         String hostname = DatadogUtilities.getHostname(null);

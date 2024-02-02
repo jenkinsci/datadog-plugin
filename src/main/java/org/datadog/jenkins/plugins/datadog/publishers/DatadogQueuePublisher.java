@@ -86,6 +86,11 @@ public class DatadogQueuePublisher extends PeriodicWork {
 
                 Task task = item.task;
                 String job_name = getJobName(task);
+
+                if (!DatadogUtilities.isJobTracked(job_name)) {
+                    continue;
+                }
+
                 TagsUtil.addTagToTags(job_tags, "job_name", job_name);
                 boolean isStuck = false;
                 boolean isBuildable = false;
