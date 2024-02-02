@@ -100,7 +100,7 @@ final class JavaConfigurator implements TracerConfigurator {
             try {
                 return parser.apply(envVariable);
             } catch (Exception e) {
-                LOGGER.fine("Variable " + envVariableName + " has value " + envVariable + " which could not be parsed. " +
+                LOGGER.fine("Variable " + envVariableName + " has value which could not be parsed. " +
                         "Will use default value " + defaultValue);
             }
         }
