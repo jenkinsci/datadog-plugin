@@ -185,6 +185,10 @@ public class DatadogClientStub implements DatadogClient {
         return false;
     }
 
+    public List<DatadogMetric> getMetrics() {
+        return Collections.unmodifiableList(this.metrics);
+    }
+
     public boolean assertMetric(String name, String hostname, String[] tags) {
         // Assert that a metric with the same name and tags has already been submitted without checking the value.
         DatadogMetric m = new DatadogMetric(name, 0, hostname, Arrays.asList(tags));
