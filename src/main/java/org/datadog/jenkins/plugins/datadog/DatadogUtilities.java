@@ -723,6 +723,42 @@ public class DatadogUtilities {
         return "master".equalsIgnoreCase(nodeName) || "built-in".equalsIgnoreCase(nodeName);
     }
 
+    public static String getNodeHostname(@Nullable EnvVars envVars, @Nullable Computer computer) {
+        if (envVars != null) {
+            String ddHostname = envVars.get(DatadogGlobalConfiguration.DD_CI_HOSTNAME);
+            if (DatadogUtilities.isValidHostname(ddHostname)) {
+                return ddHostname;
+            }
+            String hostname = envVars.get("HOSTNAME");
+            if (DatadogUtilities.isValidHostname(hostname)) {
+                return hostname;
+            }
+        }
+
+        try {
+            if(computer != null) {
+                String computerNodeName = DatadogUtilities.getNodeName(computer);
+                if (DatadogUtilities.isMainNode(computerNodeName)) {
+                    String masterHostname = DatadogUtilities.getHostname(null);
+                    if (DatadogUtilities.isValidHostname(masterHostname)) {
+                        return masterHostname;
+                    }
+                }
+
+                String computerHostName = computer.getHostName();
+                if (DatadogUtilities.isValidHostname(computerHostName)) {
+                    return computerHostName;
+                }
+            }
+        } catch (InterruptedException e){
+            Thread.currentThread().interrupt();
+            logger.fine("Interrupted while trying to extract hostname from StepContext.");
+
+        } catch (IOException e){
+            logger.fine("Unable to extract hostname from StepContext.");
+        }
+        return null;
+    }
 
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
     public static Set<String> getNodeLabels(Computer computer) {

@@ -1,9 +1,12 @@
 <div>
-    <p>Automatic tracer injection comes with some language-specific caveats.</p>
+    <p>
+        Automatic tracer injection comes with some language-specific caveats.
+        Check the Test Visibility <a target="_blank" href="https://docs.datadoghq.com/tests/setup/">setup documentation for your language</a> to make sure that the testing framework that you use is supported.
+    </p>
 
     <strong>Java</strong>
     <p>
-        Injection works for any JVM-based language (Java, Kotlin, Groovy, etc).
+        Injection works for any JVM-based language (Java, Kotlin, Groovy, Scala, etc).
         Any Maven or Gradle build that the job executes will be traced.
     </p>
     <p>
@@ -14,7 +17,7 @@
 
     <strong>JS</strong>
     <p>
-        The plugin assumes that <code>npm</code> is available on the node that executes the job.
+        The plugin assumes that <code>npm</code> and <code>node</code> (v18.0.0 or newer) are available on the node that executes the job.
     </p>
     <p>
         <code>NODE_OPTIONS</code> environment variable is used for injection.

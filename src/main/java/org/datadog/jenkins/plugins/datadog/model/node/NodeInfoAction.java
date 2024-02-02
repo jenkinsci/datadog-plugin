@@ -9,7 +9,8 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 import org.datadog.jenkins.plugins.datadog.model.DatadogPluginAction;
-import org.datadog.jenkins.plugins.datadog.util.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
 
 public class NodeInfoAction extends DatadogPluginAction {
 
@@ -66,18 +67,22 @@ public class NodeInfoAction extends DatadogPluginAction {
                 '}';
     }
 
-    public static final class ConverterImpl extends DatadogActionConverter {
+    public static final class ConverterImpl extends DatadogActionConverter<NodeInfoAction> {
         public ConverterImpl(XStream xs) {
+            super(new ConverterV1());
+        }
+    }
+
+    public static final class ConverterV1 extends VersionedConverter<NodeInfoAction> {
+
+        private static final int VERSION = 1;
+
+        public ConverterV1() {
+            super(VERSION);
         }
 
         @Override
-        public boolean canConvert(Class type) {
-            return NodeInfoAction.class == type;
-        }
-
-        @Override
-        public void marshal(Object source, HierarchicalStreamWriter writer, MarshallingContext context) {
-            NodeInfoAction action = (NodeInfoAction) source;
+        public void marshal(NodeInfoAction action, HierarchicalStreamWriter writer, MarshallingContext context) {
             if (action.nodeName != null) {
                 writeField("nodeName", action.nodeName, writer, context);
             }
@@ -93,7 +98,7 @@ public class NodeInfoAction extends DatadogPluginAction {
         }
 
         @Override
-        public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
+        public NodeInfoAction unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
             String nodeName = null;
             String nodeHostname = null;
             Set<String> nodeLabels = Collections.emptySet();
