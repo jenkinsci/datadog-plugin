@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import org.datadog.jenkins.plugins.datadog.tracer.TracerLanguage;
+import org.datadog.jenkins.plugins.datadog.apm.TracerLanguage;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 

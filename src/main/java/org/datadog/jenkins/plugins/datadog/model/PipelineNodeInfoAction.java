@@ -8,7 +8,8 @@ import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
-import org.datadog.jenkins.plugins.datadog.util.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
 
 public class PipelineNodeInfoAction extends DatadogPluginAction {
 
@@ -63,18 +64,22 @@ public class PipelineNodeInfoAction extends DatadogPluginAction {
                 '}';
     }
 
-    public static final class ConverterImpl extends DatadogActionConverter {
+    public static final class ConverterImpl extends DatadogActionConverter<PipelineNodeInfoAction> {
         public ConverterImpl(XStream xs) {
+            super(new ConverterV1());
+        }
+    }
+
+    public static final class ConverterV1 extends VersionedConverter<PipelineNodeInfoAction> {
+
+        private static final int VERSION = 1;
+
+        public ConverterV1() {
+            super(VERSION);
         }
 
         @Override
-        public boolean canConvert(Class type) {
-            return PipelineNodeInfoAction.class == type;
-        }
-
-        @Override
-        public void marshal(Object source, HierarchicalStreamWriter writer, MarshallingContext context) {
-            PipelineNodeInfoAction action = (PipelineNodeInfoAction) source;
+        public void marshal(PipelineNodeInfoAction action, HierarchicalStreamWriter writer, MarshallingContext context) {
             if (action.nodeName != null) {
                 writeField("nodeName", action.nodeName, writer, context);
             }
@@ -90,7 +95,7 @@ public class PipelineNodeInfoAction extends DatadogPluginAction {
         }
 
         @Override
-        public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
+        public PipelineNodeInfoAction unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
             String nodeName = null;
             String nodeHostname = null;
             Set<String> nodeLabels = Collections.emptySet();
