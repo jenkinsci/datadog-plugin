@@ -230,7 +230,7 @@ From a job specific configuration page:
 
 ### Test Visibility Configuration
 
-The plugin can automatically configure Datadog [Test Visibility][19] for a job or a pipeline (see the Test Visibility [documentation for your language][20] to make sure that the testing framework that you use is supported).
+The plugin can automatically configure Datadog [Test Visibility][19] for a job or a pipeline (see the Test Visibility [documentation for your language][20] to make sure that the testing framework that you use is supported; also note that automatic configuration is not supported for tests that are executed inside containers - follow [manual instrumentation steps][20] to enable Test Visibility for containerized test runs).
 
 Before enabling Test Visibility, be sure to properly configure the plugin to submit data to Datadog.
 

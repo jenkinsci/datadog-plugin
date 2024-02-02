@@ -1,4 +1,4 @@
-package org.datadog.jenkins.plugins.datadog.tracer;
+package org.datadog.jenkins.plugins.datadog.apm;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nonnull;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
@@ -27,7 +28,7 @@ public class DatadogTracerJobProperty<T extends Job<?, ?>> extends JobProperty<T
     private final Collection<TracerLanguage> languages;
     private final Map<String, String> additionalVariables;
 
-    public DatadogTracerJobProperty(boolean on, String serviceName, Collection<TracerLanguage> languages, Map<String, String> additionalVariables) {
+    public DatadogTracerJobProperty(boolean on, String serviceName, @Nonnull Collection<TracerLanguage> languages, Map<String, String> additionalVariables) {
         this.on = on;
         this.serviceName = serviceName;
         this.languages = languages;
@@ -42,6 +43,7 @@ public class DatadogTracerJobProperty<T extends Job<?, ?>> extends JobProperty<T
         return serviceName;
     }
 
+    @Nonnull
     public Collection<TracerLanguage> getLanguages() {
         return languages;
     }

@@ -1,7 +1,8 @@
-package org.datadog.jenkins.plugins.datadog.tracer;
+package org.datadog.jenkins.plugins.datadog.apm;
 
 import hudson.FilePath;
 import hudson.model.Node;
+import hudson.model.TaskListener;
 import hudson.util.Secret;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -15,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
-import org.datadog.jenkins.plugins.datadog.tracer.signature.SignatureVerifier;
+import org.datadog.jenkins.plugins.datadog.apm.signature.SignatureVerifier;
 
 final class JavaConfigurator implements TracerConfigurator {
 
@@ -33,18 +34,19 @@ final class JavaConfigurator implements TracerConfigurator {
     private final HttpClient httpClient = new HttpClient(TRACER_DOWNLOAD_TIMEOUT_MILLIS);
 
     @Override
-    public Map<String, String> configure(DatadogTracerJobProperty<?> tracerConfig, Node node, FilePath workspacePath, Map<String, String> envs) throws Exception {
-        FilePath tracerFile = downloadTracer(tracerConfig, workspacePath);
+    public Map<String, String> configure(DatadogTracerJobProperty<?> tracerConfig, Node node, FilePath workspacePath, Map<String, String> envs, TaskListener listener) throws Exception {
+        FilePath tracerFile = downloadTracer(tracerConfig, workspacePath,node, listener);
         return getEnvVariables(tracerConfig, node, tracerFile, envs);
     }
 
-    private FilePath downloadTracer(DatadogTracerJobProperty<?> tracerConfig, FilePath workspacePath) throws Exception {
+    private FilePath downloadTracer(DatadogTracerJobProperty<?> tracerConfig, FilePath workspacePath, Node node, TaskListener listener) throws Exception {
         FilePath datadogFolder = workspacePath.child(".datadog");
         datadogFolder.mkdirs();
 
         FilePath datadogTracerFile = datadogFolder.child(TRACER_FILE_NAME);
         long minutesSinceModification = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - datadogTracerFile.lastModified());
         if (minutesSinceModification < getTracerJarCacheTtlMinutes(tracerConfig)) {
+            listener.getLogger().println("[datadog] Configuring DD Java tracer: using existing tracer available at " + datadogTracerFile);
             // downloaded tracer is fresh enough
             return datadogTracerFile.absolutize();
         }
@@ -57,6 +59,8 @@ final class JavaConfigurator implements TracerConfigurator {
                 throw new RuntimeException(e);
             }
         });
+
+        listener.getLogger().println("[datadog] Configuring DD Java tracer: tracer installed in " + workspacePath + " on " + node);
 
         if (!DEFAULT_TRACER_DISTRIBUTION_URL.equals(tracerDistributionUrl)) {
             // verify signature if downloading from Maven Central

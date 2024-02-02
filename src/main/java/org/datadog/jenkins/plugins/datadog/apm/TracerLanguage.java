@@ -1,4 +1,4 @@
-package org.datadog.jenkins.plugins.datadog.tracer;
+package org.datadog.jenkins.plugins.datadog.apm;
 
 public enum TracerLanguage {
     JAVA("Java"),

@@ -1,8 +1,7 @@
-package org.datadog.jenkins.plugins.datadog.tracer.signature;
+package org.datadog.jenkins.plugins.datadog.apm.signature;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import org.bouncycastle.openpgp.PGPCompressedData;
 import org.bouncycastle.openpgp.PGPLiteralData;
 import org.bouncycastle.openpgp.PGPObjectFactory;
