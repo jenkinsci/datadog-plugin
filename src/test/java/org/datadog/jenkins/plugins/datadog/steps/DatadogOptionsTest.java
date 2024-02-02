@@ -1,7 +1,9 @@
 package org.datadog.jenkins.plugins.datadog.steps;
 
+import hudson.EnvVars;
 import hudson.ExtensionList;
 import hudson.model.labels.LabelAtom;
+import java.util.List;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
@@ -16,9 +18,10 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 
-import java.util.List;
-
 public class DatadogOptionsTest {
+
+    private static final String TEST_NODE_HOSTNAME = "test-node-hostname";
+
     @ClassRule
     public static JenkinsRule j = new JenkinsRule();
     private static DatadogClientStub stubClient = new DatadogClientStub();
@@ -29,7 +32,10 @@ public class DatadogOptionsTest {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         ExtensionList.clearLegacyInstances();
         cfg.setCollectBuildLogs(false);
-        j.createOnlineSlave(new LabelAtom("test"));
+
+        EnvVars testNodeEnvVars = new EnvVars();
+        testNodeEnvVars.put("HOSTNAME", TEST_NODE_HOSTNAME);
+        j.createOnlineSlave(new LabelAtom("test"), testNodeEnvVars);
     }
 
     @Test
@@ -46,7 +52,6 @@ public class DatadogOptionsTest {
 
     @Test
     public void testMetricTags() throws Exception {
-
         WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "testMetricTags");
         String definition = IOUtils.toString(
                 this.getClass().getResourceAsStream("pipelineMetricTags.txt"),
@@ -54,8 +59,8 @@ public class DatadogOptionsTest {
         );
         p.setDefinition(new CpsFlowDefinition(definition, true));
         p.scheduleBuild2(0).get();
-        String hostname = DatadogUtilities.getHostname(null);
         String[] expectedTags = new String[]{
+                "node:slave0",
                 "jenkins_url:" + DatadogUtilities.getJenkinsUrl(),
                 "user_id:anonymous",
                 "job:testMetricTags",
@@ -63,7 +68,7 @@ public class DatadogOptionsTest {
                 "foo:bar",
                 "bar:foo"
         };
-        stubClient.assertMetric("jenkins.job.duration", hostname, expectedTags);
+        stubClient.assertMetric("jenkins.job.duration", TEST_NODE_HOSTNAME, expectedTags);
     }
 
     private void assertLogs(final String expectedMessage, final boolean checkTraces) {

@@ -37,7 +37,7 @@ public class BuildFinishedEventImpl extends AbstractDatadogBuildEvent {
 
         String buildNumber = buildData.getBuildNumber("unknown");
         String buildResult = buildData.getResult("UNKNOWN");
-        String jobName = buildData.getJobName("unknown");
+        String jobName = buildData.getJobName();
         String buildUrl = buildData.getBuildUrl("unknown");
 
         // Build title

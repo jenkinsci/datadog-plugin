@@ -4,19 +4,24 @@ import hudson.Extension;
 import hudson.model.Queue;
 import hudson.model.Run;
 import hudson.model.queue.QueueListener;
-import org.datadog.jenkins.plugins.datadog.model.FlowNodeQueueData;
-import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
-import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
-import org.jenkinsci.plugins.workflow.flow.FlowExecution;
-import org.jenkinsci.plugins.workflow.graph.FlowNode;
-import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
-
-import javax.annotation.CheckForNull;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import javax.annotation.CheckForNull;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.node.DequeueAction;
+import org.datadog.jenkins.plugins.datadog.model.node.EnqueueAction;
+import org.datadog.jenkins.plugins.datadog.model.node.QueueInfoAction;
+import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
+import org.jenkinsci.plugins.workflow.flow.FlowExecution;
+import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.graph.FlowStartNode;
+import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
 
 @Extension
 public class DatadogQueueListener extends QueueListener {
@@ -26,6 +31,10 @@ public class DatadogQueueListener extends QueueListener {
     @Override
     public void onEnterBuildable(Queue.BuildableItem item) {
         try {
+            if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
+                return;
+            }
+
             final Queue.Task task = item.task;
             if(task == null) {
                 logger.fine("onEnterBuildable: item: " + item + ", task is null");
@@ -47,26 +56,7 @@ public class DatadogQueueListener extends QueueListener {
                 return;
             }
 
-            final Run<?,?> run = runFor(flowNode.getExecution());
-            if(run == null) {
-                logger.fine("onEnterBuildable FlowNode: " + flowNode + ", run is null.");
-                return;
-            }
-
-            final PipelineQueueInfoAction queueAction = run.getAction(PipelineQueueInfoAction.class);
-            if(queueAction == null){
-                logger.fine("onEnterBuildable: queueAction: is null");
-                return;
-            }
-
-            final FlowNodeQueueData flowNodeData = queueAction.get(run, flowNode.getId());
-            if(flowNodeData != null) {
-                flowNodeData.setEnterBuildableNanos(System.nanoTime());
-            } else {
-                final FlowNodeQueueData data = new FlowNodeQueueData(flowNode.getId());
-                data.setEnterBuildableNanos(System.nanoTime());
-                queueAction.put(run, flowNode.getId(), data);
-            }
+            flowNode.addOrReplaceAction(new EnqueueAction(System.nanoTime()));
 
         } catch (Exception e){
             logger.severe("Error onEnterBuildable: item:" + item + ", exception: " + e);
@@ -76,6 +66,10 @@ public class DatadogQueueListener extends QueueListener {
     @Override
     public void onLeaveBuildable(Queue.BuildableItem item) {
         try {
+            if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
+                return;
+            }
+
             final Queue.Task task = item.task;
             if(task == null) {
                 logger.fine("onLeaveBuildable: item: " + item + ", task is null");
@@ -96,25 +90,59 @@ public class DatadogQueueListener extends QueueListener {
                 return;
             }
 
-            Run<?,?> run = runFor(flowNode.getExecution());
-            if(run == null) {
-                logger.fine("onLeaveBuildable FlowNode: " + flowNode + ", run is null.");
+            EnqueueAction enqueueAction = flowNode.getAction(EnqueueAction.class);
+            if (enqueueAction == null) {
+                logger.fine("onLeaveBuildable FlowNode: " + flowNode + ", enqueueAction is null.");
                 return;
             }
 
-            PipelineQueueInfoAction queueAction = run.getAction(PipelineQueueInfoAction.class);
-            if(queueAction == null){
-                logger.fine("onLeaveBuildable: queueAction: is null");
-                return;
-            }
+            long queueDurationNanos = System.nanoTime() - enqueueAction.getTimestampNanos();
+            DequeueAction queueInfoAction = new DequeueAction(queueDurationNanos);
 
-            final FlowNodeQueueData flowNodeData = queueAction.get(run, flowNode.getId());
-            if(flowNodeData != null) {
-                flowNodeData.setLeaveBuildableNanos(System.nanoTime());
-            }
+            // Replace enqueue action with dequeue action in one call to avoid writing to disk twice
+            flowNode.replaceActions(QueueInfoAction.class, queueInfoAction);
+
+            propagateQueueTime(flowNode, queueInfoAction);
+
         } catch (Exception e){
             logger.severe("Error onLeaveBuildable: item:" + item + ", exception: " + e);
         }
+    }
+
+    private static void propagateQueueTime(FlowNode flowNode, DequeueAction queueInfoAction) {
+        if (flowNode.getDisplayName().contains("Allocate node")) {
+            BlockStartNode enclosingNode = DatadogUtilities.getEnclosingStageNode(flowNode);
+            if (enclosingNode != null) {
+                // propagate queue duration
+                enclosingNode.addOrReplaceAction(queueInfoAction);
+            }
+        }
+
+        List<FlowNode> parents = flowNode.getParents();
+        if (parents.size() != 1) {
+            return;
+        }
+
+        FlowNode parent = parents.iterator().next();
+        if (!(parent instanceof FlowStartNode)) {
+            // propagate queue time to build level only if dequeued node is the direct child of pipeline node
+            return;
+        }
+
+        Run<?,?> run = runFor(flowNode.getExecution());
+        if (run == null) {
+            logger.fine("onLeaveBuildable FlowNode: " + flowNode + ", run is null.");
+            return;
+        }
+
+        PipelineQueueInfoAction pipelineQueueInfoAction = run.getAction(PipelineQueueInfoAction.class);
+        if (pipelineQueueInfoAction == null) {
+            logger.fine("onLeaveBuildable FlowNode: " + flowNode + ", pipelineQueueInfoAction is null.");
+            return;
+        }
+
+        long queueTimeMillis = TimeUnit.NANOSECONDS.toMillis(queueInfoAction.getQueueTimeNanos());
+        pipelineQueueInfoAction.setPropagatedQueueTimeMillis(queueTimeMillis);
     }
 
     /**

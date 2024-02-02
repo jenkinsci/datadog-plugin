@@ -3,6 +3,6 @@ jenkins:
 
 unclassified:
     datadogGlobalConfiguration:
-      reportWith: 'http'
+      reportWith: 'HTTP'
       targetApiKey: 'test'
       emitConfigChangeEvents: true

@@ -1,99 +1,126 @@
 package org.datadog.jenkins.plugins.datadog.model;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import hudson.EnvVars;
+import hudson.matrix.MatrixConfiguration;
+import hudson.matrix.MatrixProject;
 import hudson.model.Hudson;
+import hudson.model.ItemGroup;
+import hudson.model.Job;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import jenkins.model.Jenkins;
-import org.datadog.jenkins.plugins.datadog.stubs.BuildStub;
-import org.datadog.jenkins.plugins.datadog.stubs.ProjectStub;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 public class BuildDataTest {
 
     @Test
-    public void testBaseJobNameIsTakenFromParentName() throws IOException, InterruptedException {
-        Run run = givenJobRun("jobName", "jobParentName", Collections.singletonMap("JOB_BASE_NAME", "jobBaseNameFromEnvironment"));
+    public void testJobNameIsTakenFromRunParent() throws Exception {
+        Run run = givenJobRun("jobName", "jobParentName", mock(Hudson.class), Collections.singletonMap("JOB_NAME", "jobNameFromEnvironment"));
         BuildData buildData = whenCreatingBuildData(run);
-        assertEquals("jobParentName", buildData.getBaseJobName(""));
+        assertEquals("jobName", buildData.getJobName());
     }
 
     @Test
-    public void testBaseJobNameFallsBackToEnvVar() throws IOException, InterruptedException {
-        Run run = givenJobRun("jobName", "", Collections.singletonMap("JOB_BASE_NAME", "jobBaseNameFromEnvironment"));
+    public void testJobNameFallsBackToEnvVar() throws Exception {
+        Run run = givenJobRun("", "", mock(Hudson.class), Collections.singletonMap("JOB_NAME", "jobNameFromEnvironment"));
         BuildData buildData = whenCreatingBuildData(run);
-        assertEquals("jobBaseNameFromEnvironment", buildData.getBaseJobName(""));
+        assertEquals("jobNameFromEnvironment", buildData.getJobName());
     }
 
     @Test
-    public void testBaseJobNameFallsBackToJobName() throws IOException, InterruptedException {
-        Run run = givenJobRun("jobName", "", Collections.singletonMap("JOB_NAME", "jobNameFromEnvironment"));
+    public void testJobNameIsTakenFromJobParentForMultibranchBuilds() throws Exception {
+        WorkflowMultiBranchProject jobParent = mock(WorkflowMultiBranchProject.class);
+        when(jobParent.getFullName()).thenReturn("multibranch-project-name");
+
+        WorkflowJob job = mock(WorkflowJob.class);
+        when(job.getFullName()).thenReturn("multibranch-project-name/PR-1234");
+        when(job.getParent()).thenAnswer((Answer<?>) (Answer<Object>) invocationOnMock -> jobParent);
+
+        EnvVars envVars = new EnvVars();
+        envVars.putAll(Collections.singletonMap("JOB_NAME", "jobNameFromEnvironment"));
+
+        WorkflowRun run = mock(WorkflowRun.class);
+        when(run.getEnvironment(any())).thenReturn(envVars);
+        when(run.getParent()).thenReturn(job);
+        when(run.getCharset()).thenReturn(StandardCharsets.UTF_8);
+
         BuildData buildData = whenCreatingBuildData(run);
-        assertEquals("jobName", buildData.getBaseJobName(""));
+        assertEquals("multibranch-project-name", buildData.getJobName());
     }
 
     @Test
-    public void testBaseJobNameFallsBackToJobNameFromEnvVar() throws IOException, InterruptedException {
-        Run run = givenJobRun("", "", Collections.singletonMap("JOB_NAME", "jobNameFromEnvironment"));
+    public void testJobNameIsTakenFromJobParentForMatrixProjectBuilds() throws Exception {
+        MatrixProject jobParent = mock(MatrixProject.class);
+        when(jobParent.getFullName()).thenReturn("matrix-project-name");
+
+        MatrixConfiguration job = mock(MatrixConfiguration.class);
+        when(job.getFullName()).thenReturn("matrix-project-name/config1=value1,config2=value2");
+        when(job.getParent()).thenReturn(jobParent);
+
+        EnvVars envVars = new EnvVars();
+        envVars.putAll(Collections.singletonMap("JOB_NAME", "jobNameFromEnvironment"));
+
+        Run run = mock(Run.class);
+        when(run.getEnvironment(any())).thenReturn(envVars);
+        when(run.getParent()).thenReturn(job);
+        when(run.getCharset()).thenReturn(StandardCharsets.UTF_8);
+
         BuildData buildData = whenCreatingBuildData(run);
-        assertEquals("jobNameFromEnvironment", buildData.getBaseJobName(""));
+        assertEquals("matrix-project-name", buildData.getJobName());
     }
 
     @Test
-    public void testJobNameIsTakenFromFullJobName() throws IOException, InterruptedException {
-        Run run = givenJobRun("jobName", "jobParentName", Collections.singletonMap("JOB_BASE_NAME", "jobBaseNameFromEnvironment"));
-        BuildData buildData = whenCreatingBuildData(run);
-        assertEquals("jobParentName/jobName", buildData.getJobName(""));
-    }
-
-    @Test
-    public void testJobNameFallsBackToEnvVar() throws IOException, InterruptedException {
-        Run run = givenJobRun("", "", Collections.singletonMap("JOB_NAME", "jobNameFromEnvironment"));
-        BuildData buildData = whenCreatingBuildData(run);
-        assertEquals("jobNameFromEnvironment", buildData.getJobName(""));
-    }
-
-    @Test
-    public void testBuildTagIsTakenFromEnvVar() throws IOException, InterruptedException {
-        Run run = givenJobRun("jobName", "jobParentName", Collections.singletonMap("BUILD_TAG", "buildTag"));
+    public void testBuildTagIsTakenFromEnvVar() throws Exception {
+        Run run = givenJobRun("jobName", "jobParentName", mock(Hudson.class), Collections.singletonMap("BUILD_TAG", "buildTag"));
         BuildData buildData = whenCreatingBuildData(run);
         assertEquals("buildTag", buildData.getBuildTag(""));
     }
 
     @Test
-    public void testBuildTagFallsBackToAlternativeEnvVars() throws IOException, InterruptedException {
+    public void testBuildTagFallsBackToAlternativeEnvVars() throws Exception {
         Map<String, String> envVars = new HashMap<>();
         envVars.put("JOB_NAME", "jobName");
         envVars.put("BUILD_NUMBER", "buildNumber");
-        Run run = givenJobRun("jobName", "jobParentName", envVars);
+        Run run = givenJobRun("jobName", "jobParentName", mock(Hudson.class), envVars);
         BuildData buildData = whenCreatingBuildData(run);
         assertEquals("jenkins-jobName-buildNumber", buildData.getBuildTag(""));
     }
 
-    private Run givenJobRun(String jobName, String jobParentName, Map<String, String> environment) throws IOException {
-        Jenkins jenkins = mock(Hudson.class);
-        when(jenkins.getFullName()).thenReturn(jobParentName);
-        ProjectStub job = new ProjectStub(jenkins, jobName);
+    private Run<?, ?> givenJobRun(String jobName, String jobParentName, ItemGroup<?> jobParent, Map<String, String> environment) throws Exception {
+        when(jobParent.getFullName()).thenReturn(jobParentName);
+
+        Job job = mock(Job.class);
+        when(job.getFullName()).thenReturn(jobName);
+        when(job.getParent()).thenReturn(jobParent);
 
         EnvVars envVars = new EnvVars();
         envVars.putAll(environment);
 
-        return new BuildStub(job, null, envVars, null, 10L, 2, null, 0L, null);
+        Run run = mock(Run.class);
+        when(run.getEnvironment(any())).thenReturn(envVars);
+        when(run.getParent()).thenReturn(job);
+        when(run.getCharset()).thenReturn(StandardCharsets.UTF_8);
+
+        return run;
     }
 
     private BuildData whenCreatingBuildData(Run run) throws IOException, InterruptedException {
         TaskListener listener = mock(TaskListener.class);
-        BuildData bd = new BuildData(run, listener);
-        return bd;
+        return new BuildData(run, listener);
     }
-
 
 }

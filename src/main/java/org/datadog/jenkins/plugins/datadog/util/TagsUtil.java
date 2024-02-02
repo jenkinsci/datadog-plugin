@@ -25,10 +25,16 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.util;
 
-import net.sf.json.JSONArray;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
+import net.sf.json.JSONArray;
 
 public class TagsUtil {
 
@@ -38,21 +44,15 @@ public class TagsUtil {
         if (dest == null) {
             dest = new HashMap<>();
         }
-        if (orig == null) {
-            orig = new HashMap<>();
-        }
-        for (final Iterator<Map.Entry<String, Set<String>>> iter = orig.entrySet().iterator(); iter.hasNext();){
-            Map.Entry<String, Set<String>> entry = iter.next();
-            final String oName = entry.getKey();
-            Set<String> dValues = dest.containsKey(oName) ? dest.get(oName) : new HashSet<String>();
-            if (dValues == null) {
-                dValues = new HashSet<>();
+        if (orig != null) {
+            for (Map.Entry<String, Set<String>> entry : orig.entrySet()) {
+                final String oName = entry.getKey();
+                Set<String> oValues = entry.getValue();
+                Set<String> dValues = dest.computeIfAbsent(oName, k -> new HashSet<>());
+                if (oValues != null) {
+                    dValues.addAll(oValues);
+                }
             }
-            Set<String> oValues = entry.getValue();
-            if (oValues != null) {
-                dValues.addAll(oValues);
-            }
-            dest.put(oName, dValues);
         }
         return dest;
     }

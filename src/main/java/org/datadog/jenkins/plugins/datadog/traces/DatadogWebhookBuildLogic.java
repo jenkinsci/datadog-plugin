@@ -6,26 +6,22 @@ import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeB
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
 
+import hudson.model.Run;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-
-import org.apache.commons.lang.StringUtils;
-import org.datadog.jenkins.plugins.datadog.DatadogClient;
-import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.model.BuildPipelineNode;
-import org.datadog.jenkins.plugins.datadog.model.CIGlobalTagsAction;
-import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
-import org.datadog.jenkins.plugins.datadog.model.StageBreakdownAction;
-import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
-
-import hudson.model.Run;
+import javax.annotation.Nullable;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
+import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
+import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 /**
  * Keeps the logic to send webhooks related to Jenkins Build.
@@ -35,60 +31,29 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
 
     private static final Logger logger = Logger.getLogger(DatadogWebhookBuildLogic.class.getName());
 
-    private final DatadogClient client;
-
-    public DatadogWebhookBuildLogic(final DatadogClient client) {
-        this.client = client;
-    }
-
+    @Nullable
     @Override
-    public void startBuildTrace(final BuildData buildData, Run run) {
+    public JSONObject toJson(final BuildData buildData, final Run<?,?> run) {
         if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
-            logger.fine("CI Visibility is disabled");
-            return;
-        }
-
-        final StepTraceDataAction stepTraceDataAction = new StepTraceDataAction();
-        run.addAction(stepTraceDataAction);
-
-        final StageBreakdownAction stageBreakdownAction = new StageBreakdownAction();
-        run.addAction(stageBreakdownAction);
-
-        final PipelineQueueInfoAction pipelineQueueInfoAction = new PipelineQueueInfoAction();
-        run.addAction(pipelineQueueInfoAction);
-
-        final CIGlobalTagsAction ciGlobalTags = new CIGlobalTagsAction(buildData.getTagsForTraces());
-        run.addAction(ciGlobalTags);
-    }
-
-    @Override
-    public void finishBuildTrace(final BuildData buildData, final Run<?,?> run) {
-        if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
-            return;
+            return null;
         }
 
         final TraceSpan buildSpan = BuildSpanManager.get().get(buildData.getBuildTag(""));
         if(buildSpan == null) {
-            return;
+            return null;
         }
 
         final BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
         if(buildSpanAction == null) {
-            return;
+            return null;
         }
-
-        // In this point of the execution, the BuildData stored within
-        // BuildSpanAction has been updated by the information available
-        // inside the Pipeline steps by DatadogWebhookPipelineLogic.
-        // (Only applicable if the build is based on Jenkins Pipelines).
-        final BuildData updatedBuildData = buildSpanAction.getBuildData();
 
         final long startTimeMillis = buildData.getStartTime(0L);
         // If the build is a Jenkins Pipeline, the queue time is included in the root duration.
         // We need to adjust the endTime of the root subtracting the queue time reported by its children.
         // The propagated queue time is set DatadogTracePipelineLogic#updateBuildData method.
         // The queue time reported by DatadogBuildListener#onStarted method is not included in the root duration.
-        final long propagatedMillisInQueue = Math.max(updatedBuildData.getPropagatedMillisInQueue(-1L), 0);
+        final long propagatedMillisInQueue = Math.max(buildData.getPropagatedMillisInQueue(-1L), 0);
         // Although the queue time happens before the startTime, we cannot remove it from the startTime
         // because there is no API to do it at the end of the trace. Additionally, we cannot create the root
         // at the end of the build, because we would lose the logs correlation.
@@ -97,22 +62,22 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
         final long endTimeMillis = buildData.getEndTime(0L) - propagatedMillisInQueue;
         final String jenkinsResult = buildData.getResult("");
         final String status = statusFromResult(jenkinsResult);
-        final String prefix = BuildPipelineNode.NodeType.PIPELINE.getTagName();
-        final String rawGitBranch = buildData.getBranch("").isEmpty() ? updatedBuildData.getBranch("") : buildData.getBranch("");
+        final String prefix = PipelineStepData.StepType.PIPELINE.getTagName();
+        final String rawGitBranch = buildData.getBranch("");
         final String gitBranch = normalizeBranch(rawGitBranch);
         // Check if the user set manually the DD_GIT_TAG environment variable.
         // Otherwise, Jenkins reports the tag in the Git branch information. (e.g. origin/tags/0.1.0)
-        final String gitTag = Optional.of(buildData.getGitTag("").isEmpty() ? updatedBuildData.getGitTag("") : buildData.getGitTag(""))
+        final String gitTag = Optional.of(buildData.getGitTag(""))
                 .filter(tag -> !tag.isEmpty())
                 .orElse(normalizeTag(rawGitBranch));
 
         JSONObject payload = new JSONObject();
-        payload.put("level", BuildPipelineNode.NodeType.PIPELINE.getBuildLevel());
+        payload.put("level", PipelineStepData.StepType.PIPELINE.getBuildLevel());
         payload.put("url", buildData.getBuildUrl(""));
         payload.put("start", DatadogUtilities.toISO8601(new Date(startTimeMillis)));
         payload.put("end", DatadogUtilities.toISO8601(new Date(endTimeMillis)));
         payload.put("partial_retry", false);
-        payload.put("queue_time", getMillisInQueue(updatedBuildData));
+        payload.put("queue_time", getMillisInQueue(buildData));
         payload.put("status", status);
         payload.put("is_manual", isTriggeredManually(run));
 
@@ -121,7 +86,7 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
 
         payload.put("pipeline_id", buildData.getBuildTag(""));
         payload.put("unique_id", buildData.getBuildTag(""));
-        payload.put("name", buildData.getBaseJobName(""));
+        payload.put("name", buildData.getJobName());
 
         // User
         {
@@ -147,12 +112,11 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
         {
             JSONArray tagsPayload = new JSONArray();
 
-            final CIGlobalTagsAction ciGlobalTagsAction = run.getAction(CIGlobalTagsAction.class);
-            if(ciGlobalTagsAction != null) {
-                final Map<String, String> tags = ciGlobalTagsAction.getTags();
-                for(Map.Entry<String, String> tagEntry : tags.entrySet()) {
-                    tagsPayload.add(tagEntry.getKey() + ":" + tagEntry.getValue());
-                }
+            Map<String, String> globalTags = new HashMap<>(buildData.getTagsForTraces());
+            globalTags.putAll(TagsUtil.convertTagsToMapSingleValues(DatadogUtilities.getTagsFromPipelineAction(run)));
+
+            for(Map.Entry<String, String> tagEntry : globalTags.entrySet()) {
+                tagsPayload.add(tagEntry.getKey() + ":" + tagEntry.getValue());
             }
 
             // Jenkins specific
@@ -168,9 +132,7 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
             tagsPayload.add(prefix + CITags._RESULT + ":" + status);
 
             // Configurations
-            final String fullJobName = buildData.getJobName("");
-            final String gitRef = gitBranch != null ? gitBranch : gitTag;
-            final Map<String, String> configurations = JobNameConfigurationParser.getConfigurations(fullJobName, gitRef);
+            final Map<String, String> configurations = buildData.getBuildConfigurations();
             if(!configurations.isEmpty()){
                 for(Map.Entry<String, String> entry : configurations.entrySet()) {
                     tagsPayload.add(prefix + CITags._CONFIGURATION + "." + entry.getKey() + ":" + entry.getValue());
@@ -190,25 +152,25 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
         {
             JSONObject nodePayload = new JSONObject();
 
-            final String nodeName = getNodeName(run, buildData, updatedBuildData);
+            // It seems like "built-in" node as the default value does not have much practical sense.
+            // It is done to preserve existing behavior (note that this logic is not applied to metrics - also to preserve the plugin's existing behavior).
+            // The mechanism before the changes was the following:
+            // - DatadogBuildListener#onInitialize created a BuildData instance
+            // - that BuildData had its nodeName populated from environment variables obtained from Run
+            // - the instance was persisted in an Action attached to Run, and was used to populate the node name of the pipeline span (always as the last fallback)
+            // For pipelines, the environment variables that Run#getEnvironment returns at the beginning of the run always (!) contain NODE_NAME = "built-in" (when invoked at the end of the run, the env will have a different set of variables).
+            // This is true regardless of whether the pipeline definition has a top-level agent block or not.
+            // For freestyle projects the correct NODE_NAME seems to be available in the run's environment variables at every stage of the build's lifecycle.
+            final String nodeName = buildData.getNodeName("built-in");
             nodePayload.put("name", nodeName);
             if(!DatadogUtilities.isMainNode(nodeName)) {
-
-                final String workerHostname = getNodeHostname(run, updatedBuildData);
-
-                // If the worker hostname is equals to controller hostname but the node name is not master/built-in then we
-                // could not detect the worker hostname properly. Check if it's set in the environment, otherwise set to none.
-                if(buildData.getHostname("").equalsIgnoreCase(workerHostname)) {
-                    String envHostnameOrNone = DatadogUtilities.getHostnameFromWorkerEnv(run).orElse(HOSTNAME_NONE);
-                    nodePayload.put("hostname", envHostnameOrNone);
-                } else {
-                    nodePayload.put("hostname", (workerHostname != null) ? workerHostname : HOSTNAME_NONE);
-                }
+                final String workerHostname = buildData.getHostname("");
+                nodePayload.put("hostname", !workerHostname.isEmpty() ? workerHostname : HOSTNAME_NONE);
             } else {
                 nodePayload.put("hostname", DatadogUtilities.getHostname(null));
             }
 
-            final String workspace = buildData.getWorkspace("").isEmpty() ? updatedBuildData.getWorkspace("") : buildData.getWorkspace("");
+            final String workspace = buildData.getWorkspace("");
             nodePayload.put("workspace", workspace);
 
             final Set<String> nodeLabels = getNodeLabels(run, nodeName);
@@ -216,7 +178,6 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
 
             payload.put("node", nodePayload);
         }
-
 
         // Git info
         {
@@ -230,54 +191,54 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
                 gitPayload.put("tag", gitTag);
             }
 
-            final String gitCommit = buildData.getGitCommit("").isEmpty() ? updatedBuildData.getGitCommit("") : buildData.getGitCommit("");
+            final String gitCommit = buildData.getGitCommit("");
             if(!isValidCommit(gitCommit)) {
                 logger.warning("Couldn't find a valid commit for pipelineID '"+buildData.getBuildTag("")+"'. GIT_COMMIT environment variable was not found or has invalid SHA1 string: " + gitCommit);
             } else {
                 gitPayload.put("sha", gitCommit);
             }
 
-            final String gitRepoUrl = buildData.getGitUrl("").isEmpty() ? updatedBuildData.getGitUrl("") : buildData.getGitUrl("");
+            final String gitRepoUrl = buildData.getGitUrl("");
             if (gitRepoUrl != null && !gitRepoUrl.isEmpty()) {
                 gitPayload.put("repository_url", filterSensitiveInfo(gitRepoUrl));
             }
 
-            final String gitMessage = buildData.getGitMessage("").isEmpty() ? updatedBuildData.getGitMessage("") : buildData.getGitMessage("");
+            final String gitMessage = buildData.getGitMessage("");
             if (gitMessage != null && !gitMessage.isEmpty()) {
                 gitPayload.put("message", gitMessage);
             }
 
-            final String gitAuthorDate = buildData.getGitAuthorDate("").isEmpty() ? updatedBuildData.getGitAuthorDate("") : buildData.getGitAuthorDate("");
+            final String gitAuthorDate = buildData.getGitAuthorDate("");
             if (gitAuthorDate != null && !gitAuthorDate.isEmpty()) {
                 gitPayload.put("author_time", gitAuthorDate);
             }
 
-            final String gitCommitDate = buildData.getGitCommitterDate("").isEmpty() ? updatedBuildData.getGitCommitterDate("") : buildData.getGitCommitterDate("");
+            final String gitCommitDate = buildData.getGitCommitterDate("");
             if (gitCommitDate != null && !gitCommitDate.isEmpty()) {
                 gitPayload.put("commit_time", gitCommitDate);
             }
 
-            final String gitCommitterName = buildData.getGitCommitterName("").isEmpty() ? updatedBuildData.getGitCommitterName("") : buildData.getGitCommitterName("");
+            final String gitCommitterName = buildData.getGitCommitterName("");
             if (gitCommitterName != null && !gitCommitterName.isEmpty()) {
                 gitPayload.put("committer_name", gitCommitterName);
             }
 
-            final String gitCommitterEmail = buildData.getGitCommitterEmail("").isEmpty() ? updatedBuildData.getGitCommitterEmail("") : buildData.getGitCommitterEmail("");
+            final String gitCommitterEmail = buildData.getGitCommitterEmail("");
             if (gitCommitterEmail != null && !gitCommitterEmail.isEmpty()) {
                 gitPayload.put("committer_email", gitCommitterEmail);
             }
 
-            final String gitAuthorName = buildData.getGitAuthorName("").isEmpty() ? updatedBuildData.getGitAuthorName("") : buildData.getGitAuthorName("");
+            final String gitAuthorName = buildData.getGitAuthorName("");
             if (gitAuthorName != null && !gitAuthorName.isEmpty()) {
                 gitPayload.put("author_name", gitAuthorName);
             }
 
-            final String gitAuthorEmail = buildData.getGitAuthorEmail("").isEmpty() ? updatedBuildData.getGitAuthorEmail("") : buildData.getGitAuthorEmail("");
+            final String gitAuthorEmail = buildData.getGitAuthorEmail("");
             if (gitAuthorEmail != null && !gitAuthorEmail.isEmpty()) {
                 gitPayload.put("author_email", gitAuthorEmail);
             }
 
-            final String gitDefaultBranch = buildData.getGitDefaultBranch("").isEmpty() ? updatedBuildData.getGitDefaultBranch("") : buildData.getGitDefaultBranch("");
+            final String gitDefaultBranch = buildData.getGitDefaultBranch("");
             if (gitDefaultBranch != null && !gitDefaultBranch.isEmpty()) {
                 gitPayload.put("default_branch", gitDefaultBranch);
             }
@@ -285,7 +246,7 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
             payload.put("git", gitPayload);
         }
 
-        client.postWebhook(payload.toString());
+        return payload;
     }
 
 }

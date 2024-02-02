@@ -14,7 +14,7 @@ import javax.annotation.Nonnull;
 import jenkins.YesNoMaybe;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.logs.DatadogTaskListenerDecorator;
-import org.datadog.jenkins.plugins.datadog.tracer.DatadogTracerJobProperty;
+import org.datadog.jenkins.plugins.datadog.apm.DatadogTracerJobProperty;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.log.TaskListenerDecorator;
 import org.jenkinsci.plugins.workflow.steps.BodyExecutionCallback;

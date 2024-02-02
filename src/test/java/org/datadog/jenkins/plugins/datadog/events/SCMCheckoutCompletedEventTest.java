@@ -48,7 +48,7 @@ public class SCMCheckoutCompletedEventTest {
     @Test
     public void testWithNothingSet() throws IOException, InterruptedException {
         Jenkins jenkins = mock(Jenkins.class);
-        when(jenkins.getFullName()).thenReturn(null);
+        when(jenkins.getFullName()).thenReturn("");
 
         ProjectStub job = new ProjectStub(jenkins,null);
 

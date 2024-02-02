@@ -24,29 +24,34 @@ THE SOFTWARE.
 */
 package org.datadog.jenkins.plugins.datadog.logs;
 
-import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.Before;
-import org.junit.Test;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import hudson.EnvVars;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-
-import static org.mockito.Mockito.*;
+import java.nio.charset.Charset;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.junit.Before;
+import org.junit.Test;
 
 public class DatadogTaskListenerDecoratorTest {
     private WorkflowRun workflowRun;   
     private WorkflowJob job; 
 
     @Before
-    public void setupMock() {
+    public void setupMock() throws Exception {
         workflowRun = mock(WorkflowRun.class);
         job = mock(WorkflowJob.class);
 
         when(job.getFullName()).thenReturn("Pipeline job");
         when(workflowRun.getParent()).thenReturn(job);
+        when(workflowRun.getEnvironment(any())).thenReturn(mock(EnvVars.class));
+        when(workflowRun.getCharset()).thenReturn(mock(Charset.class));
     }
 
     @Test

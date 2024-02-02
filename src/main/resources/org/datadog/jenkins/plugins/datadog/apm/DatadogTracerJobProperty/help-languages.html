@@ -1,0 +1,40 @@
+<div>
+    <p>
+        Automatic tracer injection comes with some language-specific caveats.
+        Check the Test Visibility <a target="_blank" href="https://docs.datadoghq.com/tests/setup/">setup documentation for your language</a> to make sure that the testing framework that you use is supported.
+    </p>
+
+    <strong>Java</strong>
+    <p>
+        Injection works for any JVM-based language (Java, Kotlin, Groovy, Scala, etc).
+        Any Maven or Gradle build that the job executes will be traced.
+    </p>
+    <p>
+        <code>MAVEN_OPTS</code> and <code>GRADLE_OPTS</code> environment variables are used for injection.
+        If these variables are overridden inside the job (with their existing value being discarded rather than preserved),
+        the injection will not happen.
+    </p>
+
+    <strong>JS</strong>
+    <p>
+        The plugin assumes that <code>npm</code> and <code>node</code> (v18.0.0 or newer) are available on the node that executes the job.
+    </p>
+    <p>
+        <code>NODE_OPTIONS</code> environment variable is used for injection.
+        If this variable is overridden inside the job (with its existing value being discarded rather than preserved),
+        the injection will not happen.
+    </p>
+
+    <strong>Python</strong>
+    <p>
+        The plugin assumes that <code>pip</code> is available on the node that executes the job.
+    </p>
+    <p>
+        The plugin assumes that the job uses the same <code>pip</code>/<code>python</code> versions as the default ones that are available on the execution node.
+    </p>
+    <p>
+        <code>PYTEST_ADDOPTS</code> and <code>PYTHONPATH</code> environment variables are used for injection.
+        If these variables are overridden inside the job (with their existing value being discarded rather than preserved),
+        the injection will not happen.
+    </p>
+</div>
