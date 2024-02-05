@@ -1,5 +1,14 @@
 Changes
 =======
+## 6.0.1 / 2024-02-05
+
+* [Fixed] Apply included/excluded job filters when publishing queue metrics. See [#380](https://github.com/jenkinsci/datadog-plugin/pull/380).
+* [Fixed] Fix incorrect hard-coded env var name in Java tracer configurator. See [#382](https://github.com/jenkinsci/datadog-plugin/pull/382).
+* [Fixed] Implement plugin data versioning. See [#390](https://github.com/jenkinsci/datadog-plugin/pull/390).
+* [Fixed] Fix automatic APM instrumentation for JS tracer. Add diagnostic logging to APM configurators. Update APM instrumentation docs. See [#388](https://github.com/jenkinsci/datadog-plugin/pull/388).
+* [Fixed] Update queue metrics to correctly calculate pipeline names. See [#378](https://github.com/jenkinsci/datadog-plugin/pull/378).
+* [Fixed] Fix port used for APM track spans submission. See [#386](https://github.com/jenkinsci/datadog-plugin/pull/386).
+
 ## 6.0.0 / 2024-01-31
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.6.2...datadog-6.0.0
 
