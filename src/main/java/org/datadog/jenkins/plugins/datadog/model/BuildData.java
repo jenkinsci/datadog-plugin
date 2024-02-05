@@ -191,12 +191,8 @@ public class BuildData implements Serializable {
         if (runResult != null) {
             this.result = runResult.toString();
             this.isCompleted = runResult.completeBuild;
-        } else if (run.isBuilding() && !run.hasntStartedYet()) {
-            // #isBuilding() includes queued runs, so we check #hasntStartedYet() as well
+        } else if (run.isBuilding()) {
             this.result = CITags.STATUS_RUNNING;
-            this.isCompleted = false;
-        } else {
-            this.result = null;
             this.isCompleted = false;
         }
 
