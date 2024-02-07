@@ -262,8 +262,8 @@ public class BuildData implements Serializable {
 
         List<EnvActionImpl> envActions = run.getActions(EnvActionImpl.class);
         for (EnvActionImpl envAction : envActions) {
-            EnvVars environment = envAction.getEnvironment();
-            mergedVars.putAll(environment);
+            Map<String, String> overriddenEnvironment = envAction.getOverriddenEnvironment();
+            mergedVars.putAll(overriddenEnvironment);
         }
 
         Map<String, String> envVars;
