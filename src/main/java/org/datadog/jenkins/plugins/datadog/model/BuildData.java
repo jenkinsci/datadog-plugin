@@ -79,6 +79,7 @@ import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.workflow.cps.EnvActionImpl;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 public class BuildData implements Serializable {
 
@@ -203,7 +204,7 @@ public class BuildData implements Serializable {
             durationInMs = System.currentTimeMillis() - startTime;
         }
         this.duration = durationInMs;
-        if (duration != 0 && startTime != 0 && isCompleted) {
+        if (duration != 0 && startTime != 0 && !run.isBuilding()) {
             this.endTime = startTime + duration;
         }
 
