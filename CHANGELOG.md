@@ -1,6 +1,16 @@
 Changes
 =======
+## 6.0.2 / 2024-02-08
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-6.0.1...datadog-6.0.2
+
+Fixes StackOverflowException occurring when logs collection is enabled.
+
+* [Fixed] Fix stack overflow on initialising DatadogTaskListenerDecorator. See [#396](https://github.com/jenkinsci/datadog-plugin/pull/396).
+
 ## 6.0.1 / 2024-02-05
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-6.0.0...datadog-6.0.1
+
+Various bugfixes. Fixes plugin data deserialization issue which could lead to build data corruption.
 
 * [Fixed] Apply included/excluded job filters when publishing queue metrics. See [#380](https://github.com/jenkinsci/datadog-plugin/pull/380).
 * [Fixed] Fix incorrect hard-coded env var name in Java tracer configurator. See [#382](https://github.com/jenkinsci/datadog-plugin/pull/382).
