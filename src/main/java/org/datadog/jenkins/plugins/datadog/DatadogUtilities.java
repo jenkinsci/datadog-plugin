@@ -27,6 +27,8 @@ package org.datadog.jenkins.plugins.datadog;
 
 import hudson.EnvVars;
 import hudson.ExtensionList;
+import hudson.PluginManager;
+import hudson.PluginWrapper;
 import hudson.model.Actionable;
 import hudson.model.Computer;
 import hudson.model.Item;
@@ -1112,5 +1114,20 @@ public class DatadogUtilities {
         }
         return -1L;
     }
+
+    @Nullable
+    public static String getDatadogPluginVersion() {
+        Jenkins jenkins = Jenkins.getInstanceOrNull();
+        if (jenkins == null) {
+            return null;
+        }
+        PluginManager pluginManager = jenkins.getPluginManager();
+        PluginWrapper datadogPlugin = pluginManager.getPlugin("datadog");
+        if (datadogPlugin == null) {
+            return null;
+        }
+        return datadogPlugin.getVersion();
+    }
+
 }
 
