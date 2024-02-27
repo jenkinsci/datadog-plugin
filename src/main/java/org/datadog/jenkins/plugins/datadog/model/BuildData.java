@@ -204,7 +204,7 @@ public class BuildData implements Serializable {
             durationInMs = System.currentTimeMillis() - startTime;
         }
         this.duration = durationInMs;
-        if (duration != 0 && startTime != 0 && !isBuilding) {
+        if (duration != 0 && startTime != 0) {
             this.endTime = startTime + duration;
         }
 
