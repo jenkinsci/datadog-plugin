@@ -290,7 +290,7 @@ public class DatadogClientStub implements DatadogClient {
         @Nullable
         @Override
         public Payload serialize(BuildData buildData, Run<?, ?> run) {
-            if (!buildData.isCompleted()) {
+            if (buildData.isBuilding()) {
                 // ignore in-progress pipeline events for now
                 return null;
             }

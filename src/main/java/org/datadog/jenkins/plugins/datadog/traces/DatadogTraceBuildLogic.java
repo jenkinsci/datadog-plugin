@@ -48,7 +48,7 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
             return null;
         }
 
-        if (CITags.STATUS_RUNNING.equals(buildData.getResult(null))) {
+        if (buildData.isBuilding()) {
             // APM track does not support in-progress pipelines
             return null;
         }

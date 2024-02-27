@@ -49,7 +49,7 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
         }
 
         final String jenkinsResult = buildData.getResult("");
-        final String status = statusFromResult(jenkinsResult);
+        final String status = buildData.isBuilding() ? CITags.STATUS_RUNNING : statusFromResult(jenkinsResult);
         final String prefix = PipelineStepData.StepType.PIPELINE.getTagName();
         final String rawGitBranch = buildData.getBranch("");
         final String gitBranch = normalizeBranch(rawGitBranch);

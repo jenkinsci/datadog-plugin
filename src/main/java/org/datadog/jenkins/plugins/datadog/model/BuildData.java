@@ -74,12 +74,10 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.traces.BuildConfigurationParser;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
-import org.datadog.jenkins.plugins.datadog.traces.CITags;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.workflow.cps.EnvActionImpl;
-import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 public class BuildData implements Serializable {
 
@@ -128,6 +126,7 @@ public class BuildData implements Serializable {
 
     private String result;
     private boolean isCompleted;
+    private boolean isBuilding;
     private String hostname;
     private String userId;
     private String userEmail;
@@ -192,10 +191,11 @@ public class BuildData implements Serializable {
         if (runResult != null) {
             this.result = runResult.toString();
             this.isCompleted = runResult.completeBuild;
-        } else if (run.isBuilding()) {
-            this.result = CITags.STATUS_RUNNING;
+        } else {
+            this.result = null;
             this.isCompleted = false;
         }
+        this.isBuilding = run.isBuilding();
 
         // Set StartTime, EndTime and Duration
         this.startTime = run.getStartTimeInMillis();
@@ -204,7 +204,7 @@ public class BuildData implements Serializable {
             durationInMs = System.currentTimeMillis() - startTime;
         }
         this.duration = durationInMs;
-        if (duration != 0 && startTime != 0 && !CITags.STATUS_RUNNING.equals(this.result)) {
+        if (duration != 0 && startTime != 0 && !isBuilding) {
             this.endTime = startTime + duration;
         }
 
@@ -602,6 +602,10 @@ public class BuildData implements Serializable {
 
     public boolean isCompleted() {
         return isCompleted;
+    }
+
+    public boolean isBuilding() {
+        return isBuilding;
     }
 
     public String getHostname(String value) {
