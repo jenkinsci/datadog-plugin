@@ -60,7 +60,7 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
                 .orElse(normalizeTag(rawGitBranch));
 
         JSONObject payload = new JSONObject();
-        payload.put("version", buildData.getVersion());
+        payload.put("payload_version", buildData.getVersion());
         payload.put("level", PipelineStepData.StepType.PIPELINE.getBuildLevel());
         payload.put("url", buildData.getBuildUrl(""));
 
