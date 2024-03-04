@@ -187,6 +187,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         assertEquals("success", meta.get(CITags.JENKINS_RESULT));
         assertEquals("jenkins-buildIntegrationSuccess-1", meta.get(CITags.JENKINS_TAG));
         assertNull(meta.get(CITags._DD_CI_STAGES)); // this is a freestyle project which has no stages
+        assertNotNull(meta.get(CITags.JENKINS_PLUGIN_VERSION));
 
         assertCleanupActions(run);
     }
@@ -513,6 +514,8 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         final JSONArray tags = webhook.getJSONArray("tags");
         assertTrue(tags.contains("global_job_tag:value"));
         assertTrue(tags.contains("global_tag:value"));
+
+        assertTrue(tags.stream().anyMatch(tag -> tag.toString().startsWith(CITags.JENKINS_PLUGIN_VERSION)));
     }
 
     @Test
