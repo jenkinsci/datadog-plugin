@@ -205,6 +205,7 @@ public class BuildData implements Serializable {
         }
         this.duration = durationInMs;
         if (duration != 0 && startTime != 0) {
+            // end time will be ignored for in-progress pipelines
             this.endTime = startTime + duration;
         }
 

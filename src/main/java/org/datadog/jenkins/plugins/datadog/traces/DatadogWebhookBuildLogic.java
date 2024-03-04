@@ -68,8 +68,8 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
         payload.put("start", DatadogUtilities.toISO8601(new Date(startTimeMillis)));
 
         Long endTime = buildData.getEndTime(null);
-        // there are valid cases where endTime is null (in-progress pipelines), and the backend allows for this
-        if (endTime != null) {
+        if (!buildData.isBuilding() // do not populate end time for in-progress pipelines
+                && endTime != null) {
             // If the build is a Jenkins Pipeline, the queue time is included in the root duration.
             // We need to adjust the endTime of the root subtracting the queue time reported by its children.
             // The propagated queue time is set DatadogTracePipelineLogic#updateBuildData method.
