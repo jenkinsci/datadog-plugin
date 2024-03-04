@@ -59,6 +59,7 @@ public class CITags {
     public static final String STATUS_SUCCESS = "success";
     public static final String STATUS_ERROR = "error";
     public static final String STATUS_UNSTABLE = "unstable";
+    public static final String STATUS_RUNNING = "running";
 
     public static class Values {
         public static final String ORIGIN_CIAPP_PIPELINE = "ciapp-pipeline";
