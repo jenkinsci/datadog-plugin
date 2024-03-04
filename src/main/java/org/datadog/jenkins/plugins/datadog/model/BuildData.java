@@ -164,10 +164,10 @@ public class BuildData implements Serializable {
 
         BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
         if (buildSpanAction != null) {
-            if (buildUrl == null) {
-                buildUrl = buildSpanAction.getBuildUrl();
+            if (this.buildUrl == null) {
+                this.buildUrl = buildSpanAction.getBuildUrl();
             }
-            version = buildSpanAction.getAndIncrementVersion();
+            this.version = buildSpanAction.getAndIncrementVersion();
         }
 
         // Populate instance using environment variables.
