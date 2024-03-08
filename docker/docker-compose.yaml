@@ -1,0 +1,92 @@
+version: '3.8'
+
+# The services below should only be used for development and testing purposes. They are not production-ready.
+services:
+  jenkins-master:
+    build:
+      context: ./docker/master-node
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+      - "5055:5055"
+    environment:
+      GITHUB_SSH_KEY: $GITHUB_SSH_KEY
+      GITHUB_SSH_KEY_PASSPHRASE: $GITHUB_SSH_KEY_PASSPHRASE
+      JENKINS_AGENT_NAMES: "agent-dotnet agent-python agent-js"
+      DATADOG_JENKINS_PLUGIN_REPORT_WITH: DSD
+      DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS: false
+      DATADOG_JENKINS_PLUGIN_TARGET_HOST: datadog # `dogstatsd` or `datadog` based on the container you wish to use
+      DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT: 10518
+      DATADOG_JENKINS_PLUGIN_TARGET_API_KEY: $JENKINS_PLUGIN_DATADOG_API_KEY
+    volumes:
+      - jenkins_shared:/var/jenkins_home/shared
+      - $JENKINS_PLUGIN/target/datadog.hpi:/var/jenkins_home/plugins/datadog.hpi
+
+  jenkins-agent-dotnet:
+    build:
+      context: ./docker/agent-node
+      dockerfile: Dockerfile-dotnet
+    depends_on:
+      - jenkins-master
+    environment:
+      JENKINS_URL: http://jenkins-master:8080
+      JENKINS_AGENT_NAME: agent-dotnet
+      JENKINS_AGENT_WORKDIR: /jenkins/agent
+    volumes:
+      - jenkins_shared:/shared
+
+  jenkins-agent-python:
+    build:
+      context: ./docker/agent-node
+      dockerfile: Dockerfile-python
+    depends_on:
+      - jenkins-master
+    environment:
+      JENKINS_URL: http://jenkins-master:8080
+      JENKINS_AGENT_NAME: agent-python
+      JENKINS_AGENT_WORKDIR: /jenkins/agent
+    volumes:
+      - jenkins_shared:/shared
+
+  jenkins-agent-js:
+    build:
+      context: ./docker/agent-node
+      dockerfile: Dockerfile-js
+    depends_on:
+      - jenkins-master
+    environment:
+      JENKINS_URL: http://jenkins-master:8080
+      JENKINS_AGENT_NAME: agent-js
+      JENKINS_AGENT_WORKDIR: /jenkins/agent
+    volumes:
+      - jenkins_shared:/shared
+
+  ## Uncomment the section below to use the standalone DogStatsD server to send metrics to Datadog
+  #  dogstatsd:
+  #    image: datadog/dogstatsd:latest
+  #    environment:
+  #      - DD_API_KEY=$JENKINS_PLUGIN_DATADOG_API_KEY
+  #    ports:
+  #      - 8125:8125
+
+  ## Uncomment the section below to use the whole Datadog Agent to send metrics (and logs) to Datadog.
+  ## Note that it contains a DogStatsD server as well.
+  datadog:
+    image: datadog/agent:latest
+    environment:
+      - DD_API_KEY=$JENKINS_PLUGIN_DATADOG_API_KEY
+      - DD_LOGS_ENABLED=true
+      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
+    ports:
+      - 8125:8125
+      - 8126:8126
+      - 10518:10518
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+      - $JENKINS_PLUGIN/docker/datadog/conf.yaml:/etc/datadog-agent/conf.d/jenkins.d/conf.yaml
+
+volumes:
+  jenkins_shared:
