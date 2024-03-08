@@ -361,12 +361,12 @@ NOTE: As mentioned in the [job customization](#job-customization) section, there
 | `jenkins.job.leadtime`                 | Build Lead Time.                                               | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
 | `jenkins.job.mtbf`                     | MTBF, time between last successful job and current failed job. | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
 | `jenkins.job.mttr`                     | MTTR: time between last failed job and current successful job. | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
-| `jenkins.job.pause_duration`            | Pause duration of build job (in seconds).                     | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
+| `jenkins.job.pause_duration`           | Pause duration of build job (in seconds).                      | `branch`, `jenkins_url`, `job`, `node`, `result`, `user_id`                |
 | `jenkins.job.started`                  | Rate of started jobs.                                          | `branch`, `jenkins_url`, `job`, `node`, `user_id`                          |
 | `jenkins.job.stage_duration`           | Duration of individual stages.                                 | `jenkins_url`, `job`, `user_id`, `stage_name`, `stage_depth`, `stage_parent`, `result` |
 | `jenkins.job.stage_pause_duration`     | Pause duration of individual stages (in milliseconds).         | `jenkins_url`, `job`, `user_id`, `stage_name`, `stage_depth`, `stage_parent`, `result` |
 | `jenkins.job.stage_completed`          | Rate of completed stages.                                      | `jenkins_url`, `job`, `user_id`, `stage_name`, `stage_depth`, `stage_parent`, `result` |
-| `jenkins.job.waiting`                  | Time spent waiting for job to run (in milliseconds).           | `branch`, `jenkins_url`, `job`, `node`, `user_id`                          |
+| `jenkins.job.waiting`                  | Time spent waiting for job to run (in seconds).                | `branch`, `jenkins_url`, `job`, `node`, `user_id`                          |
 | `jenkins.node.count`                   | Total number of node.                                          | `jenkins_url`                                                              |
 | `jenkins.node.offline`                 | Offline nodes count.                                           | `jenkins_url`                                                              |
 | `jenkins.node.online`                  | Online nodes count.                                            | `jenkins_url`                                                              |
@@ -383,11 +383,11 @@ NOTE: As mentioned in the [job customization](#job-customization) section, there
 | `jenkins.queue.pending`                | Number of Pending item in Queue.                               | `jenkins_url`                                                              |
 | `jenkins.queue.stuck`                  | Number of Stuck item in Queue.                                 | `jenkins_url`                                                              |
 | `jenkins.queue.blocked`                | Number of Blocked item in Queue.                               | `jenkins_url`                                                              |
-| `jenkins.queue.job.in_queue`                   | Number of times a Job has been in a Queue.                                                     | `jenkins_url`, `job_name`                                               |
-| `jenkins.queue.job.buildable`              | Number of times a Job has been Buildable in a Queue.                             | `jenkins_url`, `job_name`                                               |
-| `jenkins.queue.job.pending`                | Number of times a Job has been Pending in a Queue.                             | `jenkins_url`, `job_name`                                               |
-| `jenkins.queue.job.stuck`                  | Number of times a Job has been Stuck in a Queue.                                  | `jenkins_url`, `job_name`                                               |
-| `jenkins.queue.job.blocked`                | Number of times a Job has been Blocked in a Queue.                           | `jenkins_url`, `job_name`                                               |
+| `jenkins.queue.job.in_queue`           | Number of times a Job has been in a Queue.                     | `jenkins_url`, `job_name`                                                  |
+| `jenkins.queue.job.buildable`          | Number of times a Job has been Buildable in a Queue.           | `jenkins_url`, `job_name`                                                  |
+| `jenkins.queue.job.pending`            | Number of times a Job has been Pending in a Queue.             | `jenkins_url`, `job_name`                                                  |
+| `jenkins.queue.job.stuck`              | Number of times a Job has been Stuck in a Queue.               | `jenkins_url`, `job_name`                                                  |
+| `jenkins.queue.job.blocked`            | Number of times a Job has been Blocked in a Queue.             | `jenkins_url`, `job_name`                                                  |
 | `jenkins.scm.checkout`                 | Rate of SCM checkouts.                                         | `branch`, `jenkins_url`, `job`, `node`, `user_id`                          |
 | `jenkins.user.access_denied`           | Rate of users failing to authenticate.                         | `jenkins_url`, `user_id`                                                   |
 | `jenkins.user.authenticated`           | Rate of users authenticating.                                  | `jenkins_url`, `user_id`                                                   |
