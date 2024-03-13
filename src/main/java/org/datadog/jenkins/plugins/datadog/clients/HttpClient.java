@@ -116,8 +116,8 @@ public class HttpClient {
         );
         threadPool.setName("dd-http-client-thread-pool");
 
-        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        org.eclipse.jetty.client.HttpClient httpClient = new org.eclipse.jetty.client.HttpClient(sslContextFactory);
+        //SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        org.eclipse.jetty.client.HttpClient httpClient = new org.eclipse.jetty.client.HttpClient();
 
         configureProxies(jenkinsProxyConfiguration, httpClient);
 
