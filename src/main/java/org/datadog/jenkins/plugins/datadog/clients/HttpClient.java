@@ -25,6 +25,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
@@ -32,6 +33,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -116,8 +118,13 @@ public class HttpClient {
         );
         threadPool.setName("dd-http-client-thread-pool");
 
-        //SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        org.eclipse.jetty.client.HttpClient httpClient = new org.eclipse.jetty.client.HttpClient();
+        // https://eclipse.dev/jetty/documentation/jetty-10/programming-guide/index.html#pg-client-http-configuration-tls
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSslContextFactory(sslContextFactory);
+
+        org.eclipse.jetty.client.HttpClient httpClient = new org.eclipse.jetty.client.HttpClient(new HttpClientTransportDynamic(clientConnector));
 
         configureProxies(jenkinsProxyConfiguration, httpClient);
 
