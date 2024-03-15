@@ -2,7 +2,7 @@ version: '3.8'
 
 # The services below should only be used for development and testing purposes. They are not production-ready.
 services:
-  jenkins-master:
+  jenkins-controller:
     build:
       context: ./docker/master-node
       dockerfile: Dockerfile
@@ -28,9 +28,9 @@ services:
       context: ./docker/agent-node
       dockerfile: Dockerfile-dotnet
     depends_on:
-      - jenkins-master
+      - jenkins-controller
     environment:
-      JENKINS_URL: http://jenkins-master:8080
+      JENKINS_URL: http://jenkins-controller:8080
       JENKINS_AGENT_NAME: agent-dotnet
       JENKINS_AGENT_WORKDIR: /jenkins/agent
     volumes:
@@ -41,9 +41,9 @@ services:
       context: ./docker/agent-node
       dockerfile: Dockerfile-python
     depends_on:
-      - jenkins-master
+      - jenkins-controller
     environment:
-      JENKINS_URL: http://jenkins-master:8080
+      JENKINS_URL: http://jenkins-controller:8080
       JENKINS_AGENT_NAME: agent-python
       JENKINS_AGENT_WORKDIR: /jenkins/agent
     volumes:
@@ -54,7 +54,7 @@ services:
       context: ./docker/agent-node
       dockerfile: Dockerfile-js
     depends_on:
-      - jenkins-master
+      - jenkins-controller
     environment:
       JENKINS_URL: http://jenkins-master:8080
       JENKINS_AGENT_NAME: agent-js

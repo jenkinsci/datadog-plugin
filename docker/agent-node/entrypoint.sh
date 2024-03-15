@@ -2,8 +2,8 @@
 
 JNLP_SECRET_PATH="/shared/$JENKINS_AGENT_NAME.secret"
 
-wait_for_jenkins_master() {
-    echo "Waiting for Jenkins master at ${JENKINS_URL} to be available..."
+wait_for_jenkins_controller() {
+    echo "Waiting for Jenkins controller at ${JENKINS_URL} to be available..."
     while ! curl --output /dev/null --silent --head --fail "$JENKINS_URL"; do
         printf '.'
         sleep 2
@@ -19,10 +19,10 @@ wait_for_jenkins_master() {
         fi
     done
 
-    echo "Jenkins master is up."
+    echo "Jenkins controller is up."
 }
 
-wait_for_jenkins_master
+wait_for_jenkins_controller
 
 curl -sO "${JENKINS_URL}/jnlpJars/agent.jar"
 
