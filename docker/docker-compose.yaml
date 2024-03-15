@@ -4,7 +4,7 @@ version: '3.8'
 services:
   jenkins-controller:
     build:
-      context: ./docker/master-node
+      context: ./docker/controller-node
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
@@ -56,7 +56,7 @@ services:
     depends_on:
       - jenkins-controller
     environment:
-      JENKINS_URL: http://jenkins-master:8080
+      JENKINS_URL: http://jenkins-controller:8080
       JENKINS_AGENT_NAME: agent-js
       JENKINS_AGENT_WORKDIR: /jenkins/agent
     volumes:

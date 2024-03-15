@@ -11,7 +11,7 @@ RUN chmod 755 /var/jenkins_home/add-github-to-known-hosts.sh
 
 USER jenkins
 
-# to update the list of dependencies run `mvn hpi:list-plugin-dependencies -DoutputFile=/tmp/deps.txt && cat /tmp/deps.txt | cut -d: -f2 > docker/master-node/plugin-dependencies.txt && rm /tmp/deps.txt`
+# to update the list of dependencies run `mvn hpi:list-plugin-dependencies -DoutputFile=/tmp/deps.txt && cat /tmp/deps.txt | cut -d: -f2 > docker/controller-node/plugin-dependencies.txt && rm /tmp/deps.txt`
 COPY plugin-dependencies.txt /var/jenkins_home/plugin-dependencies.txt
 RUN jenkins-plugin-cli --latest-specified --plugin-file /var/jenkins_home/plugin-dependencies.txt
 
