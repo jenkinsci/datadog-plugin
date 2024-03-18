@@ -4,7 +4,7 @@ version: '3.8'
 services:
   jenkins-controller:
     build:
-      context: ./docker/controller-node
+      context: ./controller-node
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
@@ -25,7 +25,7 @@ services:
 
   jenkins-agent-dotnet:
     build:
-      context: ./docker/agent-node
+      context: ./agent-node
       dockerfile: Dockerfile-dotnet
     depends_on:
       - jenkins-controller
@@ -38,7 +38,7 @@ services:
 
   jenkins-agent-python:
     build:
-      context: ./docker/agent-node
+      context: ./agent-node
       dockerfile: Dockerfile-python
     depends_on:
       - jenkins-controller
@@ -51,7 +51,7 @@ services:
 
   jenkins-agent-js:
     build:
-      context: ./docker/agent-node
+      context: ./agent-node
       dockerfile: Dockerfile-js
     depends_on:
       - jenkins-controller
