@@ -65,48 +65,44 @@ public class DatadogComputerPublisher extends PeriodicWork {
             return;
         }
 
-        try (Metrics metrics = client.metrics()) {
-            String hostname = DatadogUtilities.getHostname(null);
-            long nodeCount = 0;
-            long nodeOffline = 0;
-            long nodeOnline = 0;
-            Jenkins jenkins = Jenkins.getInstance();
-            Computer[] computers = new Computer[0];
-            if(jenkins != null){
-                computers = jenkins.getComputers();
-            }
-            Map<String, Set<String>> globalTags = DatadogUtilities.getTagsFromGlobalTags();
-            // Add JenkinsUrl Tag
-            globalTags = TagsUtil.addTagToTags(globalTags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
-            for (Computer computer : computers) {
-                Map<String, Set<String>> tags = TagsUtil.merge(
-                        DatadogUtilities.getComputerTags(computer), globalTags);
-                nodeCount++;
-                if (computer.isOffline()) {
-                    nodeOffline++;
-                    metrics.gauge("jenkins.node_status.up", 0, hostname, tags);
-                }   
-                if (computer.isOnline()) {
-                    nodeOnline++;
-                    metrics.gauge("jenkins.node_status.up", 1, hostname, tags);
-                }
-                int executorCount = computer.countExecutors();
-                int inUse = computer.countBusy();
-                int free = computer.countIdle();
-
-                metrics.gauge("jenkins.node_status.count", 1, hostname, tags);
-
-                metrics.gauge("jenkins.executor.count", executorCount, hostname, tags);
-                metrics.gauge("jenkins.executor.in_use", inUse, hostname, tags);
-                metrics.gauge("jenkins.executor.free", free, hostname, tags);
-            }
-            metrics.gauge("jenkins.node.count", nodeCount, hostname, globalTags);
-            metrics.gauge("jenkins.node.offline", nodeOffline, hostname, globalTags);
-            metrics.gauge("jenkins.node.online", nodeOnline, hostname, globalTags);
-
-        } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "Failed to compute and send node metrics");
+        Metrics metrics = client.metrics();
+        String hostname = DatadogUtilities.getHostname(null);
+        long nodeCount = 0;
+        long nodeOffline = 0;
+        long nodeOnline = 0;
+        Jenkins jenkins = Jenkins.get();
+        Computer[] computers = new Computer[0];
+        if(jenkins != null){
+            computers = jenkins.getComputers();
         }
+        Map<String, Set<String>> globalTags = DatadogUtilities.getTagsFromGlobalTags();
+        // Add JenkinsUrl Tag
+        globalTags = TagsUtil.addTagToTags(globalTags, "jenkins_url", DatadogUtilities.getJenkinsUrl());
+        for (Computer computer : computers) {
+            Map<String, Set<String>> tags = TagsUtil.merge(
+                    DatadogUtilities.getComputerTags(computer), globalTags);
+            nodeCount++;
+            if (computer.isOffline()) {
+                nodeOffline++;
+                metrics.gauge("jenkins.node_status.up", 0, hostname, tags);
+            }   
+            if (computer.isOnline()) {
+                nodeOnline++;
+                metrics.gauge("jenkins.node_status.up", 1, hostname, tags);
+            }
+            int executorCount = computer.countExecutors();
+            int inUse = computer.countBusy();
+            int free = computer.countIdle();
+
+            metrics.gauge("jenkins.node_status.count", 1, hostname, tags);
+
+            metrics.gauge("jenkins.executor.count", executorCount, hostname, tags);
+            metrics.gauge("jenkins.executor.in_use", inUse, hostname, tags);
+            metrics.gauge("jenkins.executor.free", free, hostname, tags);
+        }
+        metrics.gauge("jenkins.node.count", nodeCount, hostname, globalTags);
+        metrics.gauge("jenkins.node.offline", nodeOffline, hostname, globalTags);
+        metrics.gauge("jenkins.node.online", nodeOnline, hostname, globalTags);
         
     }
 

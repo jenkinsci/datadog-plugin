@@ -103,8 +103,9 @@ public class DatadogUtilities {
      */
     public static DatadogGlobalConfiguration getDatadogGlobalDescriptor() {
         try {
-            return ExtensionList.lookupSingleton(DatadogGlobalConfiguration.class);
-        } catch (IllegalStateException | NullPointerException e) {
+            DatadogGlobalConfiguration descriptor = ExtensionList.lookupSingleton(DatadogGlobalConfiguration.class);
+            return descriptor;
+        } catch (IllegalStateException e) {
             // It can only throw such an exception when running tests
             return null;
         }
@@ -115,12 +116,11 @@ public class DatadogUtilities {
      * @return - The configured {@link DatadogJobProperty}. Null if not there
      */
     public static DatadogJobProperty getDatadogJobProperties(@Nonnull Run r) {
-        try {
+        if (r != null && r.getParent() != null) {
             return (DatadogJobProperty) r.getParent().getProperty(DatadogJobProperty.class);
-        } catch (NullPointerException e) {
-            // It can only throw a NullPointerException when running tests
-            return null;
         }
+        // If any of the required objects are null, return null
+        return null;
     }
 
     /**
@@ -136,10 +136,9 @@ public class DatadogUtilities {
             return result;
         }
         String jobName;
-        try {
+        if (run.getParent() != null && run.getParent().getFullName() != null){
             jobName = run.getParent().getFullName();
-        } catch (NullPointerException e) {
-            // It can only throw a NullPointerException when running tests
+        } else {
             return result;
         }
         final DatadogGlobalConfiguration datadogGlobalConfig = getDatadogGlobalDescriptor();
@@ -494,10 +493,8 @@ public class DatadogUtilities {
     public static String getHostname(EnvVars envVars) {
         // Check hostname configuration from Jenkins
         String hostname = null;
-        try {
+        if (getDatadogGlobalDescriptor() != null && getDatadogGlobalDescriptor().getHostname() != null){
             hostname = getDatadogGlobalDescriptor().getHostname();
-        } catch (NullPointerException e) {
-            // noop
         }
 
         if (isValidHostname(hostname)) {
@@ -677,9 +674,16 @@ public class DatadogUtilities {
 
     public static Map<String, Set<String>> getComputerTags(Computer computer) {
         Set<LabelAtom> labels = null;
-        try {
-            labels = computer.getNode().getAssignedLabels();
-        } catch (NullPointerException e) {
+        assert computer != null : "Computer is unexpectedly null";
+        var node = computer.getNode();
+        if (node != null) {
+            Set<LabelAtom> assignedLabels = node.getAssignedLabels();
+            if (assignedLabels != null) {
+                labels = node.getAssignedLabels();
+            } else {
+                logger.fine("Could not retrieve labels");
+            }
+        } else {
             logger.fine("Could not retrieve labels");
         }
         String nodeHostname = null;
@@ -806,15 +810,11 @@ public class DatadogUtilities {
     }
 
     public static String getJenkinsUrl() {
-        Jenkins jenkins = Jenkins.getInstance();
-        if (jenkins == null) {
+        Jenkins jenkins = Jenkins.get();
+        try {
+            return jenkins.getRootUrl();
+        } catch (Exception e) {
             return "unknown";
-        } else {
-            try {
-                return jenkins.getRootUrl();
-            } catch (Exception e) {
-                return "unknown";
-            }
         }
     }
 
