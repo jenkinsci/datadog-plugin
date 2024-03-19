@@ -100,7 +100,11 @@
         <version>${configuration-as-code.version}</version>
         <scope>test</scope>
     </dependency>
-
+    <dependency>
+      <groupId>org.json</groupId>
+      <artifactId>json</artifactId>
+      <version>20240303</version>
+    </dependency>
     <!-- https://mvnrepository.com/artifact/org.mockito/mockito-core -->
     <dependency>
       <groupId>org.mockito</groupId>
