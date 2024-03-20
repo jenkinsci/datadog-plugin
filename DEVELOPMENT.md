@@ -37,7 +37,7 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
 1. Set the `JENKINS_PLUGIN` environment variable to point to the directory where this repository is cloned/forked.
 1. Set the `JENKINS_PLUGIN_DATADOG_API_KEY` environment variable with your api key.
 1. Optionally set the `GITHUB_SSH_KEY` and `GITHUB_SSH_KEY_PASSPHRASE` environment variables with the key and passphrase that can be used to access GitHub. This allows to automatically create GitHub credentials in Jenkins.   
-1. Run `mvn clean package -DskipTests` and `docker-compose -p datadog-jenkins-plugin -f docker/docker-compose.yaml up` from the directory where this repository is cloned/forked (if the `docker-compose` command fails because with a `path ... not found` error, try updating it to the latest version).
+1. Run `mvn clean package -DskipTests` and `docker-compose -p datadog-jenkins-plugin -f docker/docker-compose.yaml up` from the directory where this repository is cloned/forked (if the `docker-compose` command fails with a `path ... not found` error, try updating it to the latest version).
     - NOTE: This spins up the Jenkins docker image and auto mounts the target folder of this repository (the location where the binary is built).
     - NOTE: To see code updates after re-running the maven build on your local machine, run `docker-compose -p datadog-jenkins-plugin -f docker/docker-compose.yaml down` and spin it up again.
 1. Access your Jenkins instance http://localhost:8080 with the admin credentials `admin`/`local-jenkins-instance-admin-password`.
