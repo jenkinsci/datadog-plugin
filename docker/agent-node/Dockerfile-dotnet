@@ -1,0 +1,29 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0
+
+RUN apt-get -y update
+RUN apt-get -y upgrade
+RUN apt-get -y install curl wget less vim ssh git default-jdk
+
+# Dotnet 6.0.x
+RUN curl -sfSL -o dotnet.tar.gz https://download.visualstudio.microsoft.com/download/pr/3b18aefa-0e14-4193-a167-35e1de4cfe46/acf2b230ae3ecfbc4d5f4c20cbf97b2d/dotnet-sdk-6.0.419-linux-arm64.tar.gz --http1.1 && \
+    (echo "c249e5c1d15f040e2e4ce444328ec30dd1097984b1b0c4d48d1beb61c7e35d06f133509500ee63ded86a420e569920809b587ff2abe073da3d8f10d4a03a9d15 dotnet.tar.gz" | sha512sum -c - ) && \
+    mkdir -p /usr/share/dotnet && \
+    tar -zxf dotnet.tar.gz -C /usr/share/dotnet && \
+    rm dotnet.tar.gz
+
+# Dotnet 8.0.x
+RUN curl -sfSL -o dotnet.tar.gz https://download.visualstudio.microsoft.com/download/pr/3bebb4ec-8bb7-4854-b0a2-064bf50805eb/38e6972473f83f11963245ffd940b396/dotnet-sdk-8.0.201-linux-arm64.tar.gz --http1.1 && \
+    (echo "37e230970cfeffdc3873e42595b79ecdf6bfe266a01ace6953725e69a2b64313ce144bf4d4f861130f61f680ead9b4d8a819dd5543c5470c37bbc13d88a78c80 dotnet.tar.gz" | sha512sum -c - ) && \
+    mkdir -p /usr/share/dotnet && \
+    tar -zxf dotnet.tar.gz -C /usr/share/dotnet && \
+    rm dotnet.tar.gz
+
+ENV DOTNET_CLI_TELEMETRY_OPTOUT true
+
+COPY add-github-to-known-hosts.sh /add-github-to-known-hosts.sh
+RUN chmod +x /add-github-to-known-hosts.sh
+RUN /add-github-to-known-hosts.sh
+
+COPY entrypoint.sh /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
