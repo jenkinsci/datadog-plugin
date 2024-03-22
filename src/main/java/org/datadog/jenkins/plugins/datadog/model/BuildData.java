@@ -93,6 +93,8 @@ public class BuildData implements Serializable {
     private String jobName;
     private Map<String, String> buildConfigurations;
     private String buildTag;
+    @Nullable
+    private String upstreamBuildTag;
     private String jenkinsUrl;
     private String executorNumber;
     private String javaHome;
@@ -295,8 +297,15 @@ public class BuildData implements Serializable {
 
         String upstreamProject = upstreamCause.getUpstreamProject();
         if (upstreamProject != null) {
-            String upstreamPipelineBuildTag = "jenkins-" + upstreamProject.replace('/', '-') + "-" + upstreamBuild;
-            TraceSpan.TraceSpanContext upstreamPipelineContext = BuildSpanManager.get().get(upstreamPipelineBuildTag);
+            upstreamBuildTag = "jenkins-" + upstreamProject.replace('/', '-') + "-" + upstreamBuild;
+            TraceSpan.TraceSpanContext upstreamPipelineContext = BuildSpanManager.get().get(upstreamBuildTag);
+            if (upstreamPipelineContext == null) {
+                BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
+                if (buildSpanAction != null) {
+                    upstreamPipelineContext = buildSpanAction.getUpstreamSpanContext();
+                }
+            }
+
             if (upstreamPipelineContext != null) {
                 upstreamPipelineTraceId = upstreamPipelineContext.getTraceId();
             }
@@ -703,6 +712,11 @@ public class BuildData implements Serializable {
 
     public String getBuildTag(String value) {
         return defaultIfNull(buildTag, value);
+    }
+
+    @Nullable
+    public String getUpstreamBuildTag(String value) {
+        return defaultIfNull(upstreamBuildTag, value);
     }
 
     public String getJenkinsUrl(String value) {

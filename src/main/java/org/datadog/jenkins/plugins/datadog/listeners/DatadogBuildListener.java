@@ -117,7 +117,13 @@ public class DatadogBuildListener extends RunListener<Run> {
             TraceSpan.TraceSpanContext buildSpanContext = new TraceSpan.TraceSpanContext();
             BuildSpanManager.get().put(buildData.getBuildTag(""), buildSpanContext);
 
-            final BuildSpanAction buildSpanAction = new BuildSpanAction(buildSpanContext);
+            TraceSpan.TraceSpanContext upstreamBuildSpanContext = null;
+            String upstreamBuildTag = buildData.getUpstreamBuildTag("");
+            if (upstreamBuildTag != null) {
+                upstreamBuildSpanContext = BuildSpanManager.get().get(upstreamBuildTag);
+            }
+
+            final BuildSpanAction buildSpanAction = new BuildSpanAction(buildSpanContext, upstreamBuildSpanContext);
             run.addAction(buildSpanAction);
 
             run.addAction(new GitCommitAction());
