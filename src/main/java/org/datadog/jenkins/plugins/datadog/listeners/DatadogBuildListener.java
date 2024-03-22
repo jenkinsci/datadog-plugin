@@ -114,10 +114,10 @@ public class DatadogBuildListener extends RunListener<Run> {
                 return;
             }
 
-            final TraceSpan buildSpan = new TraceSpan("jenkins.build", TimeUnit.MILLISECONDS.toNanos(buildData.getStartTime(0L)));
-            BuildSpanManager.get().put(buildData.getBuildTag(""), buildSpan);
+            TraceSpan.TraceSpanContext buildSpanContext = new TraceSpan.TraceSpanContext();
+            BuildSpanManager.get().put(buildData.getBuildTag(""), buildSpanContext);
 
-            final BuildSpanAction buildSpanAction = new BuildSpanAction(buildSpan.context());
+            final BuildSpanAction buildSpanAction = new BuildSpanAction(buildSpanContext);
             run.addAction(buildSpanAction);
 
             run.addAction(new GitCommitAction());

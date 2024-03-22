@@ -38,8 +38,8 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
             return null;
         }
 
-        final TraceSpan buildSpan = BuildSpanManager.get().get(buildData.getBuildTag(""));
-        if(buildSpan == null) {
+        TraceSpan.TraceSpanContext buildSpanContext = BuildSpanManager.get().get(buildData.getBuildTag(""));
+        if(buildSpanContext == null) {
             return null;
         }
 
@@ -89,8 +89,8 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
         payload.put("status", status);
         payload.put("is_manual", isTriggeredManually(run));
 
-        payload.put("trace_id", buildSpan.context().getTraceId());
-        payload.put("span_id", buildSpan.context().getSpanId());
+        payload.put("trace_id", buildSpanContext.getTraceId());
+        payload.put("span_id", buildSpanContext.getSpanId());
 
         payload.put("pipeline_id", buildData.getBuildTag(""));
         payload.put("unique_id", buildData.getBuildTag(""));
@@ -253,6 +253,16 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
             }
 
             payload.put("git", gitPayload);
+        }
+
+        // Upstream pipeline info
+        Long upstreamPipelineTraceId = buildData.getUpstreamPipelineTraceId();
+        String upstreamPipelineUrl = buildData.getUpstreamPipelineUrl();
+        if (upstreamPipelineTraceId != null && upstreamPipelineUrl != null) {
+            JSONObject upstreamPayload = new JSONObject();
+            upstreamPayload.put("trace_id", upstreamPipelineTraceId);
+            upstreamPayload.put("url", upstreamPipelineUrl);
+            payload.put("parent_pipeline", upstreamPayload);
         }
 
         return payload;

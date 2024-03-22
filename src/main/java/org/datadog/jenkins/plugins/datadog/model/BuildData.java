@@ -84,7 +84,6 @@ public class BuildData implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private static transient final Logger LOGGER = Logger.getLogger(BuildData.class.getName());
-
     private String buildNumber;
     private String buildId;
     private String buildUrl;
@@ -151,6 +150,9 @@ public class BuildData implements Serializable {
     private Integer version;
     private String traceId;
     private String spanId;
+
+    private String upstreamPipelineUrl;
+    private Long upstreamPipelineTraceId;
 
     public BuildData(Run<?, ?> run, @Nullable TaskListener listener) throws IOException, InterruptedException {
         if (run == null) {
@@ -265,10 +267,39 @@ public class BuildData implements Serializable {
         populateBuildParameters(run);
 
         // Set Tracing IDs
-        final TraceSpan buildSpan = BuildSpanManager.get().get(getBuildTag(""));
-        if(buildSpan !=null) {
-            this.traceId = Long.toUnsignedString(buildSpan.context().getTraceId());
-            this.spanId = Long.toUnsignedString(buildSpan.context().getSpanId());
+        TraceSpan.TraceSpanContext buildSpanContext = BuildSpanManager.get().get(getBuildTag(""));
+        if(buildSpanContext !=null) {
+            this.traceId = Long.toUnsignedString(buildSpanContext.getTraceId());
+            this.spanId = Long.toUnsignedString(buildSpanContext.getSpanId());
+        }
+
+        populateUpstreamPipelineData(run, envVars);
+    }
+
+    private void populateUpstreamPipelineData(Run<?, ?> run, EnvVars envVars) {
+        CauseAction causeAction = run.getAction(CauseAction.class);
+        if (causeAction == null) {
+            return;
+        }
+        Cause.UpstreamCause upstreamCause = causeAction.findCause(Cause.UpstreamCause.class);
+        if (upstreamCause == null) {
+            return;
+        }
+
+        String hudsonUrl = envVars.get("HUDSON_URL");
+        String upstreamUrl = upstreamCause.getUpstreamUrl();
+        int upstreamBuild = upstreamCause.getUpstreamBuild();
+        if (hudsonUrl != null && upstreamUrl != null) {
+            upstreamPipelineUrl = hudsonUrl + upstreamUrl + upstreamBuild + "/";
+        }
+
+        String upstreamProject = upstreamCause.getUpstreamProject();
+        if (upstreamProject != null) {
+            String upstreamPipelineBuildTag = "jenkins-" + upstreamProject.replace('/', '-') + "-" + upstreamBuild;
+            TraceSpan.TraceSpanContext upstreamPipelineContext = BuildSpanManager.get().get(upstreamPipelineBuildTag);
+            if (upstreamPipelineContext != null) {
+                upstreamPipelineTraceId = upstreamPipelineContext.getTraceId();
+            }
         }
     }
 
@@ -814,6 +845,14 @@ public class BuildData implements Serializable {
             DatadogUtilities.severe(LOGGER, ex, "Failed to obtain the user email associated with the user " + userId);
             return null;
         }
+    }
+
+    public String getUpstreamPipelineUrl() {
+        return upstreamPipelineUrl;
+    }
+
+    public Long getUpstreamPipelineTraceId() {
+        return upstreamPipelineTraceId;
     }
 
     public JSONObject addLogAttributes(){
