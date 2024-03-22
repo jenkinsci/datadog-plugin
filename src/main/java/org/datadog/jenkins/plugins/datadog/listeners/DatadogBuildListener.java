@@ -410,8 +410,6 @@ public class DatadogBuildListener extends RunListener<Run> {
             traceWriter.submitBuild(buildData, run);
             logger.fine("End DatadogBuildListener#onFinalized");
 
-            BuildSpanManager.get().remove(buildData.getBuildTag(""));
-
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             DatadogUtilities.severe(logger, e, "Interrupted while processing build finalization");

@@ -73,7 +73,6 @@ import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.traces.BuildConfigurationParser;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
-import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
@@ -150,8 +149,8 @@ public class BuildData implements Serializable {
      * The backend needs version to determine the relative order of these multiple events.
      */
     private Integer version;
-    private String traceId;
-    private String spanId;
+    private Long traceId;
+    private Long spanId;
 
     private String upstreamPipelineUrl;
     private Long upstreamPipelineTraceId;
@@ -172,6 +171,10 @@ public class BuildData implements Serializable {
                 this.buildUrl = buildSpanAction.getBuildUrl();
             }
             this.version = buildSpanAction.getAndIncrementVersion();
+
+            TraceSpan.TraceSpanContext buildSpanContext = buildSpanAction.getBuildSpanContext();
+            this.traceId = buildSpanContext.getTraceId();
+            this.spanId = buildSpanContext.getSpanId();
         }
 
         // Populate instance using environment variables.
@@ -268,13 +271,6 @@ public class BuildData implements Serializable {
         // Build parameters
         populateBuildParameters(run);
 
-        // Set Tracing IDs
-        TraceSpan.TraceSpanContext buildSpanContext = BuildSpanManager.get().get(getBuildTag(""));
-        if(buildSpanContext !=null) {
-            this.traceId = Long.toUnsignedString(buildSpanContext.getTraceId());
-            this.spanId = Long.toUnsignedString(buildSpanContext.getSpanId());
-        }
-
         populateUpstreamPipelineData(run, envVars);
     }
 
@@ -298,16 +294,13 @@ public class BuildData implements Serializable {
         String upstreamProject = upstreamCause.getUpstreamProject();
         if (upstreamProject != null) {
             upstreamBuildTag = "jenkins-" + upstreamProject.replace('/', '-') + "-" + upstreamBuild;
-            TraceSpan.TraceSpanContext upstreamPipelineContext = BuildSpanManager.get().get(upstreamBuildTag);
-            if (upstreamPipelineContext == null) {
-                BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
-                if (buildSpanAction != null) {
-                    upstreamPipelineContext = buildSpanAction.getUpstreamSpanContext();
-                }
-            }
 
-            if (upstreamPipelineContext != null) {
-                upstreamPipelineTraceId = upstreamPipelineContext.getTraceId();
+            BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
+            if (buildSpanAction != null) {
+                TraceSpan.TraceSpanContext upstreamSpanContext = buildSpanAction.getUpstreamSpanContext();
+                if (upstreamSpanContext != null) {
+                    upstreamPipelineTraceId = upstreamSpanContext.getTraceId();
+                }
             }
         }
     }
@@ -710,6 +703,14 @@ public class BuildData implements Serializable {
         return version;
     }
 
+    public Long getTraceId() {
+        return traceId;
+    }
+
+    public Long getSpanId() {
+        return spanId;
+    }
+
     public String getBuildTag(String value) {
         return defaultIfNull(buildTag, value);
     }
@@ -936,11 +937,11 @@ public class BuildData implements Serializable {
             payload.put("hostname", this.hostname);
 
             if(traceId != null){
-                payload.put("dd.trace_id", this.traceId);
+                payload.put("dd.trace_id", Long.toUnsignedString(traceId));
             }
 
             if(spanId != null) {
-                payload.put("dd.span_id", this.spanId);
+                payload.put("dd.span_id",  Long.toUnsignedString(spanId));
             }
             return payload;
         } catch (Exception e){

@@ -20,7 +20,6 @@ import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
-import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 /**
@@ -35,11 +34,6 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
     @Override
     public JSONObject toJson(final BuildData buildData, final Run<?,?> run) {
         if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
-            return null;
-        }
-
-        TraceSpan.TraceSpanContext buildSpanContext = BuildSpanManager.get().get(buildData.getBuildTag(""));
-        if(buildSpanContext == null) {
             return null;
         }
 
@@ -89,8 +83,8 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
         payload.put("status", status);
         payload.put("is_manual", isTriggeredManually(run));
 
-        payload.put("trace_id", buildSpanContext.getTraceId());
-        payload.put("span_id", buildSpanContext.getSpanId());
+        payload.put("trace_id", buildData.getTraceId());
+        payload.put("span_id", buildData.getSpanId());
 
         payload.put("pipeline_id", buildData.getBuildTag(""));
         payload.put("unique_id", buildData.getBuildTag(""));

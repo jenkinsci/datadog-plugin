@@ -8,53 +8,34 @@ import java.util.logging.Logger;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 
 /**
- * Used to propagate the build Span between onStart() and onComplete() methods.
- * This mechanism is needed because the Span object cannot be serialized in a Jenkins Action.
+ * Used to store trace data after the build has finished.
+ * The data is needed to link upstream build to a downstream build.
  */
 public class BuildSpanManager {
 
     private static final Logger LOGGER = Logger.getLogger(BuildSpanManager.class.getName());
 
     private static final BuildSpanManager INSTANCE = new BuildSpanManager();
-    private final Map<String, TraceSpan.TraceSpanContext> inProgress = new ConcurrentHashMap<>();
-
-    /**
-     * The last N finished contexts are stored to be used by the logic that links upstream pipelines to downstream pipelines
-     */
-    private final Map<String, TraceSpan.TraceSpanContext> finished = new ConcurrentHashMap<>();
-    private final BlockingQueue<String> finishedTags = new ArrayBlockingQueue<>(getFinishedContextsCapacity());
+    private final Map<String, TraceSpan.TraceSpanContext> contextByTag = new ConcurrentHashMap<>();
+    private final BlockingQueue<String> tags = new ArrayBlockingQueue<>(getCapacity());
 
     public static BuildSpanManager get() {
         return INSTANCE;
     }
 
     public void put(final String tag, final TraceSpan.TraceSpanContext context) {
-        inProgress.put(tag, context);
+        while (!tags.offer(tag)) {
+            // drop the oldest tag if the storage is full
+            contextByTag.remove(tags.poll());
+        }
+        contextByTag.put(tag, context);
     }
 
     public TraceSpan.TraceSpanContext get(final String tag) {
-        TraceSpan.TraceSpanContext inProgressContext = inProgress.get(tag);
-        if (inProgressContext != null) {
-            return inProgressContext;
-        } else {
-            return finished.get(tag);
-        }
+        return contextByTag.get(tag);
     }
 
-    public void remove(final String tag){
-        TraceSpan.TraceSpanContext context = inProgress.remove(tag);
-        if (context == null) {
-            return;
-        }
-
-        finished.put(tag, context);
-
-        while (!finishedTags.offer(tag)) {
-            finished.remove(finishedTags.poll());
-        }
-    }
-
-    private static int getFinishedContextsCapacity() {
+    private static int getCapacity() {
         String maxSize = System.getenv("DD_JENKINS_SPAN_CONTEXT_STORAGE_MAX_SIZE");
         if (maxSize != null) {
             try {
