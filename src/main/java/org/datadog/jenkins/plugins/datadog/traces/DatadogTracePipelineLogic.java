@@ -1,6 +1,5 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
-import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.toJson;
 import static org.datadog.jenkins.plugins.datadog.model.PipelineStepData.StepType.PIPELINE;
 import static org.datadog.jenkins.plugins.datadog.traces.CITags.Values.ORIGIN_CIAPP_PIPELINE;
 import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.filterSensitiveInfo;
@@ -46,15 +45,13 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
     public TraceSpan toSpan(PipelineStepData current, Run<?, ?> run) throws IOException, InterruptedException {
         BuildData buildData = new BuildData(run, DatadogUtilities.getTaskListener(run));
 
-        // If the root span has propagated queue time, we need to adjust all startTime and endTime from Jenkins pipelines spans
-        // because this time will be subtracted in the root span. See DatadogTraceBuildLogic#finishBuildTrace method.
-        final long propagatedMillisInQueue = Math.max(buildData.getPropagatedMillisInQueue(-1L), 0);
-        final long fixedStartTimeNanos = TimeUnit.MICROSECONDS.toNanos(current.getStartTimeMicros() - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue));
-        final long fixedEndTimeNanos = TimeUnit.MICROSECONDS.toNanos(current.getEndTimeMicros() - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue));
+        final long startTimeNanos = TimeUnit.MILLISECONDS.toNanos(current.getStartTimeMillis());
+        final long endTimeNanos = TimeUnit.MILLISECONDS.toNanos(current.getEndTimeMillis());
 
         // At this point, the current node is traceable.
         final TraceSpan.TraceSpanContext spanContext = new TraceSpan.TraceSpanContext(current.getTraceId(), current.getParentSpanId(), current.getSpanId());
-        final TraceSpan span = new TraceSpan(buildOperationName(current), fixedStartTimeNanos + current.getNanosInQueue(), spanContext);
+        final TraceSpan span = new TraceSpan(buildOperationName(current), startTimeNanos + current.getQueueTimeMillis(), spanContext);
+        span.setEndNano(endTimeNanos);
         span.setServiceName(DatadogUtilities.getDatadogGlobalDescriptor().getCiInstanceName());
         span.setResourceName(current.getName());
         span.setType("ci");
@@ -84,13 +81,12 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
         //Logs
         //NOTE: Implement sendNodeLogs
 
-        span.setEndNano(fixedEndTimeNanos);
         return span;
     }
 
     private Map<String, Long> buildTraceMetrics(PipelineStepData current) {
         final Map<String, Long> metrics = new HashMap<>();
-        metrics.put(CITags.QUEUE_TIME, TimeUnit.NANOSECONDS.toSeconds(current.getNanosInQueue()));
+        metrics.put(CITags.QUEUE_TIME, TimeUnit.MILLISECONDS.toSeconds(current.getQueueTimeMillis()));
         return metrics;
     }
 
