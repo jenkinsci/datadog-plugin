@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogAgentClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
@@ -53,7 +54,7 @@ public class AgentTraceWriteStrategy implements TraceWriteStrategy {
         return getCurrentStrategy().serialize(buildData, run);
     }
 
-    @Nullable
+    @Nonnull
     @Override
     public Payload serialize(PipelineStepData stepData, Run<?, ?> run) throws IOException, InterruptedException  {
         return getCurrentStrategy().serialize(stepData, run);
