@@ -31,7 +31,7 @@ public class BuildSpanAction extends DatadogPluginAction {
         this.version = new AtomicInteger(0);
     }
 
-    public BuildSpanAction(TraceSpan.TraceSpanContext buildSpanContext, TraceSpan.TraceSpanContext upstreamSpanContext, int version, String buildUrl) {
+    public BuildSpanAction(TraceSpan.TraceSpanContext buildSpanContext, @Nullable TraceSpan.TraceSpanContext upstreamSpanContext, int version, String buildUrl) {
         this.buildSpanContext = buildSpanContext;
         this.upstreamSpanContext = upstreamSpanContext;
         this.version = new AtomicInteger(version);

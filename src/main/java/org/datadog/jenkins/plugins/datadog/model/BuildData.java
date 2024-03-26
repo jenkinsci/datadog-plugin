@@ -152,7 +152,9 @@ public class BuildData implements Serializable {
     private Long traceId;
     private Long spanId;
 
+    @Nullable
     private String upstreamPipelineUrl;
+    @Nullable
     private Long upstreamPipelineTraceId;
 
     public BuildData(Run<?, ?> run, @Nullable TaskListener listener) throws IOException, InterruptedException {
@@ -288,18 +290,18 @@ public class BuildData implements Serializable {
         String upstreamUrl = upstreamCause.getUpstreamUrl();
         int upstreamBuild = upstreamCause.getUpstreamBuild();
         if (hudsonUrl != null && upstreamUrl != null) {
-            upstreamPipelineUrl = hudsonUrl + upstreamUrl + upstreamBuild + "/";
+            this.upstreamPipelineUrl = hudsonUrl + upstreamUrl + upstreamBuild + "/";
         }
 
         String upstreamProject = upstreamCause.getUpstreamProject();
         if (upstreamProject != null) {
-            upstreamBuildTag = "jenkins-" + upstreamProject.replace('/', '-') + "-" + upstreamBuild;
+            this.upstreamBuildTag = "jenkins-" + upstreamProject.replace('/', '-') + "-" + upstreamBuild;
 
             BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
             if (buildSpanAction != null) {
                 TraceSpan.TraceSpanContext upstreamSpanContext = buildSpanAction.getUpstreamSpanContext();
                 if (upstreamSpanContext != null) {
-                    upstreamPipelineTraceId = upstreamSpanContext.getTraceId();
+                    this.upstreamPipelineTraceId = upstreamSpanContext.getTraceId();
                 }
             }
         }
@@ -862,10 +864,12 @@ public class BuildData implements Serializable {
         }
     }
 
+    @Nullable
     public String getUpstreamPipelineUrl() {
         return upstreamPipelineUrl;
     }
 
+    @Nullable
     public Long getUpstreamPipelineTraceId() {
         return upstreamPipelineTraceId;
     }
@@ -937,11 +941,11 @@ public class BuildData implements Serializable {
             payload.put("hostname", this.hostname);
 
             if(traceId != null){
-                payload.put("dd.trace_id", Long.toUnsignedString(traceId));
+                payload.put("dd.trace_id", Long.toUnsignedString(this.traceId));
             }
 
             if(spanId != null) {
-                payload.put("dd.span_id",  Long.toUnsignedString(spanId));
+                payload.put("dd.span_id",  Long.toUnsignedString(this.spanId));
             }
             return payload;
         } catch (Exception e){
