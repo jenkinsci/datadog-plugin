@@ -3,7 +3,6 @@ package org.datadog.jenkins.plugins.datadog.model;
 import hudson.model.Run;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.node.DequeueAction;
 import org.datadog.jenkins.plugins.datadog.model.node.NodeInfoAction;
@@ -55,9 +54,9 @@ public class PipelineStepData {
     private String nodeName;
     private Set<String> nodeLabels;
     private String nodeHostname;
-    private long startTimeMicros;
-    private long endTimeMicros;
-    private long nanosInQueue;
+    private long startTimeMillis;
+    private long endTimeMillis;
+    private long queueTimeMillis;
     private String jenkinsResult;
     private Status status;
 
@@ -72,19 +71,9 @@ public class PipelineStepData {
     private long traceId;
 
     public PipelineStepData(final Run<?, ?> run, final BlockStartNode startNode, final BlockEndNode<?> endNode) {
-        this(run, startNode);
+        this(run, (FlowNode) startNode, (FlowNode) endNode);
 
         this.type = StepType.STAGE;
-
-        this.startTimeMicros = TimeUnit.MILLISECONDS.toMicros(DatadogUtilities.getTimeMillis(startNode));
-        if (startTimeMicros < 0) {
-            throw new IllegalStateException("Step " + startNode.getId() + " (" + startNode.getDisplayName() + ") has no start time info");
-        }
-
-        this.endTimeMicros = TimeUnit.MILLISECONDS.toMicros(DatadogUtilities.getTimeMillis(endNode));
-        if (endTimeMicros < 0) {
-            throw new IllegalStateException("Step " + endNode.getId() + " (" + endNode.getDisplayName() + ") has no end time info");
-        }
 
         this.jenkinsResult = DatadogUtilities.getResultTag(endNode);
         this.status = getStatus(startNode, jenkinsResult);
@@ -101,19 +90,9 @@ public class PipelineStepData {
     }
 
     public PipelineStepData(final Run<?, ?> run, final StepAtomNode stepNode, final FlowNode nextNode) {
-        this(run, stepNode);
+        this(run, (FlowNode) stepNode, (FlowNode) nextNode);
 
         this.type = StepType.STEP;
-
-        this.startTimeMicros = TimeUnit.MILLISECONDS.toMicros(DatadogUtilities.getTimeMillis(stepNode));
-        if (startTimeMicros < 0) {
-            throw new IllegalStateException("Step " + stepNode.getId() + " (" + stepNode.getDisplayName() + ") has no start time info");
-        }
-
-        this.endTimeMicros = TimeUnit.MILLISECONDS.toMicros(DatadogUtilities.getTimeMillis(nextNode));
-        if (endTimeMicros < 0) {
-            throw new IllegalStateException("Step " + nextNode.getId() + " (" + nextNode.getDisplayName() + ") has no time info");
-        }
 
         this.jenkinsResult = DatadogUtilities.getResultTag(stepNode);
         this.status = getStatus(stepNode, jenkinsResult);
@@ -132,7 +111,7 @@ public class PipelineStepData {
         }
     }
 
-    private PipelineStepData(final Run<?, ?> run, FlowNode startNode) {
+    private PipelineStepData(final Run<?, ?> run, FlowNode startNode, FlowNode endNode) {
         TraceInfoAction traceInfoAction = run.getAction(TraceInfoAction.class);
         if (traceInfoAction != null) {
             /*
@@ -183,12 +162,23 @@ public class PipelineStepData {
 
         DequeueAction queueInfoAction = startNode.getAction(DequeueAction.class);
         if (queueInfoAction != null) {
-            this.nanosInQueue = queueInfoAction.getQueueTimeNanos();
+            this.queueTimeMillis = queueInfoAction.getQueueTimeMillis();
         }
 
         this.id = startNode.getId();
         this.name = startNode.getDisplayName();
         this.args = ArgumentsAction.getFilteredArguments(startNode);
+
+        // advance start time: queue time should not be considered as part of the build duration
+        this.startTimeMillis = DatadogUtilities.getTimeMillis(startNode) + queueTimeMillis;
+        if (startTimeMillis < 0) {
+            throw new IllegalStateException("Step " + startNode.getId() + " (" + startNode.getDisplayName() + ") has no start time info");
+        }
+
+        this.endTimeMillis = DatadogUtilities.getTimeMillis(endNode);
+        if (endTimeMillis < 0) {
+            throw new IllegalStateException("Step " + endNode.getId() + " (" + endNode.getDisplayName() + ") has no end time info");
+        }
     }
 
     public String getId() {
@@ -227,16 +217,16 @@ public class PipelineStepData {
         return nodeHostname;
     }
 
-    public long getStartTimeMicros() {
-        return startTimeMicros;
+    public long getStartTimeMillis() {
+        return startTimeMillis;
     }
 
-    public long getEndTimeMicros() {
-        return endTimeMicros;
+    public long getEndTimeMillis() {
+        return endTimeMillis;
     }
 
-    public long getNanosInQueue() {
-        return nanosInQueue;
+    public long getQueueTimeMillis() {
+        return queueTimeMillis;
     }
 
     public String getJenkinsResult() {

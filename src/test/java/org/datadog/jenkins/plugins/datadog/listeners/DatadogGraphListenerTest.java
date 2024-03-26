@@ -722,6 +722,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationQueueTimeOnStages");
         String definition = getPipelineDefinition("testPipelineQueueOnStages.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
+
         // schedule build and wait for it to get queued
         new Thread(() -> {
             try {
@@ -730,6 +731,9 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
                 throw new RuntimeException(e);
             }
         }).start();
+
+        // add some delay before creating the worker:
+        // the build stages will be waiting in the queue until the worker is available
         Thread.sleep(10000);
         final DumbSlave worker = jenkinsRule.createOnlineSlave(Label.get("testStage"));
 
