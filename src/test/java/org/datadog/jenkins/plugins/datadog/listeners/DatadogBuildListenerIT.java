@@ -25,17 +25,20 @@ import hudson.FilePath;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Label;
+import hudson.model.Result;
 import hudson.plugins.git.BranchSpec;
 import hudson.plugins.git.GitSCM;
 import hudson.plugins.git.extensions.impl.LocalBranch;
 import hudson.slaves.DumbSlave;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
+import hudson.tasks.BuildTrigger;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -539,5 +542,36 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         assertNull(meta.get(CITags.GIT_COMMIT_COMMITTER_NAME));
         assertNull(meta.get(CITags.GIT_COMMIT_COMMITTER_EMAIL));
         assertNull(meta.get(CITags.GIT_COMMIT_COMMITTER_DATE));
+    }
+
+    @Test
+    public void testUpstreamJobLinking() throws Exception {
+        clientStub.configureForWebhooks();
+
+        final FreeStyleProject upstream = jenkinsRule.createFreeStyleProject("testUpstreamJobLinking_upstream");
+        final FreeStyleProject downstream = jenkinsRule.createFreeStyleProject("testUpstreamJobLinking_downstream");
+
+        BuildTrigger buildTrigger = new BuildTrigger("testUpstreamJobLinking_downstream", Result.SUCCESS);
+        upstream.getPublishersList().add(buildTrigger);
+
+        upstream.scheduleBuild2(0).get();
+        clientStub.waitForWebhooks(2);
+        List<JSONObject> webhooks = clientStub.getWebhooks();
+
+        JSONObject upstreamWebhook = findWebhook(webhooks, w -> upstream.getName().equals(w.get("name")));
+        JSONObject downstreamWebhook = findWebhook(webhooks, w -> downstream.getName().equals(w.get("name")));
+
+        JSONObject parentPipelineDetails = (JSONObject) downstreamWebhook.get("parent_pipeline");
+        assertEquals(upstreamWebhook.get("trace_id"), parentPipelineDetails.get("trace_id"));
+        assertEquals(jenkinsRule.getURL().toString() + "job/testUpstreamJobLinking_upstream/1/", parentPipelineDetails.get("url"));
+    }
+
+    private static JSONObject findWebhook(List<JSONObject> webhooks, Predicate<JSONObject> filter) {
+        for (JSONObject webhook : webhooks) {
+            if (filter.test(webhook)) {
+                return webhook;
+            }
+        }
+        throw new AssertionError("Could not find the right webhook among " + webhooks);
     }
 }

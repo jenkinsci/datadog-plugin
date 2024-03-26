@@ -114,10 +114,21 @@ public class DatadogBuildListener extends RunListener<Run> {
                 return;
             }
 
-            final TraceSpan buildSpan = new TraceSpan("jenkins.build", TimeUnit.MILLISECONDS.toNanos(buildData.getStartTime(0L)));
-            BuildSpanManager.get().put(buildData.getBuildTag(""), buildSpan);
+            TraceSpan.TraceSpanContext buildSpanContext = new TraceSpan.TraceSpanContext();
+            BuildSpanManager.get().put(buildData.getBuildTag(""), buildSpanContext);
 
-            final BuildSpanAction buildSpanAction = new BuildSpanAction(buildSpan.context());
+            TraceSpan.TraceSpanContext upstreamBuildSpanContext = null;
+            String upstreamBuildTag = buildData.getUpstreamBuildTag("");
+            if (upstreamBuildTag != null) {
+                // try to find upstream build context saved earlier
+                upstreamBuildSpanContext = BuildSpanManager.get().get(upstreamBuildTag);
+                if (upstreamBuildSpanContext == null) {
+                    logger.warning("Could not find upstream build span context for tag: " + upstreamBuildTag +
+                            ". Try increasing " + BuildSpanManager.DD_JENKINS_SPAN_CONTEXT_STORAGE_MAX_SIZE_ENV + " if this happens regularly.");
+                }
+            }
+
+            final BuildSpanAction buildSpanAction = new BuildSpanAction(buildSpanContext, upstreamBuildSpanContext);
             run.addAction(buildSpanAction);
 
             run.addAction(new GitCommitAction());
@@ -403,8 +414,6 @@ public class DatadogBuildListener extends RunListener<Run> {
             // APM Traces
             traceWriter.submitBuild(buildData, run);
             logger.fine("End DatadogBuildListener#onFinalized");
-
-            BuildSpanManager.get().remove(buildData.getBuildTag(""));
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

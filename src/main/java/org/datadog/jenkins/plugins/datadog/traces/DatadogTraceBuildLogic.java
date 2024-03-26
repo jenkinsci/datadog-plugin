@@ -53,11 +53,6 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
             return null;
         }
 
-        final TraceSpan buildSpan = BuildSpanManager.get().get(buildData.getBuildTag(""));
-        if(buildSpan == null) {
-            return null;
-        }
-
         final BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
         if(buildSpanAction == null) {
             return null;
@@ -67,6 +62,10 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
         final String buildLevel = PipelineStepData.StepType.PIPELINE.getBuildLevel();
         final long endTimeMicros = buildData.getEndTime(0L) * 1000;
 
+        long traceId = buildData.getTraceId();
+        long spanId = buildData.getSpanId();
+        TraceSpan.TraceSpanContext spanContext = new TraceSpan.TraceSpanContext(traceId, 0, spanId);
+        final TraceSpan buildSpan = new TraceSpan("jenkins.build", TimeUnit.MILLISECONDS.toNanos(buildData.getStartTime(0L)), spanContext);
         buildSpan.setServiceName(DatadogUtilities.getDatadogGlobalDescriptor().getCiInstanceName());
         buildSpan.setType("ci");
         buildSpan.putMeta(CITags.CI_PROVIDER_NAME, "jenkins");
