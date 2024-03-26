@@ -286,11 +286,10 @@ public class BuildData implements Serializable {
             return;
         }
 
-        String hudsonUrl = envVars.get("HUDSON_URL");
         String upstreamUrl = upstreamCause.getUpstreamUrl();
         int upstreamBuild = upstreamCause.getUpstreamBuild();
-        if (hudsonUrl != null && upstreamUrl != null) {
-            this.upstreamPipelineUrl = hudsonUrl + upstreamUrl + upstreamBuild + "/";
+        if (this.jenkinsUrl != null && upstreamUrl != null) {
+            this.upstreamPipelineUrl = jenkinsUrl + upstreamUrl + upstreamBuild + "/";
         }
 
         String upstreamProject = upstreamCause.getUpstreamProject();

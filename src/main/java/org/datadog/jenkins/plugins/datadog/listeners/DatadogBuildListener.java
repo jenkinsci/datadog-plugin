@@ -120,7 +120,12 @@ public class DatadogBuildListener extends RunListener<Run> {
             TraceSpan.TraceSpanContext upstreamBuildSpanContext = null;
             String upstreamBuildTag = buildData.getUpstreamBuildTag("");
             if (upstreamBuildTag != null) {
+                // try to find upstream build context saved earlier
                 upstreamBuildSpanContext = BuildSpanManager.get().get(upstreamBuildTag);
+                if (upstreamBuildSpanContext == null) {
+                    logger.warning("Could not find upstream build span context for tag: " + upstreamBuildTag +
+                            ". Try increasing " + BuildSpanManager.DD_JENKINS_SPAN_CONTEXT_STORAGE_MAX_SIZE_ENV + " if this happens regularly.");
+                }
             }
 
             final BuildSpanAction buildSpanAction = new BuildSpanAction(buildSpanContext, upstreamBuildSpanContext);

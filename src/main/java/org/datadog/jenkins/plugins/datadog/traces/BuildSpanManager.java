@@ -15,12 +15,21 @@ public class BuildSpanManager {
 
     private static final Logger LOGGER = Logger.getLogger(BuildSpanManager.class.getName());
 
-    private static final BuildSpanManager INSTANCE = new BuildSpanManager();
-    private final Map<String, TraceSpan.TraceSpanContext> contextByTag = new ConcurrentHashMap<>();
-    private final BlockingQueue<String> tags = new ArrayBlockingQueue<>(getCapacity());
+    public static final String DD_JENKINS_SPAN_CONTEXT_STORAGE_MAX_SIZE_ENV = "DD_JENKINS_SPAN_CONTEXT_STORAGE_MAX_SIZE";
+    private static final int DEFAULT_CONTEXT_STORAGE_MAX_SIZE = 1024;
+
+    private static final BuildSpanManager INSTANCE = new BuildSpanManager(getCapacity());
+
+    private final Map<String, TraceSpan.TraceSpanContext> contextByTag;
+    private final BlockingQueue<String> tags;
 
     public static BuildSpanManager get() {
         return INSTANCE;
+    }
+
+    BuildSpanManager(int capacity) {
+        this.tags = new ArrayBlockingQueue<>(capacity);
+        this.contextByTag = new ConcurrentHashMap<>();
     }
 
     public void put(final String tag, final TraceSpan.TraceSpanContext context) {
@@ -36,15 +45,20 @@ public class BuildSpanManager {
     }
 
     private static int getCapacity() {
-        String maxSize = System.getenv("DD_JENKINS_SPAN_CONTEXT_STORAGE_MAX_SIZE");
+        String maxSize = System.getenv(DD_JENKINS_SPAN_CONTEXT_STORAGE_MAX_SIZE_ENV);
         if (maxSize != null) {
             try {
-                return Integer.parseInt(maxSize);
+                int parsedMaxSize = Integer.parseInt(maxSize);
+                if (parsedMaxSize > 0) {
+                    return parsedMaxSize;
+                } else {
+                    LOGGER.warning("Invalid value for " + DD_JENKINS_SPAN_CONTEXT_STORAGE_MAX_SIZE_ENV + ": " + parsedMaxSize);
+                }
             } catch (NumberFormatException e) {
-                LOGGER.warning("Invalid value for DD_JENKINS_SPAN_CONTEXT_STORAGE_MAX_SIZE: " + maxSize);
+                LOGGER.warning("Invalid value for " + DD_JENKINS_SPAN_CONTEXT_STORAGE_MAX_SIZE_ENV + ": " + maxSize);
             }
         }
-        return 1024;
+        return DEFAULT_CONTEXT_STORAGE_MAX_SIZE;
     }
 
 }
