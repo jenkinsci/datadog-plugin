@@ -91,11 +91,11 @@
         </f:entry>
         <f:validateButton title="${%Test Hostname}" progress="${%Testing...}" method="testHostname" with="hostname" checkMethod="post" />
 
-        <f:entry title="Excluded Jobs" description="A comma-separated list of job names that should not monitored." >
+        <f:entry title="Excluded Jobs" description="A comma-separated list of job names that should not be monitored. The list can contain regular expressions (please keep in mind that regular expressions are different from glob patterns)." >
           <f:textarea field="blacklist" optional="true" default="${blacklist}" />
         </f:entry>
 
-        <f:entry title="Included Jobs" description="A list of job names that should be monitored. An empty included permits all jobs not excluded." >
+        <f:entry title="Included Jobs" description="A comma-separated list of job names that should be monitored. An empty included permits all jobs not excluded. The list can contain regular expressions (please keep in mind that regular expressions are different from glob patterns)." >
           <f:textarea field="whitelist" optional="true" default="${whitelist}" />
         </f:entry>
 
