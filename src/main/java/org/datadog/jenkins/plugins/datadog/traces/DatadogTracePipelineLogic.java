@@ -50,7 +50,7 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
 
         // At this point, the current node is traceable.
         final TraceSpan.TraceSpanContext spanContext = new TraceSpan.TraceSpanContext(current.getTraceId(), current.getParentSpanId(), current.getSpanId());
-        final TraceSpan span = new TraceSpan(buildOperationName(current), startTimeNanos + current.getQueueTimeMillis(), spanContext);
+        final TraceSpan span = new TraceSpan(buildOperationName(current), startTimeNanos, spanContext);
         span.setEndNano(endTimeNanos);
         span.setServiceName(DatadogUtilities.getDatadogGlobalDescriptor().getCiInstanceName());
         span.setResourceName(current.getName());
