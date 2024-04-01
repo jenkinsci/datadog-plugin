@@ -4,12 +4,12 @@ def configurations = [
     [ platform: "linux", jdk: "11", jenkins: null ],
     // windows 
     [ platform: "windows", jdk: "11", jenkins: comonVersion ],
-    // java 11 
-    [ platform: "linux", jdk: "11", jenkins: comonVersion ],
+    // java 17 
+    [ platform: "linux", jdk: "17", jenkins: comonVersion ],
     // windows
     [ platform: "windows", jdk: "11", jenkins: recentLTS ],
-    // java 11
-    [ platform: "linux", jdk: "11", jenkins: recentLTS ],
+    // java 17
+    [ platform: "linux", jdk: "17", jenkins: recentLTS ],
 ]
 
 buildPlugin(configurations: configurations)
