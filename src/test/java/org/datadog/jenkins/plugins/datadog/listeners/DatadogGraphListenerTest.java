@@ -53,6 +53,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
+import org.datadog.jenkins.plugins.datadog.publishers.DatadogCountersPublisher;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
@@ -167,6 +168,9 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         when(endNode.getExecution()).thenReturn(flowExecution);
 
         listener.onNewHead(endNode);
+
+        DatadogCountersPublisher.publishMetrics(clientStub);
+
         String hostname = DatadogUtilities.getHostname(null);
         String[] expectedTags = new String[] { "jenkins_url:" + DatadogUtilities.getJenkinsUrl(), "user_id:anonymous",
                 "stage_name:low", "job:pipeline", "parent_stage_name:medium", "stage_depth:2", "result:SUCCESS" };

@@ -49,6 +49,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogJobProperty;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
 import org.datadog.jenkins.plugins.datadog.events.SCMCheckoutCompletedEventImpl;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
@@ -143,10 +144,9 @@ public class DatadogSCMListener extends SCMListener {
                 client.event(event);
             }
 
-            // Submit counter
             String hostname = DatadogUtilities.getHostname(null);
             Map<String, Set<String>> tags = buildData.getTags();
-            client.incrementCounter("jenkins.scm.checkout", hostname, tags);
+            Metrics.getInstance().incrementCounter("jenkins.scm.checkout", hostname, tags);
 
             logger.fine("End DatadogSCMListener#onCheckout");
         } catch (InterruptedException e) {

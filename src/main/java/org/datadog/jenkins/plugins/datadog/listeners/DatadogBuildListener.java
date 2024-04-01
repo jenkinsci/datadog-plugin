@@ -42,6 +42,7 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -52,10 +53,11 @@ import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
-import org.datadog.jenkins.plugins.datadog.clients.Metrics;
 import org.datadog.jenkins.plugins.datadog.events.BuildAbortedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildFinishedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildStartedEventImpl;
+import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
+import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
@@ -242,13 +244,12 @@ public class DatadogBuildListener extends RunListener<Run> {
             String hostname = buildData.getHostname(DatadogUtilities.getHostname(null));
 
             if (waitingMs != null) {
-                try (Metrics metrics = client.metrics()) {
+                try (MetricsClient metrics = client.metrics()) {
                     metrics.gauge("jenkins.job.waiting", TimeUnit.MILLISECONDS.toSeconds(waitingMs), hostname, tags);
                 }
             }
 
-            // Submit counter
-            client.incrementCounter("jenkins.job.started", hostname, tags);
+            Metrics.getInstance().incrementCounter("jenkins.job.started", hostname, tags);
 
             // APM Traces
             if (DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
@@ -296,7 +297,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             return;
         }
 
-        try (Metrics metrics = client.metrics()) {
+        try (MetricsClient metrics = client.metrics()) {
             // Collect Build Data
             BuildData buildData;
             try {
@@ -332,8 +333,7 @@ public class DatadogBuildListener extends RunListener<Run> {
                         String.format("[%s]: Build Duration (without pause): %s", buildData.getJobName(), toTimeString(buildDuration)));
             }
 
-            // Submit counter
-            client.incrementCounter("jenkins.job.completed", hostname, tags);
+            Metrics.getInstance().incrementCounter("jenkins.job.completed", hostname, tags);
 
             // Send a service check
             String buildResult = buildData.getResult(Result.NOT_BUILT.toString());
@@ -486,9 +486,8 @@ public class DatadogBuildListener extends RunListener<Run> {
                 client.event(event);
             }
 
-            // Submit counter
             Map<String, Set<String>> tags = buildData.getTags();
-            client.incrementCounter("jenkins.job.aborted", hostname, tags);
+            Metrics.getInstance().incrementCounter("jenkins.job.aborted", hostname, tags);
 
             logger.fine("End DatadogBuildListener#onDeleted");
         } catch (Exception e) {

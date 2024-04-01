@@ -32,6 +32,8 @@ import java.nio.charset.Charset;
 import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent.AlertType;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent.Priority;
+import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
+import org.datadog.jenkins.plugins.datadog.publishers.DatadogCountersPublisher;
 import org.datadog.jenkins.plugins.datadog.stubs.BuildStub;
 import org.datadog.jenkins.plugins.datadog.stubs.ProjectStub;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
@@ -116,6 +118,8 @@ public class DatadogBuildListenerTest {
                 124000L, 4, previousFailedRun2, 4000000L, null);
 
         datadogBuildListener.onCompleted(previousSuccessfulRun, mock(TaskListener.class));
+        DatadogCountersPublisher.publishMetrics(client);
+
         String[] scExpectedTags1 = new String[]{
             "job:ParentFullName/JobName", "node:test-node", "user_id:anonymous", "jenkins_url:unknown", "branch:test-branch"
         };
@@ -124,35 +128,43 @@ public class DatadogBuildListenerTest {
         metricExpectedTags1[5] = "result:SUCCESS";
         client.assertMetric("jenkins.job.duration", 121, "test-hostname-2", metricExpectedTags1);
         client.assertMetric("jenkins.job.leadtime", 121, "test-hostname-2", metricExpectedTags1);
+        client.assertMetric("jenkins.job.completed", 1, "test-hostname-2", metricExpectedTags1);
         client.assertServiceCheck("jenkins.job.status", 0, "test-hostname-2", scExpectedTags1);
         client.assertEvent("Job ParentFullName/JobName build #1 success on test-hostname-2",
                 Priority.LOW, AlertType.SUCCESS, 1121L);
 
         datadogBuildListener.onCompleted(previousFailedRun1, mock(TaskListener.class));
+        DatadogCountersPublisher.publishMetrics(client);
+
         String[] metricExpectedTags2 = new String[6];
         System.arraycopy(scExpectedTags1, 0, metricExpectedTags2, 0, 5);
         metricExpectedTags2[5] = "result:FAILURE";
         client.assertMetric("jenkins.job.duration", 122, "test-hostname-2", metricExpectedTags2);
         client.assertMetric("jenkins.job.feedbacktime", 122, "test-hostname-2", metricExpectedTags2);
+        client.assertMetric("jenkins.job.completed", 1, "test-hostname-2", metricExpectedTags2);
         client.assertServiceCheck("jenkins.job.status", 2, "test-hostname-2", scExpectedTags1);
         client.assertEvent("Job ParentFullName/JobName build #2 failure on test-hostname-2",
                 Priority.NORMAL, AlertType.ERROR, 2122L);
 
         datadogBuildListener.onCompleted(previousFailedRun2, mock(TaskListener.class));
+        DatadogCountersPublisher.publishMetrics(client);
+
         client.assertMetric("jenkins.job.duration", 123, "test-hostname-2", metricExpectedTags2);
         client.assertMetric("jenkins.job.feedbacktime", 123, "test-hostname-2", metricExpectedTags2);
-        client.assertMetric("jenkins.job.completed", 2, "test-hostname-2", metricExpectedTags2);
+        client.assertMetric("jenkins.job.completed", 1, "test-hostname-2", metricExpectedTags2);
         client.assertServiceCheck("jenkins.job.status", 2, "test-hostname-2", scExpectedTags1);
         client.assertEvent("Job ParentFullName/JobName build #3 failure on test-hostname-2",
                 Priority.NORMAL, AlertType.ERROR, 3123L);
 
         datadogBuildListener.onCompleted(successRun, mock(TaskListener.class));
+        DatadogCountersPublisher.publishMetrics(client);
+
         client.assertMetric("jenkins.job.duration", 124, "test-hostname-2", metricExpectedTags1);
         client.assertMetric("jenkins.job.leadtime", 2124, "test-hostname-2", metricExpectedTags1);
         client.assertMetric("jenkins.job.cycletime", (4000+124)-(1000+121), "test-hostname-2", metricExpectedTags1);
         client.assertMetric("jenkins.job.mttr", 4000-2000, "test-hostname-2", metricExpectedTags1);
         client.assertServiceCheck("jenkins.job.status", 0, "test-hostname-2", scExpectedTags1);
-        client.assertMetric("jenkins.job.completed", 2, "test-hostname-2", metricExpectedTags1);
+        client.assertMetric("jenkins.job.completed", 1, "test-hostname-2", metricExpectedTags1);
         client.assertEvent("Job ParentFullName/JobName build #4 success on test-hostname-2",
                 Priority.LOW, AlertType.SUCCESS, 4124L);
         client.assertedAllMetricsAndServiceChecks();
@@ -192,6 +204,7 @@ public class DatadogBuildListenerTest {
         ((DatadogBuildListenerTestWrapper)datadogBuildListener).setStubbedRunExt(runExt);
 
         datadogBuildListener.onCompleted(workflowRun, listener);
+        DatadogCountersPublisher.publishMetrics(client);
 
         String[] expectedTags = {
                 "result:SUCCESS",
@@ -217,6 +230,8 @@ public class DatadogBuildListenerTest {
                 124000L, 2, null, 2000000L, previousSuccessfulRun);
 
         datadogBuildListener.onCompleted(previousSuccessfulRun, mock(TaskListener.class));
+        DatadogCountersPublisher.publishMetrics(client);
+
         String[] scExpectedTags = new String[]{
                 "job:ParentFullName/JobName", "node:test-node", "user_id:anonymous", "jenkins_url:unknown", "branch:test-branch"
         };
@@ -232,6 +247,8 @@ public class DatadogBuildListenerTest {
         client.assertedAllMetricsAndServiceChecks();
 
         datadogBuildListener.onCompleted(failedRun, mock(TaskListener.class));
+        DatadogCountersPublisher.publishMetrics(client);
+
         String[] metricExpectedTags2 = new String[6];
         System.arraycopy(scExpectedTags, 0, metricExpectedTags2, 0, 5);
         metricExpectedTags2[5] = "result:FAILURE";
@@ -255,6 +272,7 @@ public class DatadogBuildListenerTest {
                 124000L, 2, null, 2000000L, previousSuccessfulRun);
 
         datadogBuildListener.onCompleted(previousSuccessfulRun, mock(TaskListener.class));
+
         client.assertEvent("Job ParentFullName/JobName build #1 success on test-hostname-2",
                 Priority.LOW, AlertType.SUCCESS, 1123L);
 
@@ -288,6 +306,8 @@ public class DatadogBuildListenerTest {
                 123000L, 1, null, 1000000L, null);
 
         datadogBuildListener.onStarted(run, mock(TaskListener.class));
+        DatadogCountersPublisher.publishMetrics(client);
+
         String[] expectedTags = new String[6];
         expectedTags[0] = "job:ParentFullName/JobName";
         expectedTags[1] = "node:test-node";

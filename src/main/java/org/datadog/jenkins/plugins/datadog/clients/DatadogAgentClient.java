@@ -49,6 +49,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
 import org.datadog.jenkins.plugins.datadog.traces.mapper.JsonTraceSpanMapper;
 import org.datadog.jenkins.plugins.datadog.traces.write.AgentTraceWriteStrategy;
 import org.datadog.jenkins.plugins.datadog.traces.write.Payload;
@@ -399,35 +400,13 @@ public class DatadogAgentClient implements DatadogClient {
     }
 
     @Override
-    public boolean incrementCounter(String name, String hostname, Map<String, Set<String>> tags) {
-        try {
-            boolean status = reinitializeStatsDClient(false);
-            if(!status){
-                return false;
-            }
-            logger.fine("increment counter with dogStatD client");
-            this.statsd.incrementCounter(name, TagsUtil.convertTagsToArray(tags));
-            return true;
-        } catch(Exception e){
-            DatadogUtilities.severe(logger, e, "Failed to increment counter with DogStatsD");
-            reinitializeStatsDClient(true);
-            return false;
-        }
-    }
-
-    @Override
-    public void flushCounters() {
-        return; //noop
-    }
-
-    @Override
-    public Metrics metrics() {
+    public MetricsClient metrics() {
         return new AgentMetrics();
     }
 
-    private final class AgentMetrics implements Metrics {
+    private final class AgentMetrics implements MetricsClient {
         @Override
-        public void gauge(String name, long value, String hostname, Map<String, Set<String>> tags) {
+        public void gauge(String name, double value, String hostname, Map<String, Set<String>> tags) {
             try {
                 boolean status = reinitializeStatsDClient(false);
                 if (!status) {
@@ -437,6 +416,21 @@ public class DatadogAgentClient implements DatadogClient {
                 statsd.gauge(name, value, TagsUtil.convertTagsToArray(tags));
             } catch(Exception e){
                 DatadogUtilities.severe(logger, e, "Failed to send gauge metric payload to DogStatsD");
+                reinitializeStatsDClient(true);
+            }
+        }
+
+        @Override
+        public void rate(String name, double value, String hostname, Map<String, Set<String>> tags) {
+            try {
+                boolean status = reinitializeStatsDClient(false);
+                if(!status){
+                    return;
+                }
+                logger.fine("increment counter with dogStatD client");
+                statsd.count(name, value, TagsUtil.convertTagsToArray(tags));
+            } catch(Exception e){
+                DatadogUtilities.severe(logger, e, "Failed to increment counter with DogStatsD");
                 reinitializeStatsDClient(true);
             }
         }

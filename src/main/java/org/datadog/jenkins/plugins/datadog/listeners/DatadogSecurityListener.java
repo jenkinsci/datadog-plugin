@@ -32,6 +32,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
 import org.datadog.jenkins.plugins.datadog.events.UserAuthenticationEventImpl;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
@@ -75,9 +76,8 @@ public class DatadogSecurityListener extends SecurityListener {
                 client.event(event);
             }
 
-            // Submit counter
             String hostname = DatadogUtilities.getHostname(null);
-            client.incrementCounter("jenkins.user.authenticated", hostname, tags);
+            Metrics.getInstance().incrementCounter("jenkins.user.authenticated", hostname, tags);
 
             logger.fine("End DatadogSecurityListener#authenticated");
         } catch (Exception e) {
@@ -108,9 +108,8 @@ public class DatadogSecurityListener extends SecurityListener {
                 client.event(event);
             }
 
-            // Submit counter
             String hostname = DatadogUtilities.getHostname(null);
-            client.incrementCounter("jenkins.user.access_denied", hostname, tags);
+            Metrics.getInstance().incrementCounter("jenkins.user.access_denied", hostname, tags);
 
             logger.fine("End DatadogSecurityListener#failedToAuthenticate");
         } catch (Exception e) {
@@ -151,9 +150,8 @@ public class DatadogSecurityListener extends SecurityListener {
                 client.event(event);
             }
 
-            // Submit counter
             String hostname = DatadogUtilities.getHostname(null);
-            client.incrementCounter("jenkins.user.logout", hostname, tags);
+            Metrics.getInstance().incrementCounter("jenkins.user.logout", hostname, tags);
 
             logger.fine("End DatadogSecurityListener#loggedOut");
         } catch (Exception e) {
