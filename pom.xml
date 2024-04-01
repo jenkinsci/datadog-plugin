@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.42</version> <!-- or whatever the newest version available is -->
+    <version>4.52</version> <!-- or whatever the newest version available is -->
     <!--Check https://mvnrepository.com/artifact/org.jenkins-ci.plugins/plugin?repo=jenkins-releases-->
     <relativePath />
   </parent>
@@ -19,12 +19,12 @@
   <packaging>hpi</packaging>
 
   <properties>
-    <jenkins.version>2.346.1</jenkins.version>
+    <jenkins.version>2.361.4</jenkins.version>
     <hpi.compatibleSinceVersion>1.0.0</hpi.compatibleSinceVersion>
     <dd-trace-java.version>0.71.0</dd-trace-java.version>
     <!-- byte-buddy is needed until we bump to java 11: https://stackoverflow.com/questions/69929229/mockito-shipped-within-spring-boot-fails-to-attach-to-jvm-openjdk-11/72912290#72912290 -->
     <byte-buddy.version>1.12.14</byte-buddy.version>
-    <configuration-as-code.version>1462.v069a_b_57ff5c8</configuration-as-code.version>
+    <configuration-as-code.version>1625.v27444588cc3d</configuration-as-code.version>
     <useBeta>true</useBeta>
   </properties>
 
@@ -68,8 +68,8 @@
     <dependencies>
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
-        <artifactId>bom-2.346.x</artifactId>
-        <version>1478.v81d3dc4f9a_43</version>
+        <artifactId>bom-2.361.x</artifactId>
+        <version>1750.v0071fa_4c4a_e3</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>
@@ -81,6 +81,16 @@
       <groupId>io.jenkins.plugins</groupId>
       <artifactId>jnr-posix-api</artifactId>
       <version>3.1.7-1</version>
+    </dependency>
+    <dependency>
+      <groupId>io.jenkins.plugins</groupId>
+      <artifactId>commons-text-api</artifactId>
+      <version>1.10.0-36.vc008c8fcda_7b_</version>
+    </dependency>
+    <dependency>
+      <groupId>io.jenkins.plugins</groupId>
+      <artifactId>snakeyaml-api</artifactId>
+      <version>1.33-95.va_b_a_e3e47b_fa_4</version>
     </dependency>
     <dependency>
       <groupId>com.datadoghq</groupId>
@@ -192,7 +202,7 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>jackson2-api</artifactId>
-      <version>2.13.3-285.vc03c0256d517</version>
+      <version>2.13.4.20221013-295.v8e29ea_354141</version>
       <scope>test</scope>
     </dependency>
     <dependency>

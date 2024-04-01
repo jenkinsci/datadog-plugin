@@ -215,7 +215,8 @@ public class DatadogBuildListener extends RunListener<Run> {
             Queue.Item item = queue.getItem(run.getQueueId());
             Map<String, Set<String>> tags = buildData.getTags();
             String hostname = buildData.getHostname(DatadogUtilities.getHostname(null));
-            try (Metrics metrics = client.metrics()) {
+            Metrics metrics = client.metrics();
+            if (metrics != null) {
                 long waitingMs = (DatadogUtilities.currentTimeMillis() - item.getInQueueSince());
                 metrics.gauge("jenkins.job.waiting", TimeUnit.MILLISECONDS.toSeconds(waitingMs), hostname, tags);
 
@@ -224,7 +225,7 @@ public class DatadogBuildListener extends RunListener<Run> {
                     queueInfoAction.setQueueTimeMillis(waitingMs);
                 }
 
-            } catch (NullPointerException e) {
+            } else {
                 logger.warning("Unable to compute 'waiting' metric. " +
                         "item.getInQueueSince() unavailable, possibly due to worker instance provisioning");
             }
@@ -440,7 +441,10 @@ public class DatadogBuildListener extends RunListener<Run> {
                 Thread.currentThread().interrupt();
                 DatadogUtilities.severe(logger, e, "Interrupted while trying to parse deleted build data");
                 return;
-            } catch (IOException | NullPointerException e) {
+            } catch (IOException e) {
+                DatadogUtilities.severe(logger, e, "Failed to parse deleted build data");
+                return;
+            } catch (Exception e) {
                 DatadogUtilities.severe(logger, e, "Failed to parse deleted build data");
                 return;
             }

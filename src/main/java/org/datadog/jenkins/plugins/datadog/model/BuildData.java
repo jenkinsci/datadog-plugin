@@ -537,10 +537,8 @@ public class BuildData implements Serializable {
      */
     public Map<String, Set<String>> getTags() {
         Map<String, Set<String>> allTags = new HashMap<>();
-        try {
+        if (DatadogUtilities.getTagsFromGlobalTags() != null){
             allTags = DatadogUtilities.getTagsFromGlobalTags();
-        } catch(NullPointerException e){
-            //noop
         }
         allTags = TagsUtil.merge(allTags, tags);
         allTags = TagsUtil.addTagToTags(allTags, "job", getJobName());
@@ -566,10 +564,8 @@ public class BuildData implements Serializable {
 
     public Map<String, String> getTagsForTraces() {
         Map<String, Set<String>> allTags = new HashMap<>();
-        try {
+        if (DatadogUtilities.getTagsFromGlobalTags() != null){
             allTags = DatadogUtilities.getTagsFromGlobalTags();
-        } catch(NullPointerException e){
-            //noop
         }
         allTags = TagsUtil.merge(allTags, tags);
         return TagsUtil.convertTagsToMapSingleValues(allTags);
@@ -744,10 +740,8 @@ public class BuildData implements Serializable {
         }
         String userName;
         List<CauseAction> actions = null;
-        try {
+        if (run.getActions(CauseAction.class) != null){
             actions = run.getActions(CauseAction.class);
-        }catch(NullPointerException e){
-            //noop
         }
         if(actions != null){
             for (CauseAction action : actions) {

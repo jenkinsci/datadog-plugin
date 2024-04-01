@@ -104,7 +104,10 @@ public class DatadogUtilities {
     public static DatadogGlobalConfiguration getDatadogGlobalDescriptor() {
         try {
             return ExtensionList.lookupSingleton(DatadogGlobalConfiguration.class);
-        } catch (IllegalStateException | NullPointerException e) {
+        } catch (IllegalStateException e) {
+            // It can only throw such an exception when running tests
+            return null;
+        } catch (Exception e) {
             // It can only throw such an exception when running tests
             return null;
         }
@@ -117,8 +120,8 @@ public class DatadogUtilities {
     public static DatadogJobProperty getDatadogJobProperties(@Nonnull Run r) {
         try {
             return (DatadogJobProperty) r.getParent().getProperty(DatadogJobProperty.class);
-        } catch (NullPointerException e) {
-            // It can only throw a NullPointerException when running tests
+        } catch (Exception e) {
+            // It can only throw an Exception when running tests
             return null;
         }
     }
@@ -138,8 +141,8 @@ public class DatadogUtilities {
         String jobName;
         try {
             jobName = run.getParent().getFullName();
-        } catch (NullPointerException e) {
-            // It can only throw a NullPointerException when running tests
+        } catch (Exception e) {
+            // It can only throw an Exception when running tests
             return result;
         }
         final DatadogGlobalConfiguration datadogGlobalConfig = getDatadogGlobalDescriptor();
@@ -496,7 +499,7 @@ public class DatadogUtilities {
         String hostname = null;
         try {
             hostname = getDatadogGlobalDescriptor().getHostname();
-        } catch (NullPointerException e) {
+        } catch (Exception e) {
             // noop
         }
 
@@ -677,9 +680,16 @@ public class DatadogUtilities {
 
     public static Map<String, Set<String>> getComputerTags(Computer computer) {
         Set<LabelAtom> labels = null;
-        try {
-            labels = computer.getNode().getAssignedLabels();
-        } catch (NullPointerException e) {
+        assert computer != null : "Computer is unexpectedly null";
+        var node = computer.getNode();
+        if (node != null) {
+            Set<LabelAtom> assignedLabels = node.getAssignedLabels();
+            if (assignedLabels != null) {
+                labels = node.getAssignedLabels();
+            } else {
+                logger.fine("Could not retrieve labels");
+            }
+        } else {
             logger.fine("Could not retrieve labels");
         }
         String nodeHostname = null;
