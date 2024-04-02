@@ -10,7 +10,7 @@ A Jenkins plugin for automatically forwarding metrics, events, and service check
 
 ### Installation
 
-_This plugin requires [Jenkins 2.346.1][2]._
+_This plugin requires [Jenkins 2.361.4][2]._
 
 _For older versions of Jenkins (i.e 1.632+), you can find the 1.2.0 version of the plugin [here](https://updates.jenkins.io/download/plugins/datadog/)._
 
@@ -440,7 +440,7 @@ Checkout the [contributing guidelines][11] before you submit an issue or a pull 
 Checkout the [development document][12] for tips on spinning up a quick development environment locally.
 
 [1]: https://plugins.jenkins.io/datadog
-[2]: http://updates.jenkins-ci.org/download/war/2.346.1/jenkins.war
+[2]: http://updates.jenkins-ci.org/download/war/2.361.4/jenkins.war
 [3]: https://wiki.jenkins-ci.org/display/JENKINS/Plugins#Plugins-Howtoinstallplugins
 [4]: https://app.datadoghq.com/account/settings#api
 [5]: https://github.com/jenkinsci/docker
