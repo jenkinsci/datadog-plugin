@@ -215,8 +215,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             Queue.Item item = queue.getItem(run.getQueueId());
             Map<String, Set<String>> tags = buildData.getTags();
             String hostname = buildData.getHostname(DatadogUtilities.getHostname(null));
-            Metrics metrics = client.metrics();
-            if (metrics != null) {
+            try (Metrics metrics = client.metrics()){
                 long waitingMs = (DatadogUtilities.currentTimeMillis() - item.getInQueueSince());
                 metrics.gauge("jenkins.job.waiting", TimeUnit.MILLISECONDS.toSeconds(waitingMs), hostname, tags);
 
@@ -225,7 +224,7 @@ public class DatadogBuildListener extends RunListener<Run> {
                     queueInfoAction.setQueueTimeMillis(waitingMs);
                 }
 
-            } else {
+            } catch(Exception e) {
                 logger.warning("Unable to compute 'waiting' metric. " +
                         "item.getInQueueSince() unavailable, possibly due to worker instance provisioning");
             }
