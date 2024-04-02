@@ -308,37 +308,35 @@ public class DatadogGraphListener implements GraphListener {
     }
 
     private long getPauseDurationMillis(@Nonnull FlowNode startNode) {
-        FlowExecution execution = startNode.getExecution();
+        try {
+            long pauseDuration = 0;
+            FlowGraphWalker walker = new FlowGraphWalker(startNode.getExecution());
 
-        long pauseDuration = 0;
+            Iterator<FlowNode> it = walker.iterator();
 
-        FlowGraphWalker walker = new FlowGraphWalker(execution);
-        Iterator<FlowNode> it = walker.iterator();
-        if (it == null){
-            logger.warning("Unable to get the stage pause duration");
-            return 0;
-        }
-
-        // Iterates on the execution nodes to sum pause duration of sub-stages.
-        // Walks through all the execution graph of startNode, and considers the sub-nodes that are not active
-        // anymore. A sub-node is a node for which startNode is a parent (is part of its enclosing blocks).
-        while (it.hasNext()) {
-            FlowNode node = it.next();
-            if (!node.isActive()) {
-                // Lists node parents genealogy, and sees if startNode is one of them.
-                for (BlockStartNode parent : node.iterateEnclosingBlocks()) {
-                    if (parent != null && parent.getId() != null && parent.getId().equals(startNode.getId())) {
-                        FlowNodeExt nodeExt = FlowNodeExt.create(node);
-                        pauseDuration += nodeExt.getPauseDurationMillis();
-                        break;
+            // Iterates on the execution nodes to sum pause duration of sub-stages.
+            // Walks through all the execution graph of startNode, and considers the sub-nodes that are not active
+            // anymore. A sub-node is a node for which startNode is a parent (is part of its enclosing blocks).
+            while (it.hasNext()) {
+                FlowNode node = it.next();
+                if (!node.isActive()) {
+                    // Lists node parents genealogy, and sees if startNode is one of them.
+                    for (BlockStartNode parent : node.iterateEnclosingBlocks()) {
+                        if (parent.getId().equals(startNode.getId())) {
+                            FlowNodeExt nodeExt = FlowNodeExt.create(node);
+                            pauseDuration += nodeExt.getPauseDurationMillis();
+                            break;
+                        }
                     }
                 }
             }
 
+            // In milliseconds
+            return pauseDuration;
+        } catch (Exception e) {
+            logger.warning("Unable to get the stage pause duration");
         }
-        
-        // In milliseconds
-        return pauseDuration;
+        return 0;
     }
 
     private boolean isMonitored(FlowNode flowNode) {
