@@ -73,7 +73,6 @@ import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.traces.BuildConfigurationParser;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
-import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
@@ -84,7 +83,6 @@ public class BuildData implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private static transient final Logger LOGGER = Logger.getLogger(BuildData.class.getName());
-
     private String buildNumber;
     private String buildId;
     private String buildUrl;
@@ -94,6 +92,8 @@ public class BuildData implements Serializable {
     private String jobName;
     private Map<String, String> buildConfigurations;
     private String buildTag;
+    @Nullable
+    private String upstreamBuildTag;
     private String jenkinsUrl;
     private String executorNumber;
     private String javaHome;
@@ -135,8 +135,32 @@ public class BuildData implements Serializable {
     private Long startTime;
     private Long endTime;
     private Long duration;
-    private Long millisInQueue;
-    private Long propagatedMillisInQueue;
+
+    /**
+     * Queue time that is reported by the Jenkins Queue API.
+     * This is the time that the build was sitting in queue BEFORE starting to execute:
+     * <ul>
+     *  <li>if it was waiting for another build to finish because of the parallel execution settings</li>
+     *  <li>if it was waiting for a "quiet period" to finish because of the throttle settings</li>
+     *  <li>if it was waiting for an executor to become available (this point only applies to Freestyle builds; a pipeline waiting for executor will report {@link #propagatedMillisInQueue}</li>
+     * </ul>
+     * <p>
+     * This queue time goes BEFORE timestamp that is reported by {@link Run#getStartTimeInMillis()}
+     * and is NOT included into the duration reported by {@link Run#getDuration()}.
+     */
+    private long millisInQueue;
+
+    /**
+     * Queue time that is propagated from a child node of a pipeline:
+     * if a pipeline is configured to execute in a specific executor (with the top-level `agent {}` section),
+     * it will be reported as started even if that executor is not available.
+     * In this case the time spent waiting for the executor will be reported by the first child node of the pipeline,
+     * and propagated to the pipeline from there.
+     * <p>
+     * This queue time goes AFTER timestamp that is reported by {@link Run#getStartTimeInMillis()}
+     * and is INCLUDED into the duration reported by {@link Run#getDuration()}.
+     */
+    private long propagatedMillisInQueue;
 
     /**
      * Monotonically increasing "version" of the build data.
@@ -149,8 +173,13 @@ public class BuildData implements Serializable {
      * The backend needs version to determine the relative order of these multiple events.
      */
     private Integer version;
-    private String traceId;
-    private String spanId;
+    private Long traceId;
+    private Long spanId;
+
+    @Nullable
+    private String upstreamPipelineUrl;
+    @Nullable
+    private Long upstreamPipelineTraceId;
 
     public BuildData(Run<?, ?> run, @Nullable TaskListener listener) throws IOException, InterruptedException {
         if (run == null) {
@@ -168,6 +197,10 @@ public class BuildData implements Serializable {
                 this.buildUrl = buildSpanAction.getBuildUrl();
             }
             this.version = buildSpanAction.getAndIncrementVersion();
+
+            TraceSpan.TraceSpanContext buildSpanContext = buildSpanAction.getBuildSpanContext();
+            this.traceId = buildSpanContext.getTraceId();
+            this.spanId = buildSpanContext.getSpanId();
         }
 
         // Populate instance using environment variables.
@@ -197,16 +230,31 @@ public class BuildData implements Serializable {
         }
         this.isBuilding = run.isBuilding();
 
-        // Set StartTime, EndTime and Duration
-        this.startTime = run.getStartTimeInMillis();
-        long durationInMs = run.getDuration();
-        if (durationInMs == 0 && startTime != 0) {
-            durationInMs = System.currentTimeMillis() - startTime;
+        PipelineQueueInfoAction action = run.getAction(PipelineQueueInfoAction.class);
+        if (action != null) {
+            this.millisInQueue = action.getQueueTimeMillis();
+            this.propagatedMillisInQueue = action.getPropagatedQueueTimeMillis();
         }
-        this.duration = durationInMs;
-        if (duration != 0 && startTime != 0) {
-            // end time will be ignored for in-progress pipelines
-            this.endTime = startTime + duration;
+
+        long runStartTime = run.getStartTimeInMillis();
+        if (runStartTime != 0) {
+            // advance start time: queue time should not be considered as part of the build duration
+            this.startTime = runStartTime + this.propagatedMillisInQueue;
+        }
+
+        long runDuration = run.getDuration();
+        if (runDuration != 0) {
+            // adjust duration: queue time should not be considered as part of the build duration
+            this.duration = runDuration - this.propagatedMillisInQueue;
+        } else if (this.startTime != null) {
+            this.duration = System.currentTimeMillis() - this.startTime;
+        } else {
+            this.duration = 0L;
+        }
+
+        if (this.startTime != null) {
+            // we set end time regardless of current pipeline status, but for in-progress pipelines its value will be ignored
+            this.endTime = this.startTime + this.duration;
         }
 
         // Set Build Number
@@ -241,12 +289,6 @@ public class BuildData implements Serializable {
             this.workspace = envVars.get("WORKSPACE");
         }
 
-        PipelineQueueInfoAction action = run.getAction(PipelineQueueInfoAction.class);
-        if (action != null) {
-            this.millisInQueue = action.getQueueTimeMillis();
-            this.propagatedMillisInQueue = action.getPropagatedQueueTimeMillis();
-        }
-
         // Save charset canonical name
         this.charsetName = run.getCharset().name();
 
@@ -264,11 +306,36 @@ public class BuildData implements Serializable {
         // Build parameters
         populateBuildParameters(run);
 
-        // Set Tracing IDs
-        final TraceSpan buildSpan = BuildSpanManager.get().get(getBuildTag(""));
-        if(buildSpan !=null) {
-            this.traceId = Long.toUnsignedString(buildSpan.context().getTraceId());
-            this.spanId = Long.toUnsignedString(buildSpan.context().getSpanId());
+        populateUpstreamPipelineData(run, envVars);
+    }
+
+    private void populateUpstreamPipelineData(Run<?, ?> run, EnvVars envVars) {
+        CauseAction causeAction = run.getAction(CauseAction.class);
+        if (causeAction == null) {
+            return;
+        }
+        Cause.UpstreamCause upstreamCause = causeAction.findCause(Cause.UpstreamCause.class);
+        if (upstreamCause == null) {
+            return;
+        }
+
+        String upstreamUrl = upstreamCause.getUpstreamUrl();
+        int upstreamBuild = upstreamCause.getUpstreamBuild();
+        if (this.jenkinsUrl != null && upstreamUrl != null) {
+            this.upstreamPipelineUrl = jenkinsUrl + upstreamUrl + upstreamBuild + "/";
+        }
+
+        String upstreamProject = upstreamCause.getUpstreamProject();
+        if (upstreamProject != null) {
+            this.upstreamBuildTag = "jenkins-" + upstreamProject.replace('/', '-') + "-" + upstreamBuild;
+
+            BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
+            if (buildSpanAction != null) {
+                TraceSpan.TraceSpanContext upstreamSpanContext = buildSpanAction.getUpstreamSpanContext();
+                if (upstreamSpanContext != null) {
+                    this.upstreamPipelineTraceId = upstreamSpanContext.getTraceId();
+                }
+            }
         }
     }
 
@@ -654,20 +721,35 @@ public class BuildData implements Serializable {
         return defaultIfNull(startTime, value);
     }
 
-    public Long getMillisInQueue(Long value) {
-        return defaultIfNull(millisInQueue, value);
-    }
-
-    public Long getPropagatedMillisInQueue(Long value) {
-        return defaultIfNull(propagatedMillisInQueue, value);
+    /**
+     * Returns the total time this build spent waiting in queue.
+     */
+    public long getTotalQueueTimeMillis() {
+        // Need to sum both queue times because they are not mutually exclusive.
+        // In the case of pipelines millisInQueue will include the time spent waiting for other builds to finish (before pipeline start),
+        // and propagatedMillisInQueue will include the time spent waiting for an executor (after pipeline start).
+        return Math.max(millisInQueue, 0) + Math.max(propagatedMillisInQueue, 0);
     }
 
     public Integer getVersion() {
         return version;
     }
 
+    public Long getTraceId() {
+        return traceId;
+    }
+
+    public Long getSpanId() {
+        return spanId;
+    }
+
     public String getBuildTag(String value) {
         return defaultIfNull(buildTag, value);
+    }
+
+    @Nullable
+    public String getUpstreamBuildTag(String value) {
+        return defaultIfNull(upstreamBuildTag, value);
     }
 
     public String getJenkinsUrl(String value) {
@@ -810,6 +892,16 @@ public class BuildData implements Serializable {
         }
     }
 
+    @Nullable
+    public String getUpstreamPipelineUrl() {
+        return upstreamPipelineUrl;
+    }
+
+    @Nullable
+    public Long getUpstreamPipelineTraceId() {
+        return upstreamPipelineTraceId;
+    }
+
     public JSONObject addLogAttributes(){
 
         JSONObject payload = new JSONObject();
@@ -877,11 +969,11 @@ public class BuildData implements Serializable {
             payload.put("hostname", this.hostname);
 
             if(traceId != null){
-                payload.put("dd.trace_id", this.traceId);
+                payload.put("dd.trace_id", Long.toUnsignedString(this.traceId));
             }
 
             if(spanId != null) {
-                payload.put("dd.span_id", this.spanId);
+                payload.put("dd.span_id",  Long.toUnsignedString(this.spanId));
             }
             return payload;
         } catch (Exception e){
