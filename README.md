@@ -10,7 +10,7 @@ A Jenkins plugin for automatically forwarding metrics, events, and service check
 
 ### Installation
 
-_This plugin requires [Jenkins 2.361.4][2]._
+_This plugin requires [Jenkins 2.361.4][2] and Java 11._
 
 _For older versions of Jenkins (i.e 1.632+), you can find the 1.2.0 version of the plugin [here](https://updates.jenkins.io/download/plugins/datadog/)._
 
