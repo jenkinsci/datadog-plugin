@@ -69,6 +69,10 @@ public class DatadogComputerPublisher extends PeriodicWork {
             return;
         }
 
+        publishMetrics(client);
+    }
+
+    public static void publishMetrics(DatadogClient client) {
         try (MetricsClient metrics = client.metrics()) {
             String hostname = DatadogUtilities.getHostname(null);
             long nodeCount = 0;
@@ -115,7 +119,7 @@ public class DatadogComputerPublisher extends PeriodicWork {
         }
     }
 
-    private int getCurrentRunCount(Computer[] computers) {
+    private static int getCurrentRunCount(Computer[] computers) {
         Set<Run<?, ?>> runs = new HashSet<>();
         for (Computer computer : computers) {
             List<Executor> executors = computer.getExecutors();
@@ -129,7 +133,7 @@ public class DatadogComputerPublisher extends PeriodicWork {
         return runs.size();
     }
 
-    private Run<?, ?> getCurrentRun(Executor executor) {
+    private static Run<?, ?> getCurrentRun(Executor executor) {
         Queue.Executable executable = executor.getCurrentExecutable();
         while (executable != null) {
             if (executable instanceof Run) {

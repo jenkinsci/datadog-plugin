@@ -53,6 +53,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
+import org.datadog.jenkins.plugins.datadog.publishers.DatadogComputerPublisher;
 import org.datadog.jenkins.plugins.datadog.publishers.DatadogCountersPublisher;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
@@ -74,6 +75,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.recipes.WithTimeout;
 
 public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
@@ -1207,6 +1209,34 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals("value", stepSpanMeta.get("global_job_tag"));
         assertEquals("pipeline_tag_v2", stepSpanMeta.get("pipeline_tag"));
         assertEquals("pipeline_tag", stepSpanMeta.get("pipeline_tag_v2"));
+    }
+
+    @Test
+    public void testCurrentlyBuildingJobsMetric() throws Exception{
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "complexPipelineStages01");
+        String definition = getPipelineDefinition("testPipelineComplexStages01.txt");
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        new Thread(() -> {
+            try {
+                job.scheduleBuild2(0);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
+
+        final DumbSlave worker03 = jenkinsRule.createOnlineSlave(Label.get("worker03"));
+        final DumbSlave worker02 = jenkinsRule.createOnlineSlave(Label.get("worker02"));
+
+        Thread.sleep(1000);
+
+        // we know the pipeline is in progress at this point because it cannot complete until worker03 goes online
+        DatadogComputerPublisher.publishMetrics(clientStub);
+
+        final DumbSlave worker01 = jenkinsRule.createOnlineSlave(Label.get("worker01"));
+
+        String hostname = DatadogUtilities.getHostname(null);
+        String[] tags = new String[]{ "jenkins_url:" + DatadogUtilities.getJenkinsUrl() };
+        clientStub.assertMetric("jenkins.job.currently_building", 1, hostname, tags);
     }
 
     @Test

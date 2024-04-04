@@ -326,10 +326,10 @@ public class DatadogBuildListener extends RunListener<Run> {
                 }
                 metrics.gauge("jenkins.job.pause_duration", TimeUnit.MILLISECONDS.toSeconds(pauseDurationMillis), hostname, tags);
                 logger.fine(String.format("[%s]: Pause Duration: %s", buildData.getJobName(), toTimeString(pauseDurationMillis)));
-                long buildDuration = run.getDuration() - pauseDurationMillis;
-                metrics.gauge("jenkins.job.build_duration", TimeUnit.MILLISECONDS.toSeconds(buildDuration), hostname, tags);
+                long buildDurationMillis = run.getDuration() - pauseDurationMillis;
+                metrics.gauge("jenkins.job.build_duration", TimeUnit.MILLISECONDS.toSeconds(buildDurationMillis), hostname, tags);
                 logger.fine(
-                        String.format("[%s]: Build Duration (without pause): %s", buildData.getJobName(), toTimeString(buildDuration)));
+                        String.format("[%s]: Build Duration (without pause): %s", buildData.getJobName(), toTimeString(buildDurationMillis)));
             }
 
             Metrics.getInstance().incrementCounter("jenkins.job.completed", hostname, tags);

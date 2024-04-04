@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -59,14 +58,13 @@ public class TagsUtil {
 
     public static JSONArray convertTagsToJSONArray(Map<String, Set<String>> tags){
         JSONArray result = new JSONArray();
-        for (final Iterator<Map.Entry<String, Set<String>>> iter = tags.entrySet().iterator(); iter.hasNext();){
-            Map.Entry<String, Set<String>> entry = iter.next();
+        for (Map.Entry<String, Set<String>> entry : tags.entrySet()) {
             String name = entry.getKey();
             Set<String> values = entry.getValue();
-            for (String value : values){
-                if ("".equals(value)){
+            for (String value : values) {
+                if ("".equals(value) || value == null) {
                     result.add(name); // Tag with no value
-                }else{
+                } else {
                     result.add(String.format("%s:%s", name, value));
                 }
             }
@@ -75,19 +73,23 @@ public class TagsUtil {
     }
 
     public static String[] convertTagsToArray(Map<String, Set<String>> tags){
+        if (tags == null) {
+            return new String[0];
+        }
+
         List<String> result = new ArrayList<>();
-        for (final Iterator<Map.Entry<String, Set<String>>> iter = tags.entrySet().iterator(); iter.hasNext();){
-            Map.Entry<String, Set<String>> entry = iter.next();
+        for (Map.Entry<String, Set<String>> entry : tags.entrySet()) {
             String name = entry.getKey();
             Set<String> values = entry.getValue();
             for (String value : values){
-                if("".equals(value)){
+                if("".equals(value) || value == null){
                     result.add(name);
                 }else{
                     result.add(String.format("%s:%s", name, value));
                 }
             }
         }
+
         Collections.sort(result);
         return result.toArray(new String[0]);
     }
@@ -96,10 +98,7 @@ public class TagsUtil {
         if(tags == null){
             tags = new HashMap<>();
         }
-        if(!tags.containsKey(name)){
-            tags.put(name, new HashSet<>());
-        }
-        tags.get(name).add(value);
+        tags.computeIfAbsent(name, k -> new HashSet<>()).add(value);
         return tags;
     }
 
