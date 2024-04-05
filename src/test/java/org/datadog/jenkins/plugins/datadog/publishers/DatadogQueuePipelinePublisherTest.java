@@ -10,7 +10,7 @@ import org.jvnet.hudson.test.JenkinsRule;
 import org.apache.commons.io.IOUtils;
 
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -24,7 +24,7 @@ public class DatadogQueuePipelinePublisherTest {
     @Test
     public void testPipelineInQueue() throws Exception {
         DatadogClientStub client = new DatadogClientStub();;
-        ClientFactory.setTestClient(client);
+        ClientHolder.setClient(client);
         DatadogQueuePublisher queuePublisher = new DatadogQueuePublisher();
         String hostname = DatadogUtilities.getHostname(null);
         WorkflowJob job = jenkins.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationQueue");
