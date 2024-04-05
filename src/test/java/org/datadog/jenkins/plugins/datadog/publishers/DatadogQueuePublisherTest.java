@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogMetric;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -36,7 +36,7 @@ public class DatadogQueuePublisherTest {
     public void setup() throws Exception {
         client = new DatadogClientStub();
         queuePublisher = new DatadogQueuePublisher();
-        ClientFactory.setTestClient(client);
+        ClientHolder.setClient(client);
         jenkins.jenkins.getQueue().clear();
     }
 

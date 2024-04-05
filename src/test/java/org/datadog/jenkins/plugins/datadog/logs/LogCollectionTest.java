@@ -12,7 +12,7 @@ import jenkins.model.Jenkins.MasterComputer;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -31,7 +31,7 @@ public class LogCollectionTest {
 
     @BeforeClass
     public static void staticSetup() throws Exception {
-        ClientFactory.setTestClient(stubClient);
+        ClientHolder.setClient(stubClient);
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         ExtensionList.clearLegacyInstances();
         cfg.setCollectBuildLogs(true);

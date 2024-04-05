@@ -44,7 +44,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
@@ -99,7 +99,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         EnvVars.masterEnvVars.remove("ENV_VAR");
 
         clientStub = new DatadogClientStub();
-        ClientFactory.setTestClient(clientStub);
+        ClientHolder.setClient(clientStub);
 
         Jenkins jenkins = jenkinsRule.jenkins;
         jenkins.getGlobalNodeProperties().remove(EnvironmentVariablesNodeProperty.class);

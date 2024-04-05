@@ -40,7 +40,7 @@ import javax.annotation.Nullable;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
 import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
 import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
@@ -112,7 +112,7 @@ public class DatadogGraphListener implements GraphListener {
             directParentName = "root";
         }
 
-        DatadogClient client = ClientFactory.getClient();
+        DatadogClient client = ClientHolder.getClient();
         if (client == null) {
             return;
         }
