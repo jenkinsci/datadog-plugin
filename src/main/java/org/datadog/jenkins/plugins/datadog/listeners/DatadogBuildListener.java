@@ -456,9 +456,6 @@ THE SOFTWARE.
                  Thread.currentThread().interrupt();
                  DatadogUtilities.severe(logger, e, "Interrupted while trying to parse deleted build data");
                  return;
-             } catch (IOException e) {
-                 DatadogUtilities.severe(logger, e, "Failed to parse deleted build data");
-                 return;
              } catch (Exception e) {
                 DatadogUtilities.severe(logger, e, "Failed to parse deleted build data");
                 return;

@@ -104,9 +104,6 @@ public class DatadogUtilities {
     public static DatadogGlobalConfiguration getDatadogGlobalDescriptor() {
         try {
             return ExtensionList.lookupSingleton(DatadogGlobalConfiguration.class);
-        } catch (IllegalStateException e) {
-            // It can only throw such an exception when running tests
-            return null;
         } catch (Exception e) {
             // It can only throw such an exception when running tests
             return null;
@@ -687,10 +684,10 @@ public class DatadogUtilities {
             if (assignedLabels != null) {
                 labels = node.getAssignedLabels();
             } else {
-                logger.fine("Could not retrieve labels");
+                logger.warning("Could not retrieve labels");
             }
         } else {
-            logger.fine("Could not retrieve labels");
+            logger.warning("Could not retrieve labels");
         }
         String nodeHostname = null;
         try {
