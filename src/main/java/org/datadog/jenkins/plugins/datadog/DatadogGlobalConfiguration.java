@@ -27,51 +27,45 @@ package org.datadog.jenkins.plugins.datadog;
 
 import static hudson.Util.fixEmptyAndTrim;
 
-import hudson.Extension;
-import hudson.model.AbstractProject;
-import hudson.util.FormValidation;
-import hudson.util.Secret;
-import hudson.util.FormValidation.Kind;
-import hudson.util.ListBoxModel;
-import hudson.model.Item;
-import hudson.security.ACL;
-
-import jenkins.model.GlobalConfiguration;
-import jenkins.model.Jenkins;
-
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
-import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
-import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
-import org.jenkinsci.plugins.plaincredentials.StringCredentials;
-
-import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.math.NumberUtils;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
-import org.datadog.jenkins.plugins.datadog.clients.DatadogApiClient;
-import org.datadog.jenkins.plugins.datadog.clients.DatadogAgentClient;
-import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
-import org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.interceptor.RequirePOST;
-import org.kohsuke.stapler.AncestorInPath;
-
-import javax.management.InvalidAttributeValueException;
-import javax.servlet.ServletException;
+import hudson.Extension;
+import hudson.model.AbstractProject;
+import hudson.model.Item;
+import hudson.security.ACL;
+import hudson.util.FormValidation;
+import hudson.util.FormValidation.Kind;
+import hudson.util.ListBoxModel;
+import hudson.util.Secret;
 import java.io.IOException;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import javax.management.InvalidAttributeValueException;
+import javax.servlet.ServletException;
+import jenkins.model.GlobalConfiguration;
+import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
+import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
+import org.datadog.jenkins.plugins.datadog.clients.DatadogAgentClient;
+import org.datadog.jenkins.plugins.datadog.clients.DatadogApiClient;
+import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
+import org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
+import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 @Extension
 public class DatadogGlobalConfiguration extends GlobalConfiguration {
@@ -446,7 +440,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             throws IOException, ServletException {
         Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
         final Secret secret = findSecret(targetApiKey, targetCredentialsApiKey);
-        if (DatadogApiClient.validateDefaultIntakeConnection(new HttpClient(60_000), targetApiURL, secret)) {
+        if (DatadogApiClient.validateDefaultIntakeConnection(targetApiURL, secret)) {
             return FormValidation.ok("Great! Your API key is valid.");
         } else {
             return FormValidation.error("Hmmm, your API key seems to be invalid.");
@@ -465,7 +459,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         @QueryParameter("targetCredentialsApiKey") String targetCredentialsApiKey
         ) {
         StandardListBoxModel result = new StandardListBoxModel();
-        // If the users does not have permissions to list credentials, only list the current value
+        // If the user does not have permissions to list credentials, only list the current value
         if (item == null) {
             if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
                 return result.includeCurrentValue(targetCredentialsApiKey);
@@ -508,7 +502,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
 
     /**
-     * Tests the targetCredentialsApiKey field from the configuration screen, to check its' validity.
+     * Tests the targetCredentialsApiKey field from the configuration screen, to check its validity.
      *
      * @param item - The context within which to list available credentials.
      * @param targetCredentialsApiKey - A String containing the API key as a credential
@@ -832,16 +826,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             final Secret apiKeySecret = findSecret(formData.getString("targetApiKey"), formData.getString("targetCredentialsApiKey"));
             this.setUsedApiKey(apiKeySecret);
 
-            //When form is saved....
-            DatadogClient client = ClientFactory.getClient(DatadogClient.ClientType.valueOf(this.getReportWith()), this.getTargetApiURL(),
-                this.getTargetLogIntakeURL(), this.getTargetWebhookIntakeURL(), this.getUsedApiKey(), this.getTargetHost(),
-                this.getTargetPort(), this.getTargetLogCollectionPort(), this.getTargetTraceCollectionPort(), this.getCiInstanceName());
-                // ...reinitialize the DatadogClient
-            if(client == null) {
-                return false;
-            }
-
-            TraceWriterFactory.onDatadogClientUpdate(client);
+            DatadogClient client = createClient();
+            ClientHolder.setClient(client);
 
             // Persist global configuration information
             save();
@@ -855,11 +841,20 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             DatadogUtilities.severe(logger, e, "Failed to save configuration");
             return false;
         }
+    }
 
+    private DatadogClient createClient() {
+        DatadogClient.ClientType type = DatadogClient.ClientType.valueOf(reportWith);
+        switch(type){
+            case HTTP:
+                return new DatadogApiClient(targetApiURL, targetLogIntakeURL, targetWebhookIntakeURL, usedApiKey);
+            case DSD:
+                return new DatadogAgentClient(targetHost, targetPort, targetLogCollectionPort, targetTraceCollectionPort);
+            default:
+                throw new IllegalArgumentException("Unsupported client type: " + type);
+        }
     }
-    public boolean reportWithEquals(String value){
-        return this.reportWith.equals(value);
-    }
+
 
     /**
      * Getter function for the reportWith global configuration.
