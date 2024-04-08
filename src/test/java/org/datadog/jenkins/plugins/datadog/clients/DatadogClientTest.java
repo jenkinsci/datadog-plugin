@@ -28,6 +28,8 @@ package org.datadog.jenkins.plugins.datadog.clients;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.metrics.MetricKey;
+import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -139,31 +141,31 @@ public class DatadogClientTest {
         Map<String, Set<String>> tags1 = new HashMap<>();
         tags1 = DatadogClientStub.addTagToMap(tags1, "tag1", "value");
         tags1 = DatadogClientStub.addTagToMap(tags1, "tag2", "value");
-        client.incrementCounter("metric1", "host1", tags1);
-        client.incrementCounter("metric1", "host1", tags1);
+        Metrics.getInstance().incrementCounter("metric1", "host1", tags1);
+        Metrics.getInstance().incrementCounter("metric1", "host1", tags1);
 
         Map<String, Set<String>> tags2 = new HashMap<>();
         tags2 = DatadogClientStub.addTagToMap(tags2, "tag1", "value");
         tags2 = DatadogClientStub.addTagToMap(tags2, "tag2", "value");
         tags2 = DatadogClientStub.addTagToMap(tags2, "tag3", "value");
-        client.incrementCounter("metric1", "host1", tags2);
+        Metrics.getInstance().incrementCounter("metric1", "host1", tags2);
 
-        client.incrementCounter("metric1", "host2", tags2);
-        client.incrementCounter("metric1", "host2", tags2);
+        Metrics.getInstance().incrementCounter("metric1", "host2", tags2);
+        Metrics.getInstance().incrementCounter("metric1", "host2", tags2);
 
-        client.incrementCounter("metric2", "host2", tags2);
+        Metrics.getInstance().incrementCounter("metric2", "host2", tags2);
 
         // The following code should be the same as in the flushCounters method
-        ConcurrentMap<CounterMetric, Integer> counters = ConcurrentMetricCounters.getInstance().getAndReset();
+        Map<MetricKey, Integer> counters = Metrics.getInstance().getAndResetCounters();
 
         // Check counter is reset as expected
-        ConcurrentMap<CounterMetric, Integer> countersEmpty = ConcurrentMetricCounters.getInstance().getAndReset();
+        Map<MetricKey, Integer> countersEmpty = Metrics.getInstance().getAndResetCounters();
         Assert.assertTrue("size = " + countersEmpty.size(), countersEmpty.size() == 0);
 
         // Check that metrics to submit are correct
         boolean check1  = false, check2 = false, check3 = false, check4 = false;
         Assert.assertTrue("counters = " + counters.size(), counters.size() == 4);
-        for (CounterMetric counterMetric: counters.keySet()) {
+        for (MetricKey counterMetric: counters.keySet()) {
             int count = counters.get(counterMetric);
             if(counterMetric.getMetricName().equals("metric1") && counterMetric.getHostname().equals("host1")
                     && counterMetric.getTags().size() == 2){
@@ -201,7 +203,7 @@ public class DatadogClientTest {
                 Map<String, Set<String>> tags = new HashMap<>();
                 tags = DatadogClientStub.addTagToMap(tags, "tag1", "value");
                 tags = DatadogClientStub.addTagToMap(tags, "tag2", "value");
-                client.incrementCounter("metric1", "host1", tags);
+                Metrics.getInstance().incrementCounter("metric1", "host1", tags);
             }
         };
 
@@ -212,7 +214,7 @@ public class DatadogClientTest {
         stop(executor);
 
         // Check counter is reset as expected
-        ConcurrentMap<CounterMetric, Integer> counters = ConcurrentMetricCounters.getInstance().getAndReset();
+        Map<MetricKey, Integer> counters = Metrics.getInstance().getAndResetCounters();
         Assert.assertTrue("size = " + counters.size(), counters.size() == 1);
         Assert.assertTrue("counters.values() = " + counters.values(), counters.values().contains(10000));
 
@@ -230,7 +232,7 @@ public class DatadogClientTest {
                 Map<String, Set<String>> tags = new HashMap<>();
                 tags = DatadogClientStub.addTagToMap(tags, "tag1", "value");
                 tags = DatadogClientStub.addTagToMap(tags, "tag2", "value");
-                client.incrementCounter("metric1", "host1", tags);
+                Metrics.getInstance().incrementCounter("metric1", "host1", tags);
             }
         };
 
@@ -246,7 +248,7 @@ public class DatadogClientTest {
             @Override
             public Boolean call() throws Exception {
                 // Check counter is reset as expected
-                ConcurrentMap<CounterMetric, Integer> counters = ConcurrentMetricCounters.getInstance().getAndReset();
+                Map<MetricKey, Integer> counters = Metrics.getInstance().getAndResetCounters();
                 Assert.assertTrue("size = " + counters.size(), counters.size() == 1);
                 Assert.assertTrue("counters.values() = " + counters.values(), counters.values().contains(10000));
                 return true;
@@ -272,7 +274,7 @@ public class DatadogClientTest {
                 Map<String, Set<String>> tags = new HashMap<>();
                 tags = DatadogClientStub.addTagToMap(tags, "tag1", "value");
                 tags = DatadogClientStub.addTagToMap(tags, "tag2", "value");
-                client.incrementCounter("metric1", "host1", tags);
+                Metrics.getInstance().incrementCounter("metric1", "host1", tags);
             }
         };
 
@@ -283,7 +285,7 @@ public class DatadogClientTest {
         stop(executor);
 
         // Check counter is reset as expected
-        ConcurrentMap<CounterMetric, Integer> counters = ConcurrentMetricCounters.getInstance().getAndReset();
+        Map<MetricKey, Integer> counters = Metrics.getInstance().getAndResetCounters();
         Assert.assertTrue("size = " + counters.size(), counters.size() == 1);
         Assert.assertTrue("counters.values() = " + counters.values(), counters.values().contains(10000));
 

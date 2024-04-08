@@ -26,15 +26,19 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.publishers;
 
 import hudson.Extension;
-import hudson.model.*;
+import hudson.model.AsyncPeriodicWork;
+import hudson.model.TaskListener;
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
-
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
+import org.datadog.jenkins.plugins.datadog.metrics.MetricKey;
+import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
+import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
 
 @Extension
 public class DatadogCountersPublisher extends AsyncPeriodicWork {
@@ -52,16 +56,26 @@ public class DatadogCountersPublisher extends AsyncPeriodicWork {
 
     @Override
     protected void execute(TaskListener taskListener) throws IOException, InterruptedException {
-        try {
-            logger.fine("Execute called: Publishing counters");
+        logger.fine("Execute called: Publishing counters");
+        DatadogClient client = ClientFactory.getClient();
+        if (client == null) {
+            return;
+        }
 
-            // Get Datadog Client Instance
-            DatadogClient client = ClientFactory.getClient();
-            if(client == null){
-                return;
+        publishMetrics(client);
+    }
+
+    // exposed to trigger metrics flush in tests
+    public static void publishMetrics(DatadogClient client) {
+        try (MetricsClient metricsClient = client.metrics()) {
+            Map<MetricKey, Integer> counters = Metrics.getInstance().getAndResetCounters();
+            for (Map.Entry<MetricKey, Integer> entry : counters.entrySet()) {
+                MetricKey metric = entry.getKey();
+                Number value = entry.getValue();
+                logger.fine("Flushing: " + metric.getMetricName() + " - " + value);
+                metricsClient.rate(metric.getMetricName(), value.doubleValue(), metric.getHostname(), metric.getTags());
             }
 
-            client.flushCounters();
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to publish counters");
         }

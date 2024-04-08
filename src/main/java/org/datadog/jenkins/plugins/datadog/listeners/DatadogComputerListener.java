@@ -34,6 +34,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
 import org.datadog.jenkins.plugins.datadog.events.*;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import javax.annotation.CheckForNull;
@@ -81,9 +82,8 @@ public class DatadogComputerListener extends ComputerListener {
                 client.event(event);
             }
 
-            // Submit counter
             String hostname = DatadogUtilities.getHostname(null);
-            client.incrementCounter("jenkins.computer.online", hostname, tags);
+            Metrics.getInstance().incrementCounter("jenkins.computer.online", hostname, tags);
 
             logger.fine("End DatadogComputerListener#onOnline");
         } catch (Exception e) {
@@ -114,9 +114,8 @@ public class DatadogComputerListener extends ComputerListener {
                 client.event(event);
             }
 
-            // Submit counter
             String hostname = DatadogUtilities.getHostname(null);
-            client.incrementCounter("jenkins.computer.offline", hostname, tags);
+            Metrics.getInstance().incrementCounter("jenkins.computer.offline", hostname, tags);
 
             logger.fine("End DatadogComputerListener#onOffline");
         } catch (Exception e) {
@@ -147,10 +146,8 @@ public class DatadogComputerListener extends ComputerListener {
                 client.event(event);
             }
 
-
-            // Submit counter
             String hostname = DatadogUtilities.getHostname(null);
-            client.incrementCounter("jenkins.computer.temporarily_online", hostname, tags);
+            Metrics.getInstance().incrementCounter("jenkins.computer.temporarily_online", hostname, tags);
 
             logger.fine("End DatadogComputerListener#onTemporarilyOnline");
         } catch (Exception e) {
@@ -180,9 +177,8 @@ public class DatadogComputerListener extends ComputerListener {
                 client.event(event);
             }
 
-            // Submit counter
             String hostname = DatadogUtilities.getHostname(null);
-            client.incrementCounter("jenkins.computer.temporarily_offline", hostname, tags);
+            Metrics.getInstance().incrementCounter("jenkins.computer.temporarily_offline", hostname, tags);
 
             logger.fine("End DatadogComputerListener#onTemporarilyOffline");
         } catch (Exception e) {
@@ -213,9 +209,8 @@ public class DatadogComputerListener extends ComputerListener {
                 client.event(event);
             }
 
-            // Submit counter
             String hostname = DatadogUtilities.getHostname(null);
-            client.incrementCounter("jenkins.computer.launch_failure", hostname, tags);
+            Metrics.getInstance().incrementCounter("jenkins.computer.launch_failure", hostname, tags);
 
             logger.fine("End DatadogComputerListener#onLaunchFailure");
         } catch (Exception e) {

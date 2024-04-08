@@ -41,7 +41,8 @@ import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
-import org.datadog.jenkins.plugins.datadog.clients.Metrics;
+import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
+import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.DatadogPluginAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
@@ -116,7 +117,7 @@ public class DatadogGraphListener implements GraphListener {
             return;
         }
 
-        try (Metrics metrics = client.metrics()) {
+        try (MetricsClient metrics = client.metrics()) {
             String result = DatadogUtilities.getResultTag(endNode);
 
             String hostname = null;
@@ -144,7 +145,7 @@ public class DatadogGraphListener implements GraphListener {
 
             metrics.gauge("jenkins.job.stage_duration", getTime(startNode, endNode), hostname, tags);
             metrics.gauge("jenkins.job.stage_pause_duration", pauseDuration, hostname, tags);
-            client.incrementCounter("jenkins.job.stage_completed", hostname, tags);
+            Metrics.getInstance().incrementCounter("jenkins.job.stage_completed", hostname, tags);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             DatadogUtilities.severe(logger, e, "Interrupted while trying to submit the stage duration metric for " + getStageName(startNode));
