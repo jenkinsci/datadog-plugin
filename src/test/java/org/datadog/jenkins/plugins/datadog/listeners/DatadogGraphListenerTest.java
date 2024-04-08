@@ -28,6 +28,7 @@ import hudson.model.CauseAction;
 import hudson.model.FreeStyleProject;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
+import hudson.model.queue.QueueTaskFuture;
 import hudson.slaves.DumbSlave;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.triggers.SCMTrigger.SCMTriggerCause;
@@ -41,6 +42,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
@@ -1213,30 +1215,25 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
     @Test
     public void testCurrentlyBuildingJobsMetric() throws Exception{
-        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "complexPipelineStages01");
-        String definition = getPipelineDefinition("testPipelineComplexStages01.txt");
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "testCurrentJobMetricPipeline");
+        String definition = getPipelineDefinition("testCurrentJobMetric.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
-        new Thread(() -> {
-            try {
-                job.scheduleBuild2(0);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }).start();
 
-        final DumbSlave worker03 = jenkinsRule.createOnlineSlave(Label.get("worker03"));
-        final DumbSlave worker02 = jenkinsRule.createOnlineSlave(Label.get("worker02"));
+        QueueTaskFuture<WorkflowRun> buildFuture = job.scheduleBuild2(0);
+        Future<WorkflowRun> buildStartFuture = buildFuture.getStartCondition();
+        buildStartFuture.get(); // waiting for build to start
 
-        Thread.sleep(1000);
-
-        // we know the pipeline is in progress at this point because it cannot complete until worker03 goes online
+        // we know the pipeline is in progress at this point because it cannot complete until 'test-current-metric-agent' node goes online
         DatadogComputerPublisher.publishMetrics(clientStub);
 
-        final DumbSlave worker01 = jenkinsRule.createOnlineSlave(Label.get("worker01"));
+        DumbSlave agent = jenkinsRule.createOnlineSlave(Label.get("test-current-metric-agent"));
 
         String hostname = DatadogUtilities.getHostname(null);
         String[] tags = new String[]{ "jenkins_url:" + DatadogUtilities.getJenkinsUrl() };
         clientStub.assertMetric("jenkins.job.currently_building", 1, hostname, tags);
+
+        buildFuture.get(); // waiting for build to finish
+        jenkinsRule.disconnectSlave(agent); // disconnecting the agent node
     }
 
     @Test

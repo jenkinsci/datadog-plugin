@@ -122,7 +122,7 @@ public class DatadogComputerPublisher extends PeriodicWork {
     private static int getCurrentRunCount(Computer[] computers) {
         Set<Run<?, ?>> runs = new HashSet<>();
         for (Computer computer : computers) {
-            List<Executor> executors = computer.getExecutors();
+            List<Executor> executors = computer.getAllExecutors();
             for (Executor executor : executors) {
                 Run<?, ?> run = getCurrentRun(executor);
                 if (run != null) {
