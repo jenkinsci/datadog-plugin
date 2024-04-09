@@ -671,8 +671,12 @@ public class DatadogUtilities {
         return number >= 0 && number <= 255;
     }
 
-    public static Map<String, Set<String>> getComputerTags(@Nonnull Computer computer) {
+    public static Map<String, Set<String>> getComputerTags(Computer computer) {
         Set<LabelAtom> labels = null;
+        if (computer == null) {
+            logger.fine("Could not retrieve computer tags because computer is null");
+            return Collections.emptyMap();
+        }
         Node node = computer.getNode();
         if (node != null) {
             Set<LabelAtom> assignedLabels = node.getAssignedLabels();

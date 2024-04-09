@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
  */
 
- package org.datadog.jenkins.plugins.datadog.listeners;
+package org.datadog.jenkins.plugins.datadog.listeners;
 
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.cleanUpTraceActions;
 import static org.datadog.jenkins.plugins.datadog.traces.TracerConstants.SPAN_ID_ENVVAR_KEY;
