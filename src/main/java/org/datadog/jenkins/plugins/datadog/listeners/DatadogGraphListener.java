@@ -59,7 +59,6 @@ import org.jenkinsci.plugins.workflow.actions.TimingAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
-import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.flow.GraphListener;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
@@ -309,33 +308,29 @@ public class DatadogGraphListener implements GraphListener {
     }
 
     private long getPauseDurationMillis(@Nonnull FlowNode startNode) {
-        try {
-            long pauseDuration = 0;
-            FlowGraphWalker walker = new FlowGraphWalker(startNode.getExecution());
+        long pauseDuration = 0;
+        FlowGraphWalker walker = new FlowGraphWalker(startNode.getExecution());
+        Iterator<FlowNode> it = walker.iterator();
 
-            Iterator<FlowNode> it = walker.iterator();
-
-            // Iterates on the execution nodes to sum pause duration of sub-stages.
-            // Walks through all the execution graph of startNode, and considers the sub-nodes that are not active
-            // anymore. A sub-node is a node for which startNode is a parent (is part of its enclosing blocks).
-            while (it.hasNext()) {
-                FlowNode node = it.next();
-                if (!node.isActive()) {
-                    // Lists node parents genealogy, and sees if startNode is one of them.
-                    for (BlockStartNode parent : node.iterateEnclosingBlocks()) {
-                        if (parent.getId().equals(startNode.getId())) {
-                            FlowNodeExt nodeExt = FlowNodeExt.create(node);
-                            pauseDuration += nodeExt.getPauseDurationMillis();
-                            break;
-                        }
+        // Iterates on the execution nodes to sum pause duration of sub-stages.
+        // Walks through all the execution graph of startNode, and considers the sub-nodes that are not active
+        // anymore. A sub-node is a node for which startNode is a parent (is part of its enclosing blocks).
+        while (it.hasNext()) {
+            FlowNode node = it.next();
+            if (node != null && !node.isActive()) {
+                // Lists node parents genealogy, and sees if startNode is one of them.
+                for (BlockStartNode parent : node.iterateEnclosingBlocks()) {
+                    if (parent != null && parent.getId() != null && parent.getId().equals(startNode.getId())) {
+                        FlowNodeExt nodeExt = FlowNodeExt.create(node);
+                        pauseDuration += nodeExt.getPauseDurationMillis();
+                        break;
+                    } else {
+                        logger.warning("Unable to get the stage pause duration");
                     }
                 }
+            } else {
+                logger.warning("Unable to get the stage pause duration");
             }
-
-            // In milliseconds
-            return pauseDuration;
-        } catch (Exception e) {
-            logger.warning("Unable to get the stage pause duration");
         }
         return 0;
     }

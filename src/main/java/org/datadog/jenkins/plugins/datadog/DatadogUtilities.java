@@ -32,6 +32,7 @@ import hudson.PluginWrapper;
 import hudson.model.Actionable;
 import hudson.model.Computer;
 import hudson.model.Item;
+import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
@@ -115,12 +116,7 @@ public class DatadogUtilities {
      * @return - The configured {@link DatadogJobProperty}. Null if not there
      */
     public static DatadogJobProperty getDatadogJobProperties(@Nonnull Run r) {
-        try {
-            return (DatadogJobProperty) r.getParent().getProperty(DatadogJobProperty.class);
-        } catch (Exception e) {
-            // It can only throw an Exception when running tests
-            return null;
-        }
+        return (DatadogJobProperty) r.getParent().getProperty(DatadogJobProperty.class);
     }
 
     /**
@@ -675,19 +671,18 @@ public class DatadogUtilities {
         return number >= 0 && number <= 255;
     }
 
-    public static Map<String, Set<String>> getComputerTags(Computer computer) {
+    public static Map<String, Set<String>> getComputerTags(@Nonnull Computer computer) {
         Set<LabelAtom> labels = null;
-        assert computer != null : "Computer is unexpectedly null";
-        var node = computer.getNode();
+        Node node = computer.getNode();
         if (node != null) {
             Set<LabelAtom> assignedLabels = node.getAssignedLabels();
             if (assignedLabels != null) {
                 labels = node.getAssignedLabels();
             } else {
-                logger.warning("Could not retrieve labels");
+                logger.fine("Could not retrieve labels");
             }
         } else {
-            logger.warning("Could not retrieve labels");
+            logger.fine("Could not retrieve labels");
         }
         String nodeHostname = null;
         try {

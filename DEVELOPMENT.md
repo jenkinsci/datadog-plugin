@@ -98,7 +98,8 @@ Due to backwards compatability of the plugin, the Jenkins version defined in `po
 ```
 ...
 <properties>
-    <java.level>11</java.level>
+    <maven.compiler.source>1.11</maven.compiler.source>
+    <maven.compiler.target>1.11</maven.compiler.target>
     <jenkins.version>{VERSION}</jenkins.version>
     <hpi.compatibleSinceVersion>1.0.0</hpi.compatibleSinceVersion>
   </properties>
