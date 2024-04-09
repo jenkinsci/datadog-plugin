@@ -74,6 +74,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.traces.BuildConfigurationParser;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
+import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.workflow.cps.EnvActionImpl;
@@ -602,10 +603,13 @@ public class BuildData implements Serializable {
      *
      * @return a map containing all tags values
      */
+    @SuppressFBWarnings
     public Map<String, Set<String>> getTags() {
         Map<String, Set<String>> allTags = new HashMap<>();
-        if (DatadogUtilities.getTagsFromGlobalTags() != null){
+        try {
             allTags = DatadogUtilities.getTagsFromGlobalTags();
+        } catch (NullPointerException e){
+            //noop
         }
         allTags = TagsUtil.merge(allTags, tags);
         allTags = TagsUtil.addTagToTags(allTags, "job", getJobName());
@@ -629,10 +633,13 @@ public class BuildData implements Serializable {
         return allTags;
     }
 
+    @SuppressFBWarnings
     public Map<String, String> getTagsForTraces() {
         Map<String, Set<String>> allTags = new HashMap<>();
-        if (DatadogUtilities.getTagsFromGlobalTags() != null){
+        try {
             allTags = DatadogUtilities.getTagsFromGlobalTags();
+        } catch(NullPointerException e){
+            //noop
         }
         allTags = TagsUtil.merge(allTags, tags);
         return TagsUtil.convertTagsToMapSingleValues(allTags);
@@ -816,14 +823,17 @@ public class BuildData implements Serializable {
         return userId;
     }
 
+    @SuppressFBWarnings
     private String getUserId(Run run) {
         if (promotedUserId != null){
             return promotedUserId;
         }
         String userName;
         List<CauseAction> actions = null;
-        if (run.getActions(CauseAction.class) != null){
+        try {
             actions = run.getActions(CauseAction.class);
+        }catch(NullPointerException e){
+            //noop
         }
         if(actions != null){
             for (CauseAction action : actions) {
