@@ -1,5 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.model;
 
+import static org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter.*;
+
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.converters.MarshallingContext;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
@@ -11,7 +13,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.datadog.jenkins.plugins.datadog.traces.IdGenerator;
-import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogConverter;
 import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
 
 /**
@@ -79,9 +81,9 @@ public class TraceInfoAction extends DatadogPluginAction {
                 '}';
     }
 
-    public static final class ConverterImpl extends DatadogActionConverter<TraceInfoAction> {
+    public static final class ConverterImpl extends DatadogConverter<TraceInfoAction> {
         public ConverterImpl(XStream xs) {
-            super(new ConverterV1());
+            super(ignoreOldData(), new ConverterV1());
         }
     }
 

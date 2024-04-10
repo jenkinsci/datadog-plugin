@@ -1,5 +1,10 @@
 package org.datadog.jenkins.plugins.datadog.apm;
 
+import static org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentHost;
+import static org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentLogCollectionPort;
+import static org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentPort;
+import static org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentTraceCollectionPort;
+
 import hudson.FilePath;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
@@ -20,6 +25,7 @@ import java.util.regex.Pattern;
 import org.apache.commons.io.IOUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
@@ -45,7 +51,10 @@ public class TracerInjectionIT {
     @BeforeClass
     public static void suiteSetUp() throws Exception {
         DatadogGlobalConfiguration datadogConfig = DatadogUtilities.getDatadogGlobalDescriptor();
-        datadogConfig.setReportWith("DSD");
+        // There is no agent and the injected tracers will fail to actually send anything,
+        // but for the purposes of this test this is enough, since it is only asserted that the tracer initialisation was reported in the logs
+        datadogConfig.setDatadogClientConfiguration(new DatadogAgentConfiguration(
+                getDefaultAgentHost(), getDefaultAgentPort(), getDefaultAgentLogCollectionPort(), getDefaultAgentTraceCollectionPort()));
 
         agentNode = jenkinsRule.createOnlineSlave();
     }

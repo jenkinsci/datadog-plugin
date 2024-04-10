@@ -99,6 +99,11 @@
         <version>${configuration-as-code.version}</version>
         <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.github.stefanbirkner</groupId>
+      <artifactId>system-lambda</artifactId>
+      <version>1.2.1</version>
+    </dependency>
 
     <!-- https://mvnrepository.com/artifact/org.mockito/mockito-core -->
     <dependency>

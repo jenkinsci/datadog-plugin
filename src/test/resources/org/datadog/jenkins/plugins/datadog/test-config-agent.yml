@@ -4,11 +4,11 @@ jenkins:
 unclassified:
   datadogGlobalConfiguration:
     datadogClientConfiguration:
-      datadogApiConfiguration:
-        apiUrl: 'my-api-url'
-        logIntakeUrl: 'my-log-intake-url'
-        webhookIntakeUrl: 'my-webhook-intake-url'
-        apiKeyCredentialsId: 'my-api-key-credentials-id'
+      datadogAgentConfiguration:
+        agentHost: 'my-agent-host'
+        agentPort: 1357
+        agentLogCollectionPort: 2468
+        agentTraceCollectionPort: 3579
     enableCiVisibility: true
     ciInstanceName: 'my-ci-instance-name'
     excluded: 'my-excluded'
@@ -19,10 +19,10 @@ unclassified:
     globalJobTags: 'my-global-job-tags'
     includeEvents: 'my-include-events'
     excludeEvents: 'my-exclude-events'
-    emitSecurityEvents: true
-    emitSystemEvents: true
-    collectBuildLogs: true
-    retryLogs: true
-    refreshDogstatsdClient: true
-    cacheBuildRuns: true
-    useAwsInstanceHostname: true
+    emitSecurityEvents: false
+    emitSystemEvents: false
+    collectBuildLogs: false
+    retryLogs: false
+    refreshDogstatsdClient: false
+    cacheBuildRuns: false
+    useAwsInstanceHostname: false

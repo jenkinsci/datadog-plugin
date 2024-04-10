@@ -1,0 +1,31 @@
+jenkins:
+  systemMessage: "Example of configuring datadog in Jenkins"
+
+unclassified:
+    datadogGlobalConfiguration:
+      reportWith: 'HTTP'
+      targetCredentialsApiKey: 'my-target-credentials-api-key'
+      targetApiURL: 'my-target-api-url'
+      targetLogIntakeURL: 'my-target-log-intake-url'
+      targetWebhookIntakeURL: 'my-target-webhook-intake-url'
+      collectBuildTraces: true
+      traceServiceName: 'my-trace-service-name'
+      blacklist: 'my-blacklist'
+      whitelist: 'my-whitelist'
+      hostname: 'my-hostname'
+      globalTagFile: 'my-global-tag-file'
+      globalTags: 'my-global-tags'
+      globalJobTags: 'my-global-job-tags'
+      includeEvents: 'my-include-events'
+      excludeEvents: 'my-exclude-events'
+      emitConfigChangeEvents: true
+      emitSecurityEvents: false
+      emitSystemEvents: true
+      collectBuildLogs: false
+      retryLogs: true
+      refreshDogstatsdClient: false
+      cacheBuildRuns: true
+      useAwsInstanceHostname: false
+
+
+

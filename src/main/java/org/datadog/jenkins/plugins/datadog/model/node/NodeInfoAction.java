@@ -1,5 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.model.node;
 
+import static org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter.ignoreOldData;
+
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.converters.MarshallingContext;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
@@ -9,7 +11,7 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 import org.datadog.jenkins.plugins.datadog.model.DatadogPluginAction;
-import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogConverter;
 import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
 
 public class NodeInfoAction extends DatadogPluginAction {
@@ -67,9 +69,9 @@ public class NodeInfoAction extends DatadogPluginAction {
                 '}';
     }
 
-    public static final class ConverterImpl extends DatadogActionConverter<NodeInfoAction> {
+    public static final class ConverterImpl extends DatadogConverter<NodeInfoAction> {
         public ConverterImpl(XStream xs) {
-            super(new ConverterV1());
+            super(ignoreOldData(), new ConverterV1());
         }
     }
 

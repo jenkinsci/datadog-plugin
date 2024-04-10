@@ -33,13 +33,6 @@ import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy;
 
 public interface DatadogClient {
 
-    enum ClientType {
-        HTTP,
-        DSD;
-
-        ClientType() { }
-    }
-
     enum Status {
         OK(0),
         WARNING(1),

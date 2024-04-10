@@ -1,12 +1,14 @@
 package org.datadog.jenkins.plugins.datadog.model;
 
+import static org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter.ignoreOldData;
+
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.converters.MarshallingContext;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 import java.util.Objects;
-import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogConverter;
 import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
 
 public class PipelineQueueInfoAction extends DatadogPluginAction {
@@ -62,9 +64,9 @@ public class PipelineQueueInfoAction extends DatadogPluginAction {
                 '}';
     }
 
-    public static final class ConverterImpl extends DatadogActionConverter<PipelineQueueInfoAction> {
+    public static final class ConverterImpl extends DatadogConverter<PipelineQueueInfoAction> {
         public ConverterImpl(XStream xs) {
-            super(new ConverterV1());
+            super(ignoreOldData(), new ConverterV1());
         }
     }
 

@@ -14,54 +14,7 @@
   -->
   <f:section title="Datadog Plugin">
 
-    <f:radioBlock title="Use the Datadog Agent to report to Datadog (recommended)" name="reportWith" value="DSD"
-        checked="${instance.reportWithEquals('DSD')}" inline="true">
-
-        <f:entry title="Agent Host" field="targetHostEntry">
-          <f:textbox field="targetHost" default="${targetHost}" checkMethod="post" />
-        </f:entry>
-
-        <f:entry title="DogStatsD Port" field="targetPortEntry">
-          <f:textbox field="targetPort" default="${targetPort}" checkMethod="post" />
-        </f:entry>
-
-        <f:entry title="Log Collection Port" field="targetLogCollectionPortEntry" description="(Optional)">
-          <f:textbox field="targetLogCollectionPort" default="${targetLogCollectionPort}" checkMethod="post" />
-        </f:entry>
-
-        <f:validateButton title="${%Test logs connection}" progress="${%Testing...}" method="checkAgentConnectivityLogs" with="targetHost,targetLogCollectionPort" />
-
-        <f:entry title="Traces Collection Port" field="targetTraceCollectionPortEntry" description="(Optional) (Required for CI Visibility)">
-            <f:textbox field="targetTraceCollectionPort" default="${targetTraceCollectionPort}" checkMethod="post" />
-        </f:entry>
-
-        <f:validateButton title="${%Test traces connection}" progress="${%Testing...}" method="checkAgentConnectivityTraces" with="targetHost,targetTraceCollectionPort" />
-    </f:radioBlock>
-
-    <f:radioBlock title="Use Datadog API URL and Key to report to Datadog" name="reportWith" value="HTTP"
-        checked="${instance.reportWithEquals('HTTP')}" inline="true" >
-
-        <f:entry title="Datadog API URL" field="targetApiURLEntry" description="URL which the plugin reports to." >
-          <f:textbox field="targetApiURL" default="${targetApiURL}" checkMethod="post" />
-        </f:entry>
-
-        <f:entry title="Datadog Log Intake URL" field="targetLogIntakeURLEntry" description="URL which the plugin reports logs to." >
-          <f:textbox field="targetLogIntakeURL" default="${targetLogIntakeURL}" checkMethod="post" />
-        </f:entry>
-
-        <f:entry title="Datadog Webhook Intake URL" field="targetWebhookIntakeURLEntry" description="URL which the plugin reports CI Visibility events to." >
-          <f:textbox field="targetWebhookIntakeURL" default="${targetWebhookIntakeURL}" checkMethod="post" />
-        </f:entry>
-
-        <f:entry title="Datadog API Key" field="targetApiKeyEntry">
-          <f:password field="targetApiKey" default="${targetApiKey}" checkMethod="post" />
-        </f:entry>
-        <f:entry title="Datadog API Key (Select from Credentials)" field="targetCredentialsApiKeyEntry">
-          <f:select field="targetCredentialsApiKey" default="${targetCredentialsApiKey}" checkMethod="post" />
-        </f:entry>
-
-        <f:validateButton title="${%Test Key}" progress="${%Testing...}" method="testConnection" with="targetApiKey,targetCredentialsApiKey,targetApiURL" checkMethod="post" />
-    </f:radioBlock>
+    <f:descriptorRadioList varName="datadogClientConfiguration" instance="${instance.datadogClientConfiguration}" descriptors="${instance.datadogClientConfigs}"/>
 
     <f:entry title="Logs">
         <f:checkbox title="Enable Log Collection" field="collectBuildLogs" default="false" />
@@ -70,9 +23,9 @@
     <f:entry title="CI Visibility">
         <f:block>
             <table>
-              <f:optionalBlock name="ciVisibilityData" field="collectBuildTraces" title="Enable CI Visibility" default="false">
-                <f:entry title="CI Instance Name" field="traceServiceNameEntry">
-                  <f:textbox field="traceServiceName" default="${traceServiceName}" checkMethod="post" />
+              <f:optionalBlock name="ciVisibilityData" field="enableCiVisibility" title="Enable CI Visibility" default="false">
+                <f:entry title="CI Instance Name" field="ciInstanceName">
+                  <f:textbox default="${ciInstanceName}" checkMethod="post" />
                 </f:entry>
               </f:optionalBlock>
             </table>
@@ -91,12 +44,12 @@
         </f:entry>
         <f:validateButton title="${%Test Hostname}" progress="${%Testing...}" method="testHostname" with="hostname" checkMethod="post" />
 
-        <f:entry title="Excluded Jobs" description="A comma-separated list of job names that should not monitored." >
-          <f:textarea field="blacklist" optional="true" default="${blacklist}" />
+        <f:entry title="Excluded Jobs" description="A comma-separated list of job names that should not be monitored. The list can contain regular expressions (please keep in mind that regular expressions are not glob patterns)." >
+          <f:textarea field="excluded" optional="true" default="${excluded}" />
         </f:entry>
 
-        <f:entry title="Included Jobs" description="A list of job names that should be monitored. An empty included permits all jobs not excluded." >
-          <f:textarea field="whitelist" optional="true" default="${whitelist}" />
+        <f:entry title="Included Jobs" description="A comma-separated list of job names that should be monitored. An empty included permits all jobs not excluded. The list can contain regular expressions (please keep in mind that regular expressions are not glob patterns)." >
+          <f:textarea field="included" optional="true" default="${included}" />
         </f:entry>
 
         <f:entry field="globalTagFileEntry" title="Global Tag File" description="Add tags from default file in workspace.">
@@ -140,11 +93,9 @@
             <f:checkbox title="Refresh Dogstatsd Client" field="refreshDogstatsdClient" default="false" />
         </f:entry>
 
-
         <f:entry title="Use AWS Instance ID" description="Attempt to use AWS instance ID when resolving hostname">
             <f:checkbox title="Use AWS Instance ID" field="useAwsInstanceHostname" default="false" />
         </f:entry>
-
 
         <f:entry title="Cache Build Runs" description="Cache build runs when calculating pause duration">
             <f:checkbox title="Cache Build Runs" field="cacheBuildRuns" default="true" />

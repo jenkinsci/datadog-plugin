@@ -1,0 +1,26 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration plugin="datadog@6.0.3">
+    <datadogClientConfiguration class="org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration">
+        <agentHost>my-agent-host</agentHost>
+        <agentPort>9876</agentPort>
+        <agentLogCollectionPort>8765</agentLogCollectionPort>
+        <agentTraceCollectionPort>7654</agentTraceCollectionPort>
+    </datadogClientConfiguration>
+    <ciInstanceName>my-jenkins-service-name</ciInstanceName>
+    <hostname>my-hostname</hostname>
+    <excluded>my-blacklist</excluded>
+    <included>my-whitelist</included>
+    <globalTagFile>my-global-tag-file</globalTagFile>
+    <globalTags>my-global-tags</globalTags>
+    <globalJobTags>my-global-job-tags</globalJobTags>
+    <includeEvents>my-include-events</includeEvents>
+    <excludeEvents>my-exclude-evens</excludeEvents>
+    <emitSecurityEvents>true</emitSecurityEvents>
+    <emitSystemEvents>true</emitSystemEvents>
+    <collectBuildLogs>true</collectBuildLogs>
+    <enableCiVisibility>true</enableCiVisibility>
+    <retryLogs>true</retryLogs>
+    <refreshDogstatsdClient>true</refreshDogstatsdClient>
+    <cacheBuildRuns>true</cacheBuildRuns>
+    <useAwsInstanceHostname>true</useAwsInstanceHostname>
+</org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration>

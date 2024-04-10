@@ -31,7 +31,6 @@ import com.timgroup.statsd.ServiceCheck;
 import com.timgroup.statsd.StatsDClient;
 import java.net.ConnectException;
 import java.net.InetAddress;
-import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -102,38 +101,11 @@ public class DatadogAgentClient implements DatadogClient {
     }
 
     public DatadogAgentClient(String hostname, Integer port, Integer logCollectionPort, Integer traceCollectionPort, long evpProxyTimeoutMillis) {
-        validate(hostname, port, logCollectionPort, traceCollectionPort);
-
         this.hostname = hostname;
         this.port = port;
         this.logCollectionPort = logCollectionPort;
         this.traceCollectionPort = traceCollectionPort;
         this.client = new HttpClient(evpProxyTimeoutMillis);
-    }
-
-    private static void validate(String hostname, Integer port, Integer logCollectionPort, Integer traceCollectionPort) {
-        if (hostname == null || hostname.isEmpty()) {
-            throw new IllegalArgumentException("Datadog Target URL is not set properly");
-        }
-        if (port == null) {
-            throw new IllegalArgumentException("Datadog Target Port is not set properly");
-        }
-        if (DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs()  && logCollectionPort == null) {
-            logger.warning("Datadog Log Collection Port is not set properly");
-        }
-
-        if (DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()  && traceCollectionPort == null) {
-            logger.warning("Datadog Trace Collection Port is not set properly");
-        }
-    }
-
-    public static ConnectivityResult checkConnectivity(final String host, final int port) {
-        try(Socket ignored = new Socket(host, port)) {
-            return ConnectivityResult.SUCCESS;
-        } catch (Exception ex) {
-            DatadogUtilities.severe(logger, ex, "Failed to create socket to host: " + host + ", port: " +port + ". Error: " + ex);
-            return new ConnectivityResult(true, ex.toString());
-        }
     }
 
     /**

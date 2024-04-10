@@ -29,17 +29,14 @@ import hudson.util.Secret;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-import net.sf.json.JSON;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-import net.sf.json.JSONSerializer;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
@@ -82,105 +79,11 @@ public class DatadogApiClient implements DatadogClient {
     private final HttpClient httpClient;
 
     public DatadogApiClient(String url, String logIntakeUrl, String webhookIntakeUrl, Secret apiKey) {
-        validate(url, logIntakeUrl, webhookIntakeUrl, apiKey);
         this.url = url;
         this.apiKey = apiKey;
         this.logIntakeUrl = logIntakeUrl;
         this.webhookIntakeUrl = webhookIntakeUrl;
         this.httpClient = new HttpClient(HTTP_TIMEOUT_MS);
-    }
-
-    private static void validate(String url, String logIntakeUrl, String webhookIntakeUrl, Secret apiKey) throws IllegalArgumentException {
-        if (url == null || url.isEmpty()) {
-            throw new IllegalArgumentException("Datadog Target URL is not set properly");
-        }
-        if (apiKey == null || Secret.toString(apiKey).isEmpty()){
-            throw new IllegalArgumentException("Datadog API Key is not set properly");
-        }
-
-        if (!validateDefaultIntakeConnection(url, apiKey)) {
-            throw new IllegalArgumentException("Connection broken, please double check both your API URL and Key");
-        }
-
-        if (DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs() ) {
-            if (logIntakeUrl == null || logIntakeUrl.isEmpty()) {
-                throw new IllegalArgumentException("Datadog Log Intake URL is not set properly");
-            }
-            if (!validateLogIntakeConnection(logIntakeUrl, apiKey)) {
-                throw new IllegalArgumentException("Connection broken, please double check both your Log Intake URL and Key");
-            }
-        }
-
-        if (DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility() ) {
-            if (webhookIntakeUrl == null || webhookIntakeUrl.isEmpty()) {
-                throw new IllegalArgumentException("Datadog Webhook Intake URL is not set properly");
-            }
-            if (!validateWebhookIntakeConnection(webhookIntakeUrl, apiKey)) {
-                throw new IllegalArgumentException("Connection broken, please double check both your Webhook Intake URL and Key");
-            }
-        }
-    }
-
-    public static boolean validateDefaultIntakeConnection(String validatedUrl, Secret apiKey) {
-        String urlParameters = "?api_key=" + Secret.toString(apiKey);
-        String url = validatedUrl + VALIDATE + urlParameters;
-        try {
-            JSONObject json = (JSONObject) new HttpClient(HTTP_TIMEOUT_MS).get(url, Collections.emptyMap(), JSONSerializer::toJSON);
-            return json.getBoolean("valid");
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            DatadogUtilities.severe(logger, e, "Failed to validate webhook connection");
-            return false;
-        } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "Failed to validate webhook connection");
-            return false;
-        }
-    }
-
-    @SuppressFBWarnings("DLS_DEAD_LOCAL_STORE")
-    private static boolean validateWebhookIntakeConnection(String webhookIntakeUrl, Secret apiKey) {
-        Map<String, String> headers = new HashMap<>();
-        headers.put("DD-API-KEY", Secret.toString(apiKey));
-
-        byte[] body = "{}".getBytes(StandardCharsets.UTF_8);
-        try {
-            JSON jsonResponse = new HttpClient(HTTP_TIMEOUT_MS).post(webhookIntakeUrl, headers, "application/json", body, JSONSerializer::toJSON);
-            // consider test successful if JSON was parsed without errors
-            return true;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            DatadogUtilities.severe(logger, e, "Failed to validate webhook connection");
-            return false;
-        } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "Failed to validate webhook connection");
-            return false;
-        }
-    }
-
-    private static boolean validateLogIntakeConnection(String logsIntakeUrl, Secret apiKey) {
-        String payload = "{\"message\":\"[datadog-plugin] Check connection\", " +
-                "\"ddsource\":\"Jenkins\", \"service\":\"Jenkins\", " +
-                "\"hostname\":\"" + DatadogUtilities.getHostname(null) + "\"}";
-        return postLogs(new HttpClient(HTTP_TIMEOUT_MS), logsIntakeUrl, apiKey, payload);
-    }
-
-    private static boolean postLogs(HttpClient httpClient, String logIntakeUrl, Secret apiKey, String payload) {
-        if(payload == null){
-            logger.fine("No payload to post");
-            return true;
-        }
-
-        Map<String, String> headers = new HashMap<>();
-        headers.put("DD-API-KEY", Secret.toString(apiKey));
-
-        byte[] body = payload.getBytes(StandardCharsets.UTF_8);
-        try {
-            httpClient.postAsynchronously(logIntakeUrl, headers, "application/json", body);
-            return true;
-        } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "Failed to post logs");
-            return false;
-        }
     }
 
     public boolean event(DatadogEvent event) {
@@ -325,7 +228,23 @@ public class DatadogApiClient implements DatadogClient {
             logger.severe("Datadog Log Intake URL is not set properly");
             throw new RuntimeException("Datadog Log Collection Port not set properly");
         }
-        return postLogs(httpClient, logIntakeUrl, apiKey, payload);
+
+        if(payload == null){
+            logger.fine("No payload to post");
+            return true;
+        }
+
+        Map<String, String> headers = new HashMap<>();
+        headers.put("DD-API-KEY", Secret.toString(apiKey));
+
+        byte[] body = payload.getBytes(StandardCharsets.UTF_8);
+        try {
+            httpClient.postAsynchronously(logIntakeUrl, headers, "application/json", body);
+            return true;
+        } catch (Exception e) {
+            DatadogUtilities.severe(logger, e, "Failed to post logs");
+            return false;
+        }
     }
 
     @Override
