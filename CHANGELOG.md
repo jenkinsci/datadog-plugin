@@ -1,5 +1,10 @@
 Changes
 =======
+## 6.0.3 / 2024-04-11
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-6.0.2...datadog-6.0.3
+
+* [Fixed] Add git-client as a plugin dependency. See [#413](https://github.com/jenkinsci/datadog-plugin/pull/413).
+
 ## 6.0.2 / 2024-02-08
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-6.0.1...datadog-6.0.2
 
