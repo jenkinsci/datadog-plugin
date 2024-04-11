@@ -14,7 +14,7 @@
   -->
   <f:section title="Datadog Plugin">
 
-    <f:descriptorRadioList varName="datadogClientConfiguration" instance="${instance.datadogClientConfiguration}" descriptors="${instance.datadogClientConfigs}"/>
+    <f:descriptorRadioList varName="datadogClientConfiguration" instance="${instance.datadogClientConfiguration}" descriptors="${instance.datadogClientConfigOptions}"/>
 
     <f:entry title="Logs">
         <f:checkbox title="Enable Log Collection" field="collectBuildLogs" default="false" />

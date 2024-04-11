@@ -1,3 +1,4 @@
+<?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 
     <f:entry title="Datadog API URL" field="apiUrl" description="URL which the plugin reports to." >
@@ -12,13 +13,8 @@
       <f:textbox default="${descriptor.defaultWebhookIntakeUrl}" checkMethod="post" />
     </f:entry>
 
-    <f:entry title="Datadog API Key" field="apiKey">
-      <f:password value="${instance.apiKey != null ? instance.apiKey : descriptor.defaultApiKey}" checkMethod="post" />
-    </f:entry>
-    <f:entry title="Datadog API Key (Select from Credentials)" field="apiKeyCredentialsId">
-      <f:select checkMethod="post" />
-    </f:entry>
+    <div class="jenkins-form-label help-sibling">Datadog API key</div>
 
-    <f:validateButton title="${%Test Key}" progress="${%Testing...}" method="checkConnectivity" with="apiKey,apiKeyCredentialsId,apiUrl" checkMethod="post" />
+    <f:descriptorRadioList varName="apiKey" instance="${instance.apiKey != null ? instance.apiKey : descriptor.defaultApiKey}" descriptors="${descriptor.apiKeyOptions}"/>
 
 </j:jelly>

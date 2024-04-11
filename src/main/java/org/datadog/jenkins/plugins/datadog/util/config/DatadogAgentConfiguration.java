@@ -1,6 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.util.config;
 
 import hudson.Extension;
+import hudson.RelativePath;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
 import java.net.MalformedURLException;
@@ -154,6 +155,26 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
         public FormValidation doCheckAgentPort(@QueryParameter("agentPort") Integer agentPort) {
             if (agentPort == null) {
                 return FormValidation.error("Please enter port value");
+            }
+            return FormValidation.ok();
+        }
+
+        @RequirePOST
+        public FormValidation doCheckAgentLogCollectionPort(@QueryParameter("agentLogCollectionPort") Integer agentLogCollectionPort,
+                                                            @RelativePath("..")
+                                                            @QueryParameter("collectBuildLogs") final boolean collectBuildLogs) {
+            if (collectBuildLogs && agentLogCollectionPort == null) {
+                return FormValidation.error("Log collection is enabled, please enter log collection port value");
+            }
+            return FormValidation.ok();
+        }
+
+        @RequirePOST
+        public FormValidation doCheckAgentTraceCollectionPort(@QueryParameter("agentTraceCollectionPort") Integer agentTraceCollectionPort,
+                                                              @RelativePath("..")
+                                                              @QueryParameter("ciVisibilityData") final boolean enableCiVisibility) {
+            if (enableCiVisibility && agentTraceCollectionPort == null) {
+                return FormValidation.error("CI Visibility is enabled, please enter traces collection port value");
             }
             return FormValidation.ok();
         }

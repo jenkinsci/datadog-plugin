@@ -8,7 +8,9 @@ unclassified:
         apiUrl: 'my-api-url'
         logIntakeUrl: 'my-log-intake-url'
         webhookIntakeUrl: 'my-webhook-intake-url'
-        apiKeyCredentialsId: 'my-api-key-credentials-id'
+        apiKey:
+          datadogCredentialsApiKey:
+            credentialsId: 'my-api-key-credentials-id'
     enableCiVisibility: true
     ciInstanceName: 'my-ci-instance-name'
     excluded: 'my-excluded'

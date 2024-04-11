@@ -10,6 +10,8 @@ import hudson.util.XStream2;
 import java.net.URL;
 import org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration;
 import org.datadog.jenkins.plugins.datadog.util.config.DatadogApiConfiguration;
+import org.datadog.jenkins.plugins.datadog.util.config.DatadogCredentialsApiKey;
+import org.datadog.jenkins.plugins.datadog.util.config.DatadogTextApiKey;
 import org.junit.Test;
 
 public class DatadogGlobalConfigurationTest {
@@ -30,8 +32,43 @@ public class DatadogGlobalConfigurationTest {
         assertEquals("https://my-api-url.com/api/", datadogClientConfiguration.getApiUrl());
         assertEquals("https://my-log-intake-url.com/v1/input/", datadogClientConfiguration.getLogIntakeUrl());
         assertEquals("https://my-webhook-intake-url.com/api/v2/webhook/", datadogClientConfiguration.getWebhookIntakeUrl());
-        assertEquals("my-api-key-credentials-id", datadogClientConfiguration.getApiKeyCredentialsId());
-        assertEquals("{AQAAABAAAAAwB78atDHwzelG9W0Fw5FRNq0ZUaLh1BwpQPKhvs2u84lxkRPDqeUNoVZel+MKwfyTOjuetnituHYGMdvE9bc3kg==}", Secret.toString(datadogClientConfiguration.getApiKey()));
+
+        assertTrue(datadogClientConfiguration.getApiKey() instanceof DatadogTextApiKey);
+        DatadogTextApiKey textApiKey = (DatadogTextApiKey) datadogClientConfiguration.getApiKey();
+        assertEquals("{AQAAABAAAAAwB78atDHwzelG9W0Fw5FRNq0ZUaLh1BwpQPKhvs2u84lxkRPDqeUNoVZel+MKwfyTOjuetnituHYGMdvE9bc3kg==}", Secret.toString(textApiKey.getKey()));
+
+        assertEquals("my-jenkins-service-name", configuration.getCiInstanceName());
+        assertEquals("my-hostname", configuration.getHostname());
+        assertEquals("my-blacklist", configuration.getExcluded());
+        assertEquals("my-whitelist", configuration.getIncluded());
+        assertEquals("my-global-tag-file", configuration.getGlobalTagFile());
+        assertEquals("my-global-tags", configuration.getGlobalTags());
+        assertEquals("my-global-job-tags", configuration.getGlobalJobTags());
+        assertEquals("my-include-events", configuration.getIncludeEvents());
+        assertEquals("my-exclude-evens", configuration.getExcludeEvents());
+        assertFalse(configuration.isEmitSecurityEvents());
+        assertFalse(configuration.isEmitSystemEvents());
+        assertTrue(configuration.isCollectBuildLogs());
+        assertTrue(configuration.getEnableCiVisibility());
+        assertFalse(configuration.isRetryLogs());
+        assertTrue(configuration.isRefreshDogstatsdClient());
+        assertFalse(configuration.isCacheBuildRuns());
+        assertTrue(configuration.isUseAwsInstanceHostname());
+    }
+
+    @Test
+    public void canLoadGlobalConfigurationWithCredentialsApiKey() {
+        DatadogGlobalConfiguration configuration = parseConfiguration("globalConfigurationCredentialsKey.xml");
+
+        assertTrue(configuration.getDatadogClientConfiguration() instanceof DatadogApiConfiguration);
+        DatadogApiConfiguration datadogClientConfiguration = (DatadogApiConfiguration) configuration.getDatadogClientConfiguration();
+        assertEquals("https://my-api-url.com/api/", datadogClientConfiguration.getApiUrl());
+        assertEquals("https://my-log-intake-url.com/v1/input/", datadogClientConfiguration.getLogIntakeUrl());
+        assertEquals("https://my-webhook-intake-url.com/api/v2/webhook/", datadogClientConfiguration.getWebhookIntakeUrl());
+
+        assertTrue(datadogClientConfiguration.getApiKey() instanceof DatadogCredentialsApiKey);
+        DatadogCredentialsApiKey credentialsApiKey = (DatadogCredentialsApiKey) datadogClientConfiguration.getApiKey();
+        assertEquals("my-api-key-credentials-id", credentialsApiKey.getCredentialsId());
 
         assertEquals("my-jenkins-service-name", configuration.getCiInstanceName());
         assertEquals("my-hostname", configuration.getHostname());
@@ -91,8 +128,43 @@ public class DatadogGlobalConfigurationTest {
         assertEquals("my-target-api-url", datadogClientConfiguration.getApiUrl());
         assertEquals("my-target-log-intake-url", datadogClientConfiguration.getLogIntakeUrl());
         assertEquals("my-target-webhook-intake-url", datadogClientConfiguration.getWebhookIntakeUrl());
-        assertEquals("target-credentials-api-key", datadogClientConfiguration.getApiKeyCredentialsId());
-        assertEquals("{AQAAABAAAAAwB78atDHwzelG9W0Fw5FRNq0ZUaLh1BwpQPKhvs2u84lxkRPDqeUNoVZel+MKwfyTOjuetnituHYGMdvE9bc3kg==}", Secret.toString(datadogClientConfiguration.getApiKey()));
+
+        assertTrue(datadogClientConfiguration.getApiKey() instanceof DatadogTextApiKey);
+        DatadogTextApiKey textApiKey = (DatadogTextApiKey) datadogClientConfiguration.getApiKey();
+        assertEquals("{AQAAABAAAAAwB78atDHwzelG9W0Fw5FRNq0ZUaLh1BwpQPKhvs2u84lxkRPDqeUNoVZel+MKwfyTOjuetnituHYGMdvE9bc3kg==}", Secret.toString(textApiKey.getKey()));
+
+        assertEquals("my-jenkins-service-name", configuration.getCiInstanceName());
+        assertEquals("my-hostname", configuration.getHostname());
+        assertEquals("my-blacklist", configuration.getExcluded());
+        assertEquals("my-whitelist", configuration.getIncluded());
+        assertEquals("my-global-tag-file", configuration.getGlobalTagFile());
+        assertEquals("my-global-tags", configuration.getGlobalTags());
+        assertEquals("my-global-job-tags", configuration.getGlobalJobTags());
+        assertEquals("my-include-events", configuration.getIncludeEvents());
+        assertEquals("my-exclude-evens", configuration.getExcludeEvents());
+        assertFalse(configuration.isEmitSecurityEvents());
+        assertFalse(configuration.isEmitSystemEvents());
+        assertTrue(configuration.isCollectBuildLogs());
+        assertTrue(configuration.getEnableCiVisibility());
+        assertFalse(configuration.isRetryLogs());
+        assertTrue(configuration.isRefreshDogstatsdClient());
+        assertFalse(configuration.isCacheBuildRuns());
+        assertTrue(configuration.isUseAwsInstanceHostname());
+    }
+
+    @Test
+    public void canLoadGlobalConfigurationFromLegacyFormatWithCredentialsApiKey() {
+        DatadogGlobalConfiguration configuration = parseConfiguration("globalConfigurationLegacyFormatCredentialsKey.xml");
+
+        assertTrue(configuration.getDatadogClientConfiguration() instanceof DatadogApiConfiguration);
+        DatadogApiConfiguration datadogClientConfiguration = (DatadogApiConfiguration) configuration.getDatadogClientConfiguration();
+        assertEquals("my-target-api-url", datadogClientConfiguration.getApiUrl());
+        assertEquals("my-target-log-intake-url", datadogClientConfiguration.getLogIntakeUrl());
+        assertEquals("my-target-webhook-intake-url", datadogClientConfiguration.getWebhookIntakeUrl());
+
+        assertTrue(datadogClientConfiguration.getApiKey() instanceof DatadogCredentialsApiKey);
+        DatadogCredentialsApiKey credentialsApiKey = (DatadogCredentialsApiKey) datadogClientConfiguration.getApiKey();
+        assertEquals("target-credentials-api-key", credentialsApiKey.getCredentialsId());
 
         assertEquals("my-jenkins-service-name", configuration.getCiInstanceName());
         assertEquals("my-hostname", configuration.getHostname());

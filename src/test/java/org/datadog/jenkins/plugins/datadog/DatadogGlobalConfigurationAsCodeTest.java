@@ -1,10 +1,14 @@
 package org.datadog.jenkins.plugins.datadog;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
 import org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration;
 import org.datadog.jenkins.plugins.datadog.util.config.DatadogApiConfiguration;
 import org.datadog.jenkins.plugins.datadog.util.config.DatadogClientConfiguration;
+import org.datadog.jenkins.plugins.datadog.util.config.DatadogCredentialsApiKey;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -25,7 +29,10 @@ public class DatadogGlobalConfigurationAsCodeTest {
         Assert.assertEquals("my-api-url", apiConfiguration.getApiUrl());
         Assert.assertEquals("my-log-intake-url", apiConfiguration.getLogIntakeUrl());
         Assert.assertEquals("my-webhook-intake-url", apiConfiguration.getWebhookIntakeUrl());
-        Assert.assertEquals("my-api-key-credentials-id", apiConfiguration.getApiKeyCredentialsId());
+
+        assertTrue(apiConfiguration.getApiKey() instanceof DatadogCredentialsApiKey);
+        DatadogCredentialsApiKey credentialsApiKey = (DatadogCredentialsApiKey) apiConfiguration.getApiKey();
+        assertEquals("my-api-key-credentials-id", credentialsApiKey.getCredentialsId());
 
         Assert.assertTrue(cfg.getEnableCiVisibility());
         Assert.assertEquals("my-ci-instance-name", cfg.getCiInstanceName());
@@ -86,10 +93,13 @@ public class DatadogGlobalConfigurationAsCodeTest {
         Assert.assertTrue(datadogClientConfiguration instanceof DatadogApiConfiguration);
 
         DatadogApiConfiguration apiConfiguration = (DatadogApiConfiguration) datadogClientConfiguration;
-        Assert.assertEquals("my-target-credentials-api-key", apiConfiguration.getApiKeyCredentialsId());
         Assert.assertEquals("my-target-api-url", apiConfiguration.getApiUrl());
         Assert.assertEquals("my-target-log-intake-url", apiConfiguration.getLogIntakeUrl());
         Assert.assertEquals("my-target-webhook-intake-url", apiConfiguration.getWebhookIntakeUrl());
+
+        assertTrue(apiConfiguration.getApiKey() instanceof DatadogCredentialsApiKey);
+        DatadogCredentialsApiKey credentialsApiKey = (DatadogCredentialsApiKey) apiConfiguration.getApiKey();
+        assertEquals("my-target-credentials-api-key", credentialsApiKey.getCredentialsId());
 
         Assert.assertTrue(cfg.getEnableCiVisibility());
         Assert.assertEquals("my-trace-service-name", cfg.getCiInstanceName());
