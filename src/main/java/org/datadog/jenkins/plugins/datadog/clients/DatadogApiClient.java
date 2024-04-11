@@ -34,7 +34,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import net.sf.json.JSON;
@@ -46,6 +45,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
 import org.datadog.jenkins.plugins.datadog.traces.write.Payload;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategyImpl;
@@ -258,43 +258,11 @@ public class DatadogApiClient implements DatadogClient {
     }
 
     @Override
-    public boolean incrementCounter(String name, String hostname, Map<String, Set<String>> tags) {
-        if(this.defaultIntakeConnectionBroken){
-            logger.severe("Your client is not initialized properly");
-            return false;
-        }
-        ConcurrentMetricCounters.getInstance().increment(name, hostname, tags);
-        return true;
+    public MetricsClient metrics() {
+        return new ApiMetrics();
     }
 
-    @Override
-    public void flushCounters() {
-        ConcurrentMap<CounterMetric, Integer> counters = ConcurrentMetricCounters.getInstance().getAndReset();
-
-        logger.fine("Run flushCounters method");
-        try (HttpMetrics metrics = metrics()) {
-            // Submit all metrics as gauge
-            for (Map.Entry<CounterMetric, Integer> entry : counters.entrySet()) {
-                CounterMetric counterMetric = entry.getKey();
-                int count = entry.getValue();
-                logger.fine("Flushing: " + counterMetric.getMetricName() + " - " + count);
-
-                metrics.rate(
-                        counterMetric.getMetricName(), count,
-                        counterMetric.getHostname(),
-                        counterMetric.getTags());
-            }
-        } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "Failed to flush counters");
-        }
-    }
-
-    @Override
-    public HttpMetrics metrics() {
-        return new HttpMetrics();
-    }
-
-    private final class HttpMetrics implements Metrics {
+    private final class ApiMetrics implements MetricsClient {
         // when we submit a rate we need to divide the submitted value by the interval (10)
         private static final int RATE_INTERVAL = 10;
 
@@ -302,21 +270,22 @@ public class DatadogApiClient implements DatadogClient {
         private final long timestamp = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
 
         @Override
-        public void gauge(String name, long value, String hostname, Map<String, Set<String>> tags) {
+        public void gauge(String name, double value, String hostname, Map<String, Set<String>> tags) {
             addMetric(name, value, hostname, tags, "gauge");
         }
 
-        public void rate(String name, float value, String hostname, Map<String, Set<String>> tags) {
+        @Override
+        public void rate(String name, double value, String hostname, Map<String, Set<String>> tags) {
             addMetric(name, value, hostname, tags, "rate");
         }
 
-        private void addMetric(String name, float value, String hostname, Map<String, Set<String>> tags, String type) {
+        private void addMetric(String name, double value, String hostname, Map<String, Set<String>> tags, String type) {
             logger.fine(String.format("Sending metric '%s' with value %s", name, value));
 
             JSONArray point = new JSONArray();
             point.add(timestamp);
             if (type.equals("rate")) {
-                point.add(value / (float) RATE_INTERVAL);
+                point.add(value / RATE_INTERVAL);
             } else {
                 point.add(value);
             }

@@ -26,107 +26,37 @@ At this point you're waiting on us. We may suggest some changes, improvements or
 
 ### Setup
 
+The docker environment described below should only be used for development and testing purposes. __It is not production-ready.__
+
 To spin up a development environment for the *jenkins-datadog* plugin repository. The requirements are:
 
 * [Java 1.8](https://www.java.com/en/download/)
 * [Docker](https://docs.docker.com/get-started/) & [docker-compose](https://docs.docker.com/compose/install/)
 * [A clone/fork of this repository](https://help.github.com/en/articles/fork-a-repo)
 
-
-1. To get started, save the following `docker-compose.yaml` file in your working directory locally:
-
-    ```
-    version: "3.7"
-    services:
-      jenkins:
-        image: jenkins/jenkins:lts
-        ports:
-          - 8080:8080
-        volumes:
-          - $JENKINS_PLUGIN/target/:/var/jenkins_home/plugins
-    ## Uncomment environment variables based on your needs. Everything can be configured in jenkins /configure page as well.
-    #   environment:
-    #      - DATADOG_JENKINS_PLUGIN_REPORT_WITH=DSD
-    #      - DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS=false
-    ## Set `DATADOG_JENKINS_PLUGIN_TARGET_HOST` to `dogstatsd` or `datadog` based on the container you wish to use.
-    #      - DATADOG_JENKINS_PLUGIN_TARGET_HOST=dogstatsd
-    #      - DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT=10518
-    #      - DATADOG_JENKINS_PLUGIN_TARGET_API_KEY=$JENKINS_PLUGIN_DATADOG_API_KEY
-
-    ## Uncomment the section below to use the standalone DogStatsD server to send metrics to Datadog
-    #  dogstatsd:
-    #    image: datadog/dogstatsd:latest
-    #    environment:
-    #      - DD_API_KEY=$JENKINS_PLUGIN_DATADOG_API_KEY
-    #    ports:
-    #      - 8125:8125
-
-    ## Uncomment the section below to use the whole Datadog Agent to send metrics (and logs) to Datadog.
-    ## Note that it contains a DogStatsD server as well.
-    #  datadog:
-    #    image: datadog/agent:latest
-    #    environment:
-    #      - DD_API_KEY=$JENKINS_PLUGIN_DATADOG_API_KEY
-    #      - DD_LOGS_ENABLED=true
-    #      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
-    #     ports:
-    #       - 8125:8125
-    #       - 10518:10518
-    #    volumes:
-    #      - /var/run/docker.sock:/var/run/docker.sock:ro
-    #      - /proc/:/host/proc/:ro
-    #      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
-    #      - $JENKINS_PLUGIN/conf.yaml:/etc/datadog-agent/conf.d/jenkins.d/conf.yaml
-
-    ```
-1. If you wish to submit log using the Datadog Agent, you will have to configure the Datadog Agent properly by creating a `conf.yaml` file with the following content.
-
-    ```
-    logs:
-      - type: tcp
-        port: 10518
-        service: "jenkins"
-        source: "jenkins"
-    ```
 1. Set the `JENKINS_PLUGIN` environment variable to point to the directory where this repository is cloned/forked.
 1. Set the `JENKINS_PLUGIN_DATADOG_API_KEY` environment variable with your api key.
-1. Run `docker-compose -f <DOCKER_COMPOSE_FILE_PATH> up`.
-    - NOTE: This spins up the Jenkins docker image and auto mount the target folder of this repository (the location where the binary is built)
-    - NOTE: To see code updates, after re building the provider with `mvn clean package` on your local machine, run `docker-compose down` and spin this up again.
-1. Check your terminal and look for the admin password:
-    ```
-    jenkins_1    | *************************************************************
-    jenkins_1    | *************************************************************
-    jenkins_1    | *************************************************************
-    jenkins_1    |
-    jenkins_1    | Jenkins initial setup is required. An admin user has been created and a password generated.
-    jenkins_1    | Please use the following password to proceed to installation:
-    jenkins_1    |
-    jenkins_1    | <JENKINS_ADMIN_PASSWORD>
-    jenkins_1    |
-    jenkins_1    | This may also be found at: /var/jenkins_home/secrets/initialAdminPassword
-    jenkins_1    |
-    jenkins_1    | *************************************************************
-    jenkins_1    | *************************************************************
-    jenkins_1    | *************************************************************
-    ```
-
-1. Access your Jenkins instance http://localhost:8080
-1. Enter the administrator password in the Getting Started form.
-1. On the next page, click on the "Select plugins to be installed" unless you want to install all suggested plugins.
-1. Select desired plugins depending on your needs. You can always add plugins later.
-1. Create a user so that you don't have to use the admin credential again (optional).
-1. Continue until the end of the setup process and log back in.
-1. Go to http://localhost:8080/configure to configure the "Datadog Plugin", set your `API Key`.
-  - Click on the "Test Key" to make sure your key is valid.
+1. Set the `JENKINS_PLUGIN_DATADOG_CI_INSTANCE_NAME` to a name you would like your instance to have (makes it easier to identify your pipeline executions by setting `@ci.provider.instance:your-instance-name` filter in the Datadog UI).
+1. Optionally set the `GITHUB_SSH_KEY` and `GITHUB_SSH_KEY_PASSPHRASE` environment variables with the key and passphrase that can be used to access GitHub. This allows to automatically create GitHub credentials in Jenkins.   
+1. Run `mvn clean package -DskipTests` and `docker-compose -p datadog-jenkins-plugin -f docker/docker-compose.yaml up` from the directory where this repository is cloned/forked (if the `docker-compose` command fails with a `path ... not found` error, try updating it to the latest version).
+    - NOTE: This spins up the Jenkins docker image and auto mounts the target folder of this repository (the location where the binary is built).
+    - NOTE: To see code updates after re-running the maven build on your local machine, run `docker-compose -p datadog-jenkins-plugin -f docker/docker-compose.yaml down` and spin it up again.
+1. Access your Jenkins instance http://localhost:8080 with the admin credentials `admin`/`local-jenkins-instance-admin-password`.
+1. Go to http://localhost:8080/configure to configure the "Datadog Plugin":
+  - Click on the "Test Key" to make sure that the key you set using `JENKINS_PLUGIN_DATADOG_API_KEY` is valid.
   - You can set your machine `hostname`.
   - You can set Global Tag. For example `.*, owner:$1, release_env:$2, optional:Tag3`.
+
+Jenkins controller container exposes port 5055 for remote debugging via JDWP. 
 
 #### Manual Testing without an Agent
 
 Alternatively, you can manually test the plugin by running the command `mvn hpi:run`, which will spin up a local development environment without the agent. This allows you to test using the HTTP client without needing docker. See the [jenkins documentation](https://jenkinsci.github.io/maven-hpi-plugin/run-mojo.html) for more details and options.
 
 ### Create your first job
+
+If you use the `docker-compose.yaml` available in this repository, some sample jobs and pipelines will be provisioned by default.
+You can also create a new job to test the plugin.
 
 1. On jenkins Home page, click on "Create a new Job"
 1. Give it a name and select "freestyle project".
@@ -139,6 +69,7 @@ Alternatively, you can manually test the plugin by running the command `mvn hpi:
     ```
 
 ### Create Logger
+
 1. Go to http://localhost:8080/log/
 1. Give a name to your logger - For example `datadog`
 1. Add entries for all `org.datadog.jenkins.plugins.datadog.*` packages with log Level `ALL`.
@@ -146,7 +77,11 @@ Alternatively, you can manually test the plugin by running the command `mvn hpi:
 
 ### Add a Jenkins Agent
 
-It may be useful to set up a Jenkins agent in order to test correctness when running builds on other agents.
+If you use the `docker-compose.yaml` available in this repository, a few agent nodes will be provisioned by default. 
+The agents have different runtimes installed (Python, JS, .NET) as indicated in their names.
+If you do not need the agents, you can comment out the `jenkins-agent-...` services in the `docker-compose.yaml` file.
+
+If you want to set up your own agent, you can follow these steps:
 
 1. Go to `Configure Jenkins > Manage Nodes > New Node`. Enter a node name and select `Permanent Agent`.
 2. Select `Launch Method via Java Web Start` for `Launch Method` and save the node.
@@ -166,7 +101,6 @@ Due to backwards compatability of the plugin, the Jenkins version defined in `po
     <java.level>8</java.level>
     <jenkins.version>{VERSION}</jenkins.version>
     <hpi.compatibleSinceVersion>1.0.0</hpi.compatibleSinceVersion>
-    <dd-trace-java.version>0.71.0</dd-trace-java.version>
   </properties>
 ...
 ```
@@ -183,8 +117,7 @@ When accessing your jenkins instance, you may run into the following warning
 ```
 WARNING o.eclipse.jetty.http.HttpParser#parseFields: Header is too large 8193>8192
 ```
-In this case, use your browser in incognito mode.
-
+In this case, use your browser in incognito mode (or clear the cookies for your local jenkins instance).
 
 ### Unsupported class file major version 57
 

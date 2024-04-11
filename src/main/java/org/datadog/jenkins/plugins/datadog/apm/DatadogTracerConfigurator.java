@@ -35,6 +35,7 @@ public class DatadogTracerConfigurator {
 
     public DatadogTracerConfigurator() {
         configurators = new EnumMap<>(TracerLanguage.class);
+        configurators.put(TracerLanguage.DOTNET, new DotnetConfigurator());
         configurators.put(TracerLanguage.JAVA, new JavaConfigurator());
         configurators.put(TracerLanguage.JAVASCRIPT, new JavascriptConfigurator());
         configurators.put(TracerLanguage.PYTHON, new PythonConfigurator());

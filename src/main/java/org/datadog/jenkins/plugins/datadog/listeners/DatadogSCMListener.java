@@ -49,11 +49,14 @@ import org.datadog.jenkins.plugins.datadog.DatadogJobProperty;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
 import org.datadog.jenkins.plugins.datadog.events.SCMCheckoutCompletedEventImpl;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
 import org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils;
+import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriter;
+import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.datadog.jenkins.plugins.datadog.util.git.RepositoryInfo;
 import org.eclipse.jgit.lib.PersonIdent;
@@ -102,6 +105,27 @@ public class DatadogSCMListener extends SCMListener {
                         + (scm != null ? scm.getType() : null));
             }
 
+            // Collect Build Data
+            BuildData buildData;
+            try {
+                buildData = new BuildData(build, listener);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                DatadogUtilities.severe(logger, e, "Interrupted while trying to parse checked out build data");
+                return;
+            } catch (IOException e) {
+                DatadogUtilities.severe(logger, e, "Failed to parse checked out build data");
+                return;
+            }
+
+            // We have Git info available now - submit a pipeline event so the backend could update its data
+            if (DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
+                TraceWriter traceWriter = TraceWriterFactory.getTraceWriter();
+                if (traceWriter != null) {
+                    traceWriter.submitBuild(buildData, build);
+                }
+            }
+
             DatadogJobProperty prop = DatadogUtilities.getDatadogJobProperties(build);
             if (prop == null || !prop.isEmitSCMEvents()) {
                 return;
@@ -113,15 +137,6 @@ public class DatadogSCMListener extends SCMListener {
                 return;
             }
 
-            // Collect Build Data
-            BuildData buildData;
-            try {
-                buildData = new BuildData(build, listener);
-            } catch (IOException | InterruptedException e) {
-                DatadogUtilities.severe(logger, e, "Failed to parse checked out build data");
-                return;
-            }
-
             // Send event
             boolean shouldSendEvent = DatadogUtilities.shouldSendEvent(SCM_CHECKOUT_COMPLETED_EVENT_NAME);
             if (shouldSendEvent) {
@@ -129,12 +144,14 @@ public class DatadogSCMListener extends SCMListener {
                 client.event(event);
             }
 
-            // Submit counter
             String hostname = DatadogUtilities.getHostname(null);
             Map<String, Set<String>> tags = buildData.getTags();
-            client.incrementCounter("jenkins.scm.checkout", hostname, tags);
+            Metrics.getInstance().incrementCounter("jenkins.scm.checkout", hostname, tags);
 
             logger.fine("End DatadogSCMListener#onCheckout");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            DatadogUtilities.severe(logger, e, "Interrupted while trying to process build checkout event");
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to process build checkout event");
         }

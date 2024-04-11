@@ -52,7 +52,7 @@ public class DatadogConsoleLogFilter extends ConsoleLogFilter implements Seriali
         this.run = run;
     }
 
-    public OutputStream decorateLogger(Run build, OutputStream outputStream) throws IOException, InterruptedException {
+    public OutputStream decorateLogger(Run build, OutputStream outputStream) {
         try {
             if (!DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs()) {
                 logger.fine("Log Collection disabled");
@@ -68,6 +68,9 @@ public class DatadogConsoleLogFilter extends ConsoleLogFilter implements Seriali
             } else {
                 return outputStream;
             }
+        } catch (InterruptedException e){
+            Thread.currentThread().interrupt();
+            DatadogUtilities.severe(logger, e, "Interrupted while trying to wrap logger, logs will not be collected");
         } catch (Exception e){
             DatadogUtilities.severe(logger, e, "Failed to wrap logger, logs will not be collected");
         }

@@ -20,7 +20,6 @@ import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
-import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 /**
@@ -38,30 +37,13 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
             return null;
         }
 
-        final TraceSpan buildSpan = BuildSpanManager.get().get(buildData.getBuildTag(""));
-        if(buildSpan == null) {
-            return null;
-        }
-
         final BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
         if(buildSpanAction == null) {
             return null;
         }
 
-        final long startTimeMillis = buildData.getStartTime(0L);
-        // If the build is a Jenkins Pipeline, the queue time is included in the root duration.
-        // We need to adjust the endTime of the root subtracting the queue time reported by its children.
-        // The propagated queue time is set DatadogTracePipelineLogic#updateBuildData method.
-        // The queue time reported by DatadogBuildListener#onStarted method is not included in the root duration.
-        final long propagatedMillisInQueue = Math.max(buildData.getPropagatedMillisInQueue(-1L), 0);
-        // Although the queue time happens before the startTime, we cannot remove it from the startTime
-        // because there is no API to do it at the end of the trace. Additionally, we cannot create the root
-        // at the end of the build, because we would lose the logs correlation.
-        // When the root starts, we don't have the propagated queue time yet. We need to wait till the
-        // end of the pipeline execution and do it in the endTime, adjusting all children if needed.
-        final long endTimeMillis = buildData.getEndTime(0L) - propagatedMillisInQueue;
         final String jenkinsResult = buildData.getResult("");
-        final String status = statusFromResult(jenkinsResult);
+        final String status = buildData.isBuilding() ? CITags.STATUS_RUNNING : statusFromResult(jenkinsResult);
         final String prefix = PipelineStepData.StepType.PIPELINE.getTagName();
         final String rawGitBranch = buildData.getBranch("");
         final String gitBranch = normalizeBranch(rawGitBranch);
@@ -72,17 +54,26 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
                 .orElse(normalizeTag(rawGitBranch));
 
         JSONObject payload = new JSONObject();
+        payload.put("payload_version", buildData.getVersion());
         payload.put("level", PipelineStepData.StepType.PIPELINE.getBuildLevel());
         payload.put("url", buildData.getBuildUrl(""));
+
+        final long startTimeMillis = buildData.getStartTime(0L);
         payload.put("start", DatadogUtilities.toISO8601(new Date(startTimeMillis)));
-        payload.put("end", DatadogUtilities.toISO8601(new Date(endTimeMillis)));
+
+        Long endTime = buildData.getEndTime(null);
+        if (!buildData.isBuilding() // do not populate end time for in-progress pipelines
+                && endTime != null) {
+            payload.put("end", DatadogUtilities.toISO8601(new Date(endTime)));
+        }
+
         payload.put("partial_retry", false);
-        payload.put("queue_time", getMillisInQueue(buildData));
+        payload.put("queue_time", buildData.getTotalQueueTimeMillis());
         payload.put("status", status);
         payload.put("is_manual", isTriggeredManually(run));
 
-        payload.put("trace_id", buildSpan.context().getTraceId());
-        payload.put("span_id", buildSpan.context().getSpanId());
+        payload.put("trace_id", buildData.getTraceId());
+        payload.put("span_id", buildData.getSpanId());
 
         payload.put("pipeline_id", buildData.getBuildTag(""));
         payload.put("unique_id", buildData.getBuildTag(""));
@@ -121,6 +112,7 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
 
             // Jenkins specific
             tagsPayload.add(CITags._DD_CI_INTERNAL + ":" + "false");
+            tagsPayload.add(CITags.JENKINS_PLUGIN_VERSION + ":" + DatadogUtilities.getDatadogPluginVersion());
             tagsPayload.add(CITags.JENKINS_TAG + ":" + buildData.getBuildTag(""));
             tagsPayload.add(CITags.JENKINS_EXECUTOR_NUMBER  + ":" + buildData.getExecutorNumber(""));
             if (StringUtils.isNotEmpty(jenkinsResult)) {
@@ -244,6 +236,16 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
             }
 
             payload.put("git", gitPayload);
+        }
+
+        // Upstream pipeline info
+        Long upstreamPipelineTraceId = buildData.getUpstreamPipelineTraceId();
+        String upstreamPipelineUrl = buildData.getUpstreamPipelineUrl();
+        if (upstreamPipelineTraceId != null && upstreamPipelineUrl != null) {
+            JSONObject upstreamPayload = new JSONObject();
+            upstreamPayload.put("trace_id", upstreamPipelineTraceId);
+            upstreamPayload.put("url", upstreamPipelineUrl);
+            payload.put("parent_pipeline", upstreamPayload);
         }
 
         return payload;

@@ -1,0 +1,5 @@
+logs:
+  - type: tcp
+    port: 10518
+    service: "jenkins"
+    source: "jenkins"

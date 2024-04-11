@@ -28,6 +28,7 @@ import hudson.model.CauseAction;
 import hudson.model.FreeStyleProject;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
+import hudson.model.queue.QueueTaskFuture;
 import hudson.slaves.DumbSlave;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.triggers.SCMTrigger.SCMTriggerCause;
@@ -41,6 +42,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
@@ -53,6 +55,8 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
+import org.datadog.jenkins.plugins.datadog.publishers.DatadogComputerPublisher;
+import org.datadog.jenkins.plugins.datadog.publishers.DatadogCountersPublisher;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
@@ -73,6 +77,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.recipes.WithTimeout;
 
 public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
@@ -167,6 +172,9 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         when(endNode.getExecution()).thenReturn(flowExecution);
 
         listener.onNewHead(endNode);
+
+        DatadogCountersPublisher.publishMetrics(clientStub);
+
         String hostname = DatadogUtilities.getHostname(null);
         String[] expectedTags = new String[] { "jenkins_url:" + DatadogUtilities.getJenkinsUrl(), "user_id:anonymous",
                 "stage_name:low", "job:pipeline", "parent_stage_name:medium", "stage_depth:2", "result:SUCCESS" };
@@ -722,6 +730,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationQueueTimeOnStages");
         String definition = getPipelineDefinition("testPipelineQueueOnStages.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
+
         // schedule build and wait for it to get queued
         new Thread(() -> {
             try {
@@ -730,6 +739,9 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
                 throw new RuntimeException(e);
             }
         }).start();
+
+        // add some delay before creating the worker:
+        // the build stages will be waiting in the queue until the worker is available
         Thread.sleep(10000);
         final DumbSlave worker = jenkinsRule.createOnlineSlave(Label.get("testStage"));
 
@@ -1199,6 +1211,29 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals("value", stepSpanMeta.get("global_job_tag"));
         assertEquals("pipeline_tag_v2", stepSpanMeta.get("pipeline_tag"));
         assertEquals("pipeline_tag", stepSpanMeta.get("pipeline_tag_v2"));
+    }
+
+    @Test
+    public void testCurrentlyBuildingJobsMetric() throws Exception{
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "testCurrentJobMetricPipeline");
+        String definition = getPipelineDefinition("testCurrentJobMetric.txt");
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+
+        QueueTaskFuture<WorkflowRun> buildFuture = job.scheduleBuild2(0);
+        Future<WorkflowRun> buildStartFuture = buildFuture.getStartCondition();
+        buildStartFuture.get(); // waiting for build to start
+
+        // we know the pipeline is in progress at this point because it cannot complete until 'test-current-metric-agent' node goes online
+        DatadogComputerPublisher.publishMetrics(clientStub);
+
+        DumbSlave agent = jenkinsRule.createOnlineSlave(Label.get("test-current-metric-agent"));
+
+        String hostname = DatadogUtilities.getHostname(null);
+        String[] tags = new String[]{ "jenkins_url:" + DatadogUtilities.getJenkinsUrl() };
+        clientStub.assertMetric("jenkins.job.currently_building", 1, hostname, tags);
+
+        buildFuture.get(); // waiting for build to finish
+        jenkinsRule.disconnectSlave(agent); // disconnecting the agent node
     }
 
     @Test

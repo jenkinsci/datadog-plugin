@@ -34,7 +34,7 @@ final class JavascriptConfigurator implements TracerConfigurator {
 
         Map<String, String> variables = new HashMap<>();
         variables.put("DD_TRACE_PATH", tracerPath.toString());
-        variables.put("NODE_OPTIONS", PropertyUtils.prepend(envs, "NODE_OPTIONS", "-r $DD_TRACE_PATH/ci/init"));
+        variables.put("NODE_OPTIONS", PropertyUtils.prepend(envs, "NODE_OPTIONS", String.format("-r %s/ci/init", tracerPath)));
         return variables;
     }
 }

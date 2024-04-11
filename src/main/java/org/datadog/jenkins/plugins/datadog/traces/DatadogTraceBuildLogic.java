@@ -48,8 +48,8 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
             return null;
         }
 
-        final TraceSpan buildSpan = BuildSpanManager.get().get(buildData.getBuildTag(""));
-        if(buildSpan == null) {
+        if (buildData.isBuilding()) {
+            // APM track does not support in-progress pipelines
             return null;
         }
 
@@ -60,8 +60,12 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
 
         final String prefix = PipelineStepData.StepType.PIPELINE.getTagName();
         final String buildLevel = PipelineStepData.StepType.PIPELINE.getBuildLevel();
-        final long endTimeMicros = buildData.getEndTime(0L) * 1000;
 
+        long traceId = buildData.getTraceId();
+        long spanId = buildData.getSpanId();
+        TraceSpan.TraceSpanContext spanContext = new TraceSpan.TraceSpanContext(traceId, 0, spanId);
+        final TraceSpan buildSpan = new TraceSpan("jenkins.build", TimeUnit.MILLISECONDS.toNanos(buildData.getStartTime(0L)), spanContext);
+        buildSpan.setEndNano(TimeUnit.MILLISECONDS.toNanos(buildData.getEndTime(0L)));
         buildSpan.setServiceName(DatadogUtilities.getDatadogGlobalDescriptor().getCiInstanceName());
         buildSpan.setType("ci");
         buildSpan.putMeta(CITags.CI_PROVIDER_NAME, "jenkins");
@@ -70,6 +74,7 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
         buildSpan.putMeta(CITags._DD_CI_LEVEL, buildLevel);
         buildSpan.putMeta(CITags.IS_MANUAL, isTriggeredManually(run));
         buildSpan.putMeta(CITags._DD_ORIGIN, ORIGIN_CIAPP_PIPELINE);
+        buildSpan.putMeta(CITags.JENKINS_PLUGIN_VERSION, DatadogUtilities.getDatadogPluginVersion());
         buildSpan.putMeta(CITags.USER_NAME, buildData.getUserId());
         if(StringUtils.isNotEmpty(buildData.getUserEmail(""))){
             buildSpan.putMeta(CITags.USER_EMAIL, buildData.getUserEmail(""));
@@ -77,7 +82,7 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
         buildSpan.putMeta(prefix + CITags._ID, buildData.getBuildTag(""));
         buildSpan.putMeta(prefix + CITags._NUMBER, buildData.getBuildNumber(""));
         buildSpan.putMeta(prefix + CITags._URL, buildData.getBuildUrl(""));
-        buildSpan.putMetric(CITags.QUEUE_TIME, TimeUnit.MILLISECONDS.toSeconds(getMillisInQueue(buildData)));
+        buildSpan.putMetric(CITags.QUEUE_TIME, TimeUnit.MILLISECONDS.toSeconds(buildData.getTotalQueueTimeMillis()));
 
         // Pipeline Parameters
         if(!buildData.getBuildParameters().isEmpty()) {
@@ -217,19 +222,6 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
         for(Map.Entry<String, String> tagEntry : globalTags.entrySet()) {
             buildSpan.putMeta(tagEntry.getKey(), tagEntry.getValue());
         }
-
-        // If the build is a Jenkins Pipeline, the queue time is included in the root span duration.
-        // We need to adjust the endTime of the root span subtracting the queue time reported by its child span.
-        // The propagated queue time is set DatadogTracePipelineLogic#updateBuildData method.
-        // The queue time reported by DatadogBuildListener#onStarted method is not included in the root span duration.
-        final long propagatedMillisInQueue = Math.max(buildData.getPropagatedMillisInQueue(-1L), 0);
-
-        // Although the queue time happens before the span startTime, we cannot remove it from the startTime
-        // because there is no API to do it at the end of the trace. Additionally, we cannot create the root span
-        // at the end of the build, because we would lose the logs correlation.
-        // When the root span starts, we don't have the propagated queue time yet. We need to wait till the
-        // end of the pipeline execution and do it in the endTime, adjusting all child spans if needed.
-        buildSpan.setEndNano(TimeUnit.MICROSECONDS.toNanos(endTimeMicros - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue)));
 
         return buildSpan;
     }
