@@ -30,7 +30,7 @@ The docker environment described below should only be used for development and t
 
 To spin up a development environment for the *jenkins-datadog* plugin repository. The requirements are:
 
-* [Java 1.11](https://www.java.com/en/download/)
+* [Java 11](https://www.java.com/en/download/)
 * [Docker](https://docs.docker.com/get-started/) & [docker-compose](https://docs.docker.com/compose/install/)
 * [A clone/fork of this repository](https://help.github.com/en/articles/fork-a-repo)
 
