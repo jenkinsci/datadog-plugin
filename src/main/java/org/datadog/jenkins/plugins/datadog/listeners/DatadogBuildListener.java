@@ -212,7 +212,7 @@ public class DatadogBuildListener extends RunListener<Run> {
                     queueInfoAction.setQueueTimeMillis(waitingMs);
                 }
             } else {
-                // item.getInQueueSince() may raise a NPE if a worker node is spinning up to run the job.
+                // item may be null if a worker node is spinning up to run the job.
                 // This could be expected behavior with ec2 spot instances/ecs containers, meaning no waiting
                 // queue times if the plugin is spinning up an instance/container for one/first job.
                 logger.warning("Unable to get queue waiting time. " +
