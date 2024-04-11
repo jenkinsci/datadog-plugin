@@ -29,9 +29,9 @@ import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConf
 import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentLogCollectionPort;
 import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentPort;
 import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentTraceCollectionPort;
-import static org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration.DatadogApiConfigurationDescriptor.getDefaultApiUrl;
-import static org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration.DatadogApiConfigurationDescriptor.getDefaultLogIntakeUrl;
-import static org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration.DatadogApiConfigurationDescriptor.getDefaultWebhookIntakeUrl;
+import static org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeUrls.DatadogIntakeUrlsDescriptor.getDefaultApiUrl;
+import static org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeUrls.DatadogIntakeUrlsDescriptor.getDefaultLogsUrl;
+import static org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeUrls.DatadogIntakeUrlsDescriptor.getDefaultWebhooksUrl;
 import static org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogTextApiKey.DatadogTextApiKeyDescriptor.getDefaultKey;
 
 import com.thoughtworks.xstream.annotations.XStreamConverter;
@@ -55,6 +55,8 @@ import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogClientConfiguration;
+import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntake;
+import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeUrls;
 import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogApiKey;
 import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogCredentialsApiKey;
 import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogTextApiKey;
@@ -149,9 +151,14 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         // config values set manually in the UI take precedence over the ones provided via environment variables
         if (this.datadogClientConfiguration == null) {
             String clientType = System.getenv(REPORT_WITH_PROPERTY);
-            this.datadogClientConfiguration = DATADOG_AGENT_CLIENT_TYPE.equals(clientType)
-                    ? new DatadogAgentConfiguration(getDefaultAgentHost(), getDefaultAgentPort(), getDefaultAgentLogCollectionPort(), getDefaultAgentTraceCollectionPort())
-                    : new DatadogApiConfiguration(getDefaultApiUrl(), getDefaultLogIntakeUrl(), getDefaultWebhookIntakeUrl(), new DatadogTextApiKey(getDefaultKey()));
+            if (DATADOG_AGENT_CLIENT_TYPE.equals(clientType)) {
+                this.datadogClientConfiguration = new DatadogAgentConfiguration(
+                        getDefaultAgentHost(), getDefaultAgentPort(), getDefaultAgentLogCollectionPort(), getDefaultAgentTraceCollectionPort());
+            } else {
+                DatadogIntakeUrls intake = new DatadogIntakeUrls(getDefaultApiUrl(), getDefaultLogsUrl(), getDefaultWebhooksUrl());
+                DatadogTextApiKey apiKey = new DatadogTextApiKey(getDefaultKey());
+                this.datadogClientConfiguration = new DatadogApiConfiguration(intake, apiKey);
+            }
         }
 
         String traceServiceNameVar = System.getenv(TARGET_TRACE_SERVICE_NAME_PROPERTY);
@@ -994,7 +1001,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     public String getTargetApiURL() {
         if (datadogClientConfiguration instanceof DatadogApiConfiguration) {
             DatadogApiConfiguration apiConfiguration = (DatadogApiConfiguration) datadogClientConfiguration;
-            return apiConfiguration.getApiUrl();
+            DatadogIntake intake = apiConfiguration.getIntake();
+            return intake.getApiUrl();
         }
         return null;
     }
@@ -1004,7 +1012,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     public String getTargetLogIntakeURL() {
         if (datadogClientConfiguration instanceof DatadogApiConfiguration) {
             DatadogApiConfiguration apiConfiguration = (DatadogApiConfiguration) datadogClientConfiguration;
-            return apiConfiguration.getLogIntakeUrl();
+            DatadogIntake intake = apiConfiguration.getIntake();
+            return intake.getLogsUrl();
         }
         return null;
     }
@@ -1014,7 +1023,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     public String getTargetWebhookIntakeURL() {
         if (datadogClientConfiguration instanceof DatadogApiConfiguration) {
             DatadogApiConfiguration apiConfiguration = (DatadogApiConfiguration) datadogClientConfiguration;
-            return apiConfiguration.getWebhookIntakeUrl();
+            DatadogIntake intake = apiConfiguration.getIntake();
+            return intake.getWebhooksUrl();
         }
         return null;
     }
@@ -1115,6 +1125,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.datadogClientConfiguration = new DatadogAgentConfiguration(this.targetHost, this.targetPort, this.targetLogCollectionPort, this.targetTraceCollectionPort);
         }
         if (DATADOG_API_CLIENT_TYPE.equals(reportWith)) {
+            DatadogIntakeUrls intake = new DatadogIntakeUrls(this.targetApiURL, this.targetLogIntakeURL, this.targetWebhookIntakeURL);
             DatadogApiKey apiKey;
             if (this.targetCredentialsApiKey != null) {
                 apiKey = new DatadogCredentialsApiKey(this.targetCredentialsApiKey);
@@ -1123,7 +1134,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             } else {
                 apiKey = null;
             }
-            this.datadogClientConfiguration = new DatadogApiConfiguration(this.targetApiURL, this.targetLogIntakeURL, this.targetWebhookIntakeURL, apiKey);
+            this.datadogClientConfiguration = new DatadogApiConfiguration(intake, apiKey);
         }
         return this;
     }

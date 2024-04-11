@@ -8,6 +8,7 @@ import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogClientConfiguration;
+import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntake;
 import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogCredentialsApiKey;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -22,13 +23,15 @@ public class DatadogGlobalConfigurationAsCodeTest {
     @ConfiguredWithCode("test-config.yml")
     public void testConfigurationAsCodeCompatibility() {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+
         DatadogClientConfiguration datadogClientConfiguration = cfg.getDatadogClientConfiguration();
         Assert.assertTrue(datadogClientConfiguration instanceof DatadogApiConfiguration);
-
         DatadogApiConfiguration apiConfiguration = (DatadogApiConfiguration) datadogClientConfiguration;
-        Assert.assertEquals("my-api-url", apiConfiguration.getApiUrl());
-        Assert.assertEquals("my-log-intake-url", apiConfiguration.getLogIntakeUrl());
-        Assert.assertEquals("my-webhook-intake-url", apiConfiguration.getWebhookIntakeUrl());
+
+        DatadogIntake intake = apiConfiguration.getIntake();
+        Assert.assertEquals("my-api-url", intake.getApiUrl());
+        Assert.assertEquals("my-log-intake-url", intake.getLogsUrl());
+        Assert.assertEquals("my-webhook-intake-url", intake.getWebhooksUrl());
 
         assertTrue(apiConfiguration.getApiKey() instanceof DatadogCredentialsApiKey);
         DatadogCredentialsApiKey credentialsApiKey = (DatadogCredentialsApiKey) apiConfiguration.getApiKey();
@@ -52,6 +55,8 @@ public class DatadogGlobalConfigurationAsCodeTest {
         Assert.assertTrue(cfg.isCacheBuildRuns());
         Assert.assertTrue(cfg.isUseAwsInstanceHostname());
     }
+
+    // FIXME nikita: add testcase with Datadog site configuration
 
     @Test
     @ConfiguredWithCode("test-config-agent.yml")
@@ -89,13 +94,15 @@ public class DatadogGlobalConfigurationAsCodeTest {
     @ConfiguredWithCode("test-config-legacy.yml")
     public void testLegacyConfigurationAsCodeCompatibility() {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+
         DatadogClientConfiguration datadogClientConfiguration = cfg.getDatadogClientConfiguration();
         Assert.assertTrue(datadogClientConfiguration instanceof DatadogApiConfiguration);
-
         DatadogApiConfiguration apiConfiguration = (DatadogApiConfiguration) datadogClientConfiguration;
-        Assert.assertEquals("my-target-api-url", apiConfiguration.getApiUrl());
-        Assert.assertEquals("my-target-log-intake-url", apiConfiguration.getLogIntakeUrl());
-        Assert.assertEquals("my-target-webhook-intake-url", apiConfiguration.getWebhookIntakeUrl());
+
+        DatadogIntake intake = apiConfiguration.getIntake();
+        Assert.assertEquals("my-target-api-url", intake.getApiUrl());
+        Assert.assertEquals("my-target-log-intake-url", intake.getLogsUrl());
+        Assert.assertEquals("my-target-webhook-intake-url", intake.getWebhooksUrl());
 
         assertTrue(apiConfiguration.getApiKey() instanceof DatadogCredentialsApiKey);
         DatadogCredentialsApiKey credentialsApiKey = (DatadogCredentialsApiKey) apiConfiguration.getApiKey();

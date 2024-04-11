@@ -1,17 +1,9 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 
-    <f:entry title="Datadog API URL" field="apiUrl" description="URL which the plugin reports to." >
-      <f:textbox default="${descriptor.defaultApiUrl}" checkMethod="post" />
-    </f:entry>
+    <div class="jenkins-form-label help-sibling">Datadog Site</div>
 
-    <f:entry title="Datadog Log Intake URL" field="logIntakeUrl" description="URL which the plugin reports logs to." >
-      <f:textbox default="${descriptor.defaultLogIntakeUrl}" checkMethod="post" />
-    </f:entry>
-
-    <f:entry title="Datadog Webhook Intake URL" field="webhookIntakeUrl" description="URL which the plugin reports CI Visibility events to." >
-      <f:textbox default="${descriptor.defaultWebhookIntakeUrl}" checkMethod="post" />
-    </f:entry>
+    <f:descriptorRadioList varName="intake" instance="${instance.intake != null ? instance.intake : descriptor.defaultIntake}" descriptors="${descriptor.intakeOptions}"/>
 
     <div class="jenkins-form-label help-sibling">Datadog API key</div>
 

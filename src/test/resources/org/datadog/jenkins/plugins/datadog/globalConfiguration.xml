@@ -1,9 +1,11 @@
 <?xml version='1.1' encoding='UTF-8'?>
 <org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration plugin="datadog@6.0.3">
     <datadogClientConfiguration class="org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration">
-        <apiUrl>https://my-api-url.com/api/</apiUrl>
-        <logIntakeUrl>https://my-log-intake-url.com/v1/input/</logIntakeUrl>
-        <webhookIntakeUrl>https://my-webhook-intake-url.com/api/v2/webhook/</webhookIntakeUrl>
+        <intake class="org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeUrls">
+            <apiUrl>https://my-api-url.com/api/</apiUrl>
+            <logsUrl>https://my-log-intake-url.com/v1/input/</logsUrl>
+            <webhooksUrl>https://my-webhook-intake-url.com/api/v2/webhook/</webhooksUrl>
+        </intake>
         <apiKey class="org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogTextApiKey">
             <key>{AQAAABAAAAAwB78atDHwzelG9W0Fw5FRNq0ZUaLh1BwpQPKhvs2u84lxkRPDqeUNoVZel+MKwfyTOjuetnituHYGMdvE9bc3kg==}</key>
         </apiKey>

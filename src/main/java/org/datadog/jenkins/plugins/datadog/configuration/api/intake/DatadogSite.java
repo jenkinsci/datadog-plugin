@@ -1,4 +1,4 @@
-package org.datadog.jenkins.plugins.datadog.configuration.api.site;
+package org.datadog.jenkins.plugins.datadog.configuration.api.intake;
 
 public enum DatadogSite {
     US1("https://api.datadoghq.com/api/", "https://http-intake.logs.datadoghq.com/v1/input/", "https://webhook-intake.datadoghq.com/api/v2/webhook/");

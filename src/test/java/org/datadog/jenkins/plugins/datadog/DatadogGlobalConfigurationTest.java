@@ -10,6 +10,7 @@ import hudson.util.XStream2;
 import java.net.URL;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration;
+import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntake;
 import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogCredentialsApiKey;
 import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogTextApiKey;
 import org.junit.Test;
@@ -26,12 +27,13 @@ public class DatadogGlobalConfigurationTest {
     @Test
     public void canLoadGlobalConfiguration() {
         DatadogGlobalConfiguration configuration = parseConfiguration("globalConfiguration.xml");
-
         assertTrue(configuration.getDatadogClientConfiguration() instanceof DatadogApiConfiguration);
         DatadogApiConfiguration datadogClientConfiguration = (DatadogApiConfiguration) configuration.getDatadogClientConfiguration();
-        assertEquals("https://my-api-url.com/api/", datadogClientConfiguration.getApiUrl());
-        assertEquals("https://my-log-intake-url.com/v1/input/", datadogClientConfiguration.getLogIntakeUrl());
-        assertEquals("https://my-webhook-intake-url.com/api/v2/webhook/", datadogClientConfiguration.getWebhookIntakeUrl());
+
+        DatadogIntake intake = datadogClientConfiguration.getIntake();
+        assertEquals("https://my-api-url.com/api/", intake.getApiUrl());
+        assertEquals("https://my-log-intake-url.com/v1/input/", intake.getLogsUrl());
+        assertEquals("https://my-webhook-intake-url.com/api/v2/webhook/", intake.getWebhooksUrl());
 
         assertTrue(datadogClientConfiguration.getApiKey() instanceof DatadogTextApiKey);
         DatadogTextApiKey textApiKey = (DatadogTextApiKey) datadogClientConfiguration.getApiKey();
@@ -59,12 +61,13 @@ public class DatadogGlobalConfigurationTest {
     @Test
     public void canLoadGlobalConfigurationWithCredentialsApiKey() {
         DatadogGlobalConfiguration configuration = parseConfiguration("globalConfigurationCredentialsKey.xml");
-
         assertTrue(configuration.getDatadogClientConfiguration() instanceof DatadogApiConfiguration);
         DatadogApiConfiguration datadogClientConfiguration = (DatadogApiConfiguration) configuration.getDatadogClientConfiguration();
-        assertEquals("https://my-api-url.com/api/", datadogClientConfiguration.getApiUrl());
-        assertEquals("https://my-log-intake-url.com/v1/input/", datadogClientConfiguration.getLogIntakeUrl());
-        assertEquals("https://my-webhook-intake-url.com/api/v2/webhook/", datadogClientConfiguration.getWebhookIntakeUrl());
+
+        DatadogIntake intake = datadogClientConfiguration.getIntake();
+        assertEquals("https://my-api-url.com/api/", intake.getApiUrl());
+        assertEquals("https://my-log-intake-url.com/v1/input/", intake.getLogsUrl());
+        assertEquals("https://my-webhook-intake-url.com/api/v2/webhook/", intake.getWebhooksUrl());
 
         assertTrue(datadogClientConfiguration.getApiKey() instanceof DatadogCredentialsApiKey);
         DatadogCredentialsApiKey credentialsApiKey = (DatadogCredentialsApiKey) datadogClientConfiguration.getApiKey();
@@ -88,6 +91,8 @@ public class DatadogGlobalConfigurationTest {
         assertFalse(configuration.isCacheBuildRuns());
         assertTrue(configuration.isUseAwsInstanceHostname());
     }
+
+    // FIXME nikita: add testcase with Datadog site configuration
 
     @Test
     public void canLoadGlobalConfigurationReportingToAgent() {
@@ -122,12 +127,13 @@ public class DatadogGlobalConfigurationTest {
     @Test
     public void canLoadGlobalConfigurationFromLegacyFormat() {
         DatadogGlobalConfiguration configuration = parseConfiguration("globalConfigurationLegacyFormat.xml");
-
         assertTrue(configuration.getDatadogClientConfiguration() instanceof DatadogApiConfiguration);
         DatadogApiConfiguration datadogClientConfiguration = (DatadogApiConfiguration) configuration.getDatadogClientConfiguration();
-        assertEquals("my-target-api-url", datadogClientConfiguration.getApiUrl());
-        assertEquals("my-target-log-intake-url", datadogClientConfiguration.getLogIntakeUrl());
-        assertEquals("my-target-webhook-intake-url", datadogClientConfiguration.getWebhookIntakeUrl());
+
+        DatadogIntake intake = datadogClientConfiguration.getIntake();
+        assertEquals("my-target-api-url", intake.getApiUrl());
+        assertEquals("my-target-log-intake-url", intake.getLogsUrl());
+        assertEquals("my-target-webhook-intake-url", intake.getWebhooksUrl());
 
         assertTrue(datadogClientConfiguration.getApiKey() instanceof DatadogTextApiKey);
         DatadogTextApiKey textApiKey = (DatadogTextApiKey) datadogClientConfiguration.getApiKey();
@@ -155,12 +161,13 @@ public class DatadogGlobalConfigurationTest {
     @Test
     public void canLoadGlobalConfigurationFromLegacyFormatWithCredentialsApiKey() {
         DatadogGlobalConfiguration configuration = parseConfiguration("globalConfigurationLegacyFormatCredentialsKey.xml");
-
         assertTrue(configuration.getDatadogClientConfiguration() instanceof DatadogApiConfiguration);
         DatadogApiConfiguration datadogClientConfiguration = (DatadogApiConfiguration) configuration.getDatadogClientConfiguration();
-        assertEquals("my-target-api-url", datadogClientConfiguration.getApiUrl());
-        assertEquals("my-target-log-intake-url", datadogClientConfiguration.getLogIntakeUrl());
-        assertEquals("my-target-webhook-intake-url", datadogClientConfiguration.getWebhookIntakeUrl());
+
+        DatadogIntake intake = datadogClientConfiguration.getIntake();
+        assertEquals("my-target-api-url", intake.getApiUrl());
+        assertEquals("my-target-log-intake-url", intake.getLogsUrl());
+        assertEquals("my-target-webhook-intake-url", intake.getWebhooksUrl());
 
         assertTrue(datadogClientConfiguration.getApiKey() instanceof DatadogCredentialsApiKey);
         DatadogCredentialsApiKey credentialsApiKey = (DatadogCredentialsApiKey) datadogClientConfiguration.getApiKey();
