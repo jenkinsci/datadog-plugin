@@ -122,4 +122,4 @@ In this case, use your browser in incognito mode (or clear the cookies for your 
 
 ### Unsupported class file major version 57
 
-If pipeline jobs fail with the error `java.lang.IllegalArgumentException: Unsupported class file major version 57`, then double-check the version of Java running the server is `1.11`.  Note that `mvn` can find a different version that what may be in your path, you can verify via `mvn --version`.
+If pipeline jobs fail with the error `java.lang.IllegalArgumentException: Unsupported class file major version 57`, then double-check the version of Java running the server is `11` or newer.  Note that `mvn` can find a different version that what may be in your path, you can verify via `mvn --version`.
