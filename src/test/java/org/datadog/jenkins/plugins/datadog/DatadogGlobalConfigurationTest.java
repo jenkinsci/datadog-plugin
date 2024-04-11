@@ -8,10 +8,10 @@ import com.thoughtworks.xstream.XStream;
 import hudson.util.Secret;
 import hudson.util.XStream2;
 import java.net.URL;
-import org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration;
-import org.datadog.jenkins.plugins.datadog.util.config.DatadogApiConfiguration;
-import org.datadog.jenkins.plugins.datadog.util.config.DatadogCredentialsApiKey;
-import org.datadog.jenkins.plugins.datadog.util.config.DatadogTextApiKey;
+import org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration;
+import org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration;
+import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogCredentialsApiKey;
+import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogTextApiKey;
 import org.junit.Test;
 
 public class DatadogGlobalConfigurationTest {

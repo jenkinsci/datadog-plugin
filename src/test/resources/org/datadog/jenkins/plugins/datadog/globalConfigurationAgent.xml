@@ -1,6 +1,6 @@
 <?xml version='1.1' encoding='UTF-8'?>
 <org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration plugin="datadog@6.0.3">
-    <datadogClientConfiguration class="org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration">
+    <datadogClientConfiguration class="org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration">
         <agentHost>my-agent-host</agentHost>
         <agentPort>9876</agentPort>
         <agentLogCollectionPort>8765</agentLogCollectionPort>

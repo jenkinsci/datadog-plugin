@@ -1,11 +1,11 @@
-package org.datadog.jenkins.plugins.datadog.util.config;
+package org.datadog.jenkins.plugins.datadog.configuration;
 
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogApiConfiguration.DEFAULT_API_URL_VALUE;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogApiConfiguration.DEFAULT_LOG_INTAKE_URL_VALUE;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogApiConfiguration.DEFAULT_WEBHOOK_INTAKE_URL_VALUE;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogApiConfiguration.TARGET_API_URL_PROPERTY;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogApiConfiguration.TARGET_LOG_INTAKE_URL_PROPERTY;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogApiConfiguration.TARGET_WEBHOOK_INTAKE_URL_PROPERTY;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration.DEFAULT_API_URL_VALUE;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration.DEFAULT_LOG_INTAKE_URL_VALUE;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration.DEFAULT_WEBHOOK_INTAKE_URL_VALUE;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration.TARGET_API_URL_PROPERTY;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration.TARGET_LOG_INTAKE_URL_PROPERTY;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration.TARGET_WEBHOOK_INTAKE_URL_PROPERTY;
 import static org.junit.Assert.assertEquals;
 
 import com.github.stefanbirkner.systemlambda.SystemLambda;

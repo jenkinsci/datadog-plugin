@@ -1,6 +1,6 @@
-package org.datadog.jenkins.plugins.datadog.util.config;
+package org.datadog.jenkins.plugins.datadog.configuration.api.key;
 
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogApiConfiguration.TARGET_API_KEY_PROPERTY;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration.TARGET_API_KEY_PROPERTY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 

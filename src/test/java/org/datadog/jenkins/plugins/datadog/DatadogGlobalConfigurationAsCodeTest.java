@@ -5,10 +5,10 @@ import static org.junit.Assert.assertTrue;
 
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
-import org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration;
-import org.datadog.jenkins.plugins.datadog.util.config.DatadogApiConfiguration;
-import org.datadog.jenkins.plugins.datadog.util.config.DatadogClientConfiguration;
-import org.datadog.jenkins.plugins.datadog.util.config.DatadogCredentialsApiKey;
+import org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration;
+import org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration;
+import org.datadog.jenkins.plugins.datadog.configuration.DatadogClientConfiguration;
+import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogCredentialsApiKey;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;

@@ -1,4 +1,4 @@
-package org.datadog.jenkins.plugins.datadog.util.config;
+package org.datadog.jenkins.plugins.datadog.configuration.api.key;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;

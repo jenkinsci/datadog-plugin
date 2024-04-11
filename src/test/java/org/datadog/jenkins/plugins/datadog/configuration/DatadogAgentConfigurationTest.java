@@ -1,17 +1,17 @@
-package org.datadog.jenkins.plugins.datadog.util.config;
+package org.datadog.jenkins.plugins.datadog.configuration;
 
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration.DD_AGENT_HOST;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration.DD_AGENT_PORT;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration.DD_TRACE_AGENT_PORT;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration.DD_TRACE_AGENT_URL;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration.DEFAULT_AGENT_HOST_VALUE;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration.DEFAULT_AGENT_PORT_VALUE;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration.DEFAULT_LOG_COLLECTION_PORT_VALUE;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration.DEFAULT_TRACE_COLLECTION_PORT_VALUE;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration.TARGET_HOST_PROPERTY;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration.TARGET_LOG_COLLECTION_PORT_PROPERTY;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration.TARGET_PORT_PROPERTY;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration.TARGET_TRACE_COLLECTION_PORT_PROPERTY;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DD_AGENT_HOST;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DD_AGENT_PORT;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DD_TRACE_AGENT_PORT;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DD_TRACE_AGENT_URL;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DEFAULT_AGENT_HOST_VALUE;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DEFAULT_AGENT_PORT_VALUE;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DEFAULT_LOG_COLLECTION_PORT_VALUE;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DEFAULT_TRACE_COLLECTION_PORT_VALUE;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.TARGET_HOST_PROPERTY;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.TARGET_LOG_COLLECTION_PORT_PROPERTY;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.TARGET_PORT_PROPERTY;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.TARGET_TRACE_COLLECTION_PORT_PROPERTY;
 import static org.junit.Assert.assertEquals;
 
 import com.github.stefanbirkner.systemlambda.SystemLambda;

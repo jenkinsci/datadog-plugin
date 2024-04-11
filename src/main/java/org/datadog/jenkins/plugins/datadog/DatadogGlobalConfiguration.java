@@ -25,14 +25,14 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog;
 
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentHost;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentLogCollectionPort;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentPort;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentTraceCollectionPort;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogApiConfiguration.DatadogApiConfigurationDescriptor.getDefaultApiUrl;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogApiConfiguration.DatadogApiConfigurationDescriptor.getDefaultLogIntakeUrl;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogApiConfiguration.DatadogApiConfigurationDescriptor.getDefaultWebhookIntakeUrl;
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogTextApiKey.DatadogTextApiKeyDescriptor.getDefaultKey;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentHost;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentLogCollectionPort;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentPort;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentTraceCollectionPort;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration.DatadogApiConfigurationDescriptor.getDefaultApiUrl;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration.DatadogApiConfigurationDescriptor.getDefaultLogIntakeUrl;
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration.DatadogApiConfigurationDescriptor.getDefaultWebhookIntakeUrl;
+import static org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogTextApiKey.DatadogTextApiKeyDescriptor.getDefaultKey;
 
 import com.thoughtworks.xstream.annotations.XStreamConverter;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -52,13 +52,13 @@ import jenkins.model.GlobalConfiguration;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
+import org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration;
+import org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration;
+import org.datadog.jenkins.plugins.datadog.configuration.DatadogClientConfiguration;
+import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogApiKey;
+import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogCredentialsApiKey;
+import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogTextApiKey;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
-import org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration;
-import org.datadog.jenkins.plugins.datadog.util.config.DatadogApiConfiguration;
-import org.datadog.jenkins.plugins.datadog.util.config.DatadogApiKey;
-import org.datadog.jenkins.plugins.datadog.util.config.DatadogClientConfiguration;
-import org.datadog.jenkins.plugins.datadog.util.config.DatadogCredentialsApiKey;
-import org.datadog.jenkins.plugins.datadog.util.config.DatadogTextApiKey;
 import org.datadog.jenkins.plugins.datadog.util.conversion.PolymorphicReflectionConverter;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;

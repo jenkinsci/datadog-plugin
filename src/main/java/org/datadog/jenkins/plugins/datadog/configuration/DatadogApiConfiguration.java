@@ -1,6 +1,6 @@
-package org.datadog.jenkins.plugins.datadog.util.config;
+package org.datadog.jenkins.plugins.datadog.configuration;
 
-import static org.datadog.jenkins.plugins.datadog.util.config.DatadogTextApiKey.DatadogTextApiKeyDescriptor.getDefaultKey;
+import static org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogTextApiKey.DatadogTextApiKeyDescriptor.getDefaultKey;
 
 import com.thoughtworks.xstream.annotations.XStreamConverter;
 import hudson.DescriptorExtensionList;
@@ -22,13 +22,13 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONSerializer;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
-import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogApiClient;
 import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
+import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogApiKey;
+import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogTextApiKey;
 import org.datadog.jenkins.plugins.datadog.util.conversion.PolymorphicReflectionConverter;
 import org.jenkinsci.Symbol;
-import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.interceptor.RequirePOST;
@@ -36,10 +36,10 @@ import org.kohsuke.stapler.interceptor.RequirePOST;
 @Symbol("datadogApiConfiguration")
 public class DatadogApiConfiguration extends DatadogClientConfiguration {
 
-    static final String TARGET_API_URL_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_API_URL";
-    static final String TARGET_LOG_INTAKE_URL_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_LOG_INTAKE_URL";
-    static final String TARGET_WEBHOOK_INTAKE_URL_PROPERTY = "DATADOG_JENKINS_TARGET_WEBHOOK_INTAKE_URL";
-    static final String TARGET_API_KEY_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_API_KEY";
+    public static final String TARGET_API_URL_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_API_URL";
+    public static final String TARGET_LOG_INTAKE_URL_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_LOG_INTAKE_URL";
+    public static final String TARGET_WEBHOOK_INTAKE_URL_PROPERTY = "DATADOG_JENKINS_TARGET_WEBHOOK_INTAKE_URL";
+    public static final String TARGET_API_KEY_PROPERTY = "DATADOG_JENKINS_PLUGIN_TARGET_API_KEY";
 
     static final String DEFAULT_API_URL_VALUE = "https://api.datadoghq.com/api/";
     static final String DEFAULT_LOG_INTAKE_URL_VALUE = "https://http-intake.logs.datadoghq.com/v1/input/";

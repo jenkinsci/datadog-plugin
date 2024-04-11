@@ -20,7 +20,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.DatadogPluginAction;
-import org.datadog.jenkins.plugins.datadog.util.config.DatadogClientConfiguration;
+import org.datadog.jenkins.plugins.datadog.configuration.DatadogClientConfiguration;
 
 public class DatadogTracerConfigurator {
 

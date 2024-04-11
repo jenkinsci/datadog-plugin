@@ -1,4 +1,4 @@
-package org.datadog.jenkins.plugins.datadog.util.config;
+package org.datadog.jenkins.plugins.datadog.configuration.api.key;
 
 import hudson.DescriptorExtensionList;
 import hudson.model.Describable;

@@ -1,4 +1,4 @@
-package org.datadog.jenkins.plugins.datadog.util.config;
+package org.datadog.jenkins.plugins.datadog.configuration;
 
 import hudson.Extension;
 import hudson.RelativePath;
