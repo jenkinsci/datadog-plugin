@@ -603,7 +603,7 @@ public class BuildData implements Serializable {
      *
      * @return a map containing all tags values
      */
-    @SuppressFBWarnings
+    @SuppressFBWarnings("DCN_NULLPOINTER_EXCEPTION")
     public Map<String, Set<String>> getTags() {
         Map<String, Set<String>> allTags = new HashMap<>();
         try {
@@ -633,7 +633,7 @@ public class BuildData implements Serializable {
         return allTags;
     }
 
-    @SuppressFBWarnings
+    @SuppressFBWarnings("DCN_NULLPOINTER_EXCEPTION")
     public Map<String, String> getTagsForTraces() {
         Map<String, Set<String>> allTags = new HashMap<>();
         try {
@@ -823,7 +823,6 @@ public class BuildData implements Serializable {
         return userId;
     }
 
-    @SuppressFBWarnings
     private String getUserId(Run run) {
         if (promotedUserId != null){
             return promotedUserId;

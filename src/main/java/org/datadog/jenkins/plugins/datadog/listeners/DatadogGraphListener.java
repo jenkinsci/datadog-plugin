@@ -307,7 +307,7 @@ public class DatadogGraphListener implements GraphListener {
         }
     }
 
-    @SuppressFBWarnings
+    @SuppressFBWarnings("DCN_NULLPOINTER_EXCEPTION")
     private long getPauseDurationMillis(@Nonnull FlowNode startNode) {
         try {
             long pauseDuration = 0;
