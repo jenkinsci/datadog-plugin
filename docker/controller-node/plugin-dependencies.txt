@@ -7,6 +7,7 @@ workflow-durable-task-step
 workflow-job
 credentials
 git
+git-client
 jackson2-api
 matrix-project
 plain-credentials
