@@ -823,6 +823,7 @@ public class BuildData implements Serializable {
         return userId;
     }
 
+    @SuppressFBWarnings("DCN_NULLPOINTER_EXCEPTION")
     private String getUserId(Run run) {
         if (promotedUserId != null){
             return promotedUserId;
