@@ -132,12 +132,7 @@ public class DatadogUtilities {
             return result;
         }
         String jobName;
-        try {
-            jobName = run.getParent().getFullName();
-        } catch (Exception e) {
-            // It can only throw an Exception when running tests
-            return result;
-        }
+        jobName = run.getParent().getFullName();
         final DatadogGlobalConfiguration datadogGlobalConfig = getDatadogGlobalDescriptor();
         if (datadogGlobalConfig == null) {
             return result;
@@ -490,10 +485,9 @@ public class DatadogUtilities {
     public static String getHostname(EnvVars envVars) {
         // Check hostname configuration from Jenkins
         String hostname = null;
-        try {
-            hostname = getDatadogGlobalDescriptor().getHostname();
-        } catch (Exception e) {
-            // noop
+        DatadogGlobalConfiguration datadogConfiguration = getDatadogGlobalDescriptor();
+        if (datadogConfiguration != null) {
+            hostname = datadogConfiguration.getHostname();
         }
 
         if (isValidHostname(hostname)) {
