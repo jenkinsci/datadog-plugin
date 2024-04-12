@@ -1,4 +1,4 @@
-def latestSupported = "2.453"
+def latestSupported = "2.407"
 def recentLTS = "2.361.4"
 def configurations = [
     [ platform: "linux", jdk: "11", jenkins: null ],
