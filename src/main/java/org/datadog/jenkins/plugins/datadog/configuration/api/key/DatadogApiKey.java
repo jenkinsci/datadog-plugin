@@ -1,17 +1,24 @@
 package org.datadog.jenkins.plugins.datadog.configuration.api.key;
 
-import hudson.DescriptorExtensionList;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
+import hudson.util.FormValidation;
 import hudson.util.Secret;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
+import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
+import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntake;
+import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeSite;
+import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogSite;
 
 public abstract class DatadogApiKey implements Describable<DatadogApiKey>, Serializable {
 
@@ -22,12 +29,39 @@ public abstract class DatadogApiKey implements Describable<DatadogApiKey>, Seria
     public abstract Secret getKey();
 
     public static abstract class DatadogApiKeyDescriptor extends Descriptor<DatadogApiKey> {
-        public static DescriptorExtensionList<DatadogApiKey, DatadogApiKeyDescriptor> all() {
-            return Jenkins.getInstanceOrNull().getDescriptorList(DatadogApiKey.class);
+        public static List<DatadogApiKeyDescriptor> all() {
+            List<DatadogApiKeyDescriptor> descriptors = Jenkins.getInstanceOrNull().getDescriptorList(DatadogApiKey.class);
+            List<DatadogApiKeyDescriptor> sortedDescriptors = new ArrayList<>(descriptors);
+            sortedDescriptors.sort(Comparator.comparingInt(DatadogApiKeyDescriptor::getOrder));
+            return sortedDescriptors;
+        }
+
+        public abstract int getOrder();
+    }
+
+    static FormValidation checkConnectivity(Secret apiKeyValue, int intakeIdx, String site, String apiUrl) {
+        String validationUrl;
+        List<DatadogIntake.DatadogIntakeDescriptor> intakes = DatadogIntake.DatadogIntakeDescriptor.all();
+        if (intakes.get(intakeIdx) instanceof DatadogIntakeSite.DatadogIntakeSiteDescriptor) {
+            if (StringUtils.isBlank(site)) {
+                return FormValidation.error("Please select a site");
+            }
+            DatadogSite datadogSite = DatadogSite.valueOf(site);
+            validationUrl = datadogSite.getApiUrl();
+        }  else {
+            if (StringUtils.isBlank(apiUrl)) {
+                return FormValidation.error("Please fill in the API url");
+            }
+            validationUrl = apiUrl;
+        }
+        if (validateApiConnection(validationUrl, apiKeyValue)) {
+            return FormValidation.ok("Great! Your API key is valid.");
+        } else {
+            return FormValidation.error("Hmmm, your API key seems to be invalid.");
         }
     }
 
-    static boolean validateApiConnection(String apiUrl, Secret apiKeyValue) {
+    private static boolean validateApiConnection(String apiUrl, Secret apiKeyValue) {
         String urlParameters = "?api_key=" + Secret.toString(apiKeyValue);
         String url = apiUrl + VALIDATE_ENDPOINT + urlParameters;
         try {

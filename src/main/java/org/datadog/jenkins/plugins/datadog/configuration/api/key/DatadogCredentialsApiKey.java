@@ -150,6 +150,8 @@ public class DatadogCredentialsApiKey extends DatadogApiKey {
 
         @RequirePOST
         public FormValidation doCheckConnectivity(@QueryParameter("credentialsId") final String credentialsId,
+                                                  @QueryParameter("intake") final int intakeIdx,
+                                                  @QueryParameter("site") final String site,
                                                   @QueryParameter("apiUrl") final String apiUrl) {
             Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
             StringCredentials credentialFromId = getCredentialFromId(credentialsId);
@@ -157,11 +159,12 @@ public class DatadogCredentialsApiKey extends DatadogApiKey {
                 return FormValidation.error("Could not find credentials with the given ID");
             }
             Secret apiKeyValue = credentialFromId.getSecret();
-            if (validateApiConnection(apiUrl, apiKeyValue)) {
-                return FormValidation.ok("Great! Your API key is valid.");
-            } else {
-                return FormValidation.error("Hmmm, your API key seems to be invalid.");
-            }
+            return checkConnectivity(apiKeyValue, intakeIdx, site, apiUrl);
+        }
+
+        @Override
+        public int getOrder() {
+            return 1;
         }
     }
 }

@@ -1,17 +1,14 @@
 package org.datadog.jenkins.plugins.datadog.configuration;
 
-import static org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeUrls.DatadogIntakeUrlsDescriptor.getDefaultApiUrl;
-import static org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeUrls.DatadogIntakeUrlsDescriptor.getDefaultLogsUrl;
-import static org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeUrls.DatadogIntakeUrlsDescriptor.getDefaultWebhooksUrl;
 import static org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogTextApiKey.DatadogTextApiKeyDescriptor.getDefaultKey;
 
 import com.thoughtworks.xstream.annotations.XStreamConverter;
-import hudson.DescriptorExtensionList;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.util.Secret;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
@@ -23,7 +20,6 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogApiClient;
 import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
 import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntake;
-import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeUrls;
 import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogApiKey;
 import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogTextApiKey;
 import org.datadog.jenkins.plugins.datadog.util.conversion.PolymorphicReflectionConverter;
@@ -110,7 +106,7 @@ public class DatadogApiConfiguration extends DatadogClientConfiguration {
     public Map<String, String> toEnvironmentVariables() {
         Map<String, String> variables = new HashMap<>();
         variables.put("DD_CIVISIBILITY_AGENTLESS_ENABLED", "true");
-        variables.put("DD_SITE", intake.getSite());
+        variables.put("DD_SITE", intake.getSiteName());
         variables.put("DD_API_KEY", Secret.toString(getApiKeyValue()));
         return variables;
     }
@@ -133,20 +129,24 @@ public class DatadogApiConfiguration extends DatadogClientConfiguration {
         }
 
         public static DatadogIntake getDefaultIntake() {
-            // FIXME nikita: replace default value with DatadogIntakeSite
-            return new DatadogIntakeUrls(getDefaultApiUrl(), getDefaultLogsUrl(), getDefaultWebhooksUrl());
+            return DatadogIntake.getDefaultIntake();
         }
 
         public static DatadogApiKey getDefaultApiKey() {
             return new DatadogTextApiKey(getDefaultKey());
         }
 
-        public DescriptorExtensionList<DatadogIntake, DatadogIntake.DatadogIntakeDescriptor> getIntakeOptions() {
+        public List<DatadogIntake.DatadogIntakeDescriptor> getIntakeOptions() {
             return DatadogIntake.DatadogIntakeDescriptor.all();
         }
 
-        public DescriptorExtensionList<DatadogApiKey, DatadogApiKey.DatadogApiKeyDescriptor> getApiKeyOptions() {
+        public List<DatadogApiKey.DatadogApiKeyDescriptor> getApiKeyOptions() {
             return DatadogApiKey.DatadogApiKeyDescriptor.all();
+        }
+
+        @Override
+        public int getOrder() {
+            return 1;
         }
     }
 }

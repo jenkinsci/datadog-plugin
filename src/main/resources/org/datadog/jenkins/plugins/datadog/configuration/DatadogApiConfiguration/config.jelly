@@ -1,12 +1,30 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 
-    <div class="jenkins-form-label help-sibling">Datadog Site</div>
+    <table class="jenkins-table jenkins-!-margin-bottom-1">
+        <thead>
+            <th>Datadog Site</th>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <f:descriptorRadioList varName="intake" instance="${instance.intake != null ? instance.intake : descriptor.defaultIntake}" descriptors="${descriptor.intakeOptions}"/>
+                </td>
+            </tr>
+        </tbody>
+    </table>
 
-    <f:descriptorRadioList varName="intake" instance="${instance.intake != null ? instance.intake : descriptor.defaultIntake}" descriptors="${descriptor.intakeOptions}"/>
-
-    <div class="jenkins-form-label help-sibling">Datadog API key</div>
-
-    <f:descriptorRadioList varName="apiKey" instance="${instance.apiKey != null ? instance.apiKey : descriptor.defaultApiKey}" descriptors="${descriptor.apiKeyOptions}"/>
+    <table class="jenkins-table">
+        <thead>
+            <th>Datadog API key</th>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <f:descriptorRadioList varName="apiKey" instance="${instance.apiKey != null ? instance.apiKey : descriptor.defaultApiKey}" descriptors="${descriptor.apiKeyOptions}"/>
+                </td>
+            </tr>
+        </tbody>
+    </table>
 
 </j:jelly>

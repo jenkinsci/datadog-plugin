@@ -305,5 +305,10 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
                 return null;
             }
         }
+
+        @Override
+        public int getOrder() {
+            return 0;
+        }
     }
 }

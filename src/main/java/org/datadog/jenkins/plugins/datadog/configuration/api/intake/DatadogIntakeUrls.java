@@ -54,7 +54,7 @@ public class DatadogIntakeUrls extends DatadogIntake {
     }
 
     @Override
-    public String getSite() {
+    public String getSiteName() {
         // what users configure for Pipelines looks like "https://api.datadoghq.com/api/"
         // while what the tracer needs "datadoghq.com"
         try {
@@ -141,6 +141,11 @@ public class DatadogIntakeUrls extends DatadogIntake {
 
         public static String getDefaultWebhooksUrl() {
             return System.getenv().getOrDefault(TARGET_WEBHOOK_INTAKE_URL_PROPERTY, DEFAULT_WEBHOOK_INTAKE_URL_VALUE);
+        }
+
+        @Override
+        public int getOrder() {
+            return 1;
         }
     }
 }

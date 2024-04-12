@@ -5,6 +5,6 @@
       <f:select checkMethod="post" />
     </f:entry>
 
-    <f:validateButton title="${%Test Key}" progress="${%Testing...}" method="checkConnectivity" with="credentialsId,apiUrl" checkMethod="post" />
+    <f:validateButton title="${%Test Key}" progress="${%Testing...}" method="checkConnectivity" with="credentialsId,intake,site,apiUrl" checkMethod="post" />
 
 </j:jelly>

@@ -1,5 +1,6 @@
 package org.datadog.jenkins.plugins.datadog.configuration.api.key;
 
+import hudson.DescriptorExtensionList;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
@@ -7,6 +8,9 @@ import hudson.util.Secret;
 import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
+import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntake;
+import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeSite;
+import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogSite;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -61,19 +65,22 @@ public class DatadogTextApiKey extends DatadogApiKey {
 
         @RequirePOST
         public FormValidation doCheckConnectivity(@QueryParameter("key") final String key,
+                                                  @QueryParameter("intake") final int intakeIdx,
+                                                  @QueryParameter("site") final String site,
                                                   @QueryParameter("apiUrl") final String apiUrl) {
             Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
             Secret apiKeyValue = Secret.fromString(key);
-            if (validateApiConnection(apiUrl, apiKeyValue)) {
-                return FormValidation.ok("Great! Your API key is valid.");
-            } else {
-                return FormValidation.error("Hmmm, your API key seems to be invalid.");
-            }
+            return checkConnectivity(apiKeyValue, intakeIdx, site, apiUrl);
         }
 
         public static Secret getDefaultKey() {
             String apiKeyPropertyValue = System.getenv().get(TARGET_API_KEY_PROPERTY);
             return StringUtils.isNotBlank(apiKeyPropertyValue) ? Secret.fromString(apiKeyPropertyValue) : null;
+        }
+
+        @Override
+        public int getOrder() {
+            return 0;
         }
     }
 }

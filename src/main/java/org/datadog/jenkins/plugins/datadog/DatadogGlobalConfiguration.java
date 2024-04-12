@@ -29,14 +29,10 @@ import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConf
 import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentLogCollectionPort;
 import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentPort;
 import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentTraceCollectionPort;
-import static org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeUrls.DatadogIntakeUrlsDescriptor.getDefaultApiUrl;
-import static org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeUrls.DatadogIntakeUrlsDescriptor.getDefaultLogsUrl;
-import static org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeUrls.DatadogIntakeUrlsDescriptor.getDefaultWebhooksUrl;
 import static org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogTextApiKey.DatadogTextApiKeyDescriptor.getDefaultKey;
 
 import com.thoughtworks.xstream.annotations.XStreamConverter;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.DescriptorExtensionList;
 import hudson.Extension;
 import hudson.model.AbstractProject;
 import hudson.util.FormValidation;
@@ -44,6 +40,7 @@ import hudson.util.FormValidation.Kind;
 import hudson.util.Secret;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -155,7 +152,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
                 this.datadogClientConfiguration = new DatadogAgentConfiguration(
                         getDefaultAgentHost(), getDefaultAgentPort(), getDefaultAgentLogCollectionPort(), getDefaultAgentTraceCollectionPort());
             } else {
-                DatadogIntakeUrls intake = new DatadogIntakeUrls(getDefaultApiUrl(), getDefaultLogsUrl(), getDefaultWebhooksUrl());
+                DatadogIntake intake = DatadogIntake.getDefaultIntake();
                 DatadogTextApiKey apiKey = new DatadogTextApiKey(getDefaultKey());
                 this.datadogClientConfiguration = new DatadogApiConfiguration(intake, apiKey);
             }
@@ -790,7 +787,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         return FormValidation.ok("Your filtering configuration looks good!");
     }
 
-    public DescriptorExtensionList<DatadogClientConfiguration, DatadogClientConfiguration.DatadogClientConfigurationDescriptor> getDatadogClientConfigOptions() {
+    public Collection<DatadogClientConfiguration.DatadogClientConfigurationDescriptor> getDatadogClientConfigOptions() {
         return DatadogClientConfiguration.DatadogClientConfigurationDescriptor.all();
     }
 

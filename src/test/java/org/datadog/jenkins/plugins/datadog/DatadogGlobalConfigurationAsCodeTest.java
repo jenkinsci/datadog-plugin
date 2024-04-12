@@ -9,6 +9,7 @@ import org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfigurati
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogClientConfiguration;
 import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntake;
+import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogSite;
 import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogCredentialsApiKey;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -56,7 +57,42 @@ public class DatadogGlobalConfigurationAsCodeTest {
         Assert.assertTrue(cfg.isUseAwsInstanceHostname());
     }
 
-    // FIXME nikita: add testcase with Datadog site configuration
+    @Test
+    @ConfiguredWithCode("test-config-site.yml")
+    public void testSiteConfigurationAsCodeCompatibility() {
+        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+
+        DatadogClientConfiguration datadogClientConfiguration = cfg.getDatadogClientConfiguration();
+        Assert.assertTrue(datadogClientConfiguration instanceof DatadogApiConfiguration);
+        DatadogApiConfiguration apiConfiguration = (DatadogApiConfiguration) datadogClientConfiguration;
+
+        DatadogIntake intake = apiConfiguration.getIntake();
+        assertEquals(DatadogSite.US3.getApiUrl(), intake.getApiUrl());
+        assertEquals(DatadogSite.US3.getLogsUrl(), intake.getLogsUrl());
+        assertEquals(DatadogSite.US3.getWebhooksUrl(), intake.getWebhooksUrl());
+
+        assertTrue(apiConfiguration.getApiKey() instanceof DatadogCredentialsApiKey);
+        DatadogCredentialsApiKey credentialsApiKey = (DatadogCredentialsApiKey) apiConfiguration.getApiKey();
+        assertEquals("my-api-key-credentials-id", credentialsApiKey.getCredentialsId());
+
+        Assert.assertTrue(cfg.getEnableCiVisibility());
+        Assert.assertEquals("my-ci-instance-name", cfg.getCiInstanceName());
+        Assert.assertEquals("my-excluded", cfg.getExcluded());
+        Assert.assertEquals("my-included", cfg.getIncluded());
+        Assert.assertEquals("my-hostname", cfg.getHostname());
+        Assert.assertEquals("my-global-tag-file", cfg.getGlobalTagFile());
+        Assert.assertEquals("my-global-tags", cfg.getGlobalTags());
+        Assert.assertEquals("my-global-job-tags", cfg.getGlobalJobTags());
+        Assert.assertEquals("my-include-events", cfg.getIncludeEvents());
+        Assert.assertEquals("my-exclude-events", cfg.getExcludeEvents());
+        Assert.assertTrue(cfg.isEmitSecurityEvents());
+        Assert.assertTrue(cfg.isEmitSystemEvents());
+        Assert.assertTrue(cfg.isCollectBuildLogs());
+        Assert.assertTrue(cfg.isRetryLogs());
+        Assert.assertTrue(cfg.isRefreshDogstatsdClient());
+        Assert.assertTrue(cfg.isCacheBuildRuns());
+        Assert.assertTrue(cfg.isUseAwsInstanceHostname());
+    }
 
     @Test
     @ConfiguredWithCode("test-config-agent.yml")

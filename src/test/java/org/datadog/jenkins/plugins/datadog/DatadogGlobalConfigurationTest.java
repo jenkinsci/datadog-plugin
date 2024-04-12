@@ -11,6 +11,7 @@ import java.net.URL;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration;
 import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntake;
+import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogSite;
 import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogCredentialsApiKey;
 import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogTextApiKey;
 import org.junit.Test;
@@ -92,7 +93,39 @@ public class DatadogGlobalConfigurationTest {
         assertTrue(configuration.isUseAwsInstanceHostname());
     }
 
-    // FIXME nikita: add testcase with Datadog site configuration
+    @Test
+    public void canLoadGlobalConfigurationWithSite() {
+        DatadogGlobalConfiguration configuration = parseConfiguration("globalConfigurationSite.xml");
+        assertTrue(configuration.getDatadogClientConfiguration() instanceof DatadogApiConfiguration);
+        DatadogApiConfiguration datadogClientConfiguration = (DatadogApiConfiguration) configuration.getDatadogClientConfiguration();
+
+        DatadogIntake intake = datadogClientConfiguration.getIntake();
+        assertEquals(DatadogSite.US3.getApiUrl(), intake.getApiUrl());
+        assertEquals(DatadogSite.US3.getLogsUrl(), intake.getLogsUrl());
+        assertEquals(DatadogSite.US3.getWebhooksUrl(), intake.getWebhooksUrl());
+
+        assertTrue(datadogClientConfiguration.getApiKey() instanceof DatadogCredentialsApiKey);
+        DatadogCredentialsApiKey credentialsApiKey = (DatadogCredentialsApiKey) datadogClientConfiguration.getApiKey();
+        assertEquals("my-api-key-credentials-id", credentialsApiKey.getCredentialsId());
+
+        assertEquals("my-jenkins-service-name", configuration.getCiInstanceName());
+        assertEquals("my-hostname", configuration.getHostname());
+        assertEquals("my-blacklist", configuration.getExcluded());
+        assertEquals("my-whitelist", configuration.getIncluded());
+        assertEquals("my-global-tag-file", configuration.getGlobalTagFile());
+        assertEquals("my-global-tags", configuration.getGlobalTags());
+        assertEquals("my-global-job-tags", configuration.getGlobalJobTags());
+        assertEquals("my-include-events", configuration.getIncludeEvents());
+        assertEquals("my-exclude-evens", configuration.getExcludeEvents());
+        assertFalse(configuration.isEmitSecurityEvents());
+        assertFalse(configuration.isEmitSystemEvents());
+        assertTrue(configuration.isCollectBuildLogs());
+        assertTrue(configuration.getEnableCiVisibility());
+        assertFalse(configuration.isRetryLogs());
+        assertTrue(configuration.isRefreshDogstatsdClient());
+        assertFalse(configuration.isCacheBuildRuns());
+        assertTrue(configuration.isUseAwsInstanceHostname());
+    }
 
     @Test
     public void canLoadGlobalConfigurationReportingToAgent() {

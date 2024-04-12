@@ -5,6 +5,6 @@
       <f:password value="${instance.key != null ? instance.key : descriptor.defaultKey}" checkMethod="post" />
     </f:entry>
 
-    <f:validateButton title="${%Test Key}" progress="${%Testing...}" method="checkConnectivity" with="key,apiUrl" checkMethod="post" />
+    <f:validateButton title="${%Test Key}" progress="${%Testing...}" method="checkConnectivity" with="key,intake,site,apiUrl" checkMethod="post" />
 
 </j:jelly>
