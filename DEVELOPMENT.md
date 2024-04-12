@@ -47,7 +47,12 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
   - You can set your machine `hostname`.
   - You can set Global Tag. For example `.*, owner:$1, release_env:$2, optional:Tag3`.
 
-Jenkins controller container exposes port 5055 for remote debugging via JDWP. 
+Jenkins controller container exposes port 5055 for remote debugging via JDWP.
+
+#### Known errors
+
+If docker-compose fails with a message that looks like `error mounting ".../datadog-plugin/target/datadog.hpi" to rootfs at "/var/jenkins_home/plugins/datadog.hpi"`, 
+make sure that you have properly set the `JENKINS_PLUGIN` env var and that you have built the plugin by running `mvn clean package -DskipTests`. 
 
 #### Manual Testing without an Agent
 

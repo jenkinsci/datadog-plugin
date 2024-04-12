@@ -1,5 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
+import static org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter.ignoreOldData;
+
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.converters.MarshallingContext;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
@@ -10,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 import org.datadog.jenkins.plugins.datadog.model.DatadogPluginAction;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
-import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogConverter;
 import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
 
 /**
@@ -80,9 +82,9 @@ public class BuildSpanAction extends DatadogPluginAction {
                 '}';
     }
 
-    public static final class ConverterImpl extends DatadogActionConverter<BuildSpanAction> {
+    public static final class ConverterImpl extends DatadogConverter<BuildSpanAction> {
         public ConverterImpl(XStream xs) {
-            super(new ConverterV1(), new ConverterV2());
+            super(ignoreOldData(), new ConverterV1(), new ConverterV2());
         }
     }
 

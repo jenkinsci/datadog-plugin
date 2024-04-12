@@ -1,0 +1,90 @@
+package org.datadog.jenkins.plugins.datadog.configuration.api.intake;
+
+import hudson.Extension;
+import hudson.model.Descriptor;
+import java.util.Arrays;
+import javax.annotation.Nonnull;
+import jenkins.model.Jenkins;
+import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.DataBoundConstructor;
+
+@Symbol("datadogIntakeSite")
+public class DatadogIntakeSite extends DatadogIntake {
+
+    static final String DATADOG_SITE_PROPERTY = "DATADOG_JENKINS_PLUGIN_DATADOG_SITE";
+    static final DatadogSite DEFAULT_DATADOG_SITE_VALUE = DatadogSite.US1;
+
+    private final DatadogSite site;
+
+    @DataBoundConstructor
+    public DatadogIntakeSite(DatadogSite site) {
+        this.site = site;
+    }
+
+    public DatadogSite getSite() {
+        return site;
+    }
+
+    @Override
+    public String getApiUrl() {
+        return site.getApiUrl();
+    }
+
+    @Override
+    public String getLogsUrl() {
+        return site.getLogsUrl();
+    }
+
+    @Override
+    public String getWebhooksUrl() {
+        return site.getWebhooksUrl();
+    }
+
+    @Override
+    public String getSiteName() {
+        return site.getSiteName();
+    }
+
+    @Override
+    public Descriptor<DatadogIntake> getDescriptor() {
+        return Jenkins.getInstanceOrNull().getDescriptorOrDie(DatadogIntakeSite.class);
+    }
+
+    @Extension
+    public static final class DatadogIntakeSiteDescriptor extends DatadogIntakeDescriptor {
+        public DatadogIntakeSiteDescriptor() {
+            load();
+        }
+
+        @Override
+        @Nonnull
+        public String getDisplayName() {
+            return "Pick a site";
+        }
+
+        @Override
+        public String getHelpFile() {
+            return getHelpFile("siteBlock");
+        }
+
+        public static DatadogSite getDefaultSite() {
+            String site = System.getenv().get(DATADOG_SITE_PROPERTY);
+            if (site != null) {
+                try {
+                    return DatadogSite.valueOf(site);
+                } catch (IllegalArgumentException e) {
+                    throw new IllegalArgumentException(
+                            "Illegal " + DATADOG_SITE_PROPERTY + " environment property value set: " + site +
+                                    ". Allowed values are " + Arrays.toString(DatadogSite.values()), e);
+                }
+            } else {
+                return DEFAULT_DATADOG_SITE_VALUE;
+            }
+        }
+
+        @Override
+        public int getOrder() {
+            return 0;
+        }
+    }
+}

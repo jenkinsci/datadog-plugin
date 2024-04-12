@@ -1,0 +1,28 @@
+jenkins:
+  systemMessage: "Example of configuring datadog in Jenkins"
+
+unclassified:
+    datadogGlobalConfiguration:
+      reportWith: 'DSD'
+      targetHost: 'my-target-host'
+      targetPort: 1357
+      targetLogCollectionPort: 2468
+      targetTraceCollectionPort: 3579
+      collectBuildTraces: false
+      traceServiceName: 'my-trace-service-name'
+      blacklist: 'my-blacklist'
+      whitelist: 'my-whitelist'
+      hostname: 'my-hostname'
+      globalTagFile: 'my-global-tag-file'
+      globalTags: 'my-global-tags'
+      globalJobTags: 'my-global-job-tags'
+      includeEvents: 'my-include-events'
+      excludeEvents: 'my-exclude-events'
+      emitConfigChangeEvents: false
+      emitSecurityEvents: true
+      emitSystemEvents: false
+      collectBuildLogs: true
+      retryLogs: false
+      refreshDogstatsdClient: true
+      cacheBuildRuns: false
+      useAwsInstanceHostname: true

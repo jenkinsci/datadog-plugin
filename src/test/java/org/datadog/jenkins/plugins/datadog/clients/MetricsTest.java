@@ -17,6 +17,59 @@ import org.junit.Test;
 public class MetricsTest {
 
     @Test
+    public void testIncrementCountAndFlush() {
+        Map<String, Set<String>> tags1 = new HashMap<>();
+        DatadogClientStub.addTagToMap(tags1, "tag1", "value");
+        DatadogClientStub.addTagToMap(tags1, "tag2", "value");
+        Metrics.getInstance().incrementCounter("metric1", "host1", tags1);
+        Metrics.getInstance().incrementCounter("metric1", "host1", tags1);
+
+        Map<String, Set<String>> tags2 = new HashMap<>();
+        DatadogClientStub.addTagToMap(tags2, "tag1", "value");
+        DatadogClientStub.addTagToMap(tags2, "tag2", "value");
+        DatadogClientStub.addTagToMap(tags2, "tag3", "value");
+        Metrics.getInstance().incrementCounter("metric1", "host1", tags2);
+
+        Metrics.getInstance().incrementCounter("metric1", "host2", tags2);
+        Metrics.getInstance().incrementCounter("metric1", "host2", tags2);
+
+        Metrics.getInstance().incrementCounter("metric2", "host2", tags2);
+
+        // The following code should be the same as in the flushCounters method
+        Map<MetricKey, Integer> counters = Metrics.getInstance().getAndResetCounters();
+
+        // Check counter is reset as expected
+        Map<MetricKey, Integer> countersEmpty = Metrics.getInstance().getAndResetCounters();
+        Assert.assertEquals("size = " + countersEmpty.size(), 0, countersEmpty.size());
+
+        // Check that metrics to submit are correct
+        boolean check1  = false, check2 = false, check3 = false, check4 = false;
+        Assert.assertEquals("counters = " + counters.size(), 4, counters.size());
+        for (MetricKey counterMetric: counters.keySet()) {
+            int count = counters.get(counterMetric);
+            if (counterMetric.getMetricName().equals("metric1") && counterMetric.getHostname().equals("host1")
+                    && counterMetric.getTags().size() == 2) {
+                Assert.assertEquals("count = " + count, 2, count);
+                check1 = true;
+            } else if (counterMetric.getMetricName().equals("metric1") && counterMetric.getHostname().equals("host1")
+                    && counterMetric.getTags().size() == 3) {
+                Assert.assertEquals("count = " + count, 1, count);
+                check2 = true;
+            } else if (counterMetric.getMetricName().equals("metric1") && counterMetric.getHostname().equals("host2")
+                    && counterMetric.getTags().size() == 3) {
+                Assert.assertEquals("count = " + count, 2, count);
+                check3 = true;
+            } else if (counterMetric.getMetricName().equals("metric2") && counterMetric.getHostname().equals("host2")
+                    && counterMetric.getTags().size() == 3) {
+                Assert.assertEquals("count = " + count, 1, count);
+                check4 = true;
+            }
+        }
+        Assert.assertTrue(check1 + " " + check2 + " " + check3 + " " + check4,
+                check1 && check2 && check3 && check4);
+    }
+
+    @Test
     public void testIncrementCountAndFlushThreadedEnv() {
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
