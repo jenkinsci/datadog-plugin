@@ -103,6 +103,7 @@
       <groupId>com.github.stefanbirkner</groupId>
       <artifactId>system-lambda</artifactId>
       <version>1.2.1</version>
+      <scope>test</scope>
     </dependency>
 
     <!-- https://mvnrepository.com/artifact/org.mockito/mockito-core -->
