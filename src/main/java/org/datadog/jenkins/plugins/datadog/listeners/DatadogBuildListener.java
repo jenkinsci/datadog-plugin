@@ -202,17 +202,17 @@ public class DatadogBuildListener extends RunListener<Run> {
             }
 
             Long waitingMs;
-            try {
-                Queue queue = getQueue();
-                Queue.Item item = queue.getItem(run.getQueueId());
+            Queue queue = getQueue();
+            Queue.Item item = queue.getItem(run.getQueueId());
+            if (item != null){
                 waitingMs = (DatadogUtilities.currentTimeMillis() - item.getInQueueSince());
                 PipelineQueueInfoAction queueInfoAction = run.getAction(PipelineQueueInfoAction.class);
                 if (queueInfoAction != null) {
                     // this needs to be set before BuildData is created, as BuildData will use this value
                     queueInfoAction.setQueueTimeMillis(waitingMs);
                 }
-            } catch (NullPointerException e) {
-                // item.getInQueueSince() may raise a NPE if a worker node is spinning up to run the job.
+            } else {
+                // item may be null if a worker node is spinning up to run the job.
                 // This could be expected behavior with ec2 spot instances/ecs containers, meaning no waiting
                 // queue times if the plugin is spinning up an instance/container for one/first job.
                 logger.warning("Unable to get queue waiting time. " +
@@ -455,7 +455,7 @@ public class DatadogBuildListener extends RunListener<Run> {
                 Thread.currentThread().interrupt();
                 DatadogUtilities.severe(logger, e, "Interrupted while trying to parse deleted build data");
                 return;
-            } catch (IOException | NullPointerException e) {
+            } catch (IOException e) {
                 DatadogUtilities.severe(logger, e, "Failed to parse deleted build data");
                 return;
             }
