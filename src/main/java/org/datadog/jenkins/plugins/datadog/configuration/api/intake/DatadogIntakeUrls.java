@@ -65,7 +65,15 @@ public class DatadogIntakeUrls extends DatadogIntake {
             }
 
             String[] parts = host.split("\\.");
-            return (parts.length >= 2 ? parts[parts.length - 2] + "." : "") + parts[parts.length - 1];
+            StringBuilder siteName = new StringBuilder();
+            for (int i = 1; i < parts.length; i++) {
+                siteName.append(parts[i]);
+                boolean isLastPart = i + 1 == parts.length;
+                if (!isLastPart) {
+                    siteName.append('.');
+                }
+            }
+            return siteName.toString();
 
         } catch (MalformedURLException | URISyntaxException e) {
             throw new IllegalArgumentException("Cannot parse Datadog API URL", e);

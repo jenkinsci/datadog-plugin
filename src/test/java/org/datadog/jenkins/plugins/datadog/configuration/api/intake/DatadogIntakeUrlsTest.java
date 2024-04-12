@@ -9,10 +9,17 @@ import static org.datadog.jenkins.plugins.datadog.configuration.api.intake.Datad
 import static org.junit.Assert.assertEquals;
 
 import com.github.stefanbirkner.systemlambda.SystemLambda;
-import org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration;
 import org.junit.Test;
 
 public class DatadogIntakeUrlsTest {
+
+    @Test
+    public void testGetSiteName() {
+        for (DatadogSite site : DatadogSite.values()) {
+            DatadogIntakeUrls intakeUrls = new DatadogIntakeUrls(site.getApiUrl(), site.getLogsUrl(), site.getWebhooksUrl());
+            assertEquals(site.getSiteName(), intakeUrls.getSiteName());
+        }
+    }
 
     @Test
     public void testGetDefaultApiUrl() throws Exception {

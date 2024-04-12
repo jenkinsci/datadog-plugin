@@ -18,9 +18,9 @@ public enum DatadogSite {
             "https://webhook-intake.us5.datadoghq.com/api/v2/webhook/"),
     US1_FED(
             "ddog-gov.com",
-            "https://api.dd-gov.com/api/",
-            "https://http-intake.logs.dd-gov.com/v1/input/",
-            "https://webhook-intake.dd-gov.com/api/v2/webhook/"),
+            "https://api.ddog-gov.com/api/",
+            "https://http-intake.logs.ddog-gov.com/v1/input/",
+            "https://webhook-intake.ddog-gov.com/api/v2/webhook/"),
     EU1(
             "datadoghq.eu",
             "https://api.datadoghq.eu/api/",
