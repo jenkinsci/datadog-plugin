@@ -1,14 +1,10 @@
-def comonVersion = "2.356"
-def recentLTS = "2.346.1"
+def latestSupported = "2.407"
+def recentLTS = "2.361.4"
 def configurations = [
-    [ platform: "linux", jdk: "8", jenkins: null ],
-    // windows 
-    [ platform: "windows", jdk: "8", jenkins: comonVersion ],
-    // java 11 
-    [ platform: "linux", jdk: "11", jenkins: comonVersion ],
-    // windows
-    [ platform: "windows", jdk: "8", jenkins: recentLTS ],
-    // java 11
+    [ platform: "linux", jdk: "11", jenkins: null ],
+    [ platform: "windows", jdk: "11", jenkins: latestSupported ],
+    [ platform: "linux", jdk: "11", jenkins: latestSupported ],
+    [ platform: "windows", jdk: "11", jenkins: recentLTS ],
     [ platform: "linux", jdk: "11", jenkins: recentLTS ],
 ]
 
