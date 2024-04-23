@@ -27,6 +27,7 @@ import org.jenkinsci.plugins.workflow.graph.FlowStartNode;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
 
 @Extension
+@SuppressFBWarnings("RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE")
 public class DatadogQueueListener extends QueueListener {
 
     private static final Logger logger = Logger.getLogger(DatadogQueueListener.class.getName());
@@ -68,6 +69,7 @@ public class DatadogQueueListener extends QueueListener {
     }
 
     @Override
+    @SuppressFBWarnings("RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE")
     public void onLeaveBuildable(Queue.BuildableItem item) {
         try {
             if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
