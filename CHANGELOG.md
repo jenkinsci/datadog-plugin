@@ -9,7 +9,6 @@ https://github.com/jenkinsci/datadog-plugin/compare/datadog-6.0.3...datadog-6.1.
 * [Added] Implement automatic Test Visibility instrumentation for .NET projects. See [#400](https://github.com/jenkinsci/datadog-plugin/pull/400).
 * [Added] Implement submitting in-progress pipelines data. See [#387](https://github.com/jenkinsci/datadog-plugin/pull/387).
 * [Added] Tag pipeline spans with plugin version. See [#398](https://github.com/jenkinsci/datadog-plugin/pull/398).
-* [Fixed] Add git-client as a plugin dependency. See [#413](https://github.com/jenkinsci/datadog-plugin/pull/413).
 * [Fixed] Fix queue time calculation for builds and pipeline steps. See [#406](https://github.com/jenkinsci/datadog-plugin/pull/406).
 
 ## 6.0.3 / 2024-04-11
