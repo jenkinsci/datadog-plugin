@@ -1,6 +1,6 @@
 Changes
 =======
-## 7.0.0 / 2024-04-23
+## 7.0.0 / 2024-04-30
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-6.0.3...datadog-7.0.0
 
 * [Changed] Changed plugin to Java 11. See [#404](https://github.com/jenkinsci/datadog-plugin/pull/404)
