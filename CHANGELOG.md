@@ -1,5 +1,17 @@
 Changes
 =======
+## 6.1.0 / 2024-04-23
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-6.0.3...datadog-6.1.0
+
+* [Changed] Changed plugin to Java 11. See [#404](https://github.com/jenkinsci/datadog-plugin/pull/404)
+* [Added] Implement running jobs metric + update metrics code. See [#407](https://github.com/jenkinsci/datadog-plugin/pull/407).
+* [Added] Support linking downstream pipelines to upstream pipelines in CI Visibility. See [#405](https://github.com/jenkinsci/datadog-plugin/pull/405).
+* [Added] Implement automatic Test Visibility instrumentation for .NET projects. See [#400](https://github.com/jenkinsci/datadog-plugin/pull/400).
+* [Added] Implement submitting in-progress pipelines data. See [#387](https://github.com/jenkinsci/datadog-plugin/pull/387).
+* [Added] Tag pipeline spans with plugin version. See [#398](https://github.com/jenkinsci/datadog-plugin/pull/398).
+* [Fixed] Add git-client as a plugin dependency. See [#413](https://github.com/jenkinsci/datadog-plugin/pull/413).
+* [Fixed] Fix queue time calculation for builds and pipeline steps. See [#406](https://github.com/jenkinsci/datadog-plugin/pull/406).
+
 ## 6.0.3 / 2024-04-11
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-6.0.2...datadog-6.0.3
 
