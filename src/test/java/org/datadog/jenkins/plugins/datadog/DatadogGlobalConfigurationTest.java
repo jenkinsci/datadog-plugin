@@ -29,7 +29,7 @@ public class DatadogGlobalConfigurationTest {
 
     static {
         jenkinsRule = new JenkinsRule();
-        jenkinsRule.timeout = 600; // default value of 180 is too small for all the test cases in this class
+        jenkinsRule.timeout = 300; // default value of 180 is too small for all the test cases in this class
     }
 
     @Rule public JenkinsConfiguredWithCodeRule r = new JenkinsConfiguredWithCodeRule();

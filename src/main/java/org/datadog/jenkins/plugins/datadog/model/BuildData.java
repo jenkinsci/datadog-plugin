@@ -74,7 +74,6 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.traces.BuildConfigurationParser;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
-import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.workflow.cps.EnvActionImpl;
@@ -603,12 +602,11 @@ public class BuildData implements Serializable {
      *
      * @return a map containing all tags values
      */
-    @SuppressFBWarnings("DCN_NULLPOINTER_EXCEPTION")
     public Map<String, Set<String>> getTags() {
         Map<String, Set<String>> allTags = new HashMap<>();
         try {
             allTags = DatadogUtilities.getTagsFromGlobalTags();
-        } catch (NullPointerException e){
+        } catch(NullPointerException e){
             //noop
         }
         allTags = TagsUtil.merge(allTags, tags);
@@ -633,7 +631,6 @@ public class BuildData implements Serializable {
         return allTags;
     }
 
-    @SuppressFBWarnings("DCN_NULLPOINTER_EXCEPTION")
     public Map<String, String> getTagsForTraces() {
         Map<String, Set<String>> allTags = new HashMap<>();
         try {
@@ -823,7 +820,6 @@ public class BuildData implements Serializable {
         return userId;
     }
 
-    @SuppressFBWarnings("DCN_NULLPOINTER_EXCEPTION")
     private String getUserId(Run run) {
         if (promotedUserId != null){
             return promotedUserId;

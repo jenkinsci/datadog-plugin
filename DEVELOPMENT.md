@@ -30,7 +30,7 @@ The docker environment described below should only be used for development and t
 
 To spin up a development environment for the *jenkins-datadog* plugin repository. The requirements are:
 
-* [Java 11](https://www.java.com/en/download/)
+* [Java 1.8](https://www.java.com/en/download/)
 * [Docker](https://docs.docker.com/get-started/) & [docker-compose](https://docs.docker.com/compose/install/)
 * [A clone/fork of this repository](https://help.github.com/en/articles/fork-a-repo)
 
@@ -98,6 +98,7 @@ Due to backwards compatability of the plugin, the Jenkins version defined in `po
 ```
 ...
 <properties>
+    <java.level>8</java.level>
     <jenkins.version>{VERSION}</jenkins.version>
     <hpi.compatibleSinceVersion>1.0.0</hpi.compatibleSinceVersion>
   </properties>
@@ -120,4 +121,4 @@ In this case, use your browser in incognito mode (or clear the cookies for your 
 
 ### Unsupported class file major version 57
 
-If pipeline jobs fail with the error `java.lang.IllegalArgumentException: Unsupported class file major version 57`, then double-check the version of Java running the server is `11` or newer.  Note that `mvn` can find a different version that what may be in your path, you can verify via `mvn --version`.
+If pipeline jobs fail with the error `java.lang.IllegalArgumentException: Unsupported class file major version 57`, then double-check the version of Java running the server is `1.8`.  Note that `mvn` can find a different version that what may be in your path, you can verify via `mvn --version`.
