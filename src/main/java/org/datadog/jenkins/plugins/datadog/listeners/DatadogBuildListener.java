@@ -200,25 +200,6 @@ public class DatadogBuildListener extends RunListener<Run> {
                 return;
             }
 
-            Long waitingMs;
-            try {
-                Queue queue = getQueue();
-                Queue.Item item = queue.getItem(run.getQueueId());
-                waitingMs = (DatadogUtilities.currentTimeMillis() - item.getInQueueSince());
-                PipelineQueueInfoAction queueInfoAction = run.getAction(PipelineQueueInfoAction.class);
-                if (queueInfoAction != null) {
-                    // this needs to be set before BuildData is created, as BuildData will use this value
-                    queueInfoAction.setQueueTimeMillis(waitingMs);
-                }
-            } catch (NullPointerException e) {
-                // item.getInQueueSince() may raise a NPE if a worker node is spinning up to run the job.
-                // This could be expected behavior with ec2 spot instances/ecs containers, meaning no waiting
-                // queue times if the plugin is spinning up an instance/container for one/first job.
-                logger.warning("Unable to get queue waiting time. " +
-                        "item.getInQueueSince() unavailable, possibly due to worker instance provisioning");
-                waitingMs = null;
-            }
-
             // Collect Build Data
             BuildData buildData;
             try {
@@ -237,14 +218,26 @@ public class DatadogBuildListener extends RunListener<Run> {
                 DatadogEvent event = new BuildStartedEventImpl(buildData);
                 client.event(event);
             }
-
+            // Send a metric
+            // item.getInQueueSince() may raise a NPE if a worker node is spinning up to run the job.
+            // This could be expected behavior with ec2 spot instances/ecs containers, meaning no waiting
+            // queue times if the plugin is spinning up an instance/container for one/first job.
+            Queue queue = getQueue();
+            Queue.Item item = queue.getItem(run.getQueueId());
             Map<String, Set<String>> tags = buildData.getTags();
             String hostname = buildData.getHostname(DatadogUtilities.getHostname(null));
+            try (Metrics metrics = client.metrics()) {
+                long waitingMs = (DatadogUtilities.currentTimeMillis() - item.getInQueueSince());
+                metrics.gauge("jenkins.job.waiting", TimeUnit.MILLISECONDS.toSeconds(waitingMs), hostname, tags);
 
-            if (waitingMs != null) {
-                try (Metrics metrics = client.metrics()) {
-                    metrics.gauge("jenkins.job.waiting", TimeUnit.MILLISECONDS.toSeconds(waitingMs), hostname, tags);
+                PipelineQueueInfoAction queueInfoAction = run.getAction(PipelineQueueInfoAction.class);
+                if (queueInfoAction != null) {
+                    queueInfoAction.setQueueTimeMillis(waitingMs);
                 }
+
+            } catch (NullPointerException e) {
+                logger.warning("Unable to compute 'waiting' metric. " +
+                        "item.getInQueueSince() unavailable, possibly due to worker instance provisioning");
             }
 
             // Submit counter

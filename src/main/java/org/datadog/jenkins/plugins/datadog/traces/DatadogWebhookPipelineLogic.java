@@ -52,10 +52,17 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
         final String buildLevel = current.getType().getBuildLevel();
         payload.put("level", buildLevel);
 
-        payload.put("start", DatadogUtilities.toISO8601(new Date(current.getStartTimeMillis())));
-        payload.put("end", DatadogUtilities.toISO8601(new Date(current.getEndTimeMillis())));
+        // If the root has propagated queue time, we need to adjust all startTime and endTime from Jenkins pipelines
+        // because this time will be subtracted in the root. See DatadogTraceBuildLogic#finishBuildTrace method.
+        final long propagatedMillisInQueue = Math.max(buildData.getPropagatedMillisInQueue(-1L), 0);
 
-        payload.put("queue_time", current.getQueueTimeMillis());
+        final long fixedStartTimeMillis = TimeUnit.MICROSECONDS.toMillis(current.getStartTimeMicros() - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue));
+        payload.put("start", DatadogUtilities.toISO8601(new Date(fixedStartTimeMillis)));
+
+        final long fixedEndTimeMillis = TimeUnit.MICROSECONDS.toMillis(current.getEndTimeMicros() - TimeUnit.MILLISECONDS.toMicros(propagatedMillisInQueue));
+        payload.put("end", DatadogUtilities.toISO8601(new Date(fixedEndTimeMillis)));
+
+        payload.put("queue_time", TimeUnit.NANOSECONDS.toMillis(current.getNanosInQueue()));
 
         Status status = current.getStatus();
         payload.put("status", status.toTag());

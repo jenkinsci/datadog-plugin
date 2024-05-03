@@ -73,6 +73,17 @@ public abstract class DatadogBaseBuildLogic {
         }
     }
 
+    protected long getMillisInQueue(BuildData buildData) {
+        // Reported by the Jenkins Queue API.
+        // It's not included in the root span duration.
+        final long millisInQueue = buildData.getMillisInQueue(-1L);
+
+        // Reported by a child span.
+        // It's included in the root span duration.
+        final long propagatedMillisInQueue = buildData.getPropagatedMillisInQueue(-1L);
+        return Math.max(Math.max(millisInQueue, propagatedMillisInQueue), 0);
+    }
+
     protected String getStageBreakdown(Run run) {
         if (!(run instanceof WorkflowRun)) {
             return null;

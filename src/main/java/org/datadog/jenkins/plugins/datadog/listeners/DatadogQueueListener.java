@@ -1,16 +1,13 @@
 package org.datadog.jenkins.plugins.datadog.listeners;
 
 import hudson.Extension;
-import hudson.init.Terminator;
 import hudson.model.Queue;
 import hudson.model.Run;
 import hudson.model.queue.QueueListener;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import javax.annotation.CheckForNull;
@@ -30,7 +27,6 @@ import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
 public class DatadogQueueListener extends QueueListener {
 
     private static final Logger logger = Logger.getLogger(DatadogQueueListener.class.getName());
-    private static final ExecutorService threadPool = Executors.newCachedThreadPool();
 
     @Override
     public void onEnterBuildable(Queue.BuildableItem item) {
@@ -60,7 +56,7 @@ public class DatadogQueueListener extends QueueListener {
                 return;
             }
 
-            flowNode.addOrReplaceAction(new EnqueueAction(System.currentTimeMillis()));
+            flowNode.addOrReplaceAction(new EnqueueAction(System.nanoTime()));
 
         } catch (Exception e){
             logger.severe("Error onEnterBuildable: item:" + item + ", exception: " + e);
@@ -100,8 +96,8 @@ public class DatadogQueueListener extends QueueListener {
                 return;
             }
 
-            long queueDurationMillis = System.currentTimeMillis() - enqueueAction.getTimestampMillis();
-            DequeueAction queueInfoAction = new DequeueAction(queueDurationMillis);
+            long queueDurationNanos = System.nanoTime() - enqueueAction.getTimestampNanos();
+            DequeueAction queueInfoAction = new DequeueAction(queueDurationNanos);
 
             // Replace enqueue action with dequeue action in one call to avoid writing to disk twice
             flowNode.replaceActions(QueueInfoAction.class, queueInfoAction);
@@ -145,7 +141,7 @@ public class DatadogQueueListener extends QueueListener {
             return;
         }
 
-        long queueTimeMillis = queueInfoAction.getQueueTimeMillis();
+        long queueTimeMillis = TimeUnit.NANOSECONDS.toMillis(queueInfoAction.getQueueTimeNanos());
         pipelineQueueInfoAction.setPropagatedQueueTimeMillis(queueTimeMillis);
     }
 
@@ -167,7 +163,7 @@ public class DatadogQueueListener extends QueueListener {
     private FlowNode getNodeAsync(ExecutorStepExecution.PlaceholderTask placeholderTask, int timeoutMs) {
         try {
             final CompletableFuture<FlowNode> f = new CompletableFuture<>();
-            threadPool.submit(() -> f.complete(placeholderTask.getNode()));
+            Executors.newCachedThreadPool().submit(() -> f.complete(placeholderTask.getNode()));
             return f.get(timeoutMs, TimeUnit.MILLISECONDS);
         } catch (Exception ex){
             logger.fine("Error getNodeAsync for task:"+placeholderTask+", exception: " + ex);
@@ -193,14 +189,6 @@ public class DatadogQueueListener extends QueueListener {
             return (Run<?, ?>) executable;
         } else {
             return null;
-        }
-    }
-
-    @Terminator
-    public static void stop() throws Exception {
-        threadPool.shutdown();
-        if (!threadPool.awaitTermination(10, TimeUnit.SECONDS)) {
-            threadPool.shutdownNow();
         }
     }
 }

@@ -135,32 +135,8 @@ public class BuildData implements Serializable {
     private Long startTime;
     private Long endTime;
     private Long duration;
-
-    /**
-     * Queue time that is reported by the Jenkins Queue API.
-     * This is the time that the build was sitting in queue BEFORE starting to execute:
-     * <ul>
-     *  <li>if it was waiting for another build to finish because of the parallel execution settings</li>
-     *  <li>if it was waiting for a "quiet period" to finish because of the throttle settings</li>
-     *  <li>if it was waiting for an executor to become available (this point only applies to Freestyle builds; a pipeline waiting for executor will report {@link #propagatedMillisInQueue}</li>
-     * </ul>
-     * <p>
-     * This queue time goes BEFORE timestamp that is reported by {@link Run#getStartTimeInMillis()}
-     * and is NOT included into the duration reported by {@link Run#getDuration()}.
-     */
-    private long millisInQueue;
-
-    /**
-     * Queue time that is propagated from a child node of a pipeline:
-     * if a pipeline is configured to execute in a specific executor (with the top-level `agent {}` section),
-     * it will be reported as started even if that executor is not available.
-     * In this case the time spent waiting for the executor will be reported by the first child node of the pipeline,
-     * and propagated to the pipeline from there.
-     * <p>
-     * This queue time goes AFTER timestamp that is reported by {@link Run#getStartTimeInMillis()}
-     * and is INCLUDED into the duration reported by {@link Run#getDuration()}.
-     */
-    private long propagatedMillisInQueue;
+    private Long millisInQueue;
+    private Long propagatedMillisInQueue;
 
     /**
      * Monotonically increasing "version" of the build data.
@@ -230,31 +206,16 @@ public class BuildData implements Serializable {
         }
         this.isBuilding = run.isBuilding();
 
-        PipelineQueueInfoAction action = run.getAction(PipelineQueueInfoAction.class);
-        if (action != null) {
-            this.millisInQueue = action.getQueueTimeMillis();
-            this.propagatedMillisInQueue = action.getPropagatedQueueTimeMillis();
+        // Set StartTime, EndTime and Duration
+        this.startTime = run.getStartTimeInMillis();
+        long durationInMs = run.getDuration();
+        if (durationInMs == 0 && startTime != 0) {
+            durationInMs = System.currentTimeMillis() - startTime;
         }
-
-        long runStartTime = run.getStartTimeInMillis();
-        if (runStartTime != 0) {
-            // advance start time: queue time should not be considered as part of the build duration
-            this.startTime = runStartTime + this.propagatedMillisInQueue;
-        }
-
-        long runDuration = run.getDuration();
-        if (runDuration != 0) {
-            // adjust duration: queue time should not be considered as part of the build duration
-            this.duration = runDuration - this.propagatedMillisInQueue;
-        } else if (this.startTime != null) {
-            this.duration = System.currentTimeMillis() - this.startTime;
-        } else {
-            this.duration = 0L;
-        }
-
-        if (this.startTime != null) {
-            // we set end time regardless of current pipeline status, but for in-progress pipelines its value will be ignored
-            this.endTime = this.startTime + this.duration;
+        this.duration = durationInMs;
+        if (duration != 0 && startTime != 0) {
+            // end time will be ignored for in-progress pipelines
+            this.endTime = startTime + duration;
         }
 
         // Set Build Number
@@ -287,6 +248,12 @@ public class BuildData implements Serializable {
             this.workspace = pipelineInfo.getWorkspace();
         } else {
             this.workspace = envVars.get("WORKSPACE");
+        }
+
+        PipelineQueueInfoAction action = run.getAction(PipelineQueueInfoAction.class);
+        if (action != null) {
+            this.millisInQueue = action.getQueueTimeMillis();
+            this.propagatedMillisInQueue = action.getPropagatedQueueTimeMillis();
         }
 
         // Save charset canonical name
@@ -725,14 +692,12 @@ public class BuildData implements Serializable {
         return defaultIfNull(startTime, value);
     }
 
-    /**
-     * Returns the total time this build spent waiting in queue.
-     */
-    public long getTotalQueueTimeMillis() {
-        // Need to sum both queue times because they are not mutually exclusive.
-        // In the case of pipelines millisInQueue will include the time spent waiting for other builds to finish (before pipeline start),
-        // and propagatedMillisInQueue will include the time spent waiting for an executor (after pipeline start).
-        return Math.max(millisInQueue, 0) + Math.max(propagatedMillisInQueue, 0);
+    public Long getMillisInQueue(Long value) {
+        return defaultIfNull(millisInQueue, value);
+    }
+
+    public Long getPropagatedMillisInQueue(Long value) {
+        return defaultIfNull(propagatedMillisInQueue, value);
     }
 
     public Integer getVersion() {
