@@ -1,7 +1,6 @@
 package org.datadog.jenkins.plugins.datadog.apm;
 
 public enum TracerLanguage {
-    DOTNET(".NET"),
     JAVA("Java"),
     JAVASCRIPT("JS"),
     PYTHON("Python");
