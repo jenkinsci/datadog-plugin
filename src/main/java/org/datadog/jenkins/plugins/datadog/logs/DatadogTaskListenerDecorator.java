@@ -47,9 +47,6 @@ public class DatadogTaskListenerDecorator extends TaskListenerDecorator {
     public DatadogTaskListenerDecorator(WorkflowRun run) {
         try {
             this.buildData = new BuildData(run, null);
-        } catch (InterruptedException e){
-            Thread.currentThread().interrupt();
-            DatadogUtilities.severe(LOGGER, e, null);
         } catch (Exception e) {
             DatadogUtilities.severe(LOGGER, e, null);
         }

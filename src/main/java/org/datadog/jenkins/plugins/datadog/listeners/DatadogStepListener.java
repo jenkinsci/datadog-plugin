@@ -25,15 +25,12 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
-import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.node.NodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
 import org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils;
-import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriter;
-import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
@@ -309,34 +306,11 @@ public class DatadogStepListener implements StepListener {
                 final FlowNode candidate = blockStartNodes.next();
                 if("Start of Pipeline".equals(candidate.getDisplayName())) {
                     run.addOrReplaceAction(new PipelineNodeInfoAction(nodeInfoAction.getNodeName() != null ? nodeInfoAction.getNodeName() : "master", nodeInfoAction.getNodeLabels(), nodeInfoAction.getNodeHostname(), nodeInfoAction.getNodeWorkspace()));
-
-                    if (DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
-                        // we have node info available now - submit a pipeline event so the backend could update its data
-                        submitPipelineData(run);
-                    }
                 }
             }
         } finally {
             long end = System.currentTimeMillis();
             DatadogAudit.log("DatadogStepListener.findStartOfPipeline", start, end);
-        }
-    }
-
-    private static void submitPipelineData(Run<?, ?> run) {
-        TraceWriter traceWriter = TraceWriterFactory.getTraceWriter();
-        if (traceWriter == null) {
-            return;
-        }
-        try {
-            BuildData buildData = new BuildData(run, null);
-            traceWriter.submitBuild(buildData, run);
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            DatadogUtilities.severe(logger, e, "Interrupted while trying to submit pipeline data update");
-
-        } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "Failed to submit pipeline data update");
         }
     }
 

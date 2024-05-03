@@ -145,9 +145,6 @@ public class DatadogGraphListener implements GraphListener {
             metrics.gauge("jenkins.job.stage_duration", getTime(startNode, endNode), hostname, tags);
             metrics.gauge("jenkins.job.stage_pause_duration", pauseDuration, hostname, tags);
             client.incrementCounter("jenkins.job.stage_completed", hostname, tags);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            DatadogUtilities.severe(logger, e, "Interrupted while trying to submit the stage duration metric for " + getStageName(startNode));
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Unable to submit the stage duration metric for " + getStageName(startNode));
         }

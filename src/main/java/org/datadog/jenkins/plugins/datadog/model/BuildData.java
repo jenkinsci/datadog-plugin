@@ -126,7 +126,6 @@ public class BuildData implements Serializable {
 
     private String result;
     private boolean isCompleted;
-    private boolean isBuilding;
     private String hostname;
     private String userId;
     private String userEmail;
@@ -138,17 +137,6 @@ public class BuildData implements Serializable {
     private Long millisInQueue;
     private Long propagatedMillisInQueue;
 
-    /**
-     * Monotonically increasing "version" of the build data.
-     * As the pipeline progresses, it can be reported to the backend more than once:
-     * <ul>
-     * <li>when it starts executing</li>
-     * <li>when git info or node info become available</li>
-     * <li>when it finishes.</li>
-     * </ul>
-     * The backend needs version to determine the relative order of these multiple events.
-     */
-    private Integer version;
     private String traceId;
     private String spanId;
 
@@ -161,13 +149,11 @@ public class BuildData implements Serializable {
         this.tags = DatadogUtilities.getBuildTags(run, envVars);
 
         this.buildUrl = envVars.get("BUILD_URL");
-
-        BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
-        if (buildSpanAction != null) {
-            if (this.buildUrl == null) {
-                this.buildUrl = buildSpanAction.getBuildUrl();
+        if (buildUrl == null) {
+            BuildSpanAction buildSpanAction = run.getAction(BuildSpanAction.class);
+            if (buildSpanAction != null) {
+                buildUrl = buildSpanAction.getBuildUrl();
             }
-            this.version = buildSpanAction.getAndIncrementVersion();
         }
 
         // Populate instance using environment variables.
@@ -176,6 +162,18 @@ public class BuildData implements Serializable {
         // Populate instance using Git info if possible.
         // Set all Git commit related variables.
         populateGitVariables(run);
+
+        // Populate instance using run instance
+        // Set StartTime, EndTime and Duration
+        this.startTime = run.getStartTimeInMillis();
+        long durationInMs = run.getDuration();
+        if (durationInMs == 0 && run.getStartTimeInMillis() != 0) {
+            durationInMs = System.currentTimeMillis() - run.getStartTimeInMillis();
+        }
+        this.duration = durationInMs;
+        if (durationInMs != 0 && run.getStartTimeInMillis() != 0) {
+            this.endTime = run.getStartTimeInMillis() + durationInMs;
+        }
 
         // Set Jenkins Url
         this.jenkinsUrl = DatadogUtilities.getJenkinsUrl();
@@ -194,19 +192,6 @@ public class BuildData implements Serializable {
         } else {
             this.result = null;
             this.isCompleted = false;
-        }
-        this.isBuilding = run.isBuilding();
-
-        // Set StartTime, EndTime and Duration
-        this.startTime = run.getStartTimeInMillis();
-        long durationInMs = run.getDuration();
-        if (durationInMs == 0 && startTime != 0) {
-            durationInMs = System.currentTimeMillis() - startTime;
-        }
-        this.duration = durationInMs;
-        if (duration != 0 && startTime != 0) {
-            // end time will be ignored for in-progress pipelines
-            this.endTime = startTime + duration;
         }
 
         // Set Build Number
@@ -605,10 +590,6 @@ public class BuildData implements Serializable {
         return isCompleted;
     }
 
-    public boolean isBuilding() {
-        return isBuilding;
-    }
-
     public String getHostname(String value) {
         return defaultIfNull(hostname, value);
     }
@@ -664,10 +645,6 @@ public class BuildData implements Serializable {
 
     public Long getPropagatedMillisInQueue(Long value) {
         return defaultIfNull(propagatedMillisInQueue, value);
-    }
-
-    public Integer getVersion() {
-        return version;
     }
 
     public String getBuildTag(String value) {

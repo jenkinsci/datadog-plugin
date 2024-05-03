@@ -15,11 +15,11 @@ public class BuildSpanActionConverterTest extends ActionConverterTest<BuildSpanA
     @Parameterized.Parameters(name = "{0}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
-                {new BuildSpanAction(new TraceSpan.TraceSpanContext(123, 456, 789), 0, "buildUrl")},
-                {new BuildSpanAction(new TraceSpan.TraceSpanContext(0, 456, 789), 1, "buildUrl")},
-                {new BuildSpanAction(new TraceSpan.TraceSpanContext(123, 0, 789), 2, null)},
-                {new BuildSpanAction(new TraceSpan.TraceSpanContext(123, 456, 0), 3, "buildUrl")},
-                {new BuildSpanAction(new TraceSpan.TraceSpanContext(0, 0, 0), 4, null)},
+                {new BuildSpanAction(new TraceSpan.TraceSpanContext(123, 456, 789), "buildUrl")},
+                {new BuildSpanAction(new TraceSpan.TraceSpanContext(0, 456, 789), "buildUrl")},
+                {new BuildSpanAction(new TraceSpan.TraceSpanContext(123, 0, 789), null)},
+                {new BuildSpanAction(new TraceSpan.TraceSpanContext(123, 456, 0), "buildUrl")},
+                {new BuildSpanAction(new TraceSpan.TraceSpanContext(0, 0, 0), null)},
         });
     }
 

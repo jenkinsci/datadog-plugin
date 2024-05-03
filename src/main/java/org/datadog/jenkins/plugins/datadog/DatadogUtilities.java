@@ -101,6 +101,7 @@ public class DatadogUtilities {
     /**
      * @return - The descriptor for the Datadog plugin. In this case the global configuration.
      */
+    @Nullable
     public static DatadogGlobalConfiguration getDatadogGlobalDescriptor() {
         try {
             return ExtensionList.lookupSingleton(DatadogGlobalConfiguration.class);
