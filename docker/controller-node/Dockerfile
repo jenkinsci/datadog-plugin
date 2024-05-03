@@ -15,9 +15,6 @@ USER jenkins
 COPY plugin-dependencies.txt /var/jenkins_home/plugin-dependencies.txt
 RUN jenkins-plugin-cli --latest-specified --plugin-file /var/jenkins_home/plugin-dependencies.txt
 
-# this is not a dependency of the Datadog plugin, it is just needed to test upstream/downstream pipeline linking
-RUN jenkins-plugin-cli --latest-specified --plugins pipeline-build-step
-
 COPY jobs /var/jenkins_home/sample-jobs
 
 COPY 10-create-admin-user.groovy /usr/share/jenkins/ref/init.groovy.d/10-create-admin-user.groovy

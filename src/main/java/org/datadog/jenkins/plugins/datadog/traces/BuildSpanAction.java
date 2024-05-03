@@ -7,7 +7,6 @@ import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.annotation.Nullable;
 import org.datadog.jenkins.plugins.datadog.model.DatadogPluginAction;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogActionConverter;
@@ -21,29 +20,22 @@ public class BuildSpanAction extends DatadogPluginAction {
     private static final long serialVersionUID = 1L;
 
     private final TraceSpan.TraceSpanContext buildSpanContext;
-    private final TraceSpan.TraceSpanContext upstreamSpanContext;
     private final AtomicInteger version;
     private volatile String buildUrl;
 
-    public BuildSpanAction(final TraceSpan.TraceSpanContext buildSpanContext, @Nullable final TraceSpan.TraceSpanContext upstreamSpanContext) {
-        this.buildSpanContext = buildSpanContext;
-        this.upstreamSpanContext = upstreamSpanContext;
-        this.version = new AtomicInteger(0);
+    public BuildSpanAction(final TraceSpan.TraceSpanContext buildSpanContext){
+       this.buildSpanContext = buildSpanContext;
+       this.version = new AtomicInteger(0);
     }
 
-    public BuildSpanAction(TraceSpan.TraceSpanContext buildSpanContext, @Nullable TraceSpan.TraceSpanContext upstreamSpanContext, int version, String buildUrl) {
+    public BuildSpanAction(TraceSpan.TraceSpanContext buildSpanContext, int version, String buildUrl) {
         this.buildSpanContext = buildSpanContext;
-        this.upstreamSpanContext = upstreamSpanContext;
         this.version = new AtomicInteger(version);
         this.buildUrl = buildUrl;
     }
 
     public TraceSpan.TraceSpanContext getBuildSpanContext() {
         return buildSpanContext;
-    }
-
-    public TraceSpan.TraceSpanContext getUpstreamSpanContext() {
-        return upstreamSpanContext;
     }
 
     public String getBuildUrl() {
@@ -82,7 +74,7 @@ public class BuildSpanAction extends DatadogPluginAction {
 
     public static final class ConverterImpl extends DatadogActionConverter<BuildSpanAction> {
         public ConverterImpl(XStream xs) {
-            super(new ConverterV1(), new ConverterV2());
+            super(new ConverterV1());
         }
     }
 
@@ -118,50 +110,7 @@ public class BuildSpanAction extends DatadogPluginAction {
                 reader.moveUp();
             }
 
-            return new BuildSpanAction(spanContext, null, version, buildUrl);
-        }
-    }
-
-    public static final class ConverterV2 extends VersionedConverter<BuildSpanAction> {
-
-        private static final int VERSION = 2;
-
-        public ConverterV2() {
-            super(VERSION);
-        }
-
-        @Override
-        public void marshal(BuildSpanAction action, HierarchicalStreamWriter writer, MarshallingContext context) {
-            writeField("version", action.version.get(), writer, context);
-            writeField("spanContext", action.buildSpanContext, writer, context);
-            if (action.upstreamSpanContext != null) {
-                writeField("upstreamSpanContext", action.upstreamSpanContext, writer, context);
-            }
-            if (action.buildUrl != null) {
-                writeField("buildUrl", action.buildUrl, writer, context);
-            }
-        }
-
-        @Override
-        public BuildSpanAction unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
-            int version = readField(reader, context, int.class);
-            TraceSpan.TraceSpanContext spanContext = readField(reader, context, TraceSpan.TraceSpanContext.class);
-
-            String buildUrl = null;
-            TraceSpan.TraceSpanContext upstreamSpanContext = null;
-            while (reader.hasMoreChildren()) {
-                reader.moveDown();
-                String fieldName = reader.getNodeName();
-                if ("buildUrl".equals(fieldName)) {
-                    buildUrl = (String) context.convertAnother(null, String.class);
-                }
-                if ("upstreamSpanContext".equals(fieldName)) {
-                    upstreamSpanContext= readField(reader, context, TraceSpan.TraceSpanContext.class);
-                }
-                reader.moveUp();
-            }
-
-            return new BuildSpanAction(spanContext, upstreamSpanContext, version, buildUrl);
+            return new BuildSpanAction(spanContext, version, buildUrl);
         }
     }
 }

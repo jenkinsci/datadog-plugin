@@ -30,14 +30,14 @@ public class TraceSpan {
     private final long startNano;
     private long durationNano;
 
-    public TraceSpan(final String name, final long startNano, final TraceSpanContext spanContext) {
-        if (spanContext == null) {
-            throw new NullPointerException("span context cannot be null");
-        }
+    public TraceSpan(final String name, final long startNano) {
+        this(name, startNano, null);
+    }
 
+    public TraceSpan(final String name, final long startNano, final TraceSpanContext spanContext) {
         this.operationName = name;
         this.startNano = startNano;
-        this.traceSpanContext = spanContext;
+        this.traceSpanContext = spanContext != null ? spanContext : new TraceSpanContext();
 
         // Avoid sampling
         this.metrics.put(PRIORITY_SAMPLING_KEY, 1.0);
