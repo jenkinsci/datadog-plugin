@@ -45,7 +45,6 @@ import javax.annotation.Nullable;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
-import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic;
@@ -80,18 +79,32 @@ public class DatadogClientStub implements DatadogClient {
     }
 
     @Override
-    public MetricsClient metrics() {
+    public boolean incrementCounter(String name, String hostname, Map<String, Set<String>> tags) {
+        for (DatadogMetric m : this.metrics) {
+            if (m.same(new DatadogMetric(name, 0, hostname, convertTagMapToList(tags)))) {
+                double value = m.getValue() + 1;
+                this.metrics.remove(m);
+                this.metrics.add(new DatadogMetric(name, value, hostname, convertTagMapToList(tags)));
+                return true;
+            }
+        }
+        this.metrics.add(new DatadogMetric(name, 1, hostname, convertTagMapToList(tags)));
+        return true;
+    }
+
+    @Override
+    public void flushCounters() {
+        // noop
+    }
+
+    @Override
+    public Metrics metrics() {
         return new StubMetrics();
     }
 
-    public final class StubMetrics implements MetricsClient {
+    public final class StubMetrics implements Metrics {
         @Override
-        public void gauge(String name, double value, String hostname, Map<String, Set<String>> tags) {
-            metrics.add(new DatadogMetric(name, value, hostname, convertTagMapToList(tags)));
-        }
-
-        @Override
-        public void rate(String name, double value, String hostname, Map<String, Set<String>> tags) {
+        public void gauge(String name, long value, String hostname, Map<String, Set<String>> tags) {
             metrics.add(new DatadogMetric(name, value, hostname, convertTagMapToList(tags)));
         }
 

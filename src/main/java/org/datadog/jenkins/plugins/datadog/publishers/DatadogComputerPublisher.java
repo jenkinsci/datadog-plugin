@@ -27,22 +27,18 @@ package org.datadog.jenkins.plugins.datadog.publishers;
 
 import hudson.Extension;
 import hudson.model.Computer;
-import hudson.model.Executor;
 import hudson.model.PeriodicWork;
-import hudson.model.Queue;
-import hudson.model.Run;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
-import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
+import org.datadog.jenkins.plugins.datadog.clients.Metrics;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
+
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 /**
  * This class registers a {@link PeriodicWork} with Jenkins to run periodically in order to enable
@@ -69,11 +65,7 @@ public class DatadogComputerPublisher extends PeriodicWork {
             return;
         }
 
-        publishMetrics(client);
-    }
-
-    public static void publishMetrics(DatadogClient client) {
-        try (MetricsClient metrics = client.metrics()) {
+        try (Metrics metrics = client.metrics()) {
             String hostname = DatadogUtilities.getHostname(null);
             long nodeCount = 0;
             long nodeOffline = 0;
@@ -93,7 +85,7 @@ public class DatadogComputerPublisher extends PeriodicWork {
                 if (computer.isOffline()) {
                     nodeOffline++;
                     metrics.gauge("jenkins.node_status.up", 0, hostname, tags);
-                }
+                }   
                 if (computer.isOnline()) {
                     nodeOnline++;
                     metrics.gauge("jenkins.node_status.up", 1, hostname, tags);
@@ -108,40 +100,14 @@ public class DatadogComputerPublisher extends PeriodicWork {
                 metrics.gauge("jenkins.executor.in_use", inUse, hostname, tags);
                 metrics.gauge("jenkins.executor.free", free, hostname, tags);
             }
-
             metrics.gauge("jenkins.node.count", nodeCount, hostname, globalTags);
             metrics.gauge("jenkins.node.offline", nodeOffline, hostname, globalTags);
             metrics.gauge("jenkins.node.online", nodeOnline, hostname, globalTags);
-            metrics.gauge("jenkins.job.currently_building", getCurrentRunCount(computers), hostname, globalTags);
 
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to compute and send node metrics");
         }
-    }
-
-    private static int getCurrentRunCount(Computer[] computers) {
-        Set<Run<?, ?>> runs = new HashSet<>();
-        for (Computer computer : computers) {
-            List<Executor> executors = computer.getAllExecutors();
-            for (Executor executor : executors) {
-                Run<?, ?> run = getCurrentRun(executor);
-                if (run != null) {
-                    runs.add(run);
-                }
-            }
-        }
-        return runs.size();
-    }
-
-    private static Run<?, ?> getCurrentRun(Executor executor) {
-        Queue.Executable executable = executor.getCurrentExecutable();
-        while (executable != null) {
-            if (executable instanceof Run) {
-                return (Run<?, ?>) executable;
-            }
-            executable = executable.getParentExecutable();
-        }
-        return null;
+        
     }
 
 }

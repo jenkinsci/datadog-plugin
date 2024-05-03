@@ -28,7 +28,7 @@ package org.datadog.jenkins.plugins.datadog;
 import com.timgroup.statsd.ServiceCheck;
 import java.util.Map;
 import java.util.Set;
-import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
+import org.datadog.jenkins.plugins.datadog.clients.Metrics;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy;
 
 public interface DatadogClient {
@@ -69,7 +69,23 @@ public interface DatadogClient {
      */
     boolean event(DatadogEvent event);
 
-    MetricsClient metrics();
+    /**
+     * Increment a counter for the given metrics.
+     * NOTE: To submit all counters you need to execute the flushCounters method.
+     * This is to aggregate counters and submit them in batch to Datadog in order to minimize network traffic.
+     * @param name     - metric name
+     * @param hostname - metric hostname
+     * @param tags     - metric tags
+     * @return a boolean to signify the success or failure of increment submission.
+     */
+    boolean incrementCounter(String name, String hostname, Map<String, Set<String>> tags);
+
+    /**
+     * Submit all your counters as rate with 10 seconds intervals.
+     */
+    void flushCounters();
+
+    Metrics metrics();
 
     /**
      * Sends a service check to the Datadog API, including the check name, and status.

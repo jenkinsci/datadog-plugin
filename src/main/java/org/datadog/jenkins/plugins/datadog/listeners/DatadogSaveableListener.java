@@ -30,9 +30,9 @@ import hudson.XmlFile;
 import hudson.model.Saveable;
 import hudson.model.listeners.SaveableListener;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
+import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
-import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 import java.util.Map;
@@ -65,8 +65,9 @@ public class DatadogSaveableListener  extends SaveableListener {
                 return;
             }
 
+            // Submit counter
             String hostname = DatadogUtilities.getHostname(null);
-            Metrics.getInstance().incrementCounter("jenkins.config.changed", hostname, tags);
+            client.incrementCounter("jenkins.config.changed", hostname, tags);
 
             logger.fine("End DatadogSaveableListener#onChange");
         } catch (Exception e) {

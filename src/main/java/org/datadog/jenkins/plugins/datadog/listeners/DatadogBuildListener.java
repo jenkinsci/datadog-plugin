@@ -52,11 +52,10 @@ import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.clients.Metrics;
 import org.datadog.jenkins.plugins.datadog.events.BuildAbortedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildFinishedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildStartedEventImpl;
-import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
-import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
 import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
@@ -243,12 +242,13 @@ public class DatadogBuildListener extends RunListener<Run> {
             String hostname = buildData.getHostname(DatadogUtilities.getHostname(null));
 
             if (waitingMs != null) {
-                try (MetricsClient metrics = client.metrics()) {
+                try (Metrics metrics = client.metrics()) {
                     metrics.gauge("jenkins.job.waiting", TimeUnit.MILLISECONDS.toSeconds(waitingMs), hostname, tags);
                 }
             }
 
-            Metrics.getInstance().incrementCounter("jenkins.job.started", hostname, tags);
+            // Submit counter
+            client.incrementCounter("jenkins.job.started", hostname, tags);
 
             // APM Traces
             if (DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
@@ -296,7 +296,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             return;
         }
 
-        try (MetricsClient metrics = client.metrics()) {
+        try (Metrics metrics = client.metrics()) {
             // Collect Build Data
             BuildData buildData;
             try {
@@ -315,24 +315,25 @@ public class DatadogBuildListener extends RunListener<Run> {
             // Send a metric
             Map<String, Set<String>> tags = buildData.getTags();
             String hostname = buildData.getHostname(DatadogUtilities.getHostname(null));
-            metrics.gauge("jenkins.job.duration", TimeUnit.MILLISECONDS.toSeconds(buildData.getDuration(0L)), hostname, tags);
+            metrics.gauge("jenkins.job.duration", buildData.getDuration(0L) / 1000, hostname, tags);
             logger.fine(String.format("[%s]: Duration: %s", buildData.getJobName(), toTimeString(buildData.getDuration(0L))));
 
             if (run instanceof WorkflowRun) {
                 RunExt extRun = getRunExtForRun((WorkflowRun) run);
-                long pauseDurationMillis = 0;
+                long pauseDuration = 0;
                 for (StageNodeExt stage : extRun.getStages()) {
-                    pauseDurationMillis += stage.getPauseDurationMillis();
+                    pauseDuration += stage.getPauseDurationMillis();
                 }
-                metrics.gauge("jenkins.job.pause_duration", TimeUnit.MILLISECONDS.toSeconds(pauseDurationMillis), hostname, tags);
-                logger.fine(String.format("[%s]: Pause Duration: %s", buildData.getJobName(), toTimeString(pauseDurationMillis)));
-                long buildDurationMillis = run.getDuration() - pauseDurationMillis;
-                metrics.gauge("jenkins.job.build_duration", TimeUnit.MILLISECONDS.toSeconds(buildDurationMillis), hostname, tags);
+                metrics.gauge("jenkins.job.pause_duration", pauseDuration / 1000, hostname, tags);
+                logger.fine(String.format("[%s]: Pause Duration: %s", buildData.getJobName(), toTimeString(pauseDuration)));
+                long buildDuration = run.getDuration() - pauseDuration;
+                metrics.gauge("jenkins.job.build_duration", buildDuration / 1000, hostname, tags);
                 logger.fine(
-                        String.format("[%s]: Build Duration (without pause): %s", buildData.getJobName(), toTimeString(buildDurationMillis)));
+                        String.format("[%s]: Build Duration (without pause): %s", buildData.getJobName(), toTimeString(buildDuration)));
             }
 
-            Metrics.getInstance().incrementCounter("jenkins.job.completed", hostname, tags);
+            // Submit counter
+            client.incrementCounter("jenkins.job.completed", hostname, tags);
 
             // Send a service check
             String buildResult = buildData.getResult(Result.NOT_BUILT.toString());
@@ -353,29 +354,29 @@ public class DatadogBuildListener extends RunListener<Run> {
             client.serviceCheck("jenkins.job.status", status, hostname, serviceCheckTags);
 
             if (run.getResult() == Result.SUCCESS) {
-                long mttrMillis = getMeanTimeToRecovery(run);
-                long cycleTimeMillis = getCycleTime(run);
-                long leadTimeMillis = run.getDuration() + mttrMillis;
+                long mttr = getMeanTimeToRecovery(run);
+                long cycleTime = getCycleTime(run);
+                long leadTime = run.getDuration() + mttr;
 
-                metrics.gauge("jenkins.job.leadtime", TimeUnit.MILLISECONDS.toSeconds(leadTimeMillis), hostname, tags);
-                logger.fine(String.format("[%s]: Lead time: %s", buildData.getJobName(), toTimeString(leadTimeMillis)));
-                if (cycleTimeMillis > 0) {
-                    metrics.gauge("jenkins.job.cycletime", TimeUnit.MILLISECONDS.toSeconds(cycleTimeMillis), hostname, tags);
-                    logger.fine(String.format("[%s]: Cycle Time: %s", buildData.getJobName(), toTimeString(cycleTimeMillis)));
+                metrics.gauge("jenkins.job.leadtime", leadTime / 1000, hostname, tags);
+                logger.fine(String.format("[%s]: Lead time: %s", buildData.getJobName(), toTimeString(leadTime)));
+                if (cycleTime > 0) {
+                    metrics.gauge("jenkins.job.cycletime", cycleTime / 1000, hostname, tags);
+                    logger.fine(String.format("[%s]: Cycle Time: %s", buildData.getJobName(), toTimeString(cycleTime)));
                 }
-                if (mttrMillis > 0) {
-                    metrics.gauge("jenkins.job.mttr", TimeUnit.MILLISECONDS.toSeconds(mttrMillis), hostname, tags);
-                    logger.fine(String.format("[%s]: MTTR: %s", buildData.getJobName(), toTimeString(mttrMillis)));
+                if (mttr > 0) {
+                    metrics.gauge("jenkins.job.mttr", mttr / 1000, hostname, tags);
+                    logger.fine(String.format("[%s]: MTTR: %s", buildData.getJobName(), toTimeString(mttr)));
                 }
             } else {
-                long feedbackTimeMillis = run.getDuration();
-                long mtbfMillis = getMeanTimeBetweenFailure(run);
+                long feedbackTime = run.getDuration();
+                long mtbf = getMeanTimeBetweenFailure(run);
 
-                metrics.gauge("jenkins.job.feedbacktime", TimeUnit.MILLISECONDS.toSeconds(feedbackTimeMillis), hostname, tags);
-                logger.fine(String.format("[%s]: Feedback Time: %s", buildData.getJobName(), toTimeString(feedbackTimeMillis)));
-                if (mtbfMillis > 0) {
-                    metrics.gauge("jenkins.job.mtbf", TimeUnit.MILLISECONDS.toSeconds(mtbfMillis), hostname, tags);
-                    logger.fine(String.format("[%s]: MTBF: %s", buildData.getJobName(), toTimeString(mtbfMillis)));
+                metrics.gauge("jenkins.job.feedbacktime", feedbackTime / 1000, hostname, tags);
+                logger.fine(String.format("[%s]: Feedback Time: %s", buildData.getJobName(), toTimeString(feedbackTime)));
+                if (mtbf > 0) {
+                    metrics.gauge("jenkins.job.mtbf", mtbf / 1000, hostname, tags);
+                    logger.fine(String.format("[%s]: MTBF: %s", buildData.getJobName(), toTimeString(mtbf)));
                 }
             }
 
@@ -485,8 +486,9 @@ public class DatadogBuildListener extends RunListener<Run> {
                 client.event(event);
             }
 
+            // Submit counter
             Map<String, Set<String>> tags = buildData.getTags();
-            Metrics.getInstance().incrementCounter("jenkins.job.aborted", hostname, tags);
+            client.incrementCounter("jenkins.job.aborted", hostname, tags);
 
             logger.fine("End DatadogBuildListener#onDeleted");
         } catch (Exception e) {

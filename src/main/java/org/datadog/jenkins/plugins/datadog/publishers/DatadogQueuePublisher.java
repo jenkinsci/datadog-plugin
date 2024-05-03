@@ -38,7 +38,7 @@ import java.util.logging.Logger;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
-import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
+import org.datadog.jenkins.plugins.datadog.clients.Metrics;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
@@ -69,7 +69,7 @@ public class DatadogQueuePublisher extends PeriodicWork {
             return;
         }
 
-        try (MetricsClient metrics = client.metrics()) {
+        try (Metrics metrics = client.metrics()) {
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
             // Add JenkinsUrl Tag
             tags = TagsUtil.addTagToTags(tags, "jenkins_url", DatadogUtilities.getJenkinsUrl());

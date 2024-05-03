@@ -32,7 +32,6 @@ import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
-import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
 import org.datadog.jenkins.plugins.datadog.events.ItemCRUDEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.ItemCopiedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.ItemLocationChangedEventImpl;
@@ -93,8 +92,9 @@ public class DatadogItemListener extends ItemListener {
                 client.event(event);
             }
 
+            // Submit counter
             String hostname = DatadogUtilities.getHostname(null);
-            Metrics.getInstance().incrementCounter("jenkins.item." + action.toLowerCase(), hostname, tags);
+            client.incrementCounter("jenkins.item." + action.toLowerCase(), hostname, tags);
 
             logger.fine("End DatadogItemListener#on" + action);
         } catch (Exception e) {
@@ -126,8 +126,9 @@ public class DatadogItemListener extends ItemListener {
                 client.event(event);
             }
 
+            // Submit counter
             String hostname = DatadogUtilities.getHostname(null);
-            Metrics.getInstance().incrementCounter("jenkins.item.copied", hostname, tags);
+            client.incrementCounter("jenkins.item.copied", hostname, tags);
 
             logger.fine("End DatadogItemListener#onCopied");
         } catch (Exception e) {
@@ -159,8 +160,9 @@ public class DatadogItemListener extends ItemListener {
                 client.event(event);
             }
 
+            // Submit counter
             String hostname = DatadogUtilities.getHostname(null);
-            Metrics.getInstance().incrementCounter("jenkins.item.location_changed", hostname, tags);
+            client.incrementCounter("jenkins.item.location_changed", hostname, tags);
 
             logger.fine("End DatadogItemListener#onLocationChanged");
         } catch (Exception e) {

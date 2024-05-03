@@ -34,7 +34,7 @@ import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
-import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
+import org.datadog.jenkins.plugins.datadog.clients.Metrics;
 import org.datadog.jenkins.plugins.datadog.model.PluginData;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
@@ -85,7 +85,7 @@ public class DatadogJenkinsPublisher extends PeriodicWork {
             }
 
             PluginData pluginData = collectPluginData(instance);
-            try (MetricsClient metrics = client.metrics()) {
+            try (Metrics metrics = client.metrics()) {
                 metrics.gauge("jenkins.project.count", projectCount, hostname, tags);
                 metrics.gauge("jenkins.plugin.count", pluginData.getCount(), hostname, tags);
                 metrics.gauge("jenkins.plugin.active", pluginData.getActive(), hostname, tags);
