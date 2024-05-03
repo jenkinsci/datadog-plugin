@@ -33,7 +33,6 @@ public class DatadogQueueListener extends QueueListener {
     private static final ExecutorService threadPool = Executors.newCachedThreadPool();
 
     @Override
-    @SuppressFBWarnings("RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE")
     public void onEnterBuildable(Queue.BuildableItem item) {
         try {
             if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
@@ -69,7 +68,6 @@ public class DatadogQueueListener extends QueueListener {
     }
 
     @Override
-    @SuppressFBWarnings("RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE")
     public void onLeaveBuildable(Queue.BuildableItem item) {
         try {
             if (!DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
