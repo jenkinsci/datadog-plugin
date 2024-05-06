@@ -1,7 +1,19 @@
 Changes
 =======
+## 7.0.1 / 2024-05-06
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-7.0.0...datadog-7.0.1
+
+* [Fixed] Fix BuildSpanAction deserialization logic. See [#425](https://github.com/jenkinsci/datadog-plugin/pull/425).
+* [Fixed] Fix log spamming for builds that do not have upstream parent. See [#426](https://github.com/jenkinsci/datadog-plugin/pull/426).
+* [Fixed] Fix Additional Settings field help in automatic Test Visibility instrumentation. See [#421](https://github.com/jenkinsci/datadog-plugin/pull/421).
+
 ## 7.0.0 / 2024-04-30
+### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-6.0.3...datadog-7.0.0
+
+* Supported Jenkins versions:
+  * Jenkins >= 2.361.4
 
 * [Changed] Changed plugin to Java 11. See [#404](https://github.com/jenkinsci/datadog-plugin/pull/404)
 * [Added] Implement running jobs metric + update metrics code. See [#407](https://github.com/jenkinsci/datadog-plugin/pull/407).
@@ -12,11 +24,13 @@ https://github.com/jenkinsci/datadog-plugin/compare/datadog-6.0.3...datadog-7.0.
 * [Fixed] Fix queue time calculation for builds and pipeline steps. See [#406](https://github.com/jenkinsci/datadog-plugin/pull/406).
 
 ## 6.0.3 / 2024-04-11
+### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-6.0.2...datadog-6.0.3
 
 * [Fixed] Add git-client as a plugin dependency. See [#413](https://github.com/jenkinsci/datadog-plugin/pull/413).
 
 ## 6.0.2 / 2024-02-08
+### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-6.0.1...datadog-6.0.2
 
 Fixes StackOverflowException occurring when logs collection is enabled.
@@ -24,6 +38,7 @@ Fixes StackOverflowException occurring when logs collection is enabled.
 * [Fixed] Fix stack overflow on initialising DatadogTaskListenerDecorator. See [#396](https://github.com/jenkinsci/datadog-plugin/pull/396).
 
 ## 6.0.1 / 2024-02-05
+### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-6.0.0...datadog-6.0.1
 
 Various bugfixes. Fixes plugin data deserialization issue which could lead to build data corruption.
@@ -36,6 +51,7 @@ Various bugfixes. Fixes plugin data deserialization issue which could lead to bu
 * [Fixed] Fix port used for APM track spans submission. See [#386](https://github.com/jenkinsci/datadog-plugin/pull/386).
 
 ## 6.0.0 / 2024-01-31
+### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-5.6.2...datadog-6.0.0
 
 Reworking CI Visibility logic: changing how the plugin's internal state is stored, and how pipeline steps are submitted to Datadog.
