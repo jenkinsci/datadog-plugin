@@ -119,7 +119,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             BuildSpanManager.get().put(buildData.getBuildTag(""), buildSpanContext);
 
             TraceSpan.TraceSpanContext upstreamBuildSpanContext = null;
-            String upstreamBuildTag = buildData.getUpstreamBuildTag("");
+            String upstreamBuildTag = buildData.getUpstreamBuildTag(null);
             if (upstreamBuildTag != null) {
                 // try to find upstream build context saved earlier
                 upstreamBuildSpanContext = BuildSpanManager.get().get(upstreamBuildTag);
