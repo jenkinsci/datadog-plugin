@@ -97,7 +97,6 @@ public class BuildSpanAction extends DatadogPluginAction {
         @Override
         public void marshal(BuildSpanAction action, HierarchicalStreamWriter writer, MarshallingContext context) {
             writeField("spanContext", action.buildSpanContext, writer, context);
-            writeField("version", action.version.get(), writer, context);
             if (action.buildUrl != null) {
                 writeField("buildUrl", action.buildUrl, writer, context);
             }
@@ -106,8 +105,6 @@ public class BuildSpanAction extends DatadogPluginAction {
         @Override
         public BuildSpanAction unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
             TraceSpan.TraceSpanContext spanContext = readField(reader, context, TraceSpan.TraceSpanContext.class);
-            int version = readField(reader, context, int.class);
-
             String buildUrl = null;
             while (reader.hasMoreChildren()) {
                 reader.moveDown();
@@ -118,7 +115,7 @@ public class BuildSpanAction extends DatadogPluginAction {
                 reader.moveUp();
             }
 
-            return new BuildSpanAction(spanContext, null, version, buildUrl);
+            return new BuildSpanAction(spanContext, null, 0, buildUrl);
         }
     }
 
