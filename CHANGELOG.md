@@ -4,9 +4,9 @@ Changes
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-7.0.0...datadog-7.0.1
 
+* [Fixed] Fix Additional Settings field help in automatic Test Visibility instrumentation. See [#421](https://github.com/jenkinsci/datadog-plugin/pull/421).
 * [Fixed] Fix BuildSpanAction deserialization logic. See [#425](https://github.com/jenkinsci/datadog-plugin/pull/425).
 * [Fixed] Fix log spamming for builds that do not have upstream parent. See [#426](https://github.com/jenkinsci/datadog-plugin/pull/426).
-* [Fixed] Fix Additional Settings field help in automatic Test Visibility instrumentation. See [#421](https://github.com/jenkinsci/datadog-plugin/pull/421).
 
 ## 7.0.0 / 2024-04-30
 ### Details
