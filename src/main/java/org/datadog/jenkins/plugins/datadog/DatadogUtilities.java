@@ -27,6 +27,7 @@ package org.datadog.jenkins.plugins.datadog;
 
 import hudson.EnvVars;
 import hudson.ExtensionList;
+import hudson.FilePath;
 import hudson.PluginManager;
 import hudson.PluginWrapper;
 import hudson.model.Actionable;
@@ -68,6 +69,7 @@ import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.datadog.jenkins.plugins.datadog.apm.ShellCommandCallable;
 import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
 import org.datadog.jenkins.plugins.datadog.model.DatadogPluginAction;
 import org.datadog.jenkins.plugins.datadog.steps.DatadogPipelineAction;
@@ -96,6 +98,7 @@ public class DatadogUtilities {
     private static final Logger logger = Logger.getLogger(DatadogUtilities.class.getName());
 
     private static final Integer MAX_HOSTNAME_LEN = 255;
+    private static final int HOSTNAME_CMD_TIMEOUT_MILLIS = 3_000;
     private static final String DATE_FORMAT_ISO8601 = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX";
     private static final List<String> UNIX_OS = Arrays.asList("mac", "linux", "freebsd", "sunos");
 
@@ -750,13 +753,26 @@ public class DatadogUtilities {
                 if (DatadogUtilities.isValidHostname(computerHostName)) {
                     return computerHostName;
                 }
+
+                Node node = computer.getNode();
+                if (node != null) {
+                    FilePath rootPath = node.getRootPath();
+                    if (rootPath != null) {
+                        ShellCommandCallable hostnameCommand = new ShellCommandCallable(
+                                Collections.emptyMap(), HOSTNAME_CMD_TIMEOUT_MILLIS, "hostname", "-f");
+                        String shellHostname = rootPath.act(hostnameCommand).trim();
+                        if (DatadogUtilities.isValidHostname(shellHostname)) {
+                            return shellHostname;
+                        }
+                    }
+                }
             }
         } catch (InterruptedException e){
             Thread.currentThread().interrupt();
             logger.fine("Interrupted while trying to extract hostname from StepContext.");
 
-        } catch (IOException e){
-            logger.fine("Unable to extract hostname from StepContext.");
+        } catch (Exception e){
+            logger.fine("Unable to extract hostname from StepContext");
         }
         return null;
     }

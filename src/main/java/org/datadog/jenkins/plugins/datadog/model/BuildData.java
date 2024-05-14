@@ -38,11 +38,14 @@ import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isUserSuppli
 import com.cloudbees.plugins.credentials.CredentialsParameterValue;
 import hudson.EnvVars;
 import hudson.matrix.MatrixProject;
+import hudson.model.AbstractBuild;
 import hudson.model.BooleanParameterValue;
 import hudson.model.Cause;
 import hudson.model.CauseAction;
+import hudson.model.Computer;
 import hudson.model.ItemGroup;
 import hudson.model.Job;
+import hudson.model.Node;
 import hudson.model.ParameterValue;
 import hudson.model.ParametersAction;
 import hudson.model.Result;
@@ -276,6 +279,11 @@ public class BuildData implements Serializable {
             // the job is run on the master node, checking plugin config and locally available info.
             // (nodeName == null) condition is there to preserve existing behavior
             this.hostname = DatadogUtilities.getHostname(envVars);
+        } else if (run instanceof AbstractBuild) {
+            AbstractBuild<?, ?> build = (AbstractBuild<?, ?>) run;
+            Node node = build.getBuiltOn();
+            Computer computer = node != null ? node.toComputer() : null;
+            this.hostname = DatadogUtilities.getNodeHostname(envVars, computer);
         } else if (envVars.containsKey(DatadogGlobalConfiguration.DD_CI_HOSTNAME)) {
             // the job is run on an agent node, querying DD_CI_HOSTNAME set explicitly on agent
             this.hostname = envVars.get(DatadogGlobalConfiguration.DD_CI_HOSTNAME);
