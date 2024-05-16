@@ -2,6 +2,7 @@ package org.datadog.jenkins.plugins.datadog.stubs;
 
 import hudson.EnvVars;
 import hudson.model.Build;
+import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.TaskListener;
 import java.io.IOException;
@@ -29,6 +30,11 @@ public class BuildStub extends Build<ProjectStub, BuildStub> {
         this.previousBuiltBuild = previousBuiltBuild;
         this.timestamp = timestamp;
         this.previousNotFailedBuild = previousNotFailedBuild;
+    }
+
+    @Override
+    public Node getBuiltOn() {
+        return null;
     }
 
     protected BuildStub(@Nonnull ProjectStub project) throws IOException {
