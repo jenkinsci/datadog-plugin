@@ -25,6 +25,7 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.ExtensionList;
 import hudson.FilePath;
@@ -40,6 +41,7 @@ import hudson.model.TaskListener;
 import hudson.model.User;
 import hudson.model.labels.LabelAtom;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -66,6 +68,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import jenkins.model.Jenkins;
+import jenkins.security.MasterToSlaveCallable;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -757,7 +760,7 @@ public class DatadogUtilities {
                 Node node = computer.getNode();
                 if (node != null) {
                     FilePath rootPath = node.getRootPath();
-                    if (rootPath != null) {
+                    if (isUnix(rootPath)) {
                         ShellCommandCallable hostnameCommand = new ShellCommandCallable(
                                 Collections.emptyMap(), HOSTNAME_CMD_TIMEOUT_MILLIS, "hostname", "-f");
                         String shellHostname = rootPath.act(hostnameCommand).trim();
@@ -775,6 +778,21 @@ public class DatadogUtilities {
             logger.fine("Unable to extract hostname from StepContext");
         }
         return null;
+    }
+
+    private static boolean isUnix(FilePath filePath) throws IOException, InterruptedException {
+        return filePath != null && filePath.act(new IsUnix());
+    }
+
+    // copied from hudson.FilePath.IsUnix
+    private static final class IsUnix extends MasterToSlaveCallable<Boolean, IOException> {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        @NonNull
+        public Boolean call() {
+            return File.pathSeparatorChar == ':';
+        }
     }
 
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
