@@ -61,6 +61,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -772,10 +773,10 @@ public class DatadogUtilities {
             }
         } catch (InterruptedException e){
             Thread.currentThread().interrupt();
-            logger.fine("Interrupted while trying to extract hostname from StepContext.");
+            logException(logger, Level.FINE, "Interrupted while trying to extract hostname from StepContext.", e);
 
         } catch (Exception e){
-            logger.fine("Unable to extract hostname from StepContext");
+            logException(logger, Level.FINE, "Unable to get hostname for node " + computer.getName(), e);
         }
         return null;
     }
@@ -938,14 +939,17 @@ public class DatadogUtilities {
         }
     }
 
-    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH")
     public static void severe(Logger logger, Throwable e, String message) {
+        logException(logger, Level.SEVERE, message, e);
+    }
+
+    public static void logException(Logger logger, Level logLevel, String message, Throwable e) {
         if (e != null) {
             String stackTrace = ExceptionUtils.getStackTrace(e);
-            message = (message != null ? message : "An unexpected error occurred: ") + stackTrace;
+            message = (message != null ? message + " " : "An unexpected error occurred: ") + stackTrace;
         }
         if (StringUtils.isNotEmpty(message)) {
-            logger.severe(message);
+            logger.log(logLevel, message);
         }
     }
 
