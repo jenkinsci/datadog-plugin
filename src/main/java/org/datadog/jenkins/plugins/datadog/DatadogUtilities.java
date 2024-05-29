@@ -25,8 +25,10 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.ExtensionList;
+import hudson.FilePath;
 import hudson.PluginManager;
 import hudson.PluginWrapper;
 import hudson.model.Actionable;
@@ -39,6 +41,7 @@ import hudson.model.TaskListener;
 import hudson.model.User;
 import hudson.model.labels.LabelAtom;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -58,6 +61,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -65,9 +69,11 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import jenkins.model.Jenkins;
+import jenkins.security.MasterToSlaveCallable;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.datadog.jenkins.plugins.datadog.apm.ShellCommandCallable;
 import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
 import org.datadog.jenkins.plugins.datadog.model.DatadogPluginAction;
 import org.datadog.jenkins.plugins.datadog.steps.DatadogPipelineAction;
@@ -96,6 +102,7 @@ public class DatadogUtilities {
     private static final Logger logger = Logger.getLogger(DatadogUtilities.class.getName());
 
     private static final Integer MAX_HOSTNAME_LEN = 255;
+    private static final int HOSTNAME_CMD_TIMEOUT_MILLIS = 3_000;
     private static final String DATE_FORMAT_ISO8601 = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX";
     private static final List<String> UNIX_OS = Arrays.asList("mac", "linux", "freebsd", "sunos");
 
@@ -750,15 +757,43 @@ public class DatadogUtilities {
                 if (DatadogUtilities.isValidHostname(computerHostName)) {
                     return computerHostName;
                 }
+
+                Node node = computer.getNode();
+                if (node != null) {
+                    FilePath rootPath = node.getRootPath();
+                    if (isUnix(rootPath)) {
+                        ShellCommandCallable hostnameCommand = new ShellCommandCallable(
+                                Collections.emptyMap(), HOSTNAME_CMD_TIMEOUT_MILLIS, "hostname", "-f");
+                        String shellHostname = rootPath.act(hostnameCommand).trim();
+                        if (DatadogUtilities.isValidHostname(shellHostname)) {
+                            return shellHostname;
+                        }
+                    }
+                }
             }
         } catch (InterruptedException e){
             Thread.currentThread().interrupt();
-            logger.fine("Interrupted while trying to extract hostname from StepContext.");
+            logException(logger, Level.FINE, "Interrupted while trying to extract hostname from StepContext.", e);
 
-        } catch (IOException e){
-            logger.fine("Unable to extract hostname from StepContext.");
+        } catch (Exception e){
+            logException(logger, Level.FINE, "Unable to get hostname for node " + computer.getName(), e);
         }
         return null;
+    }
+
+    private static boolean isUnix(FilePath filePath) throws IOException, InterruptedException {
+        return filePath != null && filePath.act(new IsUnix());
+    }
+
+    // copied from hudson.FilePath.IsUnix
+    private static final class IsUnix extends MasterToSlaveCallable<Boolean, IOException> {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        @NonNull
+        public Boolean call() {
+            return File.pathSeparatorChar == ':';
+        }
     }
 
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
@@ -904,14 +939,17 @@ public class DatadogUtilities {
         }
     }
 
-    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH")
     public static void severe(Logger logger, Throwable e, String message) {
+        logException(logger, Level.SEVERE, message, e);
+    }
+
+    public static void logException(Logger logger, Level logLevel, String message, Throwable e) {
         if (e != null) {
             String stackTrace = ExceptionUtils.getStackTrace(e);
-            message = (message != null ? message : "An unexpected error occurred: ") + stackTrace;
+            message = (message != null ? message + " " : "An unexpected error occurred: ") + stackTrace;
         }
         if (StringUtils.isNotEmpty(message)) {
-            logger.severe(message);
+            logger.log(logLevel, message);
         }
     }
 

@@ -8,9 +8,12 @@ import static org.mockito.Mockito.when;
 import hudson.EnvVars;
 import hudson.matrix.MatrixConfiguration;
 import hudson.matrix.MatrixProject;
+import hudson.model.Computer;
+import hudson.model.FreeStyleBuild;
 import hudson.model.Hudson;
 import hudson.model.ItemGroup;
 import hudson.model.Job;
+import hudson.model.Node;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import java.io.IOException;
@@ -22,7 +25,6 @@ import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 public class BuildDataTest {
@@ -100,7 +102,28 @@ public class BuildDataTest {
         assertEquals("jenkins-jobName-buildNumber", buildData.getBuildTag(""));
     }
 
+    @Test
+    public void testNodeHostnameIsUsedForFreestyleBuilds() throws Exception {
+        String computerHostname = "computer-hostname";
+
+        Computer computer = mock(Computer.class);
+        when(computer.getHostName()).thenReturn(computerHostname);
+
+        Node node = mock(Node.class);
+        when(node.toComputer()).thenReturn(computer);
+
+        FreeStyleBuild build = givenJobRun(FreeStyleBuild.class, "jobName", "jobParentName", mock(Hudson.class), Collections.emptyMap());
+        when(build.getBuiltOn()).thenReturn(node);
+
+        BuildData buildData = whenCreatingBuildData(build);
+        assertEquals(computerHostname, buildData.getHostname(""));
+    }
+
     private Run<?, ?> givenJobRun(String jobName, String jobParentName, ItemGroup<?> jobParent, Map<String, String> environment) throws Exception {
+        return givenJobRun(Run.class, jobName, jobParentName, jobParent, environment);
+    }
+
+    private <T extends Run> T givenJobRun(Class<T> runClass, String jobName, String jobParentName, ItemGroup<?> jobParent, Map<String, String> environment) throws Exception {
         when(jobParent.getFullName()).thenReturn(jobParentName);
 
         Job job = mock(Job.class);
@@ -110,7 +133,7 @@ public class BuildDataTest {
         EnvVars envVars = new EnvVars();
         envVars.putAll(environment);
 
-        Run run = mock(Run.class);
+        T run = mock(runClass);
         when(run.getEnvironment(any())).thenReturn(envVars);
         when(run.getParent()).thenReturn(job);
         when(run.getCharset()).thenReturn(StandardCharsets.UTF_8);
