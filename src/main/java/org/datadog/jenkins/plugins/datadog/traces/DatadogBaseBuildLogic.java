@@ -89,7 +89,13 @@ public abstract class DatadogBaseBuildLogic {
             return null;
         }
 
-        final List<StageData> stages = traverseStages(currentHeads);
+        // Limit stage count to MAX_TAG_LENGTH since each stage will contribute at least 1 to the tag length json
+        final List<StageData> stages = traverseStages(currentHeads, MAX_TAG_LENGTH);
+        if (stages == null) {
+            logger.warning("Skipping sending stage to Datadog; stage breakdown is too large");
+            return null;
+        }
+
         Collections.sort(stages);
 
         final String stagesJson = JsonUtils.toJson(new ArrayList<>(stages));
@@ -101,7 +107,14 @@ public abstract class DatadogBaseBuildLogic {
         return stagesJson;
     }
 
-    private List<StageData> traverseStages(List<FlowNode> heads) {
+    /**
+     * Find all stages associated with heads, unless the number of stages exceeds the limit, in which case we
+     * short-circuit and omit stage data altogether.
+     * @param heads
+     * @param limit
+     * @return stages or null if there are more stages than the limit
+     */
+    private List<StageData> traverseStages(List<FlowNode> heads, int limit) {
         List<StageData> stages = new ArrayList<>();
         Queue<FlowNode> nodes = new ArrayDeque<>(heads);
         while (!nodes.isEmpty()) {
@@ -124,6 +137,11 @@ public abstract class DatadogBaseBuildLogic {
                 logger.fine("Skipping stage " + startNode.getDisplayName() + " because it has no time info " +
                         "(start: " + startTimeMicros + ", end: " + endTimeMicros + ")");
                 continue;
+            }
+
+            // If adding another stage would result in exceeding the limit then return instead
+            if (stages.size() >= limit) {
+                return null;
             }
 
             StageData stageData = new StageData.Builder()
