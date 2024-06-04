@@ -1,5 +1,12 @@
 Changes
 =======
+## 7.1.0 / 2024-06-04
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-7.0.1...datadog-7.1.0
+
+* [Added] Improve hostname calculation logic. See [#428](https://github.com/jenkinsci/datadog-plugin/pull/428).
+* [Fixed] Short-circuit StageData creation in trace generation. See [#430](https://github.com/jenkinsci/datadog-plugin/pull/430). Thanks [msbit01](https://github.com/msbit01).
+
 ## 7.0.1 / 2024-05-06
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-7.0.0...datadog-7.0.1
