@@ -80,7 +80,7 @@ public class DatadogGraphListener implements GraphListener {
     public void onNewHead(FlowNode flowNode) {
         WorkflowRun run = getRun(flowNode);
         // Filter the node if the job has been excluded from the Datadog plugin configuration.
-        if (run == null || !DatadogUtilities.isJobTracked(run.getParent().getFullName())) {
+        if (run == null || !DatadogUtilities.isJobTracked(run)) {
             return;
         }
 

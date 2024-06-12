@@ -32,7 +32,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
@@ -82,7 +81,10 @@ public class DatadogTaskListenerDecorator extends TaskListenerDecorator {
             try {
                 Queue.Executable executable = owner.getExecutable();
                 if (executable instanceof WorkflowRun) {
-                    return new DatadogTaskListenerDecorator((WorkflowRun) executable);
+                    WorkflowRun run = (WorkflowRun) executable;
+                    if (DatadogUtilities.isJobTracked(run)) {
+                        return new DatadogTaskListenerDecorator(run);
+                    }
                 }
             } catch (IOException ex) {
                 LOGGER.log(Level.WARNING, null, ex);

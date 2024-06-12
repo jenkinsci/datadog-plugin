@@ -89,7 +89,7 @@ public class DatadogSCMListener extends SCMListener {
                            File changelogFile, SCMRevisionState pollingBaseline) throws Exception {
         try {
             // Process only if job is NOT in excluded and is in included
-            if (!DatadogUtilities.isJobTracked(build.getParent().getFullName())) {
+            if (!DatadogUtilities.isJobTracked(build)) {
                 return;
             }
 

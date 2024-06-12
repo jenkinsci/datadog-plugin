@@ -201,6 +201,16 @@ public class DatadogUtilities {
     }
 
     /**
+     * Checks inclusion/exclusion filter settings to see if a run should be tracked by the plugin
+     *
+     * @param run The run to be checked
+     * @return {@code true} if the run should be tracked by the plugin, {@code false} otherwise
+     */
+    public static boolean isJobTracked(Run<?,?> run) {
+        return run != null && isJobTracked(run.getParent().getFullName());
+    }
+
+    /**
      * Checks if a jobName is excluded, included, or neither.
      *
      * @param jobName - A String containing the name of some job.
