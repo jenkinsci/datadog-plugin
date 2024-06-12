@@ -217,7 +217,7 @@ public class DatadogUtilities {
      * @return a boolean to signify if the jobName is or is not excluded or included.
      */
     public static boolean isJobTracked(final String jobName) {
-        return !isJobExcluded(jobName) && isJobIncluded(jobName);
+        return jobName != null && !isJobExcluded(jobName) && isJobIncluded(jobName);
     }
 
     /**
@@ -353,7 +353,7 @@ public class DatadogUtilities {
      * @param jobName - A String containing the name of some job.
      * @return a boolean to signify if the jobName is or is not excluded.
      */
-    private static boolean isJobExcluded(final String jobName) {
+    private static boolean isJobExcluded(@Nonnull final String jobName) {
         final DatadogGlobalConfiguration datadogGlobalConfig = getDatadogGlobalDescriptor();
         if (datadogGlobalConfig == null) {
             return false;
@@ -377,7 +377,7 @@ public class DatadogUtilities {
      * @param jobName - A String containing the name of some job.
      * @return a boolean to signify if the jobName is or is not included.
      */
-    private static boolean isJobIncluded(final String jobName) {
+    private static boolean isJobIncluded(@Nonnull final String jobName) {
         final DatadogGlobalConfiguration datadogGlobalConfig = getDatadogGlobalDescriptor();
         if (datadogGlobalConfig == null) {
             return true;
