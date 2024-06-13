@@ -16,8 +16,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
-import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
 import org.datadog.jenkins.plugins.datadog.apm.signature.SignatureVerifier;
+import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
 
 final class JavaConfigurator implements TracerConfigurator {
 
@@ -153,12 +153,11 @@ final class JavaConfigurator implements TracerConfigurator {
         Map<String, String> variables = new HashMap<>();
 
         String tracerAgent = "-javaagent:" + tracerFile.getRemote();
-        variables.put("MAVEN_OPTS", PropertyUtils.prepend(envs, "MAVEN_OPTS", tracerAgent));
-        variables.put("GRADLE_OPTS", PropertyUtils.prepend(envs, "GRADLE_OPTS", "-Dorg.gradle.jvmargs=" + tracerAgent));
+        variables.put("JAVA_TOOL_OPTIONS", PropertyUtils.prepend(envs, "JAVA_TOOL_OPTIONS", tracerAgent));
 
         String proxyConfiguration = getProxyConfiguration(tracerConfig, node);
         if (proxyConfiguration != null) {
-            variables.put("JAVA_TOOL_OPTIONS", PropertyUtils.prepend(envs, "JAVA_TOOL_OPTIONS", proxyConfiguration));
+            variables.put("JAVA_TOOL_OPTIONS", PropertyUtils.prepend(variables, "JAVA_TOOL_OPTIONS", proxyConfiguration));
         }
 
         Map<String, String> additionalVariables = tracerConfig.getAdditionalVariables();
@@ -197,19 +196,19 @@ final class JavaConfigurator implements TracerConfigurator {
 
         StringBuilder proxyOptions = new StringBuilder();
         if (proxyHost != null) {
-            proxyOptions.append("-Dhttp.proxyHost=").append(proxyHost);
+            proxyOptions.append("-Dhttp.proxyHost=").append(proxyHost).append(" ");
         }
         if (proxyPort > 0) {
-            proxyOptions.append("-Dhttp.proxyPort=").append(proxyPort);
+            proxyOptions.append("-Dhttp.proxyPort=").append(proxyPort).append(" ");
         }
         if (noProxyHost != null) {
-            proxyOptions.append("-Dhttp.nonProxyHosts=").append(noProxyHost);
+            proxyOptions.append("-Dhttp.nonProxyHosts=").append(noProxyHost).append(" ");
         }
         if (userName != null) {
-            proxyOptions.append("-Dhttp.proxyUser=").append(userName);
+            proxyOptions.append("-Dhttp.proxyUser=").append(userName).append(" ");
         }
         if (password != null) {
-            proxyOptions.append("-Dhttp.proxyPassword=").append(Secret.toString(password));
+            proxyOptions.append("-Dhttp.proxyPassword=").append(Secret.toString(password)).append(" ");
         }
         return proxyOptions.length() > 0 ? proxyOptions.toString() : null;
     }
