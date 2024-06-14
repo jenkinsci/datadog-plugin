@@ -7,12 +7,12 @@
     <strong>Java</strong>
     <p>
         Injection works for any JVM-based language (Java, Kotlin, Groovy, Scala, etc).
-        Any Maven or Gradle build that the job executes will be traced.
+        Any Java process will be traced.
     </p>
     <p>
-        <code>MAVEN_OPTS</code> and <code>GRADLE_OPTS</code> environment variables are used for injection.
-        If these variables are overridden inside the job (with their existing value being discarded rather than preserved),
-        the injection will not happen.
+        <code>JAVA_TOOL_OPTIONS</code> environment variable is used for injection.
+        If this variable is overridden inside the job (with its existing value being discarded rather than preserved),
+        the injection will not work.
     </p>
 
     <strong>JS</strong>

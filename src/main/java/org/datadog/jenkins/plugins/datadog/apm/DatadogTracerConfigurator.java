@@ -111,6 +111,7 @@ public class DatadogTracerConfigurator {
     private static Map<String, String> getCommonEnvVariables(DatadogGlobalConfiguration datadogConfig,
                                                              DatadogTracerJobProperty<?> tracerConfig) {
         Map<String, String> variables = new HashMap<>();
+        variables.put("DD_CIVISIBILITY_AUTO_INSTRUMENTATION_PROVIDER", "jenkins");
         variables.put("DD_CIVISIBILITY_ENABLED", "true");
         variables.put("DD_ENV", "ci");
         variables.put("DD_SERVICE", tracerConfig.getServiceName());
