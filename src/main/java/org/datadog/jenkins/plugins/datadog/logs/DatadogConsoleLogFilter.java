@@ -59,10 +59,10 @@ public class DatadogConsoleLogFilter extends ConsoleLogFilter implements Seriali
                 return outputStream;
             }
 
-            if (build != null) {
+            if (DatadogUtilities.isJobTracked(build)) {
                 DatadogWriter writer = new DatadogWriter(new BuildData(build, null), outputStream);
                 return new DatadogOutputStream(outputStream, writer);
-            } else if (run != null) {
+            } else if (DatadogUtilities.isJobTracked(run)) {
                 DatadogWriter writer = new DatadogWriter(new BuildData(run, null), outputStream);
                 return new DatadogOutputStream(outputStream, writer);
             } else {

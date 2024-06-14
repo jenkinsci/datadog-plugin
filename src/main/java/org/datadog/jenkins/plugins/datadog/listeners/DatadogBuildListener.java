@@ -91,7 +91,7 @@ public class DatadogBuildListener extends RunListener<Run> {
     public void onInitialize(Run run) {
         try {
             // Process only if job is NOT in excluded and is in included
-            if (!DatadogUtilities.isJobTracked(run.getParent().getFullName())) {
+            if (!DatadogUtilities.isJobTracked(run)) {
                 return;
             }
             logger.fine("Start DatadogBuildListener#onInitialize");
@@ -190,7 +190,7 @@ public class DatadogBuildListener extends RunListener<Run> {
     public void onStarted(Run run, TaskListener listener) {
         try {
             // Process only if job is NOT in excluded and is in included
-            if (!DatadogUtilities.isJobTracked(run.getParent().getFullName())) {
+            if (!DatadogUtilities.isJobTracked(run)) {
                 return;
             }
             logger.fine("Start DatadogBuildListener#onStarted");
@@ -280,7 +280,7 @@ public class DatadogBuildListener extends RunListener<Run> {
         DatadogClient client;
         try {
             // Process only if job in NOT in excluded and is in included
-            if (!DatadogUtilities.isJobTracked(run.getParent().getFullName())) {
+            if (!DatadogUtilities.isJobTracked(run)) {
                 return;
             }
 
@@ -394,7 +394,7 @@ public class DatadogBuildListener extends RunListener<Run> {
     public void onFinalized(Run run) {
         try {
             // Process only if job in NOT in excluded and is in included
-            if (!DatadogUtilities.isJobTracked(run.getParent().getFullName())) {
+            if (!DatadogUtilities.isJobTracked(run)) {
                 return;
             }
             logger.fine("Start DatadogBuildListener#onFinalized");
@@ -436,7 +436,7 @@ public class DatadogBuildListener extends RunListener<Run> {
     public void onDeleted(Run run) {
         try {
             // Process only if job is NOT in excluded and is in included
-            if (!DatadogUtilities.isJobTracked(run.getParent().getFullName())) {
+            if (!DatadogUtilities.isJobTracked(run)) {
                 return;
             }
             logger.fine("Start DatadogBuildListener#onDeleted");

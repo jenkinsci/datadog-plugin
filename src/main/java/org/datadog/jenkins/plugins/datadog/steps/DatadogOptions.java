@@ -114,6 +114,8 @@ public class DatadogOptions extends Step implements Serializable {
                 if (DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs()) {
                     taskLogger.println("[Datadog] Logging is already enabled globally, you do not need to specify 'collectLogs: true'");
                 } else {
+                    // not checking DatadogUtilities#isJobTracked here:
+                    // if Datadog step was added to the job, we assume it should be tracked
                     invoker.withContext(TaskListenerDecorator.merge(
                             context.get(TaskListenerDecorator.class), new DatadogTaskListenerDecorator(workflowRun))
                     );
