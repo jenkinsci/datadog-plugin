@@ -48,6 +48,10 @@ public class DatadogComputerPublisherTest {
         
         client.assertMetric("jenkins.node_status.count", 1, hostname, expectedTags);
         client.assertMetric("jenkins.node_status.up", 1, hostname, expectedTags);
+        client.assertMetric("jenkins.executor.count", 2, hostname, expectedTags);
+        client.assertMetric("jenkins.executor.in_use", 0, hostname, expectedTags);
+        // All of the executors are online, so jenkins.executor.count == jenkins.executor.in_use + jenkins.executor.free
+        client.assertMetric("jenkins.executor.free", 2, hostname, expectedTags);
         
         // if we set the computer to offline, the metrics should reflect that
         for (Computer computer: jenkins.jenkins.getComputers()){
@@ -56,7 +60,9 @@ public class DatadogComputerPublisherTest {
         computerPublisher.doRun();
         client.assertMetric("jenkins.node_status.count", 1, hostname, expectedTags);
         client.assertMetric("jenkins.node_status.up", 0, hostname, expectedTags);
-        
+        client.assertMetric("jenkins.executor.count", 0, hostname, expectedTags);
+        client.assertMetric("jenkins.executor.in_use", 0, hostname, expectedTags);
+        client.assertMetric("jenkins.executor.free", 0, hostname, expectedTags);
     }
     
     @Test
