@@ -98,9 +98,9 @@ public class DatadogComputerPublisher extends PeriodicWork {
                     nodeOnline++;
                     metrics.gauge("jenkins.node_status.up", 1, hostname, tags);
                 }
-                int executorCount = computer.countExecutors();
-                int inUse = computer.countBusy();
-                int free = computer.countIdle();
+                int executorCount = computer.isOnline() ? computer.countExecutors() : 0;
+                int inUse = computer.isOnline() ? computer.countBusy() : 0;
+                int free = ((computer.isOnline() || computer.isConnecting()) && computer.isAcceptingTasks()) ? computer.countIdle() : 0;
 
                 metrics.gauge("jenkins.node_status.count", 1, hostname, tags);
 
