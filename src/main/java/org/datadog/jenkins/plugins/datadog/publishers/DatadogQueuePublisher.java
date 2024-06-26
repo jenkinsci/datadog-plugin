@@ -147,7 +147,12 @@ public class DatadogQueuePublisher extends PeriodicWork {
             WorkflowJob workflowJob = (WorkflowJob) task;
             return workflowJob.getFullName();
         }
-        logger.info(String.format("Unknown job found: %s; %s", task.getName(), task.getDisplayName()));
+        if (task != null) {
+            logger.info(String.format("Unknown job found: %s, %s", task.getDisplayName(), task.getUrl()));
+        } else {
+            logger.info(String.format("Null task found"));
+
+        }
         return "unknown";
     }
 }
