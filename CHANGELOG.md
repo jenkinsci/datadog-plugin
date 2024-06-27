@@ -1,5 +1,13 @@
 Changes
 =======
+## 7.1.1 / 2024-06-27
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-7.1.0...datadog-7.1.1
+
+* [Fixed] added extra conditions for counting executors. See [#435](https://github.com/jenkinsci/datadog-plugin/pull/435).
+* [Fixed] Consider job inclusion/exclusion setting when tracking logs. See [#432](https://github.com/jenkinsci/datadog-plugin/pull/432).
+* [Fixed] Update APM auto-instrumentation to match any Java process. See [#433](https://github.com/jenkinsci/datadog-plugin/pull/433).
+
 ## 7.1.0 / 2024-06-04
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-7.0.1...datadog-7.1.0
