@@ -1,6 +1,6 @@
 Changes
 =======
-## 7.1.1 / 2024-06-24
+## 7.1.1 / 2024-06-27
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-7.1.0...datadog-7.1.1
 
