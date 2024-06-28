@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
 import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -64,7 +64,7 @@ public class DatadogQueuePublisher extends PeriodicWork {
     protected void doRun() throws Exception {
         logger.fine("doRun called: Computing queue metrics");
 
-        DatadogClient client = ClientFactory.getClient();
+        DatadogClient client = ClientHolder.getClient();
         if (client == null) {
             return;
         }

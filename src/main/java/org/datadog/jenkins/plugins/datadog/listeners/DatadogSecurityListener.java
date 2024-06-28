@@ -26,20 +26,19 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.listeners;
 
 import hudson.Extension;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Logger;
+import javax.annotation.Nonnull;
 import jenkins.security.SecurityListener;
 import org.acegisecurity.userdetails.UserDetails;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
-import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
+import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
 import org.datadog.jenkins.plugins.datadog.events.UserAuthenticationEventImpl;
+import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
-
-import javax.annotation.Nonnull;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Logger;
 
 /**
  * This class registers an {@link SecurityListener} to trigger events and calculate metrics:
@@ -65,7 +64,7 @@ public class DatadogSecurityListener extends SecurityListener {
             logger.fine("Start DatadogSecurityListener#authenticated");
 
             // Get Datadog Client Instance
-            DatadogClient client = ClientFactory.getClient();
+            DatadogClient client = ClientHolder.getClient();
             if(client == null){
                 return;
             }
@@ -97,7 +96,7 @@ public class DatadogSecurityListener extends SecurityListener {
             logger.fine("Start DatadogSecurityListener#failedToAuthenticate");
 
             // Get Datadog Client Instance
-            DatadogClient client = ClientFactory.getClient();
+            DatadogClient client = ClientHolder.getClient();
             if(client == null){
                 return;
             }
@@ -140,7 +139,7 @@ public class DatadogSecurityListener extends SecurityListener {
             logger.fine("Start DatadogSecurityListener#loggedOut");
 
             // Get Datadog Client Instance
-            DatadogClient client = ClientFactory.getClient();
+            DatadogClient client = ClientHolder.getClient();
             if(client == null){
                 return;
             }

@@ -11,7 +11,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,7 +30,7 @@ public class DatadogJenkinsPublisherTest {
     public void setup() {
         client = new DatadogClientStub();
         queuePublisher = new DatadogJenkinsPublisher();
-        ClientFactory.setTestClient(client);
+        ClientHolder.setClient(client);
         hostname = DatadogUtilities.getHostname(null);
         plugins = new LinkedList<>();
         failedPlugins = new LinkedList<>();
