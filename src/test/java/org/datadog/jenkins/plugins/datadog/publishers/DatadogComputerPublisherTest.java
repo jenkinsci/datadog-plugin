@@ -3,7 +3,7 @@ package org.datadog.jenkins.plugins.datadog.publishers;
 import java.util.Arrays;
 
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -22,7 +22,7 @@ public class DatadogComputerPublisherTest {
     
     @BeforeClass
     public static void setup() throws Exception {
-        ClientFactory.setTestClient(client);
+        ClientHolder.setClient(client);
     }
     
     @Test

@@ -28,19 +28,18 @@ package org.datadog.jenkins.plugins.datadog.listeners;
 import hudson.Extension;
 import hudson.model.Item;
 import hudson.model.listeners.ItemListener;
-import org.datadog.jenkins.plugins.datadog.DatadogClient;
-import org.datadog.jenkins.plugins.datadog.DatadogEvent;
-import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
-import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
-import org.datadog.jenkins.plugins.datadog.events.ItemCRUDEventImpl;
-import org.datadog.jenkins.plugins.datadog.events.ItemCopiedEventImpl;
-import org.datadog.jenkins.plugins.datadog.events.ItemLocationChangedEventImpl;
-import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
-
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
+import org.datadog.jenkins.plugins.datadog.DatadogClient;
+import org.datadog.jenkins.plugins.datadog.DatadogEvent;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
+import org.datadog.jenkins.plugins.datadog.events.ItemCRUDEventImpl;
+import org.datadog.jenkins.plugins.datadog.events.ItemCopiedEventImpl;
+import org.datadog.jenkins.plugins.datadog.events.ItemLocationChangedEventImpl;
+import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
+import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 /**
  * This class registers an {@link ItemListener} to trigger events and calculate metrics:
@@ -82,7 +81,7 @@ public class DatadogItemListener extends ItemListener {
             logger.fine("Start DatadogItemListener#on" + action);
 
             // Get Datadog Client Instance
-            DatadogClient client = ClientFactory.getClient();
+            DatadogClient client = ClientHolder.getClient();
             if(client == null){
                 return;
             }
@@ -115,7 +114,7 @@ public class DatadogItemListener extends ItemListener {
             logger.fine("Start DatadogItemListener#onCopied");
 
             // Get Datadog Client Instance
-            DatadogClient client = ClientFactory.getClient();
+            DatadogClient client = ClientHolder.getClient();
             if(client == null){
                 return;
             }
@@ -148,7 +147,7 @@ public class DatadogItemListener extends ItemListener {
             logger.fine("Start DatadogItemListener#onLocationChanged");
 
             // Get Datadog Client Instance
-            DatadogClient client = ClientFactory.getClient();
+            DatadogClient client = ClientHolder.getClient();
             if(client == null){
                 return;
             }

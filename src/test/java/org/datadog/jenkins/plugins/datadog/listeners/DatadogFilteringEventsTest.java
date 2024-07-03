@@ -6,15 +6,13 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
-import javax.management.InvalidAttributeValueException;
-
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.acegisecurity.userdetails.UserDetails;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogJobProperty;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.events.*;
 import org.datadog.jenkins.plugins.datadog.stubs.BuildStub;
@@ -52,7 +50,7 @@ public class DatadogFilteringEventsTest {
     @Before
     public void setUp() throws Exception {
         this.client = new DatadogClientStub();
-        ClientFactory.setTestClient(this.client);
+        ClientHolder.setClient(this.client);
 
         this.datadogBuildListener = new DatadogBuildListener();
         this.datadogComputerListener = new DatadogComputerListener();

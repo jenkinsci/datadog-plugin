@@ -40,7 +40,7 @@ import java.util.logging.Logger;
 import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
 import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
@@ -64,7 +64,7 @@ public class DatadogComputerPublisher extends PeriodicWork {
     protected void doRun() throws Exception {
         logger.fine("doRun called: Computing Node metrics");
 
-        DatadogClient client = ClientFactory.getClient();
+        DatadogClient client = ClientHolder.getClient();
         if (client == null) {
             return;
         }

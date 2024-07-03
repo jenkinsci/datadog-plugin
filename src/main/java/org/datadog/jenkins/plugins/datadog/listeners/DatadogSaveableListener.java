@@ -29,15 +29,14 @@ import hudson.Extension;
 import hudson.XmlFile;
 import hudson.model.Saveable;
 import hudson.model.listeners.SaveableListener;
-import org.datadog.jenkins.plugins.datadog.DatadogClient;
-import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
-import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
-import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
-
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
+import org.datadog.jenkins.plugins.datadog.DatadogClient;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
+import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
+import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 /**
  * This class registers an {@link SaveableListener} to trigger events and calculate metrics:
@@ -60,7 +59,7 @@ public class DatadogSaveableListener  extends SaveableListener {
             logger.fine("Start DatadogSaveableListener#onChange");
 
             // Get Datadog Client Instance
-            DatadogClient client = ClientFactory.getClient();
+            DatadogClient client = ClientHolder.getClient();
             if(client == null){
                 return;
             }
