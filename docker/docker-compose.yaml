@@ -24,6 +24,8 @@ services:
       DATADOG_JENKINS_PLUGIN_TARGET_API_KEY: $JENKINS_PLUGIN_DATADOG_API_KEY
       DATADOG_JENKINS_PLUGIN_ENABLE_CI_VISIBILITY: true
       DATADOG_JENKINS_PLUGIN_CI_VISIBILITY_CI_INSTANCE_NAME: $JENKINS_PLUGIN_DATADOG_CI_INSTANCE_NAME
+      # uncomment the variable below (and optionally commend the `DATADOG_` vars above) to use Configuration as Code
+      # CASC_JENKINS_CONFIG: "/var/jenkins_home/casc"
     volumes:
       - jenkins_shared:/var/jenkins_home/shared
       - $JENKINS_PLUGIN/target/datadog.hpi:/var/jenkins_home/plugins/datadog.hpi
