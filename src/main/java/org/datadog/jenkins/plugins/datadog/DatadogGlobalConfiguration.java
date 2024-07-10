@@ -27,51 +27,47 @@ package org.datadog.jenkins.plugins.datadog;
 
 import static hudson.Util.fixEmptyAndTrim;
 
-import hudson.Extension;
-import hudson.model.AbstractProject;
-import hudson.util.FormValidation;
-import hudson.util.Secret;
-import hudson.util.FormValidation.Kind;
-import hudson.util.ListBoxModel;
-import hudson.model.Item;
-import hudson.security.ACL;
-
-import jenkins.model.GlobalConfiguration;
-import jenkins.model.Jenkins;
-
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
-import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
-import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
-import org.jenkinsci.plugins.plaincredentials.StringCredentials;
-
-import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.math.NumberUtils;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
-import org.datadog.jenkins.plugins.datadog.clients.DatadogApiClient;
-import org.datadog.jenkins.plugins.datadog.clients.DatadogAgentClient;
-import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
-import org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.interceptor.RequirePOST;
-import org.kohsuke.stapler.AncestorInPath;
-
-import javax.management.InvalidAttributeValueException;
-import javax.servlet.ServletException;
+import hudson.Extension;
+import hudson.model.AbstractProject;
+import hudson.model.Item;
+import hudson.security.ACL;
+import hudson.util.FormValidation;
+import hudson.util.FormValidation.Kind;
+import hudson.util.ListBoxModel;
+import hudson.util.Secret;
 import java.io.IOException;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import javax.management.InvalidAttributeValueException;
+import javax.servlet.ServletException;
+import jenkins.model.GlobalConfiguration;
+import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
+import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.clients.DatadogAgentClient;
+import org.datadog.jenkins.plugins.datadog.clients.DatadogApiClient;
+import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
+import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
+import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
+import org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
+import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 @Extension
 public class DatadogGlobalConfiguration extends GlobalConfiguration {
@@ -963,6 +959,13 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @return a Secret containing the usedApiKey global configuration.
      */
     public Secret getUsedApiKey() {
+        // FIXME this is a temporary workaround for supporting Configuration as Code
+        if (usedApiKey == null) {
+            Secret secret = findSecret(targetApiKey != null ? targetApiKey.getEncryptedValue() : null, targetCredentialsApiKey);
+            if (!Secret.toString(secret).isEmpty()) {
+                this.usedApiKey = secret;
+            }
+        }
         return usedApiKey;
     }
 

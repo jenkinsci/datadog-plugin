@@ -1,0 +1,9 @@
+unclassified:
+  datadogGlobalConfiguration:
+    reportWith: "HTTP"
+    targetApiURL: "https://api.datadoghq.com/api/"
+    targetLogIntakeURL: "https://http-intake.logs.datadoghq.com/v1/input/"
+    targetWebhookIntakeURL: "https://webhook-intake.datadoghq.com/api/v2/webhook/"
+    ciInstanceName: "$JENKINS_PLUGIN_DATADOG_CI_INSTANCE_NAME"
+    targetCredentialsApiKey: "datadog-api-key"
+    enableCiVisibility: true
