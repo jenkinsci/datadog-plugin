@@ -47,6 +47,9 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
   - You can set your machine `hostname`.
   - You can set Global Tag. For example `.*, owner:$1, release_env:$2, optional:Tag3`.
 
+You can replace `docker/docker-compose.yaml` in the above commands with `docker/docker-compose-casc.yaml` for testing Configuration as Code.
+The applied configuration is stored in `docker/controller-node/jenkins-casc.yaml` (note that it is placed inside the container at image build time). 
+ 
 Jenkins controller container exposes port 5055 for remote debugging via JDWP. 
 
 #### Manual Testing without an Agent
