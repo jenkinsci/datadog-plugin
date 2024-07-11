@@ -1,5 +1,11 @@
 Changes
 =======
+## 7.1.2 / 2024-07-11
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-7.1.1...datadog-7.1.2
+
+* [Fixed] Fix setting Datadog API key credentials with configuration as code. See [#438](https://github.com/jenkinsci/datadog-plugin/pull/438).
+
 ## 7.1.1 / 2024-06-27
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-7.1.0...datadog-7.1.1
