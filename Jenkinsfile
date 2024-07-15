@@ -8,4 +8,18 @@ def configurations = [
     [ platform: "linux", jdk: "11", jenkins: recentLTS ],
 ]
 
-buildPlugin(configurations: configurations)
+pipeline {
+    agent any
+    environment {
+        JAVA_TOOL_OPTIONS = '-javaagent:non-existing-file.jar'
+    }
+    stages {
+        stage('Build Plugin') {
+            steps {
+                script {
+                    buildPlugin(configurations: configurations)
+                }
+            }
+        }
+    }
+}
