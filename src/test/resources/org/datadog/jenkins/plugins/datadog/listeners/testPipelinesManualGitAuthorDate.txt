@@ -1,0 +1,12 @@
+pipeline {
+    agent none
+    stages {
+        stage('test'){
+            steps {
+                withEnv(["DD_GIT_COMMIT_AUTHOR_DATE=2024-08-14T12:06:04.529Z"]) {
+                    echo "hello world"
+                }
+            }
+        }
+    }
+}

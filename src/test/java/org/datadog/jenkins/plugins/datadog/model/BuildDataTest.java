@@ -1,5 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.model;
 
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_DATE;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_DATE;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -144,6 +146,42 @@ public class BuildDataTest {
     private BuildData whenCreatingBuildData(Run run) throws IOException, InterruptedException {
         TaskListener listener = mock(TaskListener.class);
         return new BuildData(run, listener);
+    }
+
+    @Test
+    public void testCommitAuthorDateIsPopulatedFromEnvVar() throws Exception {
+        String validISO8601Date = "2024-08-14T12:06:04.529Z";
+        Map<String, String> buildEnvironment = Collections.singletonMap(DD_GIT_COMMIT_AUTHOR_DATE, validISO8601Date);
+        FreeStyleBuild build = givenJobRun(FreeStyleBuild.class, "jobName", "jobParentName", mock(Hudson.class), buildEnvironment);
+        BuildData buildData = whenCreatingBuildData(build);
+        assertEquals(validISO8601Date, buildData.getGitAuthorDate(""));
+    }
+
+    @Test
+    public void testCommitCommitterDateIsPopulatedFromEnvVar() throws Exception {
+        String validISO8601Date = "2024-08-14T12:06:04.529Z";
+        Map<String, String> buildEnvironment = Collections.singletonMap(DD_GIT_COMMIT_COMMITTER_DATE, validISO8601Date);
+        FreeStyleBuild build = givenJobRun(FreeStyleBuild.class, "jobName", "jobParentName", mock(Hudson.class), buildEnvironment);
+        BuildData buildData = whenCreatingBuildData(build);
+        assertEquals(validISO8601Date, buildData.getGitCommitterDate(""));
+    }
+
+    @Test
+    public void testCommitAuthorDateIsNotPopulatedWithInvalidValues() throws Exception {
+        String invalidISO8601Date = "12:06:04.529 14/08/2024";
+        Map<String, String> buildEnvironment = Collections.singletonMap(DD_GIT_COMMIT_AUTHOR_DATE, invalidISO8601Date);
+        FreeStyleBuild build = givenJobRun(FreeStyleBuild.class, "jobName", "jobParentName", mock(Hudson.class), buildEnvironment);
+        BuildData buildData = whenCreatingBuildData(build);
+        assertEquals("", buildData.getGitAuthorDate(""));
+    }
+
+    @Test
+    public void testCommitCommitterDateIsNotPopulatedWithInvalidValues() throws Exception {
+        String invalidISO8601Date = "12:06:04.529 14/08/2024";
+        Map<String, String> buildEnvironment = Collections.singletonMap(DD_GIT_COMMIT_COMMITTER_DATE, invalidISO8601Date);
+        FreeStyleBuild build = givenJobRun(FreeStyleBuild.class, "jobName", "jobParentName", mock(Hudson.class), buildEnvironment);
+        BuildData buildData = whenCreatingBuildData(build);
+        assertEquals("", buildData.getGitCommitterDate(""));
     }
 
 }

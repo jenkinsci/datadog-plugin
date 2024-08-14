@@ -61,6 +61,7 @@ import hudson.util.LogTaskListener;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.Charset;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -470,10 +471,26 @@ public class BuildData implements Serializable {
             this.gitMessage = envVars.get(DD_GIT_COMMIT_MESSAGE, this.gitMessage);
             this.gitAuthorName = envVars.get(DD_GIT_COMMIT_AUTHOR_NAME, this.gitAuthorName);
             this.gitAuthorEmail = envVars.get(DD_GIT_COMMIT_AUTHOR_EMAIL, this.gitAuthorEmail);
-            this.gitAuthorDate = envVars.get(DD_GIT_COMMIT_AUTHOR_DATE, this.gitAuthorDate);
             this.gitCommitterName = envVars.get(DD_GIT_COMMIT_COMMITTER_NAME, this.gitCommitterName);
             this.gitCommitterEmail = envVars.get(DD_GIT_COMMIT_COMMITTER_EMAIL, this.gitCommitterEmail);
-            this.gitCommitterDate = envVars.get(DD_GIT_COMMIT_COMMITTER_DATE, this.gitCommitterDate);
+
+            String gitAuthorDate = envVars.get(DD_GIT_COMMIT_AUTHOR_DATE, this.gitAuthorDate);
+            if (StringUtils.isNotBlank(gitAuthorDate)) {
+                if (DatadogUtilities.isValidISO8601Date(gitAuthorDate)) {
+                    this.gitAuthorDate = gitAuthorDate;
+                } else {
+                    LOGGER.log(Level.WARNING, "Invalid date specified in " + DD_GIT_COMMIT_AUTHOR_DATE + ": expected ISO8601 format (" + DatadogUtilities.toISO8601(new Date()) + "), got " + gitAuthorDate);
+                }
+            }
+
+            String gitCommitterDate = envVars.get(DD_GIT_COMMIT_COMMITTER_DATE, this.gitCommitterDate);
+            if (StringUtils.isNotBlank(gitCommitterDate)) {
+                if (DatadogUtilities.isValidISO8601Date(gitCommitterDate)) {
+                    this.gitCommitterDate = gitCommitterDate;
+                } else {
+                    LOGGER.log(Level.WARNING, "Invalid date specified in " + DD_GIT_COMMIT_COMMITTER_DATE + ": expected ISO8601 format (" + DatadogUtilities.toISO8601(new Date()) + "), got " + gitCommitterDate);
+                }
+            }
 
         } else if (envVars.get("CVS_BRANCH") != null) {
             this.branch = envVars.get("CVS_BRANCH");

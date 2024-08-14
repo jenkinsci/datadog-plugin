@@ -16,6 +16,7 @@ import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_T
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -77,7 +78,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
-import org.jvnet.hudson.test.recipes.WithTimeout;
 
 public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
@@ -392,6 +392,90 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         }
     }
 
+    @Test
+    public void testManuallySetCommitterDateIsExtractedFromEnvironmentVariables() throws Exception {
+        Jenkins jenkins = jenkinsRule.jenkins;
+
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "testPipelinesManualGitCommitterDate.txt");
+        String definition = getPipelineDefinition("testPipelinesManualGitCommitterDate.txt");
+
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        final FilePath ws = jenkins.getWorkspaceFor(job);
+
+        job.scheduleBuild2(0).get();
+
+        clientStub.waitForTraces(3);
+        final List<TraceSpan> spans = clientStub.getSpans();
+        assertEquals(3, spans.size());
+        for(TraceSpan span : spans) {
+            if ("jenkins.build".equals(span.getOperationName())) {
+                assertEquals("2024-08-14T12:06:04.529Z", span.getMeta().get(CITags.GIT_COMMIT_COMMITTER_DATE));
+            }
+        }
+    }
+
+    @Test
+    public void testManuallySetAuthorDateIsExtractedFromEnvironmentVariables() throws Exception {
+        Jenkins jenkins = jenkinsRule.jenkins;
+
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "testPipelinesManualGitAuthorDate.txt");
+        String definition = getPipelineDefinition("testPipelinesManualGitAuthorDate.txt");
+
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        final FilePath ws = jenkins.getWorkspaceFor(job);
+
+        job.scheduleBuild2(0).get();
+
+        clientStub.waitForTraces(3);
+        final List<TraceSpan> spans = clientStub.getSpans();
+        assertEquals(3, spans.size());
+        for(TraceSpan span : spans) {
+            if ("jenkins.build".equals(span.getOperationName())) {
+                assertEquals("2024-08-14T12:06:04.529Z", span.getMeta().get(CITags.GIT_COMMIT_AUTHOR_DATE));
+            }
+        }
+    }
+
+    @Test
+    public void testInvalidManuallySetCommitterDateIsExtractedFromEnvironmentVariables() throws Exception {
+        Jenkins jenkins = jenkinsRule.jenkins;
+
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "testPipelinesInvalidManualGitCommitterDate.txt");
+        String definition = getPipelineDefinition("testPipelinesInvalidManualGitCommitterDate.txt");
+
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        final FilePath ws = jenkins.getWorkspaceFor(job);
+
+        job.scheduleBuild2(0).get();
+
+        clientStub.waitForTraces(3);
+        final List<TraceSpan> spans = clientStub.getSpans();
+        assertEquals(3, spans.size());
+        for(TraceSpan span : spans) {
+            assertNull(span.getMeta().get(CITags.GIT_COMMIT_COMMITTER_DATE));
+        }
+    }
+
+    @Test
+    public void testInvalidManuallySetAuthorDateIsExtractedFromEnvironmentVariables() throws Exception {
+        Jenkins jenkins = jenkinsRule.jenkins;
+
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "testPipelinesInvalidManualGitAuthorDate.txt");
+        String definition = getPipelineDefinition("testPipelinesInvalidManualGitAuthorDate.txt");
+
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        final FilePath ws = jenkins.getWorkspaceFor(job);
+
+        job.scheduleBuild2(0).get();
+
+        clientStub.waitForTraces(3);
+        final List<TraceSpan> spans = clientStub.getSpans();
+        assertEquals(3, spans.size());
+        for(TraceSpan span : spans) {
+            assertNull(span.getMeta().get(CITags.GIT_COMMIT_AUTHOR_DATE));
+        }
+    }
+
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\$([A-Z_]+)");
 
     private String getPipelineDefinition(String file) throws IOException {
@@ -560,10 +644,10 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         env.put(DD_GIT_COMMIT_MESSAGE, "hardcoded-message");
         env.put(DD_GIT_COMMIT_AUTHOR_NAME, "hardcoded-author-name");
         env.put(DD_GIT_COMMIT_AUTHOR_EMAIL, "hardcoded-author-email");
-        env.put(DD_GIT_COMMIT_AUTHOR_DATE, "hardcoded-author-date");
+        env.put(DD_GIT_COMMIT_AUTHOR_DATE, "2024-08-14T12:06:04.530Z");
         env.put(DD_GIT_COMMIT_COMMITTER_NAME, "hardcoded-committer-name");
         env.put(DD_GIT_COMMIT_COMMITTER_EMAIL, "hardcoded-committer-email");
-        env.put(DD_GIT_COMMIT_COMMITTER_DATE, "hardcoded-committer-date");
+        env.put(DD_GIT_COMMIT_COMMITTER_DATE, "2024-08-14T12:06:04.529Z");
         final String defaultBranch = "refs/heads/hardcoded-master";
         env.put(DD_GIT_DEFAULT_BRANCH, defaultBranch);
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "pipelineIntegrationUserSuppliedGitWithCommitInfo");
@@ -587,10 +671,10 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals("hardcoded-message", meta.get(CITags.GIT_COMMIT_MESSAGE));
         assertEquals("hardcoded-author-name", meta.get(CITags.GIT_COMMIT_AUTHOR_NAME));
         assertEquals("hardcoded-author-email", meta.get(CITags.GIT_COMMIT_AUTHOR_EMAIL));
-        assertEquals("hardcoded-author-date", meta.get(CITags.GIT_COMMIT_AUTHOR_DATE));
+        assertEquals("2024-08-14T12:06:04.530Z", meta.get(CITags.GIT_COMMIT_AUTHOR_DATE));
         assertEquals("hardcoded-committer-name", meta.get(CITags.GIT_COMMIT_COMMITTER_NAME));
         assertEquals("hardcoded-committer-email", meta.get(CITags.GIT_COMMIT_COMMITTER_EMAIL));
-        assertEquals("hardcoded-committer-date", meta.get(CITags.GIT_COMMIT_COMMITTER_DATE));
+        assertEquals("2024-08-14T12:06:04.529Z", meta.get(CITags.GIT_COMMIT_COMMITTER_DATE));
         assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get(CITags.GIT_COMMIT__SHA));
         assertEquals("401d997a6eede777602669ccaec059755c98161f", meta.get(CITags.GIT_COMMIT_SHA));
         assertEquals("master", meta.get(CITags.GIT_BRANCH));

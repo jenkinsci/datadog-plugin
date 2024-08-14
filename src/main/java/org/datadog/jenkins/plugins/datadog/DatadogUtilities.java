@@ -48,6 +48,7 @@ import java.io.InputStreamReader;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -982,6 +983,19 @@ public class DatadogUtilities {
         SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT_ISO8601);
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         return sdf.format(date);
+    }
+
+    public static boolean isValidISO8601Date(String date) {
+        if (StringUtils.isBlank(date)) {
+            return false;
+        }
+        SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT_ISO8601);
+        try {
+            sdf.parse(date);
+            return true;
+        } catch (ParseException e) {
+            return false;
+        }
     }
 
     /**

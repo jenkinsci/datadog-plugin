@@ -16,13 +16,16 @@ import hudson.FilePath;
 import hudson.model.Computer;
 import hudson.model.Run;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
@@ -261,11 +264,6 @@ public class DatadogStepListener implements StepListener {
                 commitAction.setAuthorEmail(ddGitAuthorEmail);
             }
 
-            final String ddGitAuthorDate = envVars.get(DD_GIT_COMMIT_AUTHOR_DATE);
-            if(ddGitAuthorDate != null) {
-                commitAction.setAuthorDate(ddGitAuthorDate);
-            }
-
             final String ddGitCommitterName = envVars.get(DD_GIT_COMMIT_COMMITTER_NAME);
             if(ddGitCommitterName != null) {
                 commitAction.setCommitterName(ddGitCommitterName);
@@ -276,9 +274,22 @@ public class DatadogStepListener implements StepListener {
                 commitAction.setCommitterEmail(ddGitCommitterEmail);
             }
 
+            final String ddGitAuthorDate = envVars.get(DD_GIT_COMMIT_AUTHOR_DATE);
+            if (StringUtils.isNotBlank(ddGitAuthorDate)) {
+                if (DatadogUtilities.isValidISO8601Date(ddGitAuthorDate)) {
+                    commitAction.setAuthorDate(ddGitAuthorDate);
+                } else {
+                    logger.log(Level.WARNING, "Invalid date specified in " + DD_GIT_COMMIT_AUTHOR_DATE + ": expected ISO8601 format (" + DatadogUtilities.toISO8601(new Date()) + "), got " + ddGitAuthorDate);
+                }
+            }
+
             final String ddGitCommitterDate = envVars.get(DD_GIT_COMMIT_COMMITTER_DATE);
-            if(ddGitCommitterDate != null) {
-                commitAction.setCommitterDate(ddGitCommitterDate);
+            if (StringUtils.isNotBlank(ddGitCommitterDate)) {
+                if (DatadogUtilities.isValidISO8601Date(ddGitCommitterDate)) {
+                    commitAction.setCommitterDate(ddGitCommitterDate);
+                } else {
+                    logger.log(Level.WARNING, "Invalid date specified in " + DD_GIT_COMMIT_COMMITTER_DATE + ": expected ISO8601 format (" + DatadogUtilities.toISO8601(new Date()) + "), got " + ddGitCommitterDate);
+                }
             }
         }
 
