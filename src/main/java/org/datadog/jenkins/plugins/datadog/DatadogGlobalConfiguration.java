@@ -32,6 +32,8 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import hudson.Extension;
+import hudson.init.InitMilestone;
+import hudson.init.Initializer;
 import hudson.model.AbstractProject;
 import hudson.model.Item;
 import hudson.security.ACL;
@@ -47,6 +49,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import javax.management.InvalidAttributeValueException;
 import javax.servlet.ServletException;
 import jenkins.model.GlobalConfiguration;
@@ -179,6 +182,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     public DatadogGlobalConfiguration() {
         load(); // Load the persisted global configuration
         loadEnvVariables(); // Load environment variables after as they should take precedence.
+    }
+
+    @Initializer(after = InitMilestone.PLUGINS_STARTED)
+    public void onStartup() {
+        ClientHolder.setClient(createClient());
     }
 
     public void loadEnvVariables() {
@@ -718,7 +726,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     @SuppressFBWarnings("REC_CATCH_EXCEPTION")
     public boolean configure(final StaplerRequest req, final JSONObject formData) throws FormException {
         try {
-
             if(!super.configure(req, formData)){
                 return false;
             }
@@ -843,7 +850,12 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         }
     }
 
-    private DatadogClient createClient() {
+    @Nullable
+    public DatadogClient createClient() {
+        if (StringUtils.isBlank(reportWith)) {
+            return null;
+        }
+
         DatadogClient.ClientType type = DatadogClient.ClientType.valueOf(reportWith);
         switch(type){
             case HTTP:

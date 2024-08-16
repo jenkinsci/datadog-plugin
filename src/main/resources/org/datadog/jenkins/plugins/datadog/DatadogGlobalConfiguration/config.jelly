@@ -15,7 +15,7 @@
   <f:section title="Datadog Plugin">
 
     <f:radioBlock title="Use the Datadog Agent to report to Datadog (recommended)" name="reportWith" value="DSD"
-        checked="${instance.reportWithEquals('DSD')}" inline="true">
+        checked="${'DSD' == instance.reportWith}" inline="true">
 
         <f:entry title="Agent Host" field="targetHostEntry">
           <f:textbox field="targetHost" default="${targetHost}" checkMethod="post" />
@@ -39,7 +39,7 @@
     </f:radioBlock>
 
     <f:radioBlock title="Use Datadog API URL and Key to report to Datadog" name="reportWith" value="HTTP"
-        checked="${instance.reportWithEquals('HTTP')}" inline="true" >
+        checked="${'HTTP' == instance.reportWith}" inline="true" >
 
         <f:entry title="Datadog API URL" field="targetApiURLEntry" description="URL which the plugin reports to." >
           <f:textbox field="targetApiURL" default="${targetApiURL}" checkMethod="post" />

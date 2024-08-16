@@ -28,6 +28,8 @@ package org.datadog.jenkins.plugins.datadog.clients;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
+import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
 
 public class ClientHolder {
