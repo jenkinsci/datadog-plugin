@@ -47,6 +47,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -186,7 +187,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
     @Initializer(after = InitMilestone.PLUGINS_STARTED)
     public void onStartup() {
-        ClientHolder.setClient(createClient());
+        try {
+            ClientHolder.setClient(createClient());
+        } catch (Exception e) {
+            DatadogUtilities.logException(logger, Level.INFO, "Could not init Datadog client", e);
+        }
     }
 
     public void loadEnvVariables() {
