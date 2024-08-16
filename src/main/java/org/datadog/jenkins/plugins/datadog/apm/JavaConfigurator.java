@@ -5,6 +5,7 @@ import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.util.Secret;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -14,14 +15,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.apm.signature.SignatureVerifier;
 import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
 
 final class JavaConfigurator implements TracerConfigurator {
 
-    private static final Logger LOGGER = Logger.getLogger(DatadogTracerConfigurator.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(JavaConfigurator.class.getName());
 
     private static final String TRACER_DISTRIBUTION_URL_ENV_VAR = "DATADOG_JENKINS_PLUGIN_TRACER_DISTRIBUTION_URL";
     private static final String DEFAULT_TRACER_DISTRIBUTION_URL = "https://dtdg.co/latest-java-tracer";
@@ -43,10 +46,7 @@ final class JavaConfigurator implements TracerConfigurator {
     }
 
     private FilePath downloadTracer(DatadogTracerJobProperty<?> tracerConfig, FilePath workspacePath, Node node, TaskListener listener) throws Exception {
-        FilePath datadogFolder = workspacePath.child(".datadog");
-        datadogFolder.mkdirs();
-
-        FilePath datadogTracerFile = datadogFolder.child(TRACER_FILE_NAME);
+        FilePath datadogTracerFile = getDatadogTracerFile(workspacePath);
         long minutesSinceModification = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - datadogTracerFile.lastModified());
         if (minutesSinceModification < getTracerJarCacheTtlMinutes(tracerConfig)) {
             listener.getLogger().println("[datadog] Configuring DD Java tracer: using existing tracer available at " + datadogTracerFile);
@@ -84,6 +84,12 @@ final class JavaConfigurator implements TracerConfigurator {
         }
 
         return datadogTracerFile.absolutize();
+    }
+
+    private static FilePath getDatadogTracerFile(FilePath workspacePath) throws IOException, InterruptedException {
+        FilePath datadogFolder = workspacePath.child(".datadog");
+        datadogFolder.mkdirs();
+        return datadogFolder.child(TRACER_FILE_NAME);
     }
 
     private int getTracerJarCacheTtlMinutes(DatadogTracerJobProperty<?> tracerConfig) {
@@ -211,5 +217,16 @@ final class JavaConfigurator implements TracerConfigurator {
             proxyOptions.append("-Dhttp.proxyPassword=").append(Secret.toString(password)).append(" ");
         }
         return proxyOptions.length() > 0 ? proxyOptions.toString() : null;
+    }
+
+    @Override
+    public boolean isConfigurationValid(Node node, FilePath workspacePath) {
+        try {
+            FilePath datadogTracerFile = getDatadogTracerFile(workspacePath);
+            return datadogTracerFile.exists();
+        } catch (Exception e) {
+            DatadogUtilities.logException(LOGGER, Level.FINE, "Could not verify Java tracer file existence", e);
+            return false;
+        }
     }
 }

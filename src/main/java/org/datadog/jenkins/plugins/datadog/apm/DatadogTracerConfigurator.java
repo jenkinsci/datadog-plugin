@@ -48,24 +48,33 @@ public class DatadogTracerConfigurator {
             return Collections.emptyMap();
         }
 
+        TopLevelItem topLevelItem = getTopLevelItem(run);
+        FilePath workspacePath = node.getWorkspaceFor(topLevelItem);
+        if (workspacePath == null) {
+            listener.error("[datadog] Cannot find workspace path for " + topLevelItem + " on " + node);
+            return Collections.emptyMap();
+        }
+
         String nodeHostname = DatadogUtilities.getNodeHostname(envs, computer);
         Collection<TracerLanguage> languages = tracerConfig.getLanguages();
         for (ConfigureTracerAction action : run.getActions(ConfigureTracerAction.class)) {
             if (nodeHostname != null && nodeHostname.equals(action.nodeHostname) && action.languages.containsAll(languages)) {
-                return action.variables;
+                boolean previousConfigurationValid = true;
+                for (TracerLanguage language : action.languages) {
+                    TracerConfigurator tracerConfigurator = configurators.get(language);
+                    if (tracerConfigurator != null) {
+                        previousConfigurationValid &= tracerConfigurator.isConfigurationValid(node, workspacePath);
+                    }
+                }
+                if (previousConfigurationValid) {
+                    return action.variables;
+                }
             }
         }
 
         DatadogGlobalConfiguration datadogConfig = DatadogUtilities.getDatadogGlobalDescriptor();
         if (datadogConfig == null) {
             listener.error("[datadog] Cannot set up tracer: Datadog config not found");
-            return Collections.emptyMap();
-        }
-
-        TopLevelItem topLevelItem = getTopLevelItem(run);
-        FilePath workspacePath = node.getWorkspaceFor(topLevelItem);
-        if (workspacePath == null) {
-            listener.error("[datadog] Cannot find workspace path for " + topLevelItem + " on " + node);
             return Collections.emptyMap();
         }
 

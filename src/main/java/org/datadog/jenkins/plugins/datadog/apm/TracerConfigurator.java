@@ -11,4 +11,11 @@ interface TracerConfigurator {
                                   FilePath workspacePath,
                                   Map<String, String> envs,
                                   TaskListener listener) throws Exception;
+
+    /**
+     * Is used to check whether configuration is valid or needs to be re-applied.
+     */
+    default boolean isConfigurationValid(Node node, FilePath workspacePath) {
+        return true;
+    }
 }
