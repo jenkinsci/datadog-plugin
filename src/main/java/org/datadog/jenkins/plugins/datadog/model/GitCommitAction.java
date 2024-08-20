@@ -29,7 +29,7 @@ public class GitCommitAction extends DatadogPluginAction {
     public GitCommitAction() {
     }
 
-    public GitCommitAction(String tag, String commit, String message, String authorName, String authorEmail, String authorDate, String committerName, String committerEmail, String committerDate) {
+    GitCommitAction(String tag, String commit, String message, String authorName, String authorEmail, String authorDate, String committerName, String committerEmail, String committerDate) {
         this.tag = tag;
         this.commit = commit;
         this.message = message;
