@@ -7,8 +7,13 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 
 final class PythonConfigurator implements TracerConfigurator {
+
+    private static final Logger LOGGER = Logger.getLogger(PythonConfigurator.class.getName());
 
     private static final int GET_PIP_VERSION_TIMEOUT_MILLIS = 30_000;
     private static final int INSTALL_TRACER_TIMEOUT_MILLIS = 300_000;
@@ -38,5 +43,16 @@ final class PythonConfigurator implements TracerConfigurator {
             }
         }
         throw new IllegalStateException("Could not determine tracer location in " + workspacePath + "; command output is: " + getTracerLocationOutput);
+    }
+
+    @Override
+    public boolean isConfigurationValid(Node node, FilePath workspacePath) {
+        try {
+            String tracerLocation = getTracerLocation(workspacePath);
+            return workspacePath.child(tracerLocation).exists();
+        } catch (Exception e) {
+            DatadogUtilities.logException(LOGGER, Level.FINE, "Could not verify Python tracer file existence", e);
+            return false;
+        }
     }
 }
