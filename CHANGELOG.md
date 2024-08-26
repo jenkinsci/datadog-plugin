@@ -1,5 +1,12 @@
 Changes
 =======
+## 7.1.3 / 2024-08-26
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-7.1.2...datadog-7.1.3
+
+* [Fixed] Fix APM tracer libraries verification. See [#444](https://github.com/jenkinsci/datadog-plugin/pull/444).
+* [Fixed] Add validation for manually set Git timestamps. See [#443](https://github.com/jenkinsci/datadog-plugin/pull/443).
+
 ## 7.1.2 / 2024-07-12
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-7.1.1...datadog-7.1.2
