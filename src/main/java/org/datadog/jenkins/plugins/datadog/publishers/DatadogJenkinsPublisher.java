@@ -30,19 +30,18 @@ import hudson.PluginManager;
 import hudson.PluginWrapper;
 import hudson.model.PeriodicWork;
 import hudson.model.Project;
-import jenkins.model.Jenkins;
-import org.datadog.jenkins.plugins.datadog.DatadogClient;
-import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
-import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
-import org.datadog.jenkins.plugins.datadog.model.PluginData;
-import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import jenkins.model.Jenkins;
+import org.datadog.jenkins.plugins.datadog.DatadogClient;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
+import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
+import org.datadog.jenkins.plugins.datadog.model.PluginData;
+import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 /**
  * This class registers a {@link PeriodicWork} with Jenkins to run periodically in order to enable
@@ -66,7 +65,7 @@ public class DatadogJenkinsPublisher extends PeriodicWork {
             logger.fine("doRun called: Computing Jenkins metrics");
 
             // Get Datadog Client Instance
-            DatadogClient client = ClientFactory.getClient();
+            DatadogClient client = ClientHolder.getClient();
             String hostname = DatadogUtilities.getHostname(null);
             if(client == null){
                 return;

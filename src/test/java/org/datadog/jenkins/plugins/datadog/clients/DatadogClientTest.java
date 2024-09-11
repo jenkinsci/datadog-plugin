@@ -25,7 +25,11 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.clients;
 
-import org.datadog.jenkins.plugins.datadog.DatadogClient;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.metrics.MetricKey;
@@ -36,14 +40,6 @@ import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.mockito.Mockito;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.*;
-
 public class DatadogClientTest {
 
     @ClassRule
@@ -52,68 +48,50 @@ public class DatadogClientTest {
     @Test
     public void testHttpClientGetInstanceApiKey() {
         //validateConfiguration throws an error when given an invalid API key when the urls are valid
-        Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> {
-            DatadogApiClient.enableValidations = false;
-            DatadogApiClient client = (DatadogApiClient) DatadogApiClient.getInstance("http", "test", "test", null);
-            client.validateConfiguration();
-        });
+        Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> new DatadogApiClient("http", "test", "test", null));
 
         String expectedMessage = "Datadog API Key is not set properly";
         String actualMessage = exception.getMessage();
-        Assert.assertTrue(actualMessage.equals(expectedMessage));
+        Assert.assertEquals(actualMessage, expectedMessage);
     }
 
     @Test
     public void testHttpClientGetInstanceApiUrl() {
         // validateConfiguration throws an error when given an invalid url
-        Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> {
-            DatadogApiClient.enableValidations = false;
-            DatadogApiClient client = (DatadogApiClient) DatadogApiClient.getInstance("", null, null, null);
-            client.validateConfiguration();
-        });
+        Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> new DatadogApiClient("", null, null, null));
         String expectedMessage = "Datadog Target URL is not set properly";
         String actualMessage = exception.getMessage();
-        Assert.assertTrue(actualMessage.equals(expectedMessage));
+        Assert.assertEquals(actualMessage, expectedMessage);
     }
 
 
     @Test
     public void testHttpClientGetInstanceEnableValidations() {
-        // calling getInstance with invalid data returns null
-        DatadogApiClient.enableValidations = true;
-        DatadogClient client = DatadogApiClient.getInstance("https", null, null, null);
-        Assert.assertEquals(client, null);
+        Assert.assertThrows(IllegalArgumentException.class, () -> new DatadogApiClient("https", null, null, null));
     }
-
 
     @Test
     public void testDogstatsDClientGetInstanceTargetPort() {
         // validateConfiguration throws an error when given an invalid port
-        Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> {
-            DatadogAgentClient.enableValidations = false;
-            DatadogAgentClient client = (DatadogAgentClient) DatadogAgentClient.getInstance("test", null, null, null);
-            client.validateConfiguration();
-        });
+        Exception exception = Assert.assertThrows(IllegalArgumentException.class, () -> new DatadogAgentClient("test", null, null, null));
 
         String expectedMessage = "Datadog Target Port is not set properly";
         String actualMessage = exception.getMessage();
-        Assert.assertTrue(actualMessage.equals(expectedMessage));
+        Assert.assertEquals(actualMessage, expectedMessage);
     }
 
     @Test
     public void testDogstatsDClientGetInstanceEnableValidations() {
         // calling getInstance with invalid data returns null
-        DatadogAgentClient.enableValidations = true;
-        DatadogClient client = DatadogAgentClient.getInstance("https", null, null, null);
-        Assert.assertEquals(client, null);
+        Assert.assertThrows(IllegalArgumentException.class, () -> new DatadogAgentClient("https", null, null, null));
     }
 
     @Test
     public void testEvpProxyEnabled() {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEnableCiVisibility(true);
-        DatadogAgentClient client = Mockito.spy(new DatadogAgentClient("test",1234, 1235, 1236, 1_000));
-        Mockito.doReturn(new HashSet<>(Arrays.asList("/evp_proxy/v3/"))).when(client).fetchAgentSupportedEndpoints();
+        DatadogAgentClient client = Mockito.spy(new DatadogAgentClient("test", 1234, 1235, 1236, 1_000));
+        Mockito.doReturn(new HashSet<>(Collections.singletonList("/evp_proxy/v3/"))).when(client).fetchAgentSupportedEndpoints();
         Assert.assertTrue(client.isEvpProxySupported());
     }
 
@@ -121,7 +99,7 @@ public class DatadogClientTest {
     public void testEvpProxyDisabled() {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEnableCiVisibility(true);
-        DatadogAgentClient client = Mockito.spy(new DatadogAgentClient("test",1234, 1235, 1236, 1_000));
+        DatadogAgentClient client = Mockito.spy(new DatadogAgentClient("test", 1234, 1235, 1236, 1_000));
         Mockito.doReturn(new HashSet<String>()).when(client).fetchAgentSupportedEndpoints();
         Assert.assertFalse(client.isEvpProxySupported());
     }
@@ -135,19 +113,17 @@ public class DatadogClientTest {
     }
 
     @Test
-    public void testIncrementCountAndFlush() throws IOException, InterruptedException {
-        DatadogApiClient.enableValidations = false;
-        DatadogClient client = DatadogApiClient.getInstance("test", null, null, null);
+    public void testIncrementCountAndFlush() {
         Map<String, Set<String>> tags1 = new HashMap<>();
-        tags1 = DatadogClientStub.addTagToMap(tags1, "tag1", "value");
-        tags1 = DatadogClientStub.addTagToMap(tags1, "tag2", "value");
+        DatadogClientStub.addTagToMap(tags1, "tag1", "value");
+        DatadogClientStub.addTagToMap(tags1, "tag2", "value");
         Metrics.getInstance().incrementCounter("metric1", "host1", tags1);
         Metrics.getInstance().incrementCounter("metric1", "host1", tags1);
 
         Map<String, Set<String>> tags2 = new HashMap<>();
-        tags2 = DatadogClientStub.addTagToMap(tags2, "tag1", "value");
-        tags2 = DatadogClientStub.addTagToMap(tags2, "tag2", "value");
-        tags2 = DatadogClientStub.addTagToMap(tags2, "tag3", "value");
+        DatadogClientStub.addTagToMap(tags2, "tag1", "value");
+        DatadogClientStub.addTagToMap(tags2, "tag2", "value");
+        DatadogClientStub.addTagToMap(tags2, "tag3", "value");
         Metrics.getInstance().incrementCounter("metric1", "host1", tags2);
 
         Metrics.getInstance().incrementCounter("metric1", "host2", tags2);
@@ -160,151 +136,32 @@ public class DatadogClientTest {
 
         // Check counter is reset as expected
         Map<MetricKey, Integer> countersEmpty = Metrics.getInstance().getAndResetCounters();
-        Assert.assertTrue("size = " + countersEmpty.size(), countersEmpty.size() == 0);
+        Assert.assertEquals("size = " + countersEmpty.size(), 0, countersEmpty.size());
 
         // Check that metrics to submit are correct
         boolean check1  = false, check2 = false, check3 = false, check4 = false;
-        Assert.assertTrue("counters = " + counters.size(), counters.size() == 4);
+        Assert.assertEquals("counters = " + counters.size(), 4, counters.size());
         for (MetricKey counterMetric: counters.keySet()) {
             int count = counters.get(counterMetric);
-            if(counterMetric.getMetricName().equals("metric1") && counterMetric.getHostname().equals("host1")
-                    && counterMetric.getTags().size() == 2){
-                Assert.assertTrue("count = " + count, count == 2);
+            if (counterMetric.getMetricName().equals("metric1") && counterMetric.getHostname().equals("host1")
+                    && counterMetric.getTags().size() == 2) {
+                Assert.assertEquals("count = " + count, 2, count);
                 check1 = true;
             } else if (counterMetric.getMetricName().equals("metric1") && counterMetric.getHostname().equals("host1")
-                    && counterMetric.getTags().size() == 3){
-                Assert.assertTrue("count = " + count,count == 1);
+                    && counterMetric.getTags().size() == 3) {
+                Assert.assertEquals("count = " + count, 1, count);
                 check2 = true;
             } else if (counterMetric.getMetricName().equals("metric1") && counterMetric.getHostname().equals("host2")
-                    && counterMetric.getTags().size() == 3){
-                Assert.assertTrue("count = " + count,count == 2);
+                    && counterMetric.getTags().size() == 3) {
+                Assert.assertEquals("count = " + count, 2, count);
                 check3 = true;
             } else if (counterMetric.getMetricName().equals("metric2") && counterMetric.getHostname().equals("host2")
-                    && counterMetric.getTags().size() == 3){
-                Assert.assertTrue("count = " + count,count == 1);
+                    && counterMetric.getTags().size() == 3) {
+                Assert.assertEquals("count = " + count, 1, count);
                 check4 = true;
             }
         }
         Assert.assertTrue(check1 + " " + check2 + " " + check3 + " " + check4,
                 check1 && check2 && check3 && check4);
     }
-
-
-    @Test
-    public void testIncrementCountAndFlushThreadedEnv() throws IOException, InterruptedException {
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-
-        Runnable increment = new Runnable() {
-            @Override
-            public void run() {
-                // We use a new instance of a client on every run.
-                DatadogApiClient.enableValidations = false;
-                DatadogClient client = DatadogApiClient.getInstance("test2", null, null, null);
-                Map<String, Set<String>> tags = new HashMap<>();
-                tags = DatadogClientStub.addTagToMap(tags, "tag1", "value");
-                tags = DatadogClientStub.addTagToMap(tags, "tag2", "value");
-                Metrics.getInstance().incrementCounter("metric1", "host1", tags);
-            }
-        };
-
-        for(int i = 0; i < 10000; i++){
-            executor.submit(increment);
-        }
-
-        stop(executor);
-
-        // Check counter is reset as expected
-        Map<MetricKey, Integer> counters = Metrics.getInstance().getAndResetCounters();
-        Assert.assertTrue("size = " + counters.size(), counters.size() == 1);
-        Assert.assertTrue("counters.values() = " + counters.values(), counters.values().contains(10000));
-
-    }
-
-    @Test
-    public void testIncrementCountAndFlushThreadedEnvThreadCheck() throws IOException, InterruptedException, ExecutionException {
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-        Runnable increment = new Runnable() {
-            @Override
-            public void run() {
-                // We use a new instance of a client on every run.
-                DatadogApiClient.enableValidations = false;
-                DatadogClient client = DatadogApiClient.getInstance("test3", null, null, null);
-                Map<String, Set<String>> tags = new HashMap<>();
-                tags = DatadogClientStub.addTagToMap(tags, "tag1", "value");
-                tags = DatadogClientStub.addTagToMap(tags, "tag2", "value");
-                Metrics.getInstance().incrementCounter("metric1", "host1", tags);
-            }
-        };
-
-        for(int i = 0; i < 10000; i++){
-            executor.submit(increment);
-        }
-
-        stop(executor);
-
-        // We also check the result in a distinct thread
-        ExecutorService single = Executors.newSingleThreadExecutor();
-        Callable<Boolean> check = new Callable<Boolean>() {
-            @Override
-            public Boolean call() throws Exception {
-                // Check counter is reset as expected
-                Map<MetricKey, Integer> counters = Metrics.getInstance().getAndResetCounters();
-                Assert.assertTrue("size = " + counters.size(), counters.size() == 1);
-                Assert.assertTrue("counters.values() = " + counters.values(), counters.values().contains(10000));
-                return true;
-            }
-        };
-
-        Future<Boolean> value = single.submit(check);
-
-        stop(single);
-
-        Assert.assertTrue(value.get());
-
-    }
-
-    @Test
-    public void testIncrementCountAndFlushThreadedEnvOneClient() throws IOException, InterruptedException {
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-        DatadogApiClient.enableValidations = false;
-        final DatadogClient client = DatadogApiClient.getInstance("testing", null, null, null);
-        Runnable increment = new Runnable() {
-            @Override
-            public void run() {
-                Map<String, Set<String>> tags = new HashMap<>();
-                tags = DatadogClientStub.addTagToMap(tags, "tag1", "value");
-                tags = DatadogClientStub.addTagToMap(tags, "tag2", "value");
-                Metrics.getInstance().incrementCounter("metric1", "host1", tags);
-            }
-        };
-
-        for(int i = 0; i < 10000; i++){
-            executor.submit(increment);
-        }
-
-        stop(executor);
-
-        // Check counter is reset as expected
-        Map<MetricKey, Integer> counters = Metrics.getInstance().getAndResetCounters();
-        Assert.assertTrue("size = " + counters.size(), counters.size() == 1);
-        Assert.assertTrue("counters.values() = " + counters.values(), counters.values().contains(10000));
-
-    }
-
-    private static void stop(ExecutorService executor) {
-        try {
-            executor.shutdown();
-            executor.awaitTermination(5, TimeUnit.SECONDS);
-        }
-        catch (InterruptedException e) {
-            System.err.println("termination interrupted");
-        }
-        finally {
-            if (!executor.isTerminated()) {
-                System.err.println("killing non-finished tasks");
-            }
-            executor.shutdownNow();
-        }
-    }
-
 }

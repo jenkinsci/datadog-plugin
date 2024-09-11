@@ -35,7 +35,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
 import org.datadog.jenkins.plugins.datadog.metrics.MetricKey;
 import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
 import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
@@ -57,7 +57,7 @@ public class DatadogCountersPublisher extends AsyncPeriodicWork {
     @Override
     protected void execute(TaskListener taskListener) throws IOException, InterruptedException {
         logger.fine("Execute called: Publishing counters");
-        DatadogClient client = ClientFactory.getClient();
+        DatadogClient client = ClientHolder.getClient();
         if (client == null) {
             return;
         }

@@ -53,7 +53,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
+import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 import org.datadog.jenkins.plugins.datadog.publishers.DatadogComputerPublisher;
@@ -128,7 +128,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
         listener = new DatadogGraphListener();
         clientStub = new DatadogClientStub();
-        ClientFactory.setTestClient(clientStub);
+        ClientHolder.setClient(clientStub);
 
         Jenkins jenkins = jenkinsRule.jenkins;
         jenkins.getGlobalNodeProperties().remove(EnvironmentVariablesNodeProperty.class);

@@ -30,19 +30,21 @@ import hudson.model.Computer;
 import hudson.model.TaskListener;
 import hudson.slaves.ComputerListener;
 import hudson.slaves.OfflineCause;
-import org.datadog.jenkins.plugins.datadog.DatadogClient;
-import org.datadog.jenkins.plugins.datadog.DatadogEvent;
-import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.ClientFactory;
-import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
-import org.datadog.jenkins.plugins.datadog.events.*;
-import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+import org.datadog.jenkins.plugins.datadog.DatadogClient;
+import org.datadog.jenkins.plugins.datadog.DatadogEvent;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
+import org.datadog.jenkins.plugins.datadog.events.ComputerLaunchFailedEventImpl;
+import org.datadog.jenkins.plugins.datadog.events.ComputerOfflineEventImpl;
+import org.datadog.jenkins.plugins.datadog.events.ComputerOnlineEventImpl;
+import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
+import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 /**
  * This class registers an {@link ComputerListener} to trigger events and calculate metrics:
@@ -69,7 +71,7 @@ public class DatadogComputerListener extends ComputerListener {
             logger.fine("Start DatadogComputerListener#onOnline");
 
             // Get Datadog Client Instance
-            DatadogClient client = ClientFactory.getClient();
+            DatadogClient client = ClientHolder.getClient();
             if(client == null){
                 return;
             }
@@ -103,7 +105,7 @@ public class DatadogComputerListener extends ComputerListener {
             logger.fine("Start DatadogComputerListener#onOffline");
 
             // Get Datadog Client Instance
-            DatadogClient client = ClientFactory.getClient();
+            DatadogClient client = ClientHolder.getClient();
             if(client == null){
                 return;
             }
@@ -135,7 +137,7 @@ public class DatadogComputerListener extends ComputerListener {
             logger.fine("Start DatadogComputerListener#onTemporarilyOnline");
 
             // Get Datadog Client Instance
-            DatadogClient client = ClientFactory.getClient();
+            DatadogClient client = ClientHolder.getClient();
             if(client == null){
                 return;
             }
@@ -166,7 +168,7 @@ public class DatadogComputerListener extends ComputerListener {
             logger.fine("Start DatadogComputerListener#onTemporarilyOffline");
 
             // Get Datadog Client Instance
-            DatadogClient client = ClientFactory.getClient();
+            DatadogClient client = ClientHolder.getClient();
             if(client == null){
                 return;
             }
@@ -198,7 +200,7 @@ public class DatadogComputerListener extends ComputerListener {
             logger.fine("Start DatadogComputerListener#onLaunchFailure");
 
             // Get Datadog Client Instance
-            DatadogClient client = ClientFactory.getClient();
+            DatadogClient client = ClientHolder.getClient();
             if(client == null){
                 return;
             }
