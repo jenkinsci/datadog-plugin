@@ -414,7 +414,10 @@ public class DatadogBuildListener extends RunListener<Run> {
                 return;
             }
 
-            run.addAction(new DatadogLinkAction(buildData));
+            DatadogGlobalConfiguration datadogGlobalConfiguration = DatadogUtilities.getDatadogGlobalDescriptor();
+            if (datadogGlobalConfiguration != null && datadogGlobalConfiguration.getEnableCiVisibility()) {
+                run.addAction(new DatadogLinkAction(buildData));
+            }
 
             traceWriter.submitBuild(buildData, run);
             logger.fine("End DatadogBuildListener#onFinalized");
