@@ -1,7 +1,5 @@
 package org.datadog.jenkins.plugins.datadog.model;
 
-import static org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter.ignoreOldData;
-
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.converters.MarshallingContext;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
@@ -10,7 +8,7 @@ import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 import hudson.model.Action;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogActionConverter;
 import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
 
 public class DatadogLinkAction implements Action {
@@ -42,9 +40,9 @@ public class DatadogLinkAction implements Action {
         return url;
     }
 
-    public static final class ConverterImpl extends DatadogConverter<DatadogLinkAction> {
+    public static final class ConverterImpl extends DatadogActionConverter<DatadogLinkAction> {
         public ConverterImpl(XStream xs) {
-            super(ignoreOldData(), new ConverterV1());
+            super(new ConverterV1());
         }
     }
 
