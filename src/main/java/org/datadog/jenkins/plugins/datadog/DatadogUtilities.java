@@ -743,19 +743,29 @@ public class DatadogUtilities {
     }
 
     public static String getNodeHostname(@Nullable EnvVars envVars, @Nullable Computer computer) {
-        if (envVars != null) {
-            String ddHostname = envVars.get(DatadogGlobalConfiguration.DD_CI_HOSTNAME);
-            if (DatadogUtilities.isValidHostname(ddHostname)) {
-                return ddHostname;
-            }
-            String hostname = envVars.get("HOSTNAME");
-            if (DatadogUtilities.isValidHostname(hostname)) {
-                return hostname;
+        if (computer != null) {
+            try {
+                EnvVars computerEnvironment = computer.getEnvironment();
+                String computerEnvVarsHostname = getNodeHostname(computerEnvironment);
+                if (isValidHostname(computerEnvVarsHostname)) {
+                    return computerEnvVarsHostname;
+                }
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logException(logger, Level.FINE, "Interrupted while trying to get computer env vars", e);
+            } catch (Exception e) {
+                logException(logger, Level.FINE, "Error getting computer env vars", e);
             }
         }
 
+        String envVarsHostname = getNodeHostname(envVars);
+        if (isValidHostname(envVarsHostname)) {
+            return envVarsHostname;
+        }
+
         try {
-            if(computer != null) {
+            if (computer != null) {
                 String computerNodeName = DatadogUtilities.getNodeName(computer);
                 if (DatadogUtilities.isMainNode(computerNodeName)) {
                     String masterHostname = DatadogUtilities.getHostname(null);
@@ -771,23 +781,41 @@ public class DatadogUtilities {
 
                 Node node = computer.getNode();
                 if (node != null) {
+                    String[] command;
                     FilePath rootPath = node.getRootPath();
                     if (isUnix(rootPath)) {
-                        ShellCommandCallable hostnameCommand = new ShellCommandCallable(
-                                Collections.emptyMap(), HOSTNAME_CMD_TIMEOUT_MILLIS, "hostname", "-f");
-                        String shellHostname = rootPath.act(hostnameCommand).trim();
-                        if (DatadogUtilities.isValidHostname(shellHostname)) {
-                            return shellHostname;
-                        }
+                        command = new String[]{"hostname", "-f"};
+                    } else {
+                        command = new String[]{"hostname"};
+                    }
+
+                    ShellCommandCallable hostnameCommand = new ShellCommandCallable(Collections.emptyMap(), HOSTNAME_CMD_TIMEOUT_MILLIS, command);
+                    String shellHostname = rootPath.act(hostnameCommand).trim();
+                    if (DatadogUtilities.isValidHostname(shellHostname)) {
+                        return shellHostname;
                     }
                 }
             }
-        } catch (InterruptedException e){
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             logException(logger, Level.FINE, "Interrupted while trying to extract hostname from StepContext.", e);
 
-        } catch (Exception e){
+        } catch (Exception e) {
             logException(logger, Level.FINE, "Unable to get hostname for node " + computer.getName(), e);
+        }
+        return null;
+    }
+
+    private static String getNodeHostname(@Nullable EnvVars envVars) {
+        if (envVars != null) {
+            String ddHostname = envVars.get(DatadogGlobalConfiguration.DD_CI_HOSTNAME);
+            if (DatadogUtilities.isValidHostname(ddHostname)) {
+                return ddHostname;
+            }
+            String hostname = envVars.get("HOSTNAME");
+            if (DatadogUtilities.isValidHostname(hostname)) {
+                return hostname;
+            }
         }
         return null;
     }
