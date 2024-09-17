@@ -185,7 +185,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         loadEnvVariables(); // Load environment variables after as they should take precedence.
     }
 
-    @Initializer(after = InitMilestone.PLUGINS_STARTED)
+    @Initializer(after = InitMilestone.SYSTEM_CONFIG_LOADED)
     public void onStartup() {
         try {
             ClientHolder.setClient(createClient());
