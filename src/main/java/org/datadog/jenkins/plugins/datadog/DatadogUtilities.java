@@ -749,20 +749,19 @@ public class DatadogUtilities {
 
                 Node node = computer.getNode();
                 if (node != null) {
-                    String[] command;
                     FilePath rootPath = node.getRootPath();
-                    if (isUnix(rootPath)) {
-                        command = new String[]{"hostname", "-f"};
-                    } else {
-                        command = new String[]{"hostname"};
-                    }
+                    if (rootPath != null) {
+                        String[] command;
+                        if (isUnix(rootPath)) {
+                            command = new String[]{"hostname", "-f"};
+                        } else {
+                            command = new String[]{"hostname"};
+                        }
 
-                    ShellCommandCallable hostnameCommand = new ShellCommandCallable(Collections.emptyMap(), HOSTNAME_CMD_TIMEOUT_MILLIS, command);
-                    String shellHostname = rootPath.act(hostnameCommand);
-                    if (shellHostname != null) {
-                        String trimmedHostname = shellHostname.trim();
-                        if (DatadogUtilities.isValidHostname(trimmedHostname)) {
-                            return trimmedHostname;
+                        ShellCommandCallable hostnameCommand = new ShellCommandCallable(Collections.emptyMap(), HOSTNAME_CMD_TIMEOUT_MILLIS, command);
+                        String shellHostname = rootPath.act(hostnameCommand).trim();
+                        if (DatadogUtilities.isValidHostname(shellHostname)) {
+                            return shellHostname;
                         }
                     }
                 }
