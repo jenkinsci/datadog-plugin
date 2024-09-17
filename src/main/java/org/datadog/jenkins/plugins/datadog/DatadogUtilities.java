@@ -364,17 +364,7 @@ public class DatadogUtilities {
         if (datadogGlobalConfig == null) {
             return false;
         }
-        final String excludedProp = datadogGlobalConfig.getExcluded();
-        List<String> excluded = cstrToList(excludedProp);
-        for (String excludedJob : excluded) {
-            Pattern excludedJobPattern = Pattern.compile(excludedJob);
-            Matcher jobNameMatcher = excludedJobPattern.matcher(jobName);
-            if (jobNameMatcher.matches()) {
-                return true;
-            }
-        }
-        return false;
-
+        return datadogGlobalConfig.isJobExcluded(jobName);
     }
 
     /**
@@ -388,16 +378,7 @@ public class DatadogUtilities {
         if (datadogGlobalConfig == null) {
             return true;
         }
-        final String includedProp = datadogGlobalConfig.getIncluded();
-        final List<String> included = cstrToList(includedProp);
-        for (String includedJob : included) {
-            Pattern includedJobPattern = Pattern.compile(includedJob);
-            Matcher jobNameMatcher = includedJobPattern.matcher(jobName);
-            if (jobNameMatcher.matches()) {
-                return true;
-            }
-        }
-        return included.isEmpty();
+        return datadogGlobalConfig.isJobIncluded(jobName);
     }
 
     /**
@@ -408,6 +389,23 @@ public class DatadogUtilities {
      */
     public static List<String> cstrToList(final String str) {
         return convertRegexStringToList(str, ",");
+    }
+
+    /**
+     * Converts a comma-separated string into a list
+     *
+     * @param str - A string containing a comma separated list of items.
+     * @param converter - Converter function that is applied to every list element
+     */
+    public static <T> List<T> cstrToList(String str, Function<String, T> converter) {
+        return convertRegexStringToList(str, ",").stream().map(converter).collect(Collectors.toList());
+    }
+
+    /**
+     * Converts a list to a comma-separated string
+     */
+    public static <T> String listToCstr(List<T> list, Function<T, String> converter) {
+        return list != null ? list.stream().map(converter).collect(Collectors.joining(",")) : null;
     }
 
     /**
