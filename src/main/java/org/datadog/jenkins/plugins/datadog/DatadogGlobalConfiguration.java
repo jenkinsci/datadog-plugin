@@ -25,8 +25,6 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog;
 
-import static hudson.Util.fixEmptyAndTrim;
-
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
@@ -41,18 +39,6 @@ import hudson.util.FormValidation;
 import hudson.util.FormValidation.Kind;
 import hudson.util.ListBoxModel;
 import hudson.util.Secret;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import javax.annotation.Nullable;
-import javax.management.InvalidAttributeValueException;
-import javax.servlet.ServletException;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -64,12 +50,19 @@ import org.datadog.jenkins.plugins.datadog.clients.DatadogApiClient;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.config.DatadogAgentConfiguration;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
-import org.kohsuke.stapler.AncestorInPath;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.*;
 import org.kohsuke.stapler.interceptor.RequirePOST;
+
+import javax.annotation.Nullable;
+import javax.management.InvalidAttributeValueException;
+import javax.servlet.ServletException;
+import java.io.IOException;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
+import static hudson.Util.fixEmptyAndTrim;
 
 @Extension
 public class DatadogGlobalConfiguration extends GlobalConfiguration {
@@ -121,7 +114,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static final String INCLUDE_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_INCLUDE_EVENTS";
     private static final String EXCLUDE_EVENTS_PROPERTY = "DATADOG_JENKINS_PLUGIN_EXCLUDE_EVENTS";
     private static final String COLLECT_BUILD_LOGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS";
-    private static final String RETRY_LOGS_PROPERTY = "DATADOG_JENKINS_PLUGIN_RETRY_LOGS";
     private static final String REFRESH_DOGSTATSD_CLIENT_PROPERTY = "DATADOG_REFRESH_STATSD_CLIENT";
     private static final String CACHE_BUILD_RUNS_PROPERTY = "DATADOG_CACHE_BUILD_RUNS";
     private static final String USE_AWS_INSTANCE_HOSTNAME_PROPERTY = "DATADOG_USE_AWS_INSTANCE_HOSTNAME";
@@ -174,7 +166,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private boolean emitConfigChangeEvents = DEFAULT_EMIT_CONFIG_CHANGE_EVENTS_VALUE;
     private boolean collectBuildLogs = DEFAULT_COLLECT_BUILD_LOGS_VALUE;
     private boolean collectBuildTraces = DEFAULT_COLLECT_BUILD_TRACES_VALUE;
-    private boolean retryLogs = DEFAULT_RETRY_LOGS_VALUE;
+    private transient boolean retryLogs = DEFAULT_RETRY_LOGS_VALUE; // TODO to be removed
     private boolean refreshDogstatsdClient = DEFAULT_REFRESH_DOGSTATSD_CLIENT_VALUE;
     private boolean cacheBuildRuns = DEFAULT_CACHE_BUILD_RUNS_VALUE;
     private boolean useAwsInstanceHostname = DEFAULT_USE_AWS_INSTANCE_HOSTNAME_VALUE;
@@ -315,11 +307,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         String collectBuildLogsEnvVar = System.getenv(COLLECT_BUILD_LOGS_PROPERTY);
         if(StringUtils.isNotBlank(collectBuildLogsEnvVar)){
             this.collectBuildLogs = Boolean.valueOf(collectBuildLogsEnvVar);
-        }
-
-        String retryLogsEnvVar = System.getenv(RETRY_LOGS_PROPERTY);
-        if(StringUtils.isNotBlank(retryLogsEnvVar)){
-            this.retryLogs = Boolean.valueOf(retryLogsEnvVar);
         }
 
         String refreshDogstatsdClientEnvVar = System.getenv(REFRESH_DOGSTATSD_CLIENT_PROPERTY);
@@ -807,7 +794,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.setGlobalTagFile(formData.getString("globalTagFile"));
             this.setGlobalTags(formData.getString("globalTags"));
             this.setGlobalJobTags(formData.getString("globalJobTags"));
-            this.setRetryLogs(formData.getBoolean("retryLogs"));
             this.setRefreshDogstatsdClient(formData.getBoolean("refreshDogstatsdClient"));
             this.setCacheBuildRuns(formData.getBoolean("cacheBuildRuns"));
             this.setUseAwsInstanceHostname(formData.getBoolean("useAwsInstanceHostname"));
@@ -1311,17 +1297,17 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     }
 
     /**
-     * @return - A {@link Boolean} indicating if the user has configured Datadog to retry sending logs.
+     * @deprecated This method is here to ensure backward compatibility
      */
+    @Deprecated
     public boolean isRetryLogs() {
         return retryLogs;
     }
 
     /**
-     * Set the checkbox in the UI, used for Jenkins data binding
-     *
-     * @param retryLogs - The checkbox status (checked/unchecked)
+     * @deprecated This method is here to ensure backward compatibility
      */
+    @Deprecated
     @DataBoundSetter
     public void setRetryLogs(boolean retryLogs) {
         this.retryLogs = retryLogs;
