@@ -46,6 +46,7 @@ import org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfigurati
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogClientConfiguration;
 import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntake;
+import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeSite;
 import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeUrls;
 import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogApiKey;
 import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogCredentialsApiKey;
@@ -64,6 +65,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.*;
+import static org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeSite.DatadogIntakeSiteDescriptor.getSite;
 import static org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogTextApiKey.DatadogTextApiKeyDescriptor.getDefaultKey;
 
 @Extension
@@ -174,7 +176,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             String clientType = System.getenv(REPORT_WITH_PROPERTY);
             if (DATADOG_AGENT_CLIENT_TYPE.equals(clientType)) {
                 this.datadogClientConfiguration = new DatadogAgentConfiguration(
-                        getDefaultAgentHost(), getDefaultAgentPort(), getDefaultAgentLogCollectionPort(), getDefaultAgentTraceCollectionPort());
+                        getDefaultAgentHost(), getDefaultAgentPort(), getDefaultAgentLogCollectionPort(), getDefaultAgentTraceCollectionPort(), getSite());
             } else {
                 DatadogIntake intake = DatadogIntake.getDefaultIntake();
                 DatadogTextApiKey apiKey = new DatadogTextApiKey(getDefaultKey());
@@ -1144,7 +1146,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.included = this.whitelist;
         }
         if (DATADOG_AGENT_CLIENT_TYPE.equals(reportWith)) {
-            this.datadogClientConfiguration = new DatadogAgentConfiguration(this.targetHost, this.targetPort, this.targetLogCollectionPort, this.targetTraceCollectionPort);
+            this.datadogClientConfiguration = new DatadogAgentConfiguration(this.targetHost, this.targetPort, this.targetLogCollectionPort, this.targetTraceCollectionPort, getSite());
         }
         if (DATADOG_API_CLIENT_TYPE.equals(reportWith)) {
             DatadogIntakeUrls intake = new DatadogIntakeUrls(this.targetApiURL, this.targetLogIntakeURL, this.targetWebhookIntakeURL);
