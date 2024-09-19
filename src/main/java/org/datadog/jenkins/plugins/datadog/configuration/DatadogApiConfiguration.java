@@ -122,7 +122,7 @@ public class DatadogApiConfiguration extends DatadogClientConfiguration {
     }
 
     @Extension
-    public static final class DatadogApiConfigurationDescriptor extends DatadogClientConfigurationDescriptor {
+    public static final class DatadogApiConfigurationDescriptor extends DatadogClientConfiguration.DatadogClientConfigurationDescriptor {
         public DatadogApiConfigurationDescriptor() {
             load();
         }
