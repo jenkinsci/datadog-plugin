@@ -25,4 +25,8 @@
         method="checkTraceConnectivity" with="agentHost,agentTraceCollectionPort"
     />
 
+    <f:entry title="Datadog Site" field="site">
+      <f:select/>
+    </f:entry>
+
 </j:jelly>

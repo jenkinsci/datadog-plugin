@@ -6,19 +6,22 @@ import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 import hudson.model.Action;
+import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
+
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogActionConverter;
-import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
+
+import static org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter.ignoreOldData;
 
 public class DatadogLinkAction implements Action {
 
     private final String url;
 
-    public DatadogLinkAction(BuildData buildData) { // ci.pipeline.url%3A"https%3A%2F%2Fgoogle.com"
+    public DatadogLinkAction(BuildData buildData, String siteName) {
         String query = String.format("ci_level:pipeline @ci.pipeline.name:\"%s\" @ci.pipeline.number:%s", buildData.getJobName(), buildData.getBuildNumber(""));
         String urlEncodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
-        this.url = String.format("https://app.datadoghq.com/ci/pipeline-executions?query=%s", urlEncodedQuery);
+        this.url = String.format("https://app.%s/ci/pipeline-executions?query=%s", siteName, urlEncodedQuery);
     }
 
     private DatadogLinkAction(String url) {
@@ -40,9 +43,9 @@ public class DatadogLinkAction implements Action {
         return url;
     }
 
-    public static final class ConverterImpl extends DatadogActionConverter<DatadogLinkAction> {
+    public static final class ConverterImpl extends DatadogConverter<DatadogLinkAction> {
         public ConverterImpl(XStream xs) {
-            super(new ConverterV1());
+            super(ignoreOldData(), new ConverterV1());
         }
     }
 

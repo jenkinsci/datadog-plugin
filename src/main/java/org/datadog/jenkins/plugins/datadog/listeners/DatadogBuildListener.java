@@ -41,11 +41,13 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import javax.annotation.Nonnull;
+import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
+import org.datadog.jenkins.plugins.datadog.configuration.DatadogClientConfiguration;
 import org.datadog.jenkins.plugins.datadog.events.BuildAbortedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildFinishedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildStartedEventImpl;
@@ -414,9 +416,13 @@ public class DatadogBuildListener extends RunListener<Run> {
                 return;
             }
 
-            DatadogGlobalConfiguration datadogGlobalConfiguration = DatadogUtilities.getDatadogGlobalDescriptor();
-            if (datadogGlobalConfiguration != null && datadogGlobalConfiguration.getEnableCiVisibility()) {
-                run.addAction(new DatadogLinkAction(buildData));
+            DatadogGlobalConfiguration datadogConfiguration = DatadogUtilities.getDatadogGlobalDescriptor();
+            if (datadogConfiguration != null && datadogConfiguration.getEnableCiVisibility()) {
+                DatadogClientConfiguration clientConfiguration = datadogConfiguration.getDatadogClientConfiguration();
+                String siteName = clientConfiguration.getSiteName();
+                if (StringUtils.isNotBlank(siteName)) {
+                    run.addAction(new DatadogLinkAction(buildData, siteName));
+                }
             }
 
             traceWriter.submitBuild(buildData, run);
