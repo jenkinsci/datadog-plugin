@@ -378,7 +378,7 @@ public class DatadogAgentClient implements DatadogClient {
         return new AgentTraceWriteStrategy(evpStrategy, apmStrategy, this::isEvpProxySupported);
     }
 
-    private boolean isEvpProxySupported() {
+    boolean isEvpProxySupported() {
         logger.info("Checking for EVP Proxy support in the Agent.");
         Set<String> supportedAgentEndpoints = fetchAgentSupportedEndpoints();
         return supportedAgentEndpoints.contains("/evp_proxy/v3/");
@@ -390,7 +390,7 @@ public class DatadogAgentClient implements DatadogClient {
      * @return a set of endpoints (if /info wasn't available, it will be empty)
      */
     @SuppressFBWarnings("REC_CATCH_EXCEPTION")
-    private Set<String> fetchAgentSupportedEndpoints() {
+    Set<String> fetchAgentSupportedEndpoints() {
         logger.fine("Fetching Agent info");
 
         String url = String.format("http://%s:%d/info", hostname, traceCollectionPort);
