@@ -26,16 +26,6 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.clients;
 
 import hudson.util.Secret;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 import net.sf.json.JSON;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -44,13 +34,24 @@ import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.logs.LogWriteStrategy;
 import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
 import org.datadog.jenkins.plugins.datadog.traces.write.Payload;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategyImpl;
 import org.datadog.jenkins.plugins.datadog.traces.write.Track;
+import org.datadog.jenkins.plugins.datadog.util.CircuitBreaker;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.logging.Logger;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * This class is used to collect all methods that has to do with transmitting
@@ -314,18 +315,92 @@ public class DatadogApiClient implements DatadogClient {
         httpClient.postAsynchronously(url, headers, "application/json", body);
     }
 
-    /**
-     * Posts a given payload to the Datadog Logs Intake, using the user configured apiKey.
-     *
-     * @param payload - A String containing a specific subset of a builds metadata.
-     * @return a boolean to signify the success or failure of the HTTP POST request.
-     */
-    public boolean sendLogs(String payload) {
-        if(logIntakeUrl == null || logIntakeUrl.isEmpty()){
-            logger.severe("Datadog Log Intake URL is not set properly");
-            throw new RuntimeException("Datadog Log Collection Port not set properly");
+    @Override
+    public LogWriteStrategy createLogWriteStrategy() {
+        return new ApiLogWriteStrategy(logIntakeUrl, apiKey, httpClient);
+    }
+
+    private static final class ApiLogWriteStrategy implements LogWriteStrategy {
+        private static final byte[] BEGIN_JSON_ARRAY = "[".getBytes(StandardCharsets.UTF_8);
+        private static final byte[] END_JSON_ARRAY = "]".getBytes(StandardCharsets.UTF_8);
+        private static final byte[] COMMA = ",".getBytes(StandardCharsets.UTF_8);
+
+        private final String logIntakeUrl;
+        private final Secret apiKey;
+        private final HttpClient httpClient;
+
+        private final CircuitBreaker<List<String>> circuitBreaker;
+
+        public ApiLogWriteStrategy(String logIntakeUrl, Secret apiKey, HttpClient httpClient) {
+            this.logIntakeUrl = logIntakeUrl;
+            this.apiKey = apiKey;
+            this.httpClient = httpClient;
+            this.circuitBreaker = new CircuitBreaker<>(
+                    this::doSend,
+                    this::fallback,
+                    this::handleError,
+                    100,
+                    CircuitBreaker.DEFAULT_MAX_HEALTH_CHECK_DELAY_MILLIS,
+                    CircuitBreaker.DEFAULT_DELAY_FACTOR);
         }
-        return postLogs(httpClient, logIntakeUrl, apiKey, payload);
+
+        @Override
+        public void send(List<String> logs) {
+            circuitBreaker.accept(logs);
+        }
+
+        private void doSend(List<String> payloads) throws Exception {
+            if (logIntakeUrl == null || logIntakeUrl.isEmpty()) {
+                logger.severe("Datadog Log Intake URL is not set properly");
+                return;
+            }
+
+            Map<String, String> headers = new HashMap<>();
+            headers.put("DD-API-KEY", Secret.toString(apiKey));
+            headers.put("Content-Encoding", "gzip");
+
+            ByteArrayOutputStream request = new ByteArrayOutputStream();
+            GZIPOutputStream compressedRequest = new GZIPOutputStream(request);
+            int uncompressedRequestLength = 0;
+
+            for (String payload : payloads) {
+                byte[] body = payload.getBytes(StandardCharsets.UTF_8);
+                if (body.length >= PAYLOAD_SIZE_LIMIT) {
+                    logger.severe("Dropping a log because payload size (" + body.length + ") exceeds the allowed limit of " + PAYLOAD_SIZE_LIMIT);
+                    continue;
+                }
+
+                if (uncompressedRequestLength + body.length + 1 >= PAYLOAD_SIZE_LIMIT) {
+                    compressedRequest.write(END_JSON_ARRAY);
+                    compressedRequest.close();
+                    httpClient.post(logIntakeUrl, headers, "application/json", request.toByteArray(), Function.identity());
+                    request = new ByteArrayOutputStream();
+                    compressedRequest = new GZIPOutputStream(request);
+                    uncompressedRequestLength = 0;
+                }
+
+                compressedRequest.write(uncompressedRequestLength == 0 ? BEGIN_JSON_ARRAY : COMMA);
+                compressedRequest.write(body);
+                uncompressedRequestLength += body.length + 1;
+            }
+
+            compressedRequest.write(END_JSON_ARRAY);
+            compressedRequest.close();
+            httpClient.post(logIntakeUrl, headers, "application/json", request.toByteArray(), Function.identity());
+        }
+
+        private void handleError(Exception e) {
+            DatadogUtilities.severe(logger, e, "Failed to post logs");
+        }
+
+        private void fallback(List<String> payloads) {
+            // cannot establish connection to agent, do nothing
+        }
+
+        @Override
+        public void close() {
+            // do nothing
+        }
     }
 
     @Override

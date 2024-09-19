@@ -26,10 +26,12 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog;
 
 import com.timgroup.statsd.ServiceCheck;
-import java.util.Map;
-import java.util.Set;
+import org.datadog.jenkins.plugins.datadog.logs.LogWriteStrategy;
 import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy;
+
+import java.util.Map;
+import java.util.Set;
 
 public interface DatadogClient {
 
@@ -82,12 +84,7 @@ public interface DatadogClient {
      */
     boolean serviceCheck(String name, Status status, String hostname, Map<String, Set<String>> tags);
 
-    /**
-     * Send log message.
-     * @param payload log payload to submit JSON object as String
-     * @return a boolean to signify the success or failure of the request.
-     */
-    boolean sendLogs(String payload);
+    LogWriteStrategy createLogWriteStrategy();
 
     TraceWriteStrategy createTraceWriteStrategy();
 

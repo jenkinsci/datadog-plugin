@@ -25,12 +25,12 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.clients;
 
-import java.util.Objects;
-import javax.annotation.Nullable;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
-import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
-import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.logs.LogWriterFactory;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
+
+import javax.annotation.Nullable;
+import java.util.Objects;
 
 public class ClientHolder {
     private static volatile DatadogClient CLIENT;
@@ -39,6 +39,7 @@ public class ClientHolder {
         if (!Objects.equals(CLIENT, client)) {
             CLIENT = client;
             TraceWriterFactory.onDatadogClientUpdate(client);
+            LogWriterFactory.onDatadogClientUpdate(client);
         }
     }
 

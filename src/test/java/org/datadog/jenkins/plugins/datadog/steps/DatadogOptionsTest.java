@@ -73,7 +73,7 @@ public class DatadogOptionsTest {
 
     private void assertLogs(final String expectedMessage, final boolean checkTraces) {
         boolean hasExpectedMessage = false;
-        List<JSONObject> logLines = stubClient.logLines;
+        List<JSONObject> logLines = stubClient.getLogLines();
         for(final JSONObject logLine : logLines) {
             if(checkTraces) {
                 Assert.assertNotNull(logLine.get("dd.trace_id"));
