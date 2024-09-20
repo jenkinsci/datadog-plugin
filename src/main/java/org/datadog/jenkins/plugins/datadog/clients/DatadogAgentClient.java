@@ -29,23 +29,6 @@ import com.timgroup.statsd.Event;
 import com.timgroup.statsd.NonBlockingStatsDClient;
 import com.timgroup.statsd.ServiceCheck;
 import com.timgroup.statsd.StatsDClient;
-import java.net.ConnectException;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.logging.Handler;
-import java.util.logging.Logger;
-import java.util.logging.SocketHandler;
-import javax.annotation.concurrent.GuardedBy;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
@@ -305,6 +288,10 @@ public class DatadogAgentClient implements DatadogClient {
 
     @Override
     public LogWriteStrategy createLogWriteStrategy() {
+        if (logCollectionPort == null) {
+            logger.severe("Datadog Log Collection Port is not set properly, logs will not be written to Datadog");
+            return LogWriteStrategy.NO_OP;
+        }
         return new AgentLogWriteStrategy(hostname, logCollectionPort);
     }
 

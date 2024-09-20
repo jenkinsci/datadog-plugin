@@ -317,6 +317,10 @@ public class DatadogApiClient implements DatadogClient {
 
     @Override
     public LogWriteStrategy createLogWriteStrategy() {
+        if (logIntakeUrl == null || logIntakeUrl.isEmpty()) {
+            logger.severe("Datadog Log Intake URL is not set properly, logs will not be written to Datadog");
+            return LogWriteStrategy.NO_OP;
+        }
         return new ApiLogWriteStrategy(logIntakeUrl, apiKey, httpClient);
     }
 
@@ -350,11 +354,6 @@ public class DatadogApiClient implements DatadogClient {
         }
 
         private void doSend(List<String> payloads) throws Exception {
-            if (logIntakeUrl == null || logIntakeUrl.isEmpty()) {
-                logger.severe("Datadog Log Intake URL is not set properly");
-                return;
-            }
-
             Map<String, String> headers = new HashMap<>();
             headers.put("DD-API-KEY", Secret.toString(apiKey));
             headers.put("Content-Encoding", "gzip");
