@@ -210,6 +210,11 @@
       <artifactId>support-log-formatter</artifactId>
       <version>1.2</version>
     </dependency>
+    <dependency>
+      <groupId>org.kohsuke</groupId>
+      <artifactId>access-modifier-suppressions</artifactId>
+      <version>${access-modifier-checker.version}</version>
+    </dependency>
   </dependencies>
 
   <build>

@@ -1,15 +1,13 @@
 package org.datadog.jenkins.plugins.datadog.publishers;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
+import hudson.ExtensionList;
 import hudson.PluginManager;
 import hudson.PluginManager.FailedPlugin;
 import hudson.PluginWrapper;
 import hudson.model.Project;
-import java.util.Arrays;
-import java.util.LinkedList;
+import hudson.model.UpdateSite;
 import jenkins.model.Jenkins;
+import jenkins.security.UpdateSiteWarningsMonitor;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
@@ -17,6 +15,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
+
+import java.util.*;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class DatadogJenkinsPublisherTest {
     private DatadogClientStub client;
@@ -66,10 +69,22 @@ public class DatadogJenkinsPublisherTest {
         addPlugin(false, false, false);
         addPlugin(false, true, false);
         addPlugin(false, true, false);
+
+        PluginWrapper dummyPlugin = mock(PluginWrapper.class);
+        List<UpdateSite.Warning> warnings = Collections.singletonList(null);
+        Map<PluginWrapper, List<UpdateSite.Warning>> warningsByPlugin = Collections.singletonMap(dummyPlugin, warnings);
+        UpdateSiteWarningsMonitor updateSiteWarningsMonitor = mock(UpdateSiteWarningsMonitor.class);
+        when(updateSiteWarningsMonitor.getActivePluginWarningsByPlugin()).thenReturn(warningsByPlugin);
+
         try(MockedStatic<Jenkins> jenkinsClass = Mockito.mockStatic(Jenkins.class)){
             jenkinsClass.when(Jenkins::getInstanceOrNull).thenReturn(jenkins);
             jenkinsClass.when(Jenkins::getInstance).thenReturn(jenkins);
-            queuePublisher.doRun();
+
+            try(MockedStatic<ExtensionList> extensionList = Mockito.mockStatic(ExtensionList.class)){
+                extensionList.when(() -> ExtensionList.lookupSingleton(UpdateSiteWarningsMonitor.class)).thenReturn(updateSiteWarningsMonitor);
+
+                queuePublisher.doRun();
+            }
         }
         final String[] expectedTags = new String[1];
         expectedTags[0] = "jenkins_url:dummy.hostname";
@@ -78,7 +93,6 @@ public class DatadogJenkinsPublisherTest {
         client.assertMetric("jenkins.plugin.failed", 3, hostname, expectedTags);
         client.assertMetric("jenkins.plugin.inactivate", 5, hostname, expectedTags);
         client.assertMetric("jenkins.plugin.withUpdate", 5, hostname, expectedTags);
-
-
+        client.assertMetric("jenkins.plugin.withWarning", 1, hostname, expectedTags);
     }
 }
