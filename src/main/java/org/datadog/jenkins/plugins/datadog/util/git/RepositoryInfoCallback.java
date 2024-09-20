@@ -1,15 +1,13 @@
 package org.datadog.jenkins.plugins.datadog.util.git;
 
 import hudson.remoting.VirtualChannel;
+import org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils;
+import org.eclipse.jgit.lib.*;
+import org.jenkinsci.plugins.gitclient.RepositoryCallback;
+
 import java.io.IOException;
 import java.util.Set;
 import java.util.logging.Logger;
-import org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.StoredConfig;
-import org.jenkinsci.plugins.gitclient.RepositoryCallback;
 
 /**
  * Returns the RepositoryInfo instance for a certain repository
@@ -24,14 +22,13 @@ public final class RepositoryInfoCallback implements RepositoryCallback<Reposito
     private static final long serialVersionUID = 1L;
 
     @Override
-    public RepositoryInfo invoke(Repository repository, VirtualChannel channel) throws IOException, InterruptedException {
+    public RepositoryInfo invoke(Repository repository, VirtualChannel channel) {
         try {
             String remoteName = getRemoteName(repository);
             String repoUrl = getRepoUrl(repository, remoteName);
             final String defaultBranch = getDefaultBranch(repository, remoteName);
-            String branch = GitInfoUtils.normalizeBranch(repository.getBranch()); // currently checked out branch
+            String branch = GitInfoUtils.normalizeBranch(getBranch(repository)); // currently checked out branch
             return new RepositoryInfo(repoUrl, defaultBranch, branch);
-
         } catch (Exception e) {
             LOGGER.fine("Unable to build RepositoryInfo. Error: " + e);
             return null;
@@ -66,12 +63,31 @@ public final class RepositoryInfoCallback implements RepositoryCallback<Reposito
         if (remoteHead != null && remoteHead.isSymbolic()) {
             return GitInfoUtils.normalizeBranch(remoteHead.getTarget().getName());
         }
-        if (repository.findRef("master") != null) {
+        if (repository.findRef("master") != null || repository.findRef("refs/remotes/origin/master") != null) {
             return "master";
         }
-        if (repository.findRef("main") != null) {
+        if (repository.findRef("main") != null || repository.findRef("refs/remotes/origin/main") != null) {
             return "main";
         }
         return null;
+    }
+
+    private static String getBranch(Repository repository) throws IOException {
+        String branch = repository.getBranch();
+        if (GitInfoUtils.isSha(branch)) {
+            // A detached HEAD is checked out.
+            // Iterate over available refs to see if any of them points to the checked out commit.
+            for (Ref ref : repository.getRefDatabase().getRefs()) {
+                String refName = ref.getName();
+                if (Constants.HEAD.equals(refName)) {
+                    continue;
+                }
+                ObjectId refObjectId = ref.getObjectId();
+                if (branch.equals(refObjectId.getName())) {
+                    return refName;
+                }
+            }
+        }
+        return branch;
     }
 }
