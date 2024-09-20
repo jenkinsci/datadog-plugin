@@ -365,12 +365,12 @@ public class DatadogApiClient implements DatadogClient {
 
             for (String payload : payloads) {
                 byte[] body = payload.getBytes(StandardCharsets.UTF_8);
-                if (body.length >= PAYLOAD_SIZE_LIMIT) {
+                if (body.length + 2 > PAYLOAD_SIZE_LIMIT) { // + 2 is for array beginning and end: [<payload>]
                     logger.severe("Dropping a log because payload size (" + body.length + ") exceeds the allowed limit of " + PAYLOAD_SIZE_LIMIT);
                     continue;
                 }
 
-                if (uncompressedRequestLength + body.length + 1 >= PAYLOAD_SIZE_LIMIT) {
+                if (uncompressedRequestLength + body.length + 2 > PAYLOAD_SIZE_LIMIT) { // + 2 is for comma and array end: ,<payload>]
                     compressedRequest.write(END_JSON_ARRAY);
                     compressedRequest.close();
                     httpClient.post(logIntakeUrl, headers, "application/json", request.toByteArray(), Function.identity());
