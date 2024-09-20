@@ -26,49 +26,9 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.EnvVars;
-import hudson.ExtensionList;
-import hudson.FilePath;
-import hudson.PluginManager;
-import hudson.PluginWrapper;
-import hudson.model.Actionable;
-import hudson.model.Computer;
-import hudson.model.Item;
-import hudson.model.Node;
-import hudson.model.Result;
-import hudson.model.Run;
-import hudson.model.TaskListener;
-import hudson.model.User;
+import hudson.*;
+import hudson.model.*;
 import hudson.model.labels.LabelAtom;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
-import java.nio.charset.Charset;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -82,21 +42,29 @@ import org.datadog.jenkins.plugins.datadog.traces.CITags;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.pipeline.StageStatus;
-import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
-import org.jenkinsci.plugins.workflow.actions.ErrorAction;
-import org.jenkinsci.plugins.workflow.actions.LabelAction;
-import org.jenkinsci.plugins.workflow.actions.NotExecutedNodeAction;
-import org.jenkinsci.plugins.workflow.actions.QueueItemAction;
-import org.jenkinsci.plugins.workflow.actions.StageAction;
-import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
-import org.jenkinsci.plugins.workflow.actions.TimingAction;
-import org.jenkinsci.plugins.workflow.actions.WarningAction;
+import org.jenkinsci.plugins.workflow.actions.*;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.io.*;
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
+import java.nio.charset.Charset;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class DatadogUtilities {
 
@@ -743,19 +711,29 @@ public class DatadogUtilities {
     }
 
     public static String getNodeHostname(@Nullable EnvVars envVars, @Nullable Computer computer) {
-        if (envVars != null) {
-            String ddHostname = envVars.get(DatadogGlobalConfiguration.DD_CI_HOSTNAME);
-            if (DatadogUtilities.isValidHostname(ddHostname)) {
-                return ddHostname;
-            }
-            String hostname = envVars.get("HOSTNAME");
-            if (DatadogUtilities.isValidHostname(hostname)) {
-                return hostname;
+        if (computer != null) {
+            try {
+                EnvVars computerEnvironment = computer.getEnvironment();
+                String computerEnvVarsHostname = getNodeHostname(computerEnvironment);
+                if (isValidHostname(computerEnvVarsHostname)) {
+                    return computerEnvVarsHostname;
+                }
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logException(logger, Level.FINE, "Interrupted while trying to get computer env vars", e);
+            } catch (Exception e) {
+                logException(logger, Level.FINE, "Error getting computer env vars", e);
             }
         }
 
+        String envVarsHostname = getNodeHostname(envVars);
+        if (isValidHostname(envVarsHostname)) {
+            return envVarsHostname;
+        }
+
         try {
-            if(computer != null) {
+            if (computer != null) {
                 String computerNodeName = DatadogUtilities.getNodeName(computer);
                 if (DatadogUtilities.isMainNode(computerNodeName)) {
                     String masterHostname = DatadogUtilities.getHostname(null);
@@ -772,9 +750,15 @@ public class DatadogUtilities {
                 Node node = computer.getNode();
                 if (node != null) {
                     FilePath rootPath = node.getRootPath();
-                    if (isUnix(rootPath)) {
-                        ShellCommandCallable hostnameCommand = new ShellCommandCallable(
-                                Collections.emptyMap(), HOSTNAME_CMD_TIMEOUT_MILLIS, "hostname", "-f");
+                    if (rootPath != null) {
+                        String[] command;
+                        if (isUnix(rootPath)) {
+                            command = new String[]{"hostname", "-f"};
+                        } else {
+                            command = new String[]{"hostname"};
+                        }
+
+                        ShellCommandCallable hostnameCommand = new ShellCommandCallable(Collections.emptyMap(), HOSTNAME_CMD_TIMEOUT_MILLIS, command);
                         String shellHostname = rootPath.act(hostnameCommand).trim();
                         if (DatadogUtilities.isValidHostname(shellHostname)) {
                             return shellHostname;
@@ -782,12 +766,26 @@ public class DatadogUtilities {
                     }
                 }
             }
-        } catch (InterruptedException e){
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             logException(logger, Level.FINE, "Interrupted while trying to extract hostname from StepContext.", e);
 
-        } catch (Exception e){
+        } catch (Exception e) {
             logException(logger, Level.FINE, "Unable to get hostname for node " + computer.getName(), e);
+        }
+        return null;
+    }
+
+    private static String getNodeHostname(@Nullable EnvVars envVars) {
+        if (envVars != null) {
+            String ddHostname = envVars.get(DatadogGlobalConfiguration.DD_CI_HOSTNAME);
+            if (DatadogUtilities.isValidHostname(ddHostname)) {
+                return ddHostname;
+            }
+            String hostname = envVars.get("HOSTNAME");
+            if (DatadogUtilities.isValidHostname(hostname)) {
+                return hostname;
+            }
         }
         return null;
     }
