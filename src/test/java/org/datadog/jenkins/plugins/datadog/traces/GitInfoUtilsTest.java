@@ -28,4 +28,16 @@ public class GitInfoUtilsTest {
         assertTrue(GitInfoUtils.isSha("f8d01f9626b324eb206c5544fceaadb459dfd93a"));
         assertTrue(GitInfoUtils.isSha("F8D01F9626B324EB206C5544FCEAADB459DFD93A"));
     }
+
+    @Test
+    public void testNormalizeBranch() {
+        Assert.assertNull(GitInfoUtils.normalizeBranch(null));
+        Assert.assertNull(GitInfoUtils.normalizeBranch(""));
+        Assert.assertNull(GitInfoUtils.normalizeBranch("tags/v1.0.0"));
+        Assert.assertEquals("my-branch", GitInfoUtils.normalizeBranch("my-branch"));
+        Assert.assertEquals("my-branch", GitInfoUtils.normalizeBranch("/my-branch"));
+        Assert.assertEquals("my-branch", GitInfoUtils.normalizeBranch("origin/my-branch"));
+        Assert.assertEquals("my-branch", GitInfoUtils.normalizeBranch("refs/heads/my-branch"));
+        Assert.assertEquals("my-branch", GitInfoUtils.normalizeBranch("refs/remotes/origin/my-branch"));
+    }
 }
