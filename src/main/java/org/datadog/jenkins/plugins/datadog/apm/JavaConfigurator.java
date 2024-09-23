@@ -4,6 +4,11 @@ import hudson.FilePath;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.util.Secret;
+import jenkins.model.Jenkins;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.apm.signature.SignatureVerifier;
+import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,10 +22,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import jenkins.model.Jenkins;
-import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.apm.signature.SignatureVerifier;
-import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
 
 final class JavaConfigurator implements TracerConfigurator {
 
@@ -33,9 +34,6 @@ final class JavaConfigurator implements TracerConfigurator {
     private static final String TRACER_JAR_CACHE_TTL_ENV_VAR = "DATADOG_JENKINS_PLUGIN_TRACER_JAR_CACHE_TTL_MINUTES";
     private static final int DEFAULT_TRACER_JAR_CACHE_TTL_MINUTES = 60 * 12;
     private static final int TRACER_DOWNLOAD_TIMEOUT_MILLIS = 60_000;
-    private static final String DATADOG_DISTRIBUTION_HOST = "dtdg.co";
-    private static final String MAVEN_CENTRAL_HOST = "repo1.maven.org";
-    private static final String DATADOG_AGENT_MAVEN_DISTRIBUTION_PATH = "/maven2/com/datadoghq/dd-java-agent/";
 
     private final HttpClient httpClient = new HttpClient(TRACER_DOWNLOAD_TIMEOUT_MILLIS);
 
@@ -132,24 +130,10 @@ final class JavaConfigurator implements TracerConfigurator {
         URL url;
         try {
             url = new URL(distributionUrl);
+            return distributionUrl;
         } catch (MalformedURLException e) {
             throw new IllegalArgumentException("Error while parsing tracer distribution URL: " + distributionUrl, e);
         }
-
-        String host = url.getHost();
-        if (DATADOG_DISTRIBUTION_HOST.equals(host)) {
-            return distributionUrl;
-        }
-
-        if (!MAVEN_CENTRAL_HOST.equals(host)) {
-            throw new IllegalArgumentException("Illegal tracer distribution host: " + host + " (" + distributionUrl + ")");
-        }
-
-        String path = url.getPath();
-        if (!path.startsWith(DATADOG_AGENT_MAVEN_DISTRIBUTION_PATH)) {
-            throw new IllegalArgumentException("Illegal tracer distribution path: " + path + " (" + distributionUrl + ")");
-        }
-        return distributionUrl;
     }
 
     private static Map<String, String> getEnvVariables(DatadogTracerJobProperty<?> tracerConfig,
