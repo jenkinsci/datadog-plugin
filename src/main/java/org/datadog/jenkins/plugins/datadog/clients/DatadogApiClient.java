@@ -138,7 +138,7 @@ public class DatadogApiClient implements DatadogClient {
     }
 
     @SuppressFBWarnings("DLS_DEAD_LOCAL_STORE")
-    private static boolean validateWebhookIntakeConnection(String webhookIntakeUrl, Secret apiKey) {
+    public static boolean validateWebhookIntakeConnection(String webhookIntakeUrl, Secret apiKey) {
         Map<String, String> headers = new HashMap<>();
         headers.put("DD-API-KEY", Secret.toString(apiKey));
 
@@ -157,7 +157,7 @@ public class DatadogApiClient implements DatadogClient {
         }
     }
 
-    private static boolean validateLogIntakeConnection(String logsIntakeUrl, Secret apiKey) {
+    public static boolean validateLogIntakeConnection(String logsIntakeUrl, Secret apiKey) {
         String payload = "{\"message\":\"[datadog-plugin] Check connection\", " +
                 "\"ddsource\":\"Jenkins\", \"service\":\"Jenkins\", " +
                 "\"hostname\":\"" + DatadogUtilities.getHostname(null) + "\"}";

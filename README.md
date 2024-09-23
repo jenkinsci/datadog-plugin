@@ -157,7 +157,11 @@ The environment variables with the `DATADOG_JENKINS_PLUGIN` namespace take prece
 
 #### Logging
 
-Logging is done by utilizing the `java.util.Logger`, which follows the [best logging practices for Jenkins][6]. To obtain logs, follow the directions in the [Jenkins logging documentation][6]. When adding a logger, all Datadog plugin functions start with `org.datadog.jenkins.plugins.datadog.` and the function name you are after should autopopulate. As of this writing, the only function available was `org.datadog.jenkins.plugins.datadog.listeners.DatadogBuildListener`.
+Logging is done by utilizing the `java.util.Logger`, which follows the [best logging practices for Jenkins][6].
+
+The plugin automatically registers a custom logger named "Datadog Plugin Logs" that writes the plugin's logs with level `INFO` or higher.
+The custom logger registration can be disabled by setting the `DD_JENKINS_PLUGIN_LOG_RECORDER_ENABLED` environment variable to `false`.
+If you with to see the plugin logs with maximum detail, manually change the level of the custom logger to `ALL`.
 
 ## Customization
 
@@ -421,6 +425,23 @@ NOTE: As mentioned in the [job customization](#job-customization) section, there
 ### Service checks
 
 Build status `jenkins.job.status` with the default tags: : `jenkins_url`, `job`, `node`, `user_id`
+
+## Troubleshooting
+
+### Generating a diagnostic flare.
+
+Plugin diagnostic flare contains data that can be used to diagnose problems with the plugin.
+At the time of this writing the flare includes the following:
+- plugin configuration in XML format
+- plugin connectivity checks results
+- runtime data (current versions of JVM, Jenkins Core, plugin)
+- recent exceptions that happened inside the plugin code
+- plugin logs with level `INFO` and above, and recent Jenkins controller logs
+- current stacks of the threads of the Jenkins controller process
+- environment variables starting with `DD_` or `DATADOG_` (except API key and/or APP key)
+
+To generate a flare go to the `Manage Jenkins` page, find the `Troubleshooting` section, and select `Datadog`.
+Click on `Download Diagnostic Flare` (requires "MANAGE" permissions) to generate the flare.
 
 ## Issue tracking
 
