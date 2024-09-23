@@ -6,6 +6,7 @@ import jenkins.model.Jenkins;
 
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.logging.Formatter;
@@ -31,7 +32,7 @@ public class JenkinsLogsFlare implements FlareContributor {
     public void writeFileContents(OutputStream out) {
         // Print writer is not closed intentionally, to avoid closing out.
         // Auto-flush set to true ensures everything is witten
-        PrintWriter printWriter = new PrintWriter(out, true);
+        PrintWriter printWriter = new PrintWriter(out, true, StandardCharsets.UTF_8);
 
         List<LogRecord> logRecords = Jenkins.logRecords;
         ListIterator<LogRecord> it = logRecords.listIterator(logRecords.size());

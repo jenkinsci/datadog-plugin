@@ -11,6 +11,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
@@ -62,7 +63,7 @@ public class PluginLogsFlare implements FlareContributor {
     public void writeFileContents(OutputStream out) {
         // Print writer is not closed intentionally, to avoid closing out.
         // Auto-flush set to true ensures everything is witten
-        PrintWriter printWriter = new PrintWriter(out, true);
+        PrintWriter printWriter = new PrintWriter(out, true, StandardCharsets.UTF_8);
 
         Jenkins jenkins = Jenkins.get();
         LogRecorderManager logRecorderManager = jenkins.getLog();

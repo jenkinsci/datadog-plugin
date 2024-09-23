@@ -27,7 +27,7 @@ public class RuntimeInfoFlare implements FlareContributor {
         payload.put("os-architecture", System.getProperty("os.arch"));
         payload.put("os-name", System.getProperty("os.name"));
         payload.put("os-version", System.getProperty("os.version"));
-        payload.put("jenkins-version", Jenkins.getVersion().toString());
+        payload.put("jenkins-version", String.valueOf(Jenkins.getVersion()));
         payload.put("plugin-version", DatadogUtilities.getDatadogPluginVersion());
 
         String payloadString = payload.toString(2);

@@ -16,6 +16,7 @@ import org.kohsuke.stapler.interceptor.RequirePOST;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.logging.Level;
@@ -99,7 +100,7 @@ public class DatadogPluginManagement extends ManagementLink {
 
                     zipOut.closeEntry();
                     zipOut.putNextEntry(new ZipEntry(contributor.getFilename() + ".error"));
-                    zipOut.write(ExceptionUtils.getStackTrace(e).getBytes());
+                    zipOut.write(ExceptionUtils.getStackTrace(e).getBytes(StandardCharsets.UTF_8));
                 } finally {
                     zipOut.closeEntry();
                 }
