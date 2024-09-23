@@ -127,9 +127,8 @@ final class JavaConfigurator implements TracerConfigurator {
     }
 
     private String validateUserSuppliedTracerUrl(String distributionUrl) {
-        URL url;
         try {
-            url = new URL(distributionUrl);
+            new URL(distributionUrl);
             return distributionUrl;
         } catch (MalformedURLException e) {
             throw new IllegalArgumentException("Error while parsing tracer distribution URL: " + distributionUrl, e);
