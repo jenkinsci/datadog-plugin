@@ -711,25 +711,26 @@ public class DatadogUtilities {
     }
 
     public static String getNodeHostname(@Nullable EnvVars envVars, @Nullable Computer computer) {
-        if (computer != null) {
-            try {
-                EnvVars computerEnvironment = computer.getEnvironment();
-                String computerEnvVarsHostname = getNodeHostname(computerEnvironment);
-                if (isValidHostname(computerEnvVarsHostname)) {
-                    return computerEnvVarsHostname;
-                }
+        EnvVars computerEnv = getEnvironment(computer);
 
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                logException(logger, Level.FINE, "Interrupted while trying to get computer env vars", e);
-            } catch (Exception e) {
-                logException(logger, Level.FINE, "Error getting computer env vars", e);
-            }
+        String computerDDHostname = computerEnv != null ? computerEnv.get(DatadogGlobalConfiguration.DD_CI_HOSTNAME) : null;
+        if (DatadogUtilities.isValidHostname(computerDDHostname)) {
+            return computerDDHostname;
         }
 
-        String envVarsHostname = getNodeHostname(envVars);
-        if (isValidHostname(envVarsHostname)) {
-            return envVarsHostname;
+        String ddHostname = envVars != null ? envVars.get(DatadogGlobalConfiguration.DD_CI_HOSTNAME) : null;
+        if (DatadogUtilities.isValidHostname(ddHostname)) {
+            return ddHostname;
+        }
+
+        String computerHostname = computerEnv != null ? computerEnv.get("HOSTNAME") : null;
+        if (DatadogUtilities.isValidHostname(computerHostname)) {
+            return computerHostname;
+        }
+
+        String hostname = envVars != null ? envVars.get("HOSTNAME") : null;
+        if (DatadogUtilities.isValidHostname(hostname)) {
+            return hostname;
         }
 
         try {
@@ -776,15 +777,15 @@ public class DatadogUtilities {
         return null;
     }
 
-    private static String getNodeHostname(@Nullable EnvVars envVars) {
-        if (envVars != null) {
-            String ddHostname = envVars.get(DatadogGlobalConfiguration.DD_CI_HOSTNAME);
-            if (DatadogUtilities.isValidHostname(ddHostname)) {
-                return ddHostname;
-            }
-            String hostname = envVars.get("HOSTNAME");
-            if (DatadogUtilities.isValidHostname(hostname)) {
-                return hostname;
+    private static EnvVars getEnvironment(Computer computer) {
+        if (computer != null) {
+            try {
+                return computer.getEnvironment();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logException(logger, Level.FINE, "Interrupted while trying to get computer env vars", e);
+            } catch (Exception e) {
+                logException(logger, Level.FINE, "Error getting computer env vars", e);
             }
         }
         return null;
