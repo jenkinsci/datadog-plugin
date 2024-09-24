@@ -28,6 +28,7 @@ final class JavaConfigurator implements TracerConfigurator {
     private static final Logger LOGGER = Logger.getLogger(JavaConfigurator.class.getName());
 
     private static final String TRACER_DISTRIBUTION_URL_ENV_VAR = "DATADOG_JENKINS_PLUGIN_TRACER_DISTRIBUTION_URL";
+    private static final String DATADOG_PUBLIC_KEY_ENV_VAR = "DATADOG_JENKINS_PLUGIN_DATADOG_PUBLIC_KEY";
     private static final String DEFAULT_TRACER_DISTRIBUTION_URL = "https://dtdg.co/latest-java-tracer";
     private static final String TRACER_FILE_NAME = "dd-java-agent.jar";
     private static final String TRACER_IGNORE_JENKINS_PROXY_ENV_VAR = "DATADOG_JENKINS_PLUGIN_TRACER_IGNORE_JENKINS_PROXY";
@@ -99,7 +100,7 @@ final class JavaConfigurator implements TracerConfigurator {
     }
 
     private byte[] getTracerSignaturePublicKey(DatadogTracerJobProperty<?> tracerConfig) {
-        return getSetting(tracerConfig, TRACER_DISTRIBUTION_URL_ENV_VAR, SignatureVerifier.DATADOG_PUBLIC_KEY.getBytes(StandardCharsets.UTF_8), String::getBytes);
+        return getSetting(tracerConfig, DATADOG_PUBLIC_KEY_ENV_VAR, SignatureVerifier.DATADOG_PUBLIC_KEY.getBytes(StandardCharsets.UTF_8), String::getBytes);
     }
 
     private <T> T getSetting(DatadogTracerJobProperty<?> tracerConfig, String envVariableName, T defaultValue, Function<String, T> parser) {
