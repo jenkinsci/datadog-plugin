@@ -20,6 +20,11 @@ public class DatadogConfigFlare implements FlareContributor {
     }
 
     @Override
+    public int order() {
+        return 1;
+    }
+
+    @Override
     public String getDescription() {
         return "Plugin configuration";
     }

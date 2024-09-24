@@ -16,6 +16,11 @@ import java.nio.charset.StandardCharsets;
 public class ConnectivityChecksFlare implements FlareContributor {
 
     @Override
+    public int order() {
+        return 2;
+    }
+
+    @Override
     public String getDescription() {
         return "Connectivity check results";
     }

@@ -24,6 +24,11 @@ public class JenkinsLogsFlare implements FlareContributor {
     private static final Formatter LOG_FORMATTER = new SupportLogFormatter();
 
     @Override
+    public int order() {
+        return 6;
+    }
+
+    @Override
     public String getDescription() {
         return "Recent Jenkins controller logs";
     }

@@ -13,7 +13,7 @@
           <f:entry field="selectedContributors">
             <j:forEach var="contributor" items="${it.contributors}">
               <div>
-                <f:toggleSwitch title="${contributor.description}" checked="true" />
+                <f:toggleSwitch title="${contributor.description}" checked="${contributor.enabledByDefault}" />
               </div>
             </j:forEach>
           </f:entry>

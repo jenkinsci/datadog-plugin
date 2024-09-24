@@ -17,6 +17,11 @@ import java.util.concurrent.BlockingQueue;
 public class ExceptionsFlare implements FlareContributor {
 
     @Override
+    public int order() {
+        return 4;
+    }
+
+    @Override
     public String getDescription() {
         return "Recent exceptions";
     }

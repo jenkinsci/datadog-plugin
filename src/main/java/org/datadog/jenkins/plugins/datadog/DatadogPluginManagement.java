@@ -17,12 +17,12 @@ import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -34,13 +34,14 @@ public class DatadogPluginManagement extends ManagementLink {
 
     private static final Logger LOGGER = Logger.getLogger(DatadogPluginManagement.class.getName());
 
-    private final ExtensionList<FlareContributor> contributors;
+    private final List<FlareContributor> contributors;
 
     public DatadogPluginManagement() {
-        contributors = ExtensionList.lookup(FlareContributor.class);
+        contributors = new ArrayList<>(ExtensionList.lookup(FlareContributor.class));
+        contributors.sort(Comparator.comparingInt(FlareContributor::order));
     }
 
-    public ExtensionList<FlareContributor> getContributors() {
+    public List<FlareContributor> getContributors() {
         return contributors;
     }
 
@@ -99,6 +100,10 @@ public class DatadogPluginManagement extends ManagementLink {
                 writeDiagnosticFlare(selectedContributors, out);
             }
 
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOGGER.severe("Interrupted while waiting for JFR recording to finish");
+
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to generate Datadog plugin flare", e);
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -118,7 +123,7 @@ public class DatadogPluginManagement extends ManagementLink {
         return selectedContributors;
     }
 
-    private void writeDiagnosticFlare(List<FlareContributor> selectedContributors, OutputStream out) throws IOException {
+    private void writeDiagnosticFlare(List<FlareContributor> selectedContributors, OutputStream out) throws Exception {
         try (ZipOutputStream zipOut = new ZipOutputStream(out)) {
             for (FlareContributor contributor : selectedContributors) {
                 zipOut.putNextEntry(new ZipEntry(contributor.getFilename()));

@@ -11,6 +11,11 @@ import java.util.Map;
 public class ThreadDumpFlare implements FlareContributor {
 
     @Override
+    public int order() {
+        return 7;
+    }
+
+    @Override
     public String getDescription() {
         return "Thread stack traces";
     }

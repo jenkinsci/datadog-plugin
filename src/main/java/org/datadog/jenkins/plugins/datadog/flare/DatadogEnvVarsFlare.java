@@ -11,6 +11,11 @@ import java.util.Properties;
 public class DatadogEnvVarsFlare implements FlareContributor {
 
     @Override
+    public int order() {
+        return 3;
+    }
+
+    @Override
     public String getDescription() {
         return "DD_ and DATADOG_ environment variables";
     }

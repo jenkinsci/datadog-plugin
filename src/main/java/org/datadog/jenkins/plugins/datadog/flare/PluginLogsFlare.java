@@ -55,6 +55,11 @@ public class PluginLogsFlare implements FlareContributor {
     }
 
     @Override
+    public int order() {
+        return 5;
+    }
+
+    @Override
     public String getDescription() {
         return "Plugin logs";
     }
