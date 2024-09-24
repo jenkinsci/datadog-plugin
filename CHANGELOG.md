@@ -1,5 +1,11 @@
 Changes
 =======
+## 7.2.1 / 2024-09-24
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-7.2.0...datadog-7.2.1
+
+* [Fixed] Fix custom tracer JAR verification. See [#459](https://github.com/jenkinsci/datadog-plugin/pull/459).
+
 ## 7.2.0 / 2024-09-24
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-7.1.3...datadog-7.2.0
