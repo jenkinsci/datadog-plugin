@@ -24,6 +24,11 @@ public class JenkinsLogsFlare implements FlareContributor {
     private static final Formatter LOG_FORMATTER = new SupportLogFormatter();
 
     @Override
+    public String getDescription() {
+        return "Recent Jenkins controller logs";
+    }
+
+    @Override
     public String getFilename() {
         return "jenkins.log";
     }
@@ -32,7 +37,7 @@ public class JenkinsLogsFlare implements FlareContributor {
     public void writeFileContents(OutputStream out) {
         // Print writer is not closed intentionally, to avoid closing out.
         // Auto-flush set to true ensures everything is witten
-        PrintWriter printWriter = new PrintWriter(out, true, StandardCharsets.UTF_8);
+        PrintWriter printWriter = new PrintWriter(out, false, StandardCharsets.UTF_8);
 
         List<LogRecord> logRecords = Jenkins.logRecords;
         ListIterator<LogRecord> it = logRecords.listIterator(logRecords.size());
@@ -41,5 +46,7 @@ public class JenkinsLogsFlare implements FlareContributor {
             String formatted = LOG_FORMATTER.format(logRecord);
             printWriter.print(formatted);
         }
+
+        printWriter.flush();
     }
 }

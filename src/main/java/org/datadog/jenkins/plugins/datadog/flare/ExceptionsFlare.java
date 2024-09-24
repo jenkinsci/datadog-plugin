@@ -17,6 +17,11 @@ import java.util.concurrent.BlockingQueue;
 public class ExceptionsFlare implements FlareContributor {
 
     @Override
+    public String getDescription() {
+        return "Recent exceptions";
+    }
+
+    @Override
     public String getFilename() {
         return "exceptions.txt";
     }
@@ -25,7 +30,7 @@ public class ExceptionsFlare implements FlareContributor {
     public void writeFileContents(OutputStream out) {
         // Print writer is not closed intentionally, to avoid closing out.
         // Auto-flush set to true ensures everything is witten
-        PrintWriter printWriter = new PrintWriter(out, true, StandardCharsets.UTF_8);
+        PrintWriter printWriter = new PrintWriter(out, false, StandardCharsets.UTF_8);
 
         DateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS Z");
         BlockingQueue<Pair<Date, Throwable>> exceptionsBuffer = DatadogUtilities.getExceptionsBuffer();
@@ -34,5 +39,7 @@ public class ExceptionsFlare implements FlareContributor {
             Throwable exception = p.getValue();
             printWriter.println(dateFormatter.format(date) + ": " + ExceptionUtils.getStackTrace(exception));
         }
+
+        printWriter.flush();
     }
 }

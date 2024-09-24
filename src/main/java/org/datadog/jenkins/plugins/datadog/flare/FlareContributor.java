@@ -5,6 +5,8 @@ import java.io.OutputStream;
 
 public interface FlareContributor {
 
+    String getDescription();
+
     String getFilename();
 
     void writeFileContents(OutputStream out) throws IOException;

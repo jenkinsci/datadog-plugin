@@ -20,6 +20,11 @@ public class DatadogConfigFlare implements FlareContributor {
     }
 
     @Override
+    public String getDescription() {
+        return "Plugin configuration";
+    }
+
+    @Override
     public String getFilename() {
         return "DatadogGlobalConfiguration.xml";
     }

@@ -6,9 +6,20 @@
 
     <l:hasAdministerOrManage>
       <f:form method="post" action="downloadDiagnosticFlare" name="downloadDiagnosticFlare">
-          <f:block>
-            <f:submit name="downloadDiagnosticFlare" value="Download Diagnostic Flare"/>
-          </f:block>
+        <f:panel>
+          <h3>Diagnostic Flare</h3>
+          <p>A flare allows you to gather necessary troubleshooting information for the Datadog support team.</p>
+
+          <f:entry field="selectedContributors">
+            <j:forEach var="contributor" items="${it.contributors}">
+              <div>
+                <f:toggleSwitch title="${contributor.description}" checked="true" />
+              </div>
+            </j:forEach>
+          </f:entry>
+
+          <f:submit name="downloadDiagnosticFlare" value="Download"/>
+        </f:panel>
       </f:form>
     </l:hasAdministerOrManage>
 

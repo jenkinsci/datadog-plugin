@@ -11,6 +11,11 @@ import java.util.Map;
 public class ThreadDumpFlare implements FlareContributor {
 
     @Override
+    public String getDescription() {
+        return "Thread stack traces";
+    }
+
+    @Override
     public String getFilename() {
         return "thread-dump.txt";
     }
@@ -19,7 +24,7 @@ public class ThreadDumpFlare implements FlareContributor {
     public void writeFileContents(OutputStream out) {
         // Print writer is not closed intentionally, to avoid closing out.
         // Auto-flush set to true ensures everything is witten
-        PrintWriter printWriter = new PrintWriter(out, true, StandardCharsets.UTF_8);
+        PrintWriter printWriter = new PrintWriter(out, false, StandardCharsets.UTF_8);
 
         Map<Thread, StackTraceElement[]> allStackTraces = Thread.getAllStackTraces();
         for (Map.Entry<Thread, StackTraceElement[]> entry : allStackTraces.entrySet()) {
@@ -32,5 +37,7 @@ public class ThreadDumpFlare implements FlareContributor {
             }
             printWriter.println();
         }
+
+        printWriter.flush();
     }
 }

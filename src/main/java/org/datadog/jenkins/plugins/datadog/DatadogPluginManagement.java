@@ -7,18 +7,23 @@ import hudson.ExtensionList;
 import hudson.model.ManagementLink;
 import hudson.security.Permission;
 import jenkins.model.Jenkins;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.datadog.jenkins.plugins.datadog.flare.FlareContributor;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
@@ -28,6 +33,16 @@ import java.util.zip.ZipOutputStream;
 public class DatadogPluginManagement extends ManagementLink {
 
     private static final Logger LOGGER = Logger.getLogger(DatadogPluginManagement.class.getName());
+
+    private final ExtensionList<FlareContributor> contributors;
+
+    public DatadogPluginManagement() {
+        contributors = ExtensionList.lookup(FlareContributor.class);
+    }
+
+    public ExtensionList<FlareContributor> getContributors() {
+        return contributors;
+    }
 
     @CheckForNull
     @Override
@@ -78,8 +93,10 @@ public class DatadogPluginManagement extends ManagementLink {
 
             response.setContentType("application/octet-stream");
             response.setHeader("Content-Disposition", String.format("attachment; filename=dd-jenkins-plugin-flare-%s.zip", formattedTimestamp));
+
             try (OutputStream out = response.getOutputStream()) {
-                writeDiagnosticFlare(out);
+                List<FlareContributor> selectedContributors = getSelectedContributors(request);
+                writeDiagnosticFlare(selectedContributors, out);
             }
 
         } catch (Exception e) {
@@ -88,10 +105,22 @@ public class DatadogPluginManagement extends ManagementLink {
         }
     }
 
-    private void writeDiagnosticFlare(OutputStream out) throws IOException {
-        ExtensionList<FlareContributor> contributors = ExtensionList.lookup(FlareContributor.class);
+    private List<FlareContributor> getSelectedContributors(StaplerRequest request) throws ServletException {
+        JSONObject form = request.getSubmittedForm();
+        JSONArray selectedUiControls = form.getJSONArray("selectedContributors");
+
+        List<FlareContributor> selectedContributors = new ArrayList<>();
+        for (int i = 0; i < selectedUiControls.size(); i++) {
+            if (selectedUiControls.getBoolean(i)) {
+                selectedContributors.add(contributors.get(i));
+            }
+        }
+        return selectedContributors;
+    }
+
+    private void writeDiagnosticFlare(List<FlareContributor> selectedContributors, OutputStream out) throws IOException {
         try (ZipOutputStream zipOut = new ZipOutputStream(out)) {
-            for (FlareContributor contributor : contributors) {
+            for (FlareContributor contributor : selectedContributors) {
                 zipOut.putNextEntry(new ZipEntry(contributor.getFilename()));
                 try {
                     contributor.writeFileContents(zipOut);

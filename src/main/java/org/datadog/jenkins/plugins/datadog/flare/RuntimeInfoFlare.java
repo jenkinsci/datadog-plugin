@@ -14,6 +14,11 @@ import java.nio.charset.StandardCharsets;
 public class RuntimeInfoFlare implements FlareContributor {
 
     @Override
+    public String getDescription() {
+        return "Runtime information (versions of JDK, Jenkins, plugin)";
+    }
+
+    @Override
     public String getFilename() {
         return "runtime-info.json";
     }

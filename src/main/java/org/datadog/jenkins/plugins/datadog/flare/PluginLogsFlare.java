@@ -55,6 +55,11 @@ public class PluginLogsFlare implements FlareContributor {
     }
 
     @Override
+    public String getDescription() {
+        return "Plugin logs";
+    }
+
+    @Override
     public String getFilename() {
         return "plugin.log";
     }
@@ -63,7 +68,7 @@ public class PluginLogsFlare implements FlareContributor {
     public void writeFileContents(OutputStream out) {
         // Print writer is not closed intentionally, to avoid closing out.
         // Auto-flush set to true ensures everything is witten
-        PrintWriter printWriter = new PrintWriter(out, true, StandardCharsets.UTF_8);
+        PrintWriter printWriter = new PrintWriter(out, false, StandardCharsets.UTF_8);
 
         Jenkins jenkins = Jenkins.get();
         LogRecorderManager logRecorderManager = jenkins.getLog();
@@ -81,5 +86,7 @@ public class PluginLogsFlare implements FlareContributor {
             String formatted = LOG_FORMATTER.format(logRecord);
             printWriter.print(formatted);
         }
+
+        printWriter.flush();
     }
 }
