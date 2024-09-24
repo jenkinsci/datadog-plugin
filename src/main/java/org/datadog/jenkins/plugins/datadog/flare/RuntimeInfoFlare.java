@@ -21,6 +21,7 @@ public class RuntimeInfoFlare implements FlareContributor {
     @Override
     public void writeFileContents(OutputStream out) throws IOException {
         JSONObject payload = new JSONObject();
+        payload.put("hostname", DatadogUtilities.getHostname(null));
         payload.put("java-runtime-name", System.getProperty("java.runtime.name"));
         payload.put("java-version", System.getProperty("java.version"));
         payload.put("java-vendor", System.getProperty("java.vendor"));
