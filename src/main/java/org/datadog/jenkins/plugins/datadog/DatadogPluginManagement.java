@@ -102,7 +102,7 @@ public class DatadogPluginManagement extends ManagementLink {
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            LOGGER.severe("Interrupted while waiting for JFR recording to finish");
+            LOGGER.severe("Interrupted while generating Datadog plugin flare");
 
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to generate Datadog plugin flare", e);

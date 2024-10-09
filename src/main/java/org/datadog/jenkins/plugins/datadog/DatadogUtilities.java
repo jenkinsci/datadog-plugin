@@ -989,7 +989,7 @@ public class DatadogUtilities {
                 return Integer.parseInt(bufferCapacityString);
             } catch (NumberFormatException e) {
                 severe(logger, e, EXCEPTIONS_BUFFER_CAPACITY_ENV_VAR + " environment variable has invalid value");
-                return 0;
+                return DEFAULT_EXCEPTIONS_BUFFER_CAPACITY;
             }
         }
     }

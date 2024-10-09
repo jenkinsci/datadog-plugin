@@ -161,7 +161,7 @@ Logging is done by utilizing the `java.util.Logger`, which follows the [best log
 
 The plugin automatically registers a custom logger named "Datadog Plugin Logs" that writes the plugin's logs with level `INFO` or higher.
 The custom logger registration can be disabled by setting the `DD_JENKINS_PLUGIN_LOG_RECORDER_ENABLED` environment variable to `false`.
-If you with to see the plugin logs with maximum detail, manually change the level of the custom logger to `ALL`.
+If you want to see the plugin logs with maximum detail, manually change the level of the custom logger to `ALL`.
 
 ## Customization
 
