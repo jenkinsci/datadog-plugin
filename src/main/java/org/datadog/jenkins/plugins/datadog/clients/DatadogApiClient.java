@@ -359,7 +359,7 @@ public class DatadogApiClient implements DatadogClient {
             headers.put("Content-Encoding", "gzip");
 
             ByteArrayOutputStream request = new ByteArrayOutputStream();
-            GZIPOutputStream compressedRequest = new GZIPOutputStream(request);
+            GZIPOutputStream gzip = new GZIPOutputStream(request);
             int uncompressedRequestLength = 0;
 
             for (String payload : payloads) {
@@ -370,21 +370,21 @@ public class DatadogApiClient implements DatadogClient {
                 }
 
                 if (uncompressedRequestLength + body.length + 2 > PAYLOAD_SIZE_LIMIT) { // + 2 is for comma and array end: ,<payload>]
-                    compressedRequest.write(END_JSON_ARRAY);
-                    compressedRequest.close();
+                    gzip.write(END_JSON_ARRAY);
+                    gzip.close();
                     httpClient.post(logIntakeUrl, headers, "application/json", request.toByteArray(), Function.identity());
                     request = new ByteArrayOutputStream();
-                    compressedRequest = new GZIPOutputStream(request);
+                    gzip = new GZIPOutputStream(request);
                     uncompressedRequestLength = 0;
                 }
 
-                compressedRequest.write(uncompressedRequestLength == 0 ? BEGIN_JSON_ARRAY : COMMA);
-                compressedRequest.write(body);
+                gzip.write(uncompressedRequestLength == 0 ? BEGIN_JSON_ARRAY : COMMA);
+                gzip.write(body);
                 uncompressedRequestLength += body.length + 1;
             }
 
-            compressedRequest.write(END_JSON_ARRAY);
-            compressedRequest.close();
+            gzip.write(END_JSON_ARRAY);
+            gzip.close();
             httpClient.post(logIntakeUrl, headers, "application/json", request.toByteArray(), Function.identity());
         }
 
@@ -393,7 +393,7 @@ public class DatadogApiClient implements DatadogClient {
         }
 
         private void fallback(List<String> payloads) {
-            // cannot establish connection to agent, do nothing
+            // cannot establish connection to API, do nothing
         }
 
         @Override

@@ -346,7 +346,7 @@ public class DatadogAgentClient implements DatadogClient {
         public void close() {
             try {
                 if (out != null) {
-                    out.flush();
+                    flushSafely();
                     out.close();
                 }
                 if (socket != null) {
@@ -354,6 +354,14 @@ public class DatadogAgentClient implements DatadogClient {
                 }
             } catch (IOException e) {
                 DatadogUtilities.severe(logger, e, "Error when closing agent logs writer");
+            }
+        }
+
+        private void flushSafely() throws IOException {
+            try {
+                out.flush();
+            } catch (IOException e) {
+                DatadogUtilities.severe(logger, e, "Error when flushing agent logs writer");
             }
         }
     }
