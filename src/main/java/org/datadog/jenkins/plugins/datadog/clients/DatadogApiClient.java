@@ -360,6 +360,7 @@ public class DatadogApiClient implements DatadogClient {
 
             ByteArrayOutputStream request = new ByteArrayOutputStream();
             GZIPOutputStream gzip = new GZIPOutputStream(request);
+            // the backend checks the size limit against the uncompressed body of the request
             int uncompressedRequestLength = 0;
 
             for (String payload : payloads) {
