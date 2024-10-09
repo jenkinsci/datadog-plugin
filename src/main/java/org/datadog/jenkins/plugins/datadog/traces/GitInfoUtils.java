@@ -42,6 +42,10 @@ public class GitInfoUtils {
             return gitReference.replace("origin/", "");
         } else if(gitReference.startsWith("refs/heads/")) {
             return gitReference.replace("refs/heads/", "");
+        } else if(gitReference.startsWith("refs/remotes/")) {
+            // find the next slash after remotes/ to trim remote name ("origin" or anything else)
+            int idx = gitReference.indexOf('/', "refs/remotes/".length());
+            return idx >= 0 ? gitReference.substring(idx + 1) : gitReference.substring("refs/remotes/".length());
         }
         return gitReference;
     }
@@ -63,5 +67,18 @@ public class GitInfoUtils {
         } catch (final URISyntaxException ex) {
             return urlStr;
         }
+    }
+
+    public static boolean isSha(String refName) {
+        if (refName == null || refName.length() != 40) {
+            return false;
+        }
+        for (int i = 0; i < refName.length(); i++) {
+            char c = refName.charAt(i);
+            if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) {
+                return false;
+            }
+        }
+        return true;
     }
 }

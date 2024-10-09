@@ -1,5 +1,21 @@
 Changes
 =======
+## 7.2.1 / 2024-09-24
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-7.2.0...datadog-7.2.1
+
+* [Fixed] Fix custom tracer JAR verification. See [#459](https://github.com/jenkinsci/datadog-plugin/pull/459).
+
+## 7.2.0 / 2024-09-24
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-7.1.3...datadog-7.2.0
+
+* [Added] Refactor Datadog clients. See [#408](https://github.com/jenkinsci/datadog-plugin/pull/408).
+* [Fixed] Fix branch name detection for multibranch pipelines. See [#452](https://github.com/jenkinsci/datadog-plugin/pull/452).
+* [Fixed] Improve job hostname detection on Windows. See [#448](https://github.com/jenkinsci/datadog-plugin/pull/448).
+* [Fixed] Fix deadlock when loading global configuration on startup. See [#449](https://github.com/jenkinsci/datadog-plugin/pull/449).
+* [Fixed] Remove restriction on possible hosts for Java tracer URL. See [#456](https://github.com/jenkinsci/datadog-plugin/pull/456).
+
 ## 7.1.3 / 2024-08-26
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-7.1.2...datadog-7.1.3

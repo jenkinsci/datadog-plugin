@@ -25,35 +25,29 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-
-
+import hudson.EnvVars;
+import hudson.model.Computer;
 import hudson.model.Result;
 import org.apache.commons.math3.exception.NullArgumentException;
-import org.jenkinsci.plugins.workflow.actions.ErrorAction;
-import org.jenkinsci.plugins.workflow.actions.LabelAction;
-import org.jenkinsci.plugins.workflow.actions.TagsAction;
-import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
-import org.jenkinsci.plugins.workflow.actions.WarningAction;
+import org.jenkinsci.plugins.workflow.actions.*;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
-import org.jvnet.hudson.test.JenkinsRule;
-
 import org.junit.Assert;
-import org.junit.Test;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Test;
+import org.jvnet.hudson.test.JenkinsRule;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
-import java.util.*;
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.util.*;
+
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class DatadogUtilitiesTest {
 
@@ -131,31 +125,31 @@ public class DatadogUtilitiesTest {
 
         // when getError returns an error
         when(node.getError()).thenReturn(new ErrorAction(new NullArgumentException()));
-        Assert.assertEquals(DatadogUtilities.getResultTag(node), "ERROR");
+        assertEquals(DatadogUtilities.getResultTag(node), "ERROR");
 
         // when there's a warning action
         when(node.getError()).thenReturn(null);
         when(node.getPersistentAction(WarningAction.class)).thenReturn(new WarningAction(Result.SUCCESS));
-        Assert.assertEquals(DatadogUtilities.getResultTag(node), "SUCCESS");
+        assertEquals(DatadogUtilities.getResultTag(node), "SUCCESS");
 
         when(node.getPersistentAction(WarningAction.class)).thenReturn(new WarningAction(Result.NOT_BUILT));
-        Assert.assertEquals(DatadogUtilities.getResultTag(node), "NOT_BUILT");
+        assertEquals(DatadogUtilities.getResultTag(node), "NOT_BUILT");
 
         // when the result is unknown
         when(node.getPersistentAction(WarningAction.class)).thenReturn(null);
-        Assert.assertEquals(DatadogUtilities.getResultTag(node), "SUCCESS");
+        assertEquals(DatadogUtilities.getResultTag(node), "SUCCESS");
 
         // when the node is a Stage node and the stage is skipped
         BlockStartNode startNode = mock(BlockStartNode.class);
         TagsAction tagsAction = new TagsAction();
         tagsAction.addTag("STAGE_STATUS", "SKIPPED_FOR_UNSTABLE");
         when(startNode.getPersistentAction(TagsAction.class)).thenReturn(tagsAction);
-        Assert.assertEquals(DatadogUtilities.getResultTag(startNode), "SKIPPED");
+        assertEquals(DatadogUtilities.getResultTag(startNode), "SKIPPED");
 
         // when the node is a BlockEndNode and the stage containing it was skipped
         BlockEndNode endNode = mock(BlockEndNode.class);
         when(endNode.getStartNode()).thenReturn(startNode);
-        Assert.assertEquals(DatadogUtilities.getResultTag(endNode), "SKIPPED");
+        assertEquals(DatadogUtilities.getResultTag(endNode), "SKIPPED");
 
 
     }
@@ -167,13 +161,13 @@ public class DatadogUtilitiesTest {
 
         final Set<String> oneItem = new HashSet<>();
         oneItem.add("item1");
-        Assert.assertEquals("[\"item1\"]", DatadogUtilities.toJson(oneItem));
+        assertEquals("[\"item1\"]", DatadogUtilities.toJson(oneItem));
 
         final Set<String> multipleItems = new LinkedHashSet<>();
         multipleItems.add("item1");
         multipleItems.add("item2");
         multipleItems.add("item3");
-        Assert.assertEquals("[\"item1\",\"item2\",\"item3\"]", DatadogUtilities.toJson(multipleItems));
+        assertEquals("[\"item1\",\"item2\",\"item3\"]", DatadogUtilities.toJson(multipleItems));
     }
 
     @Test
@@ -183,13 +177,13 @@ public class DatadogUtilitiesTest {
 
         final Map<String, String> oneItem = new HashMap<>();
         oneItem.put("itemKey1","itemValue1");
-        Assert.assertEquals("{\"itemKey1\":\"itemValue1\"}", DatadogUtilities.toJson(oneItem));
+        assertEquals("{\"itemKey1\":\"itemValue1\"}", DatadogUtilities.toJson(oneItem));
 
         final Map<String, String> multipleItems = new LinkedHashMap<>();
         multipleItems.put("itemKey1", "itemValue1");
         multipleItems.put("itemKey2", "itemValue2");
         multipleItems.put("itemKey3", "itemValue3");
-        Assert.assertEquals("{\"itemKey1\":\"itemValue1\",\"itemKey2\":\"itemValue2\",\"itemKey3\":\"itemValue3\"}", DatadogUtilities.toJson(multipleItems));
+        assertEquals("{\"itemKey1\":\"itemValue1\",\"itemKey2\":\"itemValue2\",\"itemKey3\":\"itemValue3\"}", DatadogUtilities.toJson(multipleItems));
     }
 
     @Test
@@ -207,7 +201,7 @@ public class DatadogUtilitiesTest {
             cfg.setUseAwsInstanceHostname(true);
 
             hostname = DatadogUtilities.getHostname(null);
-            Assert.assertEquals("test", hostname);
+            assertEquals("test", hostname);
 
             cfg.setUseAwsInstanceHostname(false);
             hostname = DatadogUtilities.getHostname(null);
@@ -237,6 +231,55 @@ public class DatadogUtilitiesTest {
         assertTrue(DatadogUtilities.isPrivateIPv4Address("192.168.0.1"));
         assertTrue(DatadogUtilities.isPrivateIPv4Address("192.168.255.255"));
         assertFalse(DatadogUtilities.isPrivateIPv4Address("192.167.255.255"));
+    }
+
+    @Test
+    public void testComputerDDCIHostnameHasHighestPriority() throws Exception {
+        Computer computer = givenComputerWithEnvVars(
+                DatadogGlobalConfiguration.DD_CI_HOSTNAME, "computer-dd-ci-hostname",
+                "HOSTNAME", "computer-hostname");
+        EnvVars jobEnvVars = givenEnvVars(
+                DatadogGlobalConfiguration.DD_CI_HOSTNAME, "job-dd-ci-hostname",
+                "HOSTNAME", "job-hostname");
+        assertEquals("computer-dd-ci-hostname", DatadogUtilities.getNodeHostname(jobEnvVars, computer));
+    }
+
+    @Test
+    public void testJobDDCIHostnameHasHigherPriorityThanComputerHostname() throws Exception {
+        Computer computer = givenComputerWithEnvVars("HOSTNAME", "computer-hostname");
+        EnvVars jobEnvVars = givenEnvVars(
+                DatadogGlobalConfiguration.DD_CI_HOSTNAME, "job-dd-ci-hostname",
+                "HOSTNAME", "job-hostname");
+        assertEquals("job-dd-ci-hostname", DatadogUtilities.getNodeHostname(jobEnvVars, computer));
+    }
+
+    @Test
+    public void testComputerHostnameHasHigherPriorityThanJobHostname() throws Exception {
+        Computer computer = givenComputerWithEnvVars("HOSTNAME", "computer-hostname");
+        EnvVars jobEnvVars = givenEnvVars("HOSTNAME", "job-hostname");
+        assertEquals("computer-hostname", DatadogUtilities.getNodeHostname(jobEnvVars, computer));
+    }
+
+    @Test
+    public void testJobHostname() throws Exception {
+        Computer computer = givenComputerWithEnvVars();
+        EnvVars jobEnvVars = givenEnvVars("HOSTNAME", "job-hostname");
+        assertEquals("job-hostname", DatadogUtilities.getNodeHostname(jobEnvVars, computer));
+    }
+
+    private static Computer givenComputerWithEnvVars(String... vars) throws Exception {
+        EnvVars computerEnvVars = givenEnvVars(vars);
+        Computer computer = mock(Computer.class);
+        when(computer.getEnvironment()).thenReturn(computerEnvVars);
+        return computer;
+    }
+
+    private static EnvVars givenEnvVars(String... vars) {
+        EnvVars envVars = new EnvVars();
+        for (int i = 0; i < vars.length; i += 2) {
+            envVars.put(vars[i], vars[i + 1]);
+        }
+        return envVars;
     }
 
 }

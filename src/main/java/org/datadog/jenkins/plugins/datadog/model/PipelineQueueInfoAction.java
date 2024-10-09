@@ -18,7 +18,7 @@ public class PipelineQueueInfoAction extends DatadogPluginAction {
 
     public PipelineQueueInfoAction() {}
 
-    public PipelineQueueInfoAction(long queueTimeMillis, long propagatedQueueTimeMillis) {
+    PipelineQueueInfoAction(long queueTimeMillis, long propagatedQueueTimeMillis) {
         this.queueTimeMillis = queueTimeMillis;
         this.propagatedQueueTimeMillis = propagatedQueueTimeMillis;
     }
@@ -27,18 +27,16 @@ public class PipelineQueueInfoAction extends DatadogPluginAction {
         return queueTimeMillis;
     }
 
-    public PipelineQueueInfoAction setQueueTimeMillis(long queueTimeMillis) {
+    public void setQueueTimeMillis(long queueTimeMillis) {
         this.queueTimeMillis = queueTimeMillis;
-        return this;
     }
 
     public long getPropagatedQueueTimeMillis() {
         return propagatedQueueTimeMillis;
     }
 
-    public PipelineQueueInfoAction setPropagatedQueueTimeMillis(long propagatedQueueTimeMillis) {
+    public void setPropagatedQueueTimeMillis(long propagatedQueueTimeMillis) {
         this.propagatedQueueTimeMillis = propagatedQueueTimeMillis;
-        return this;
     }
 
     @Override
@@ -56,7 +54,7 @@ public class PipelineQueueInfoAction extends DatadogPluginAction {
 
     @Override
     public String toString() {
-        return "QueueInfoAction{" +
+        return "PipelineQueueInfoAction{" +
                 "queueTimeMillis=" + queueTimeMillis +
                 ", propagatedQueueTimeMillis=" + propagatedQueueTimeMillis +
                 '}';

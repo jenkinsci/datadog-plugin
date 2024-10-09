@@ -29,11 +29,29 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.*;
 import hudson.model.*;
 import hudson.model.labels.LabelAtom;
+import java.io.*;
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
+import java.nio.charset.Charset;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.datadog.jenkins.plugins.datadog.apm.ShellCommandCallable;
 import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
 import org.datadog.jenkins.plugins.datadog.model.DatadogPluginAction;
@@ -49,22 +67,6 @@ import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.io.*;
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
-import java.nio.charset.Charset;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class DatadogUtilities {
 
@@ -711,19 +713,30 @@ public class DatadogUtilities {
     }
 
     public static String getNodeHostname(@Nullable EnvVars envVars, @Nullable Computer computer) {
-        if (envVars != null) {
-            String ddHostname = envVars.get(DatadogGlobalConfiguration.DD_CI_HOSTNAME);
-            if (DatadogUtilities.isValidHostname(ddHostname)) {
-                return ddHostname;
-            }
-            String hostname = envVars.get("HOSTNAME");
-            if (DatadogUtilities.isValidHostname(hostname)) {
-                return hostname;
-            }
+        EnvVars computerEnv = getEnvironment(computer);
+
+        String computerDDHostname = computerEnv != null ? computerEnv.get(DatadogGlobalConfiguration.DD_CI_HOSTNAME) : null;
+        if (DatadogUtilities.isValidHostname(computerDDHostname)) {
+            return computerDDHostname;
+        }
+
+        String ddHostname = envVars != null ? envVars.get(DatadogGlobalConfiguration.DD_CI_HOSTNAME) : null;
+        if (DatadogUtilities.isValidHostname(ddHostname)) {
+            return ddHostname;
+        }
+
+        String computerHostname = computerEnv != null ? computerEnv.get("HOSTNAME") : null;
+        if (DatadogUtilities.isValidHostname(computerHostname)) {
+            return computerHostname;
+        }
+
+        String hostname = envVars != null ? envVars.get("HOSTNAME") : null;
+        if (DatadogUtilities.isValidHostname(hostname)) {
+            return hostname;
         }
 
         try {
-            if(computer != null) {
+            if (computer != null) {
                 String computerNodeName = DatadogUtilities.getNodeName(computer);
                 if (DatadogUtilities.isMainNode(computerNodeName)) {
                     String masterHostname = DatadogUtilities.getHostname(null);
@@ -740,9 +753,15 @@ public class DatadogUtilities {
                 Node node = computer.getNode();
                 if (node != null) {
                     FilePath rootPath = node.getRootPath();
-                    if (isUnix(rootPath)) {
-                        ShellCommandCallable hostnameCommand = new ShellCommandCallable(
-                                Collections.emptyMap(), HOSTNAME_CMD_TIMEOUT_MILLIS, "hostname", "-f");
+                    if (rootPath != null) {
+                        String[] command;
+                        if (isUnix(rootPath)) {
+                            command = new String[]{"hostname", "-f"};
+                        } else {
+                            command = new String[]{"hostname"};
+                        }
+
+                        ShellCommandCallable hostnameCommand = new ShellCommandCallable(Collections.emptyMap(), HOSTNAME_CMD_TIMEOUT_MILLIS, command);
                         String shellHostname = rootPath.act(hostnameCommand).trim();
                         if (DatadogUtilities.isValidHostname(shellHostname)) {
                             return shellHostname;
@@ -750,12 +769,26 @@ public class DatadogUtilities {
                     }
                 }
             }
-        } catch (InterruptedException e){
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             logException(logger, Level.FINE, "Interrupted while trying to extract hostname from StepContext.", e);
 
-        } catch (Exception e){
+        } catch (Exception e) {
             logException(logger, Level.FINE, "Unable to get hostname for node " + computer.getName(), e);
+        }
+        return null;
+    }
+
+    private static EnvVars getEnvironment(Computer computer) {
+        if (computer != null) {
+            try {
+                return computer.getEnvironment();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logException(logger, Level.FINE, "Interrupted while trying to get computer env vars", e);
+            } catch (Exception e) {
+                logException(logger, Level.FINE, "Error getting computer env vars", e);
+            }
         }
         return null;
     }
@@ -924,12 +957,57 @@ public class DatadogUtilities {
 
     public static void logException(Logger logger, Level logLevel, String message, Throwable e) {
         if (e != null) {
+            addExceptionToBuffer(e);
+
             String stackTrace = ExceptionUtils.getStackTrace(e);
             message = (message != null ? message + " " : "An unexpected error occurred: ") + stackTrace;
         }
         if (StringUtils.isNotEmpty(message)) {
             logger.log(logLevel, message);
         }
+    }
+
+    private static final String EXCEPTIONS_BUFFER_CAPACITY_ENV_VAR = "DD_JENKINS_EXCEPTIONS_BUFFER_CAPACITY";
+    private static final int DEFAULT_EXCEPTIONS_BUFFER_CAPACITY = 100;
+    private static final BlockingQueue<Pair<Date, Throwable>> EXCEPTIONS_BUFFER;
+
+    static {
+        int bufferCapacity = getExceptionsBufferCapacity();
+        if (bufferCapacity > 0) {
+            EXCEPTIONS_BUFFER = new ArrayBlockingQueue<>(bufferCapacity);
+        } else {
+            EXCEPTIONS_BUFFER = null;
+        }
+    }
+
+    private static int getExceptionsBufferCapacity() {
+        String bufferCapacityString = System.getenv("EXCEPTIONS_BUFFER_CAPACITY_ENV_VAR");
+        if (bufferCapacityString == null) {
+            return DEFAULT_EXCEPTIONS_BUFFER_CAPACITY;
+        } else {
+            try {
+                return Integer.parseInt(bufferCapacityString);
+            } catch (NumberFormatException e) {
+                severe(logger, e, EXCEPTIONS_BUFFER_CAPACITY_ENV_VAR + " environment variable has invalid value");
+                return DEFAULT_EXCEPTIONS_BUFFER_CAPACITY;
+            }
+        }
+    }
+
+    private static void addExceptionToBuffer(Throwable e) {
+        if (EXCEPTIONS_BUFFER == null) {
+            return;
+        }
+        Pair<Date, Throwable> p = Pair.of(new Date(), e);
+        while (!EXCEPTIONS_BUFFER.offer(p)) {
+            // rather than popping elements one by one, we drain several with one operation to reduce lock contention
+            int drainSize = Math.max(DEFAULT_EXCEPTIONS_BUFFER_CAPACITY / 10, 1);
+            EXCEPTIONS_BUFFER.drainTo(new ArrayList<>(drainSize), drainSize);
+        }
+    }
+
+    public static BlockingQueue<Pair<Date, Throwable>> getExceptionsBuffer() {
+        return EXCEPTIONS_BUFFER;
     }
 
     public static int toInt(boolean b) {

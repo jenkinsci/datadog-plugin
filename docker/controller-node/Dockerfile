@@ -33,6 +33,7 @@ COPY 20-create-agent-nodes.groovy /usr/share/jenkins/ref/init.groovy.d/20-create
 COPY 30-create-github-credentials.groovy /usr/share/jenkins/ref/init.groovy.d/30-create-github-credentials.groovy
 COPY 40-create-datadog-key_credentials.groovy /usr/share/jenkins/ref/init.groovy.d/40-create-datadog-key_credentials.groovy
 COPY 50-create-jobs.groovy /usr/share/jenkins/ref/init.groovy.d/50-create-jobs.groovy
+COPY 51-create-multi-branch-pipeline.groovy /usr/share/jenkins/ref/init.groovy.d/51-create-multi-branch-pipeline.groovy
 
 RUN /var/jenkins_home/add-github-to-known-hosts.sh
 
