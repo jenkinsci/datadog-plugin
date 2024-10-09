@@ -31,9 +31,13 @@ public class DatadogEnvVarsFlare implements FlareContributor {
         for (Map.Entry<String, String> e : System.getenv().entrySet()) {
             String name = e.getKey();
             if (name.startsWith("DD_") || name.startsWith("DATADOG_")) {
-                if (!name.contains("API_KEY") && !name.contains("APP_KEY")) {
-                    datadogVariables.put(name, e.getValue());
+
+                String value = e.getValue();
+                if (name.contains("API_KEY") || name.contains("APP_KEY")) {
+                    value = "*".repeat(value.length());
                 }
+
+                datadogVariables.put(name, value);
             }
         }
         datadogVariables.store(out, "Environment variables prefixed with DD_ or DATADOG_");
