@@ -34,6 +34,7 @@ import jenkins.security.MasterToSlaveCallable;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.datadog.jenkins.plugins.datadog.apm.ShellCommandCallable;
 import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
 import org.datadog.jenkins.plugins.datadog.model.DatadogPluginAction;
@@ -59,6 +60,8 @@ import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -955,12 +958,57 @@ public class DatadogUtilities {
 
     public static void logException(Logger logger, Level logLevel, String message, Throwable e) {
         if (e != null) {
+            addExceptionToBuffer(e);
+
             String stackTrace = ExceptionUtils.getStackTrace(e);
             message = (message != null ? message + " " : "An unexpected error occurred: ") + stackTrace;
         }
         if (StringUtils.isNotEmpty(message)) {
             logger.log(logLevel, message);
         }
+    }
+
+    private static final String EXCEPTIONS_BUFFER_CAPACITY_ENV_VAR = "DD_JENKINS_EXCEPTIONS_BUFFER_CAPACITY";
+    private static final int DEFAULT_EXCEPTIONS_BUFFER_CAPACITY = 100;
+    private static final BlockingQueue<Pair<Date, Throwable>> EXCEPTIONS_BUFFER;
+
+    static {
+        int bufferCapacity = getExceptionsBufferCapacity();
+        if (bufferCapacity > 0) {
+            EXCEPTIONS_BUFFER = new ArrayBlockingQueue<>(bufferCapacity);
+        } else {
+            EXCEPTIONS_BUFFER = null;
+        }
+    }
+
+    private static int getExceptionsBufferCapacity() {
+        String bufferCapacityString = System.getenv("EXCEPTIONS_BUFFER_CAPACITY_ENV_VAR");
+        if (bufferCapacityString == null) {
+            return DEFAULT_EXCEPTIONS_BUFFER_CAPACITY;
+        } else {
+            try {
+                return Integer.parseInt(bufferCapacityString);
+            } catch (NumberFormatException e) {
+                severe(logger, e, EXCEPTIONS_BUFFER_CAPACITY_ENV_VAR + " environment variable has invalid value");
+                return DEFAULT_EXCEPTIONS_BUFFER_CAPACITY;
+            }
+        }
+    }
+
+    private static void addExceptionToBuffer(Throwable e) {
+        if (EXCEPTIONS_BUFFER == null) {
+            return;
+        }
+        Pair<Date, Throwable> p = Pair.of(new Date(), e);
+        while (!EXCEPTIONS_BUFFER.offer(p)) {
+            // rather than popping elements one by one, we drain several with one operation to reduce lock contention
+            int drainSize = Math.max(DEFAULT_EXCEPTIONS_BUFFER_CAPACITY / 10, 1);
+            EXCEPTIONS_BUFFER.drainTo(new ArrayList<>(drainSize), drainSize);
+        }
+    }
+
+    public static BlockingQueue<Pair<Date, Throwable>> getExceptionsBuffer() {
+        return EXCEPTIONS_BUFFER;
     }
 
     public static int toInt(boolean b) {
