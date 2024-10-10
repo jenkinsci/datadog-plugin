@@ -1,9 +1,9 @@
 package org.datadog.jenkins.plugins.datadog.traces.write;
 
 import hudson.init.Terminator;
-import javax.annotation.Nullable;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
-import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
+
+import javax.annotation.Nullable;
 
 public class TraceWriterFactory {
 
@@ -36,9 +36,6 @@ public class TraceWriterFactory {
 
     @Nullable
     public static TraceWriter getTraceWriter() {
-        if (TRACE_WRITER == null) {
-            onDatadogClientUpdate(ClientHolder.getClient());
-        }
         return TRACE_WRITER;
     }
 }

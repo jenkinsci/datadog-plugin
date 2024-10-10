@@ -29,38 +29,31 @@ import com.timgroup.statsd.Event;
 import com.timgroup.statsd.NonBlockingStatsDClient;
 import com.timgroup.statsd.ServiceCheck;
 import com.timgroup.statsd.StatsDClient;
-import java.net.ConnectException;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.logging.Handler;
-import java.util.logging.Logger;
-import java.util.logging.SocketHandler;
-import javax.annotation.concurrent.GuardedBy;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.logs.LogWriteStrategy;
 import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
 import org.datadog.jenkins.plugins.datadog.traces.mapper.JsonTraceSpanMapper;
-import org.datadog.jenkins.plugins.datadog.traces.write.AgentTraceWriteStrategy;
-import org.datadog.jenkins.plugins.datadog.traces.write.Payload;
-import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy;
-import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategyImpl;
-import org.datadog.jenkins.plugins.datadog.traces.write.Track;
+import org.datadog.jenkins.plugins.datadog.traces.write.*;
+import org.datadog.jenkins.plugins.datadog.util.CircuitBreaker;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import javax.annotation.concurrent.GuardedBy;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.function.Function;
+import java.util.logging.Logger;
 
 /**
  * This class is used to collect all methods that has to do with transmitting
@@ -78,11 +71,6 @@ public class DatadogAgentClient implements DatadogClient {
     private final Integer traceCollectionPort;
 
     private final HttpClient client;
-
-    // logs
-    private volatile Logger ddLogger;
-    private final Object ddLoggerInitLock = new Object();
-    private String previousPayload;
 
     // statsd
     private volatile StatsDClient statsd;
@@ -136,34 +124,23 @@ public class DatadogAgentClient implements DatadogClient {
         }
     }
 
-    /**
-     * Fetches the supported endpoints from the Trace Agent /info API
-     *
-     * @return a set of endpoints (if /info wasn't available, it will be empty)
-     */
-    @SuppressFBWarnings("REC_CATCH_EXCEPTION")
-    public Set<String> fetchAgentSupportedEndpoints() {
-        logger.fine("Fetching Agent info");
+    public static class ConnectivityResult {
+        private final boolean error;
+        private final String errorMessage;
 
-        String url = String.format("http://%s:%d/info", hostname, traceCollectionPort);
-        try {
-            return client.get(url, Collections.emptyMap(), s -> {
-                JSONObject jsonResponse = new JSONObject(s);
-                JSONArray jsonEndpoints = jsonResponse.getJSONArray("endpoints");
+        public static final ConnectivityResult SUCCESS = new ConnectivityResult(false, null);
 
-                Set<String> endpoints = new HashSet<>();
-                for (int i = 0; i < jsonEndpoints.length(); i++) {
-                    endpoints.add(jsonEndpoints.getString(i));
-                }
-                return endpoints;
-            });
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            DatadogUtilities.severe(logger, e, "Could not get the list of agent endpoints");
-            return Collections.emptySet();
-        } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "Could not get the list of agent endpoints");
-            return Collections.emptySet();
+        public ConnectivityResult(final boolean error, final String errorMessage) {
+            this.error = error;
+            this.errorMessage = errorMessage;
+        }
+
+        public boolean isError() {
+            return error;
+        }
+
+        public String getErrorMessage() {
+            return errorMessage;
         }
     }
 
@@ -310,117 +287,81 @@ public class DatadogAgentClient implements DatadogClient {
     }
 
     @Override
-    public boolean sendLogs(String payload) {
-        if(logCollectionPort == null){
-            logger.severe("Datadog Log Collection Port is not set properly");
-            return false;
+    public LogWriteStrategy createLogWriteStrategy() {
+        if (logCollectionPort == null) {
+            logger.severe("Datadog Log Collection Port is not set properly, logs will not be written to Datadog");
+            return LogWriteStrategy.NO_OP;
         }
-
-        if(this.ddLogger == null) {
-            boolean status = reinitializeLogger(false);
-            if(!status) {
-                logger.info("Datadog Plugin Logger could not be initialized");
-                return false;
-            }
-        }
-
-        // Check if we have handlers in our logger. This may happen when ddLogger initialization fails
-        // ddLogger may not be null but may be mis-configured.
-        // Reset to null to reinitialize if needed.
-        Handler[] handlers = this.ddLogger.getHandlers();
-        if(handlers == null || handlers.length == 0){
-            this.ddLogger = null;
-            logger.info("Datadog Plugin Logger does not have handlers");
-            return false;
-        }
-
-        try {
-            this.ddLogger.info(payload);
-
-            // We check for errors in our custom errorManager
-            Handler handler = this.ddLogger.getHandlers()[0];
-            DatadogErrorManager errorManager = (DatadogErrorManager)handler.getErrorManager();
-            if(errorManager.hadReportedIssue()){
-                reinitializeLogger(true);
-                // NOTE: After a socket timeout, the first message to be sent get lost, it is only the second message
-                // that gets reported as an error in the errorManager.
-                // For this reason, we always keep the previousPayload in order to resubmit it.
-                boolean retryLogs = DatadogUtilities.getDatadogGlobalDescriptor().isRetryLogs();
-                if (retryLogs) {
-                    this.ddLogger.info(previousPayload);
-                }
-                previousPayload = payload;
-
-                // we return false so that we retry to send the current payload message that still didn't get submitted.
-                return false;
-            }
-            previousPayload = payload;
-        }catch(Exception e){
-            DatadogUtilities.severe(logger, e, "Failed to send log payload to DogStatsD");
-            previousPayload = payload;
-            return false;
-        }
-        return true;
+        return new AgentLogWriteStrategy(hostname, logCollectionPort);
     }
 
-    /**
-     * reinitialize the Logger Client
-     * @return true if reinitialized properly otherwise false
-     */
-    private synchronized boolean reinitializeLogger(boolean force) {
-        synchronized (ddLoggerInitLock) {
-            if(this.ddLogger != null && !force){
-                return true;
-            }
-            if(!DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs() || this.logCollectionPort == null){
-                return false;
-            }
-            try {
-                logger.info("Re/Initialize Datadog-Plugin Logger: hostname = " + this.hostname + ", logCollectionPort = " + this.logCollectionPort);
-                // need to close existing logger since it has a socket opened - not closing it leads to a file descriptor leak
-                close(this.ddLogger);
-                this.ddLogger = Logger.getLogger("Datadog-Plugin Logger");
-                this.ddLogger.setUseParentHandlers(false);
-                //Remove all existing Handlers
-                Handler[] handlers = this.ddLogger.getHandlers();
+    private static final class AgentLogWriteStrategy implements LogWriteStrategy {
+        private static final byte[] LINE_SEPARATOR = System.lineSeparator().getBytes(StandardCharsets.UTF_8);
 
-                if (handlers != null) {
-                    for(Handler h : handlers){
-                        this.ddLogger.removeHandler(h);
-                    }
-                }
-                //Add New Handler
-                SocketHandler socketHandler = new SocketHandler(this.hostname, this.logCollectionPort);
-                socketHandler.setFormatter(new DatadogFormatter());
-                socketHandler.setErrorManager(new DatadogErrorManager());
-                this.ddLogger.addHandler(socketHandler);
-            } catch (Exception e){
-                if(e instanceof UnknownHostException){
-                    DatadogUtilities.severe(logger, e, "Failed to reinitialize Datadog-Plugin Logger, Unknown Host " + this.hostname);
-                }else if(e instanceof ConnectException){
-                    DatadogUtilities.severe(logger, e, "Failed to reinitialize Datadog-Plugin Logger, Connection exception. This may be because your port is incorrect " + this.logCollectionPort);
-                }else{
-                    DatadogUtilities.severe(logger, e, "Failed to reinitialize Datadog-Plugin Logger");
-                }
-                return false;
-            }
-            return true;
-        }
-    }
+        private final String host;
+        private final int port;
 
-    private static void close(Logger logger) {
-        if (logger == null) {
-            return;
+        private final CircuitBreaker<List<String>> circuitBreaker;
+
+        private Socket socket;
+        private OutputStream out;
+
+        private AgentLogWriteStrategy(String host, int port) {
+            this.host = host;
+            this.port = port;
+            this.circuitBreaker = new CircuitBreaker<>(
+                    this::doSend,
+                    this::fallback,
+                    this::handleError,
+                    100,
+                    CircuitBreaker.DEFAULT_MAX_HEALTH_CHECK_DELAY_MILLIS,
+                    CircuitBreaker.DEFAULT_DELAY_FACTOR);
         }
-        Handler[] handlers = logger.getHandlers();
-        if (handlers == null) {
-            return;
+
+        public void send(List<String> payloads) {
+            circuitBreaker.accept(payloads);
         }
-        for (Handler handler : handlers) {
+
+        private void doSend(List<String> payloads) throws Exception {
+            if (socket == null || socket.isClosed() || !socket.isConnected()) {
+                socket = new Socket(host, port);
+                out = new BufferedOutputStream(socket.getOutputStream());
+            }
+            for (String payload : payloads) {
+                out.write(payload.getBytes(StandardCharsets.UTF_8));
+                out.write(LINE_SEPARATOR);
+            }
+        }
+
+        private void handleError(Exception e) {
+            socket = null;
+            DatadogUtilities.severe(logger, e, "Could not write logs to agent");
+        }
+
+        private void fallback(List<String> payloads) {
+            // cannot establish connection to agent, do nothing
+        }
+
+        @Override
+        public void close() {
             try {
-                handler.close();
-            } catch (Exception e) {
-                // ignore
+                if (out != null) {
+                    flushSafely();
+                    out.close();
+                }
+                if (socket != null) {
+                    socket.close();
+                }
+            } catch (IOException e) {
+                DatadogUtilities.severe(logger, e, "Error when closing agent logs writer");
+            }
+        }
+
+        private void flushSafely() throws IOException {
+            try {
+                out.flush();
+            } catch (IOException e) {
+                DatadogUtilities.severe(logger, e, "Error when flushing agent logs writer");
             }
         }
     }
@@ -436,6 +377,37 @@ public class DatadogAgentClient implements DatadogClient {
         logger.info("Checking for EVP Proxy support in the Agent.");
         Set<String> supportedAgentEndpoints = fetchAgentSupportedEndpoints();
         return supportedAgentEndpoints.contains("/evp_proxy/v3/");
+    }
+
+    /**
+     * Fetches the supported endpoints from the Trace Agent /info API
+     *
+     * @return a set of endpoints (if /info wasn't available, it will be empty)
+     */
+    @SuppressFBWarnings("REC_CATCH_EXCEPTION")
+    Set<String> fetchAgentSupportedEndpoints() {
+        logger.fine("Fetching Agent info");
+
+        String url = String.format("http://%s:%d/info", hostname, traceCollectionPort);
+        try {
+            return client.get(url, Collections.emptyMap(), s -> {
+                JSONObject jsonResponse = new JSONObject(s);
+                JSONArray jsonEndpoints = jsonResponse.getJSONArray("endpoints");
+
+                Set<String> endpoints = new HashSet<>();
+                for (int i = 0; i < jsonEndpoints.length(); i++) {
+                    endpoints.add(jsonEndpoints.getString(i));
+                }
+                return endpoints;
+            });
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            DatadogUtilities.severe(logger, e, "Could not get the list of agent endpoints");
+            return Collections.emptySet();
+        } catch (Exception e) {
+            DatadogUtilities.severe(logger, e, "Could not get the list of agent endpoints");
+            return Collections.emptySet();
+        }
     }
 
     /**
@@ -494,26 +466,6 @@ public class DatadogAgentClient implements DatadogClient {
 
         } catch (Exception e) {
             throw new RuntimeException("Error while sending trace", e);
-        }
-    }
-
-    public static class ConnectivityResult {
-        private final boolean error;
-        private final String errorMessage;
-
-        public static final ConnectivityResult SUCCESS = new ConnectivityResult(false, null);
-
-        public ConnectivityResult(final boolean error, final String errorMessage) {
-            this.error = error;
-            this.errorMessage = errorMessage;
-        }
-
-        public boolean isError() {
-            return error;
-        }
-
-        public String getErrorMessage() {
-            return errorMessage;
         }
     }
 

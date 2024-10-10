@@ -1,15 +1,15 @@
 package org.datadog.jenkins.plugins.datadog.util;
 
-import java.util.function.Consumer;
 import javax.annotation.concurrent.GuardedBy;
+import java.util.function.Consumer;
 
 public class CircuitBreaker<T> {
 
-    private static final int DEFAULT_MIN_HEALTH_CHECK_DELAY_MILLIS = 1000;
-    private static final int DEFAULT_MAX_HEALTH_CHECK_DELAY_MILLIS = 60000;
-    private static final double DEFAULT_DELAY_FACTOR = 2.0;
+    public static final int DEFAULT_MIN_HEALTH_CHECK_DELAY_MILLIS = 1000;
+    public static final int DEFAULT_MAX_HEALTH_CHECK_DELAY_MILLIS = 60000;
+    public static final double DEFAULT_DELAY_FACTOR = 2.0;
 
-    private final Consumer<T> action;
+    private final ThrowingConsumer<T> action;
     private final Consumer<T> fallback;
     private final Consumer<Exception> errorHandler;
     private final long minHealthCheckDelayMillis;
@@ -23,11 +23,11 @@ public class CircuitBreaker<T> {
     @GuardedBy("this")
     private long healthCheckAt;
 
-    public CircuitBreaker(Consumer<T> action, Consumer<T> fallback, Consumer<Exception> errorHandler) {
+    public CircuitBreaker(ThrowingConsumer<T> action, Consumer<T> fallback, Consumer<Exception> errorHandler) {
         this(action, fallback, errorHandler, DEFAULT_MIN_HEALTH_CHECK_DELAY_MILLIS, DEFAULT_MAX_HEALTH_CHECK_DELAY_MILLIS, DEFAULT_DELAY_FACTOR);
     }
 
-    public CircuitBreaker(Consumer<T> action,
+    public CircuitBreaker(ThrowingConsumer<T> action,
                           Consumer<T> fallback,
                           Consumer<Exception> errorHandler,
                           long minHealthCheckDelayMillis,

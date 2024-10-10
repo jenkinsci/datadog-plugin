@@ -27,15 +27,13 @@ package org.datadog.jenkins.plugins.datadog.logs;
 
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
-import org.datadog.jenkins.plugins.datadog.DatadogClient;
+import org.datadog.jenkins.plugins.datadog.util.AsyncWriter;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
-import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Set;
@@ -45,12 +43,10 @@ public class DatadogWriter {
 
     private static final Logger logger = Logger.getLogger(DatadogWriter.class.getName());
 
-    private OutputStream errorStream;
     private Charset charset;
     private BuildData buildData;
 
-    public DatadogWriter(BuildData buildData, OutputStream error) {
-        this.errorStream = error != null ? error : System.err;
+    public DatadogWriter(BuildData buildData) {
         this.charset = buildData.getCharset();
         this.buildData = buildData;
     }
@@ -76,18 +72,13 @@ public class DatadogWriter {
             payload.put("timestamp", System.currentTimeMillis());
             payload.put(PipelineStepData.StepType.PIPELINE.getTagName() + CITags._NAME, this.buildData.getJobName());
 
-            // Get Datadog Client Instance
-            DatadogClient client = ClientHolder.getClient();
-            if(client == null){
-                return;
+            AsyncWriter<String> logWriter = LogWriterFactory.getLogWriter();
+            if (logWriter != null) {
+                logWriter.submit(payload.toString());
             }
-            boolean status = client.sendLogs(payload.toString());
-            if(!status){
-                // we try again in case a connection has to be re-established.
-                client.sendLogs(payload.toString());
-            }
-        } catch (Exception e){
-            DatadogUtilities.severe(logger, e, "Failed to send log payload");
+
+        } catch (Exception e) {
+            DatadogUtilities.severe(logger, e, "Failed to submit log payload");
         }
     }
 

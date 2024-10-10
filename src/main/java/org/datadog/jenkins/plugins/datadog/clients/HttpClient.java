@@ -106,10 +106,10 @@ public class HttpClient {
         };
 
         QueuedThreadPool threadPool = new QueuedThreadPool(
-                getEnv(MAX_THREADS_ENV_VAR, MAX_THREADS_DEFAULT),
-                getEnv(MIN_THREADS_ENV_VAR, MIN_THREADS_DEFAULT),
-                getEnv(IDLE_THREAD_TIMEOUT_MILLIS_ENV_VAR, IDLE_THREAD_TIMEOUT_MILLIS),
-                getEnv(RESERVED_THREADS_ENV_VAR, RESERVED_THREADS_DEFAULT),
+                DatadogUtilities.envVar(MAX_THREADS_ENV_VAR, MAX_THREADS_DEFAULT),
+                DatadogUtilities.envVar(MIN_THREADS_ENV_VAR, MIN_THREADS_DEFAULT),
+                DatadogUtilities.envVar(IDLE_THREAD_TIMEOUT_MILLIS_ENV_VAR, IDLE_THREAD_TIMEOUT_MILLIS),
+                DatadogUtilities.envVar(RESERVED_THREADS_ENV_VAR, RESERVED_THREADS_DEFAULT),
                 queue,
                 null,
                 threadFactory
@@ -122,7 +122,7 @@ public class HttpClient {
         configureProxies(jenkinsProxyConfiguration, httpClient);
 
         httpClient.setExecutor(threadPool);
-        httpClient.setMaxConnectionsPerDestination(getEnv(MAX_CONNECTIONS_PER_DESTINATION_ENV_VAR, MAX_CONNECTIONS_PER_DESTINATION_DEFAULT));
+        httpClient.setMaxConnectionsPerDestination(DatadogUtilities.envVar(MAX_CONNECTIONS_PER_DESTINATION_ENV_VAR, MAX_CONNECTIONS_PER_DESTINATION_DEFAULT));
         httpClient.setUserAgentField(new HttpField("User-Agent", getUserAgent()));
         try {
             httpClient.start();
@@ -172,9 +172,9 @@ public class HttpClient {
     public HttpClient(long timeoutMillis) {
         this.timeoutMillis = timeoutMillis;
         this.retryPolicyFactory = new HttpRetryPolicy.Factory(
-                getEnv(MAX_REQUEST_RETRIES_ENV_VAR, MAX_REQUEST_RETRIES_DEFAULT),
-                getEnv(INITIAL_RETRY_DELAY_MILLIS_ENV_VAR, INITIAL_RETRY_DELAY_MILLIS_DEFAULT),
-                getEnv(RETRY_DELAY_FACTOR_ENV_VAR, RETRY_DELAY_FACTOR_DEFAULT));
+                DatadogUtilities.envVar(MAX_REQUEST_RETRIES_ENV_VAR, MAX_REQUEST_RETRIES_DEFAULT),
+                DatadogUtilities.envVar(INITIAL_RETRY_DELAY_MILLIS_ENV_VAR, INITIAL_RETRY_DELAY_MILLIS_DEFAULT),
+                DatadogUtilities.envVar(RETRY_DELAY_FACTOR_ENV_VAR, RETRY_DELAY_FACTOR_DEFAULT));
     }
 
     public <T> T get(String url, Map<String, String> headers, Function<String, T> responseParser) throws ExecutionException, InterruptedException, TimeoutException {
@@ -303,7 +303,7 @@ public class HttpClient {
         ensureClientIsUpToDate();
 
         Request request = requestSupplier.get();
-        request.send(new ResponseListener(getEnv(MAX_RESPONSE_LENGTH_BYTES_ENV_VAR, MAX_RESPONSE_LENGTH_BYTES_DEFAULT), requestSupplier, retryPolicy));
+        request.send(new ResponseListener(DatadogUtilities.envVar(MAX_RESPONSE_LENGTH_BYTES_ENV_VAR, MAX_RESPONSE_LENGTH_BYTES_DEFAULT), requestSupplier, retryPolicy));
     }
 
     private static final class ResponseListener extends BufferingResponseListener {
@@ -344,29 +344,5 @@ public class HttpClient {
         public ResponseProcessingException(String message) {
             super(message);
         }
-    }
-
-    private static int getEnv(String envVar, int defaultValue) {
-        String value = System.getenv(envVar);
-        if (value != null) {
-            try {
-                return Integer.parseInt(value);
-            } catch (Exception e) {
-                DatadogUtilities.severe(logger, null, "Invalid value " + value + " provided for env var " + envVar + ": integer number expected");
-            }
-        }
-        return defaultValue;
-    }
-
-    private static double getEnv(String envVar, double defaultValue) {
-        String value = System.getenv(envVar);
-        if (value != null) {
-            try {
-                return Double.parseDouble(value);
-            } catch (Exception e) {
-                DatadogUtilities.severe(logger, null, "Invalid value " + value + " provided for env var " + envVar + ": double number expected");
-            }
-        }
-        return defaultValue;
     }
 }

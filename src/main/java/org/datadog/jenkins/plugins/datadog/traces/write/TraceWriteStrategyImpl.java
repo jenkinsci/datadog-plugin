@@ -17,6 +17,7 @@ import org.datadog.jenkins.plugins.datadog.traces.DatadogTracePipelineLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookBuildLogic;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogWebhookPipelineLogic;
 import org.datadog.jenkins.plugins.datadog.util.CircuitBreaker;
+import org.datadog.jenkins.plugins.datadog.util.ThrowingConsumer;
 
 public class TraceWriteStrategyImpl implements TraceWriteStrategy {
 
@@ -27,7 +28,7 @@ public class TraceWriteStrategyImpl implements TraceWriteStrategy {
     private final DatadogBasePipelineLogic pipelineLogic;
     private final CircuitBreaker<Collection<Payload>> sendSpansCircuitBreaker;
 
-    public TraceWriteStrategyImpl(Track track, Consumer<Collection<Payload>> spansSender) {
+    public TraceWriteStrategyImpl(Track track, ThrowingConsumer<Collection<Payload>> spansSender) {
         if (track == Track.APM) {
             this.buildLogic = new DatadogTraceBuildLogic();
             this.pipelineLogic = new DatadogTracePipelineLogic();

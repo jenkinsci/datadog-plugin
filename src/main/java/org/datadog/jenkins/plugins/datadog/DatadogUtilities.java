@@ -29,6 +29,23 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.*;
 import hudson.model.*;
 import hudson.model.labels.LabelAtom;
+import java.io.*;
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
+import java.nio.charset.Charset;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -50,24 +67,6 @@ import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.io.*;
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
-import java.nio.charset.Charset;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class DatadogUtilities {
 
@@ -1235,6 +1234,30 @@ public class DatadogUtilities {
             return null;
         }
         return datadogPlugin.getVersion();
+    }
+
+    public static int envVar(String name, int defaultValue) {
+        String value = System.getenv(name);
+        if (value != null) {
+            try {
+                return Integer.parseInt(value);
+            } catch (Exception e) {
+                DatadogUtilities.severe(logger, null, "Invalid value " + value + " provided for env var " + name + ": integer number expected");
+            }
+        }
+        return defaultValue;
+    }
+
+    public static double envVar(String name, double defaultValue) {
+        String value = System.getenv(name);
+        if (value != null) {
+            try {
+                return Double.parseDouble(value);
+            } catch (Exception e) {
+                DatadogUtilities.severe(logger, null, "Invalid value " + value + " provided for env var " + name + ": floating point number expected");
+            }
+        }
+        return defaultValue;
     }
 
 }

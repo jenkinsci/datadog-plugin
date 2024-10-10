@@ -132,10 +132,6 @@
         <f:validateButton title="${%Test Filtering Configuration}" progress="${%Testing...}" method="testFilteringConfig" 
           with="emitSecurityEvents,emitSystemEvents,includeEvents,excludeEvents"/>
 
-        <f:entry title="Retry Logs" description="Retry sending a log if sending to Datadog fails">
-            <f:checkbox title="Retry Logs" field="retryLogs" default="true" />
-        </f:entry>
-
         <f:entry title="Refresh Dogstatsd Client" description="Refresh Dogstatsd Client when your agent IP changes">
             <f:checkbox title="Refresh Dogstatsd Client" field="refreshDogstatsdClient" default="false" />
         </f:entry>

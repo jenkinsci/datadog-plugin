@@ -57,7 +57,7 @@ public class DatadogTaskListenerDecorator extends TaskListenerDecorator {
     @Nonnull
     @Override
     public OutputStream decorate(@Nonnull OutputStream outputStream) {
-        DatadogWriter writer = new DatadogWriter(this.buildData, outputStream);
+        DatadogWriter writer = new DatadogWriter(this.buildData);
         return new DatadogOutputStream(outputStream, writer);
     }
 

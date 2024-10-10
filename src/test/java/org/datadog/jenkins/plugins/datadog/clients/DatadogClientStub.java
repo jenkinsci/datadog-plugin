@@ -27,24 +27,10 @@ package org.datadog.jenkins.plugins.datadog.clients;
 
 import com.google.common.base.Objects;
 import hudson.model.Run;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import javax.annotation.Nullable;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
+import org.datadog.jenkins.plugins.datadog.logs.LogWriteStrategy;
 import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
@@ -59,18 +45,24 @@ import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy;
 import org.datadog.jenkins.plugins.datadog.traces.write.Track;
 import org.junit.Assert;
 
+import javax.annotation.Nullable;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
 public class DatadogClientStub implements DatadogClient {
 
     public List<DatadogMetric> metrics;
     public List<DatadogMetric> serviceChecks;
     public List<DatadogEventStub> events;
-    public List<JSONObject> logLines;
 
     public DatadogClientStub() {
         this.metrics = new CopyOnWriteArrayList<>();
         this.serviceChecks = new CopyOnWriteArrayList<>();
         this.events = new CopyOnWriteArrayList<>();
-        this.logLines = new CopyOnWriteArrayList<>();
     }
 
     @Override
@@ -104,13 +96,6 @@ public class DatadogClientStub implements DatadogClient {
     @Override
     public boolean serviceCheck(String name, Status status, String hostname, Map<String, Set<String>> tags) {
         this.serviceChecks.add(new DatadogMetric(name, status.toValue(), hostname, convertTagMapToList(tags)));
-        return true;
-    }
-
-    @Override
-    public boolean sendLogs(String payloadLogs) {
-        JSONObject payload = JSONObject.fromObject(payloadLogs);
-        this.logLines.add(payload);
         return true;
     }
 
@@ -338,6 +323,34 @@ public class DatadogClientStub implements DatadogClient {
     @Override
     public TraceWriteStrategy createTraceWriteStrategy() {
         return traceWriteStrategy;
+    }
+
+    @Override
+    public LogWriteStrategy createLogWriteStrategy() {
+        return logWriteStrategy;
+    }
+
+    private final StubLogWriteStrategy logWriteStrategy = new StubLogWriteStrategy();
+
+    private static final class StubLogWriteStrategy implements LogWriteStrategy {
+        public final List<JSONObject> logLines = new CopyOnWriteArrayList<>();
+
+        @Override
+        public void send(List<String> logs) {
+            for (String log : logs) {
+                JSONObject payload = JSONObject.fromObject(log);
+                this.logLines.add(payload);
+            }
+        }
+
+        @Override
+        public void close() {
+            // do nothing
+        }
+    }
+
+    public List<JSONObject> getLogLines() {
+        return logWriteStrategy.logLines;
     }
 
     public boolean waitForWebhooks(final int number) throws InterruptedException {
