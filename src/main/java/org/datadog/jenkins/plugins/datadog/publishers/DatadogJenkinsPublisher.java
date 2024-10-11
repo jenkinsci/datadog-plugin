@@ -26,22 +26,27 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.publishers;
 
 import hudson.Extension;
+import hudson.ExtensionList;
 import hudson.PluginManager;
 import hudson.PluginWrapper;
 import hudson.model.PeriodicWork;
 import hudson.model.Project;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
+import hudson.model.UpdateSite;
 import jenkins.model.Jenkins;
+import jenkins.security.UpdateSiteWarningsMonitor;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
 import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
 import org.datadog.jenkins.plugins.datadog.model.PluginData;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
+import org.kohsuke.accmod.restrictions.suppressions.SuppressRestrictedWarnings;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 /**
  * This class registers a {@link PeriodicWork} with Jenkins to run periodically in order to enable
@@ -91,6 +96,11 @@ public class DatadogJenkinsPublisher extends PeriodicWork {
                 metrics.gauge("jenkins.plugin.failed", pluginData.getFailed(), hostname, tags);
                 metrics.gauge("jenkins.plugin.inactivate", pluginData.getInactive(), hostname, tags);
                 metrics.gauge("jenkins.plugin.withUpdate", pluginData.getUpdatable(), hostname, tags);
+
+                Integer warnings = pluginData.getWarnings();
+                if (warnings != null) {
+                    metrics.gauge("jenkins.plugin.withWarning", pluginData.getWarnings(), hostname, tags);
+                }
             }
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to compute and send Jenkins metrics");
@@ -108,7 +118,8 @@ public class DatadogJenkinsPublisher extends PeriodicWork {
         PluginManager pluginManager = instance.getPluginManager();
         List<PluginWrapper> plugins = pluginManager.getPlugins();
         pluginData.withCount(plugins.size())
-                .withFailed(pluginManager.getFailedPlugins().size());
+                .withFailed(pluginManager.getFailedPlugins().size())
+                .withWarnings(getPluginWarningsCount());
         for (PluginWrapper w : plugins) {
             if (w.hasUpdate()) {
                 pluginData.incrementUpdatable();
@@ -121,5 +132,17 @@ public class DatadogJenkinsPublisher extends PeriodicWork {
         }
 
         return pluginData.build();
+    }
+
+    @SuppressRestrictedWarnings({ UpdateSiteWarningsMonitor.class, UpdateSite.Warning.class })
+    private Integer getPluginWarningsCount() {
+        try {
+            UpdateSiteWarningsMonitor updateSiteWarningsMonitor = ExtensionList.lookupSingleton(UpdateSiteWarningsMonitor.class);
+            Map<PluginWrapper, List<UpdateSite.Warning>> activePluginWarningsByPlugin = updateSiteWarningsMonitor.getActivePluginWarningsByPlugin();
+            return activePluginWarningsByPlugin.size();
+        } catch (Exception e) {
+            DatadogUtilities.severe(logger, e, "Could not get plugin warnings");
+            return null;
+        }
     }
 }
