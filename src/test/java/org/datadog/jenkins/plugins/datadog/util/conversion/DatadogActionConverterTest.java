@@ -1,5 +1,6 @@
 package org.datadog.jenkins.plugins.datadog.util.conversion;
 
+import static org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter.ignoreOldData;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -73,9 +74,9 @@ public class DatadogActionConverterTest {
         private int deserializedWithVersion;
     }
 
-    private static final class MyConverter extends DatadogActionConverter<MyClass> {
+    private static final class MyConverter extends DatadogConverter<MyClass> {
         public MyConverter() {
-            super(new MyVersionedConverter(1), new MyVersionedConverter(2), new MyVersionedConverter(3));
+            super(ignoreOldData(), new MyVersionedConverter(1), new MyVersionedConverter(2), new MyVersionedConverter(3));
         }
     }
 

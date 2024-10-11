@@ -27,15 +27,17 @@ import javax.annotation.Nullable;
  *
  * @param <T> The type of converted objects (should be as narrow as possible, so that different converters do not conflict)
  */
-public abstract class DatadogActionConverter<T> implements Converter {
+public abstract class DatadogConverter<T> implements Converter {
 
     private static final String VERSION_ATTRIBUTE = "v";
 
+    private final Class<?> convertedType;
     private final VersionedConverter<T> writeConverter;
     private final Map<Integer, VersionedConverter<T>> readConverters;
-    private final Class<?> convertedType;
+    private final VersionedConverter<T> legacyConverter;
 
     /**
+     * @param legacyConverter Converter that is used to unmarshall legacy data written by older plugin versions
      * @param converters The list of versioned converters.
      *                   Writing is always done with the most up-to-date converter (the one with the maximum version).
      *                   Reading is done with the appropriate converter (the one that has version that matches the data version).
@@ -43,7 +45,9 @@ public abstract class DatadogActionConverter<T> implements Converter {
      *                   no deserialization is performed.
      */
     @SafeVarargs
-    protected DatadogActionConverter(@Nonnull VersionedConverter<T>... converters) {
+    protected DatadogConverter(VersionedConverter<T> legacyConverter, @Nonnull VersionedConverter<T>... converters) {
+        this.legacyConverter = legacyConverter;
+
         if (converters.length == 0) {
             throw new IllegalArgumentException("At least one converter is needed");
         }
@@ -64,8 +68,8 @@ public abstract class DatadogActionConverter<T> implements Converter {
                 .orElseThrow(() -> new IllegalArgumentException("Cannot find converter with max version"));
 
         // only direct children are supported, to keep logic simple
-        if (!getClass().getSuperclass().equals(DatadogActionConverter.class)) {
-            throw new IllegalArgumentException(getClass().getName() + " is not a direct descendant of " + DatadogActionConverter.class.getName());
+        if (!getClass().getSuperclass().equals(DatadogConverter.class)) {
+            throw new IllegalArgumentException(getClass().getName() + " is not a direct descendant of " + DatadogConverter.class.getName());
         }
 
         ParameterizedType genericSuperclass = (ParameterizedType) getClass().getGenericSuperclass();
@@ -102,7 +106,7 @@ public abstract class DatadogActionConverter<T> implements Converter {
             String versionString = reader.getAttribute(VERSION_ATTRIBUTE);
             if (versionString == null) {
                 // no attribute, data was written by an old version of the plugin
-                return null;
+                return legacyConverter;
             }
             int version = Integer.parseInt(versionString);
             return readConverters.get(version);

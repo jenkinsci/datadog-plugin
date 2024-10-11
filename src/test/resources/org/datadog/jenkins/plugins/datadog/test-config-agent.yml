@@ -1,0 +1,27 @@
+jenkins:
+  systemMessage: "Example of configuring datadog in Jenkins"
+
+unclassified:
+  datadogGlobalConfiguration:
+    datadogClientConfiguration:
+      datadogAgentConfiguration:
+        agentHost: 'my-agent-host'
+        agentPort: 1357
+        agentLogCollectionPort: 2468
+        agentTraceCollectionPort: 3579
+    enableCiVisibility: true
+    ciInstanceName: 'my-ci-instance-name'
+    excluded: 'my-excluded'
+    included: 'my-included'
+    hostname: 'my-hostname'
+    globalTagFile: 'my-global-tag-file'
+    globalTags: 'my-global-tags'
+    globalJobTags: 'my-global-job-tags'
+    includeEvents: 'my-include-events'
+    excludeEvents: 'my-exclude-events'
+    emitSecurityEvents: false
+    emitSystemEvents: false
+    collectBuildLogs: false
+    refreshDogstatsdClient: false
+    cacheBuildRuns: false
+    useAwsInstanceHostname: false
