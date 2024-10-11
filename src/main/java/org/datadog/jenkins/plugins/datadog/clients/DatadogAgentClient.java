@@ -29,6 +29,24 @@ import com.timgroup.statsd.Event;
 import com.timgroup.statsd.NonBlockingStatsDClient;
 import com.timgroup.statsd.ServiceCheck;
 import com.timgroup.statsd.StatsDClient;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.logging.Logger;
+import javax.annotation.concurrent.GuardedBy;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
@@ -42,18 +60,6 @@ import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.json.JSONArray;
 import org.json.JSONObject;
-
-import javax.annotation.concurrent.GuardedBy;
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.function.Function;
-import java.util.logging.Logger;
 
 /**
  * This class is used to collect all methods that has to do with transmitting
@@ -90,8 +96,6 @@ public class DatadogAgentClient implements DatadogClient {
     }
 
     public DatadogAgentClient(String hostname, Integer port, Integer logCollectionPort, Integer traceCollectionPort, long evpProxyTimeoutMillis) {
-        validate(hostname, port, logCollectionPort, traceCollectionPort);
-
         this.hostname = hostname;
         this.port = port;
         this.logCollectionPort = logCollectionPort;
@@ -99,28 +103,34 @@ public class DatadogAgentClient implements DatadogClient {
         this.client = new HttpClient(evpProxyTimeoutMillis);
     }
 
-    private static void validate(String hostname, Integer port, Integer logCollectionPort, Integer traceCollectionPort) {
-        if (hostname == null || hostname.isEmpty()) {
-            throw new IllegalArgumentException("Datadog Target URL is not set properly");
-        }
-        if (port == null) {
-            throw new IllegalArgumentException("Datadog Target Port is not set properly");
-        }
-        if (DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs()  && logCollectionPort == null) {
-            logger.warning("Datadog Log Collection Port is not set properly");
-        }
+    /**
+     * Fetches the supported endpoints from the Trace Agent /info API
+     *
+     * @return a set of endpoints (if /info wasn't available, it will be empty)
+     */
+    @SuppressFBWarnings("REC_CATCH_EXCEPTION")
+    Set<String> fetchAgentSupportedEndpoints() {
+        logger.fine("Fetching Agent info");
 
-        if (DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()  && traceCollectionPort == null) {
-            logger.warning("Datadog Trace Collection Port is not set properly");
-        }
-    }
+        String url = String.format("http://%s:%d/info", hostname, traceCollectionPort);
+        try {
+            return client.get(url, Collections.emptyMap(), s -> {
+                JSONObject jsonResponse = new JSONObject(s);
+                JSONArray jsonEndpoints = jsonResponse.getJSONArray("endpoints");
 
-    public static ConnectivityResult checkConnectivity(final String host, final int port) {
-        try(Socket ignored = new Socket(host, port)) {
-            return ConnectivityResult.SUCCESS;
-        } catch (Exception ex) {
-            DatadogUtilities.severe(logger, ex, "Failed to create socket to host: " + host + ", port: " +port + ". Error: " + ex);
-            return new ConnectivityResult(true, ex.toString());
+                Set<String> endpoints = new HashSet<>();
+                for (int i = 0; i < jsonEndpoints.length(); i++) {
+                    endpoints.add(jsonEndpoints.getString(i));
+                }
+                return endpoints;
+            });
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            DatadogUtilities.severe(logger, e, "Could not get the list of agent endpoints");
+            return Collections.emptySet();
+        } catch (Exception e) {
+            DatadogUtilities.severe(logger, e, "Could not get the list of agent endpoints");
+            return Collections.emptySet();
         }
     }
 
@@ -377,37 +387,6 @@ public class DatadogAgentClient implements DatadogClient {
         logger.info("Checking for EVP Proxy support in the Agent.");
         Set<String> supportedAgentEndpoints = fetchAgentSupportedEndpoints();
         return supportedAgentEndpoints.contains("/evp_proxy/v3/");
-    }
-
-    /**
-     * Fetches the supported endpoints from the Trace Agent /info API
-     *
-     * @return a set of endpoints (if /info wasn't available, it will be empty)
-     */
-    @SuppressFBWarnings("REC_CATCH_EXCEPTION")
-    Set<String> fetchAgentSupportedEndpoints() {
-        logger.fine("Fetching Agent info");
-
-        String url = String.format("http://%s:%d/info", hostname, traceCollectionPort);
-        try {
-            return client.get(url, Collections.emptyMap(), s -> {
-                JSONObject jsonResponse = new JSONObject(s);
-                JSONArray jsonEndpoints = jsonResponse.getJSONArray("endpoints");
-
-                Set<String> endpoints = new HashSet<>();
-                for (int i = 0; i < jsonEndpoints.length(); i++) {
-                    endpoints.add(jsonEndpoints.getString(i));
-                }
-                return endpoints;
-            });
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            DatadogUtilities.severe(logger, e, "Could not get the list of agent endpoints");
-            return Collections.emptySet();
-        } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "Could not get the list of agent endpoints");
-            return Collections.emptySet();
-        }
     }
 
     /**

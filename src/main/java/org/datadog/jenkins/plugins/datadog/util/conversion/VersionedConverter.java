@@ -32,4 +32,9 @@ public abstract class VersionedConverter<T> {
         reader.moveUp();
         return value;
     }
+
+    public static <U> VersionedConverter<U> ignoreOldData() {
+        // syntax sugar to indicate that old data will be discarded
+        return null;
+    }
 }
