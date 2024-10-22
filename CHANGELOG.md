@@ -1,6 +1,8 @@
 Changes
 =======
 ## 8.0.0-beta / 2024-10-22
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-7.2.1...datadog-8.0.0-beta
 
 * [Added] Implement diagnostic flare. See [#454](https://github.com/jenkinsci/datadog-plugin/pull/454).
 * [Fixed] Refactor logs submission. See [#451](https://github.com/jenkinsci/datadog-plugin/pull/451).
