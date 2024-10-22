@@ -1,5 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.traces.message;
 
+import static org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter.ignoreOldData;
+
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.converters.MarshallingContext;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
@@ -10,7 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import org.datadog.jenkins.plugins.datadog.traces.IdGenerator;
-import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogActionConverter;
+import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogConverter;
 import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
 
 public class TraceSpan {
@@ -182,9 +184,9 @@ public class TraceSpan {
                     '}';
         }
 
-        public static final class ConverterImpl extends DatadogActionConverter<TraceSpanContext> {
+        public static final class ConverterImpl extends DatadogConverter<TraceSpanContext> {
             public ConverterImpl(XStream xs) {
-                super(new ConverterV1());
+                super(ignoreOldData(), new ConverterV1());
             }
         }
 
