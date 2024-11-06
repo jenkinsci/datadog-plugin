@@ -143,7 +143,11 @@ final class JavaConfigurator implements TracerConfigurator {
         Map<String, String> variables = new HashMap<>();
 
         String tracerAgent = "-javaagent:" + tracerFile.getRemote();
-        variables.put("JAVA_TOOL_OPTIONS", PropertyUtils.prepend(envs, "JAVA_TOOL_OPTIONS", tracerAgent));
+        variables.put("DD_TRACE_OPTS", PropertyUtils.prepend(envs, "DD_TRACE_OPTS", tracerAgent)); // this var can be used for "semi-automatic" tracer injection (e.g. `JAVA_TOOL_OPTIONS=$DD_TRACE_OPTS`)
+        variables.put("MAVEN_OPTS", PropertyUtils.prepend(envs, "MAVEN_OPTS", tracerAgent));
+        variables.put("SBT_OPTS", PropertyUtils.prepend(envs, "SBT_OPTS", tracerAgent));
+        variables.put("ANT_OPTS", PropertyUtils.prepend(envs, "ANT_OPTS", tracerAgent));
+        variables.put("GRADLE_OPTS", PropertyUtils.prepend(envs, "GRADLE_OPTS", "-Dorg.gradle.jvmargs=" + tracerAgent));
 
         String proxyConfiguration = getProxyConfiguration(tracerConfig, node);
         if (proxyConfiguration != null) {
