@@ -1,5 +1,6 @@
 package org.datadog.jenkins.plugins.datadog.model;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 
 public class PluginData implements Serializable {
@@ -11,12 +12,16 @@ public class PluginData implements Serializable {
     private long inactive = 0;
     private long updatable = 0;
 
+    @Nullable
+    private Integer warnings;
+
     private PluginData(Builder builder) {
         this.count = builder.count;
         this.failed = builder.failed;
         this.active = builder.active;
         this.inactive = builder.inactive;
         this.updatable = builder.updatable;
+        this.warnings = builder.warnings;
     }
 
     public static PluginData.Builder newBuilder() {
@@ -30,6 +35,9 @@ public class PluginData implements Serializable {
         private long inactive = 0;
         private long updatable = 0;
 
+        @Nullable
+        private Integer warnings;
+
         private Builder() {
         }
 
@@ -40,6 +48,11 @@ public class PluginData implements Serializable {
 
         public Builder withFailed(long failed) {
             this.failed = failed;
+            return this;
+        }
+
+        public Builder withWarnings(Integer warnings) {
+            this.warnings = warnings;
             return this;
         }
 
@@ -96,5 +109,10 @@ public class PluginData implements Serializable {
 
     public long getUpdatable() {
         return updatable;
+    }
+
+    @Nullable
+    public Integer getWarnings() {
+        return warnings;
     }
 }
