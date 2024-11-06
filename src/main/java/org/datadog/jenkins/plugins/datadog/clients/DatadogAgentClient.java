@@ -56,7 +56,6 @@ import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
 import org.datadog.jenkins.plugins.datadog.traces.mapper.JsonTraceSpanMapper;
 import org.datadog.jenkins.plugins.datadog.traces.write.*;
 import org.datadog.jenkins.plugins.datadog.util.CircuitBreaker;
-import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -101,57 +100,6 @@ public class DatadogAgentClient implements DatadogClient {
         this.logCollectionPort = logCollectionPort;
         this.traceCollectionPort = traceCollectionPort;
         this.client = new HttpClient(evpProxyTimeoutMillis);
-    }
-
-    /**
-     * Fetches the supported endpoints from the Trace Agent /info API
-     *
-     * @return a set of endpoints (if /info wasn't available, it will be empty)
-     */
-    @SuppressFBWarnings("REC_CATCH_EXCEPTION")
-    Set<String> fetchAgentSupportedEndpoints() {
-        logger.fine("Fetching Agent info");
-
-        String url = String.format("http://%s:%d/info", hostname, traceCollectionPort);
-        try {
-            return client.get(url, Collections.emptyMap(), s -> {
-                JSONObject jsonResponse = new JSONObject(s);
-                JSONArray jsonEndpoints = jsonResponse.getJSONArray("endpoints");
-
-                Set<String> endpoints = new HashSet<>();
-                for (int i = 0; i < jsonEndpoints.length(); i++) {
-                    endpoints.add(jsonEndpoints.getString(i));
-                }
-                return endpoints;
-            });
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            DatadogUtilities.severe(logger, e, "Could not get the list of agent endpoints");
-            return Collections.emptySet();
-        } catch (Exception e) {
-            DatadogUtilities.severe(logger, e, "Could not get the list of agent endpoints");
-            return Collections.emptySet();
-        }
-    }
-
-    public static class ConnectivityResult {
-        private final boolean error;
-        private final String errorMessage;
-
-        public static final ConnectivityResult SUCCESS = new ConnectivityResult(false, null);
-
-        public ConnectivityResult(final boolean error, final String errorMessage) {
-            this.error = error;
-            this.errorMessage = errorMessage;
-        }
-
-        public boolean isError() {
-            return error;
-        }
-
-        public String getErrorMessage() {
-            return errorMessage;
-        }
     }
 
     @Override
@@ -385,8 +333,35 @@ public class DatadogAgentClient implements DatadogClient {
 
     boolean isEvpProxySupported() {
         logger.info("Checking for EVP Proxy support in the Agent.");
-        Set<String> supportedAgentEndpoints = fetchAgentSupportedEndpoints();
-        return supportedAgentEndpoints.contains("/evp_proxy/v3/");
+        try {
+            Set<String> supportedAgentEndpoints = fetchAgentSupportedEndpoints(hostname, traceCollectionPort, client);
+            return supportedAgentEndpoints.contains("/evp_proxy/v3/");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            DatadogUtilities.severe(logger, e, "Could not get the list of agent endpoints");
+            return false;
+        } catch (Exception e) {
+            DatadogUtilities.severe(logger, e, "Could not get the list of agent endpoints");
+            return false;
+        }
+    }
+
+    /**
+     * Fetches the supported endpoints from the Trace Agent /info API
+     */
+    public static Set<String> fetchAgentSupportedEndpoints(String hostname, Integer traceCollectionPort, HttpClient client) throws Exception {
+        logger.fine("Fetching Agent info");
+        String url = String.format("http://%s:%d/info", hostname, traceCollectionPort);
+        return client.get(url, Collections.emptyMap(), s -> {
+            JSONObject jsonResponse = new JSONObject(s);
+            JSONArray jsonEndpoints = jsonResponse.getJSONArray("endpoints");
+
+            Set<String> endpoints = new HashSet<>();
+            for (int i = 0; i < jsonEndpoints.length(); i++) {
+                endpoints.add(jsonEndpoints.getString(i));
+            }
+            return endpoints;
+        });
     }
 
     /**
