@@ -1,5 +1,12 @@
 Changes
 =======
+## 8.1.0 / 2024-11-06
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-8.0.0...datadog-8.1.0
+
+* [Added] Add jenkins.plugin.withWarning metric. See [#453](https://github.com/jenkinsci/datadog-plugin/pull/453).
+* [Fixed] Only instrument Maven/Gradle/SBT/Ant when doing tests auto-instrumentation. See [#465](https://github.com/jenkinsci/datadog-plugin/pull/465).
+
 ## 8.0.0 / 2024-10-31
 ### Details
 
