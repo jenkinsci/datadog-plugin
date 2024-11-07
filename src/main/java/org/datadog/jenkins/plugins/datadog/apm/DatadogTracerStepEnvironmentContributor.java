@@ -9,6 +9,7 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import java.io.IOException;
 import java.util.Map;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepEnvironmentContributor;
 
@@ -20,8 +21,9 @@ public class DatadogTracerStepEnvironmentContributor extends StepEnvironmentCont
         Run<?, ?> run = stepContext.get(Run.class);
         Computer computer = stepContext.get(Computer.class);
         Node node = stepContext.get(Node.class);
+        FlowNode flowNode = stepContext.get(FlowNode.class);
         if (run != null && node != null) {
-            Map<String, String> additionalEnvVars = DatadogTracerConfigurator.INSTANCE.configure(run, computer, node, envs, listener);
+            Map<String, String> additionalEnvVars = DatadogTracerConfigurator.INSTANCE.configure(run, computer, node, flowNode, envs, listener);
             envs.putAll(additionalEnvVars);
         }
     }

@@ -18,6 +18,13 @@ public class TestVisibility implements Serializable {
     public TestVisibility() {
     }
 
+    public TestVisibility(boolean enabled, String serviceName, Collection<TracerLanguage> languages, Map<String, String> additionalVariables) {
+        this.enabled = enabled;
+        this.serviceName = serviceName;
+        this.languages = languages;
+        this.additionalVariables = additionalVariables;
+    }
+
     public boolean getEnabled() {
         return enabled;
     }

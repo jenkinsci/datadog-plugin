@@ -144,6 +144,19 @@ public class TracerInjectionIT {
         }
     }
 
+    @Test
+    public void testTracerInjectionViaPipelineStepInSingleStage() throws Exception {
+        WorkflowJob pipeline = givenPipelineProjectWithTracerEnabledStepInOneStage();
+        try {
+            WorkflowRun build = whenRunningBuild(pipeline);
+            jenkinsRule.assertLogContains("Stage 1 has no tracer", build);
+            jenkinsRule.assertLogContains("Stage 2 has tracer", build);
+            jenkinsRule.assertLogContains("Stage 3 has no tracer", build);
+        } finally {
+            pipeline.delete();
+        }
+    }
+
     private FreeStyleProject givenFreestyleProject() throws IOException {
         return jenkinsRule.createFreeStyleProject("freestyleProject");
     }
@@ -173,6 +186,13 @@ public class TracerInjectionIT {
         replacements.put("PIPELINE_STEPS", getMavenCommand());
 
         String pipelineDefinition = buildPipelineDefinition("test-maven-pipeline-with-datadog-step.txt", replacements);
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineProject");
+        job.setDefinition(new CpsFlowDefinition(pipelineDefinition, true));
+        return job;
+    }
+
+    private WorkflowJob givenPipelineProjectWithTracerEnabledStepInOneStage() throws Exception {
+        String pipelineDefinition = buildPipelineDefinition("test-multistage-maven-pipeline-with-datadog-step.txt", Collections.emptyMap());
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineProject");
         job.setDefinition(new CpsFlowDefinition(pipelineDefinition, true));
         return job;

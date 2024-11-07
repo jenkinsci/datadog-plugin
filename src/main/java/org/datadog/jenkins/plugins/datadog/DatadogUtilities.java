@@ -146,27 +146,65 @@ public class DatadogUtilities {
      * @param run - Current build
      * @return A {@link Map} containing the key,value pairs of tags if any.
      */
-    public static Map<String, Set<String>> getTagsFromPipelineAction(Run run) {
-        // pipeline defined tags
-        final Map<String, Set<String>> result = new HashMap<>();
-        DatadogPipelineAction action = run.getAction(DatadogPipelineAction.class);
-        if (action != null) {
-            List<String> pipelineTags = action.getTags();
-            for (String pipelineTag : pipelineTags) {
-                String[] tagItem = pipelineTag.replaceAll(" ", "").split(":", 2);
-                if (tagItem.length == 2) {
-                    String tagName = tagItem[0];
-                    String tagValue = tagItem[1];
-                    Set<String> tagValues = result.computeIfAbsent(tagName, k -> new HashSet<>());
-                    tagValues.add(tagValue.toLowerCase());
-                } else if (tagItem.length == 1) {
-                    String tagName = tagItem[0];
-                    Set<String> tagValues = result.computeIfAbsent(tagName, k -> new HashSet<>());
-                    tagValues.add(""); // no values
-                } else {
-                    logger.fine(String.format("Ignoring the tag %s. It is empty.", tagItem));
-                }
+    public static Map<String, Set<String>> getTagsFromPipelineAction(Run<?, ?> run) {
+        return getTagsFromPipelineAction(run, null);
+    }
+
+    public static Map<String, Set<String>> getTagsFromPipelineAction(Run<?, ?> run, @Nullable FlowNode node) {
+        Map<String, Set<String>> mergedTags = new HashMap<>();
+        List<DatadogPipelineAction> actions = getDatadogPipelineActions(run, node);
+        // iterating from outer actions to inner ones to preserve priority
+        ListIterator<DatadogPipelineAction> it = actions.listIterator(actions.size());
+        while (it.hasPrevious()) {
+            DatadogPipelineAction action = it.previous();
+            Map<String, Set<String>> tags = getTagsFromPipelineAction(action);
+            TagsUtil.merge(mergedTags, tags);
+        }
+        return mergedTags;
+    }
+
+    private static Map<String, Set<String>> getTagsFromPipelineAction(DatadogPipelineAction action) {
+        List<String> tags = action.getTags();
+        if (tags == null) {
+            return Collections.emptyMap();
+        }
+        Map<String, Set<String>> result = new HashMap<>();
+        for (String pipelineTag : tags) {
+            String[] tagItem = pipelineTag.replaceAll(" ", "").split(":", 2);
+            if (tagItem.length == 2) {
+                String tagName = tagItem[0];
+                String tagValue = tagItem[1];
+                Set<String> tagValues = result.computeIfAbsent(tagName, k -> new HashSet<>());
+                tagValues.add(tagValue.toLowerCase());
+            } else if (tagItem.length == 1) {
+                String tagName = tagItem[0];
+                Set<String> tagValues = result.computeIfAbsent(tagName, k -> new HashSet<>());
+                tagValues.add(""); // no values
+            } else {
+                logger.fine(String.format("Ignoring the tag %s. It is empty.", tagItem));
             }
+        }
+        return result;
+    }
+
+    /**
+     * Gets DatadogPipelineAction instances attached to given run and node.
+     * The list is ordered from the innermost action to the outermost one
+     * (that is, actions that are nested deeper go first in the list).
+     */
+    public static List<DatadogPipelineAction> getDatadogPipelineActions(Run<?, ?> run, @Nullable FlowNode node) {
+        List<DatadogPipelineAction> result = new ArrayList<>();
+        while (node != null) {
+            DatadogPipelineAction action = node.getAction(DatadogPipelineAction.class);
+            if (action != null) {
+                result.add(action);
+            }
+            node = DatadogUtilities.getEnclosingStageNode(node);
+        }
+
+        DatadogPipelineAction runAction = run.getAction(DatadogPipelineAction.class);
+        if (runAction != null){
+            result.add(runAction);
         }
         return result;
     }
@@ -924,6 +962,9 @@ public class DatadogUtilities {
      */
     @SuppressFBWarnings("DCN_NULLPOINTER_EXCEPTION")
     public static BlockStartNode getEnclosingStageNode(FlowNode node) {
+        if (node == null) {
+            return null;
+        }
         try {
             for (BlockStartNode block : node.iterateEnclosingBlocks()) {
                 if (DatadogUtilities.isStageNode(block)) {

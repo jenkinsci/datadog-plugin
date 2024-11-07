@@ -3,6 +3,7 @@ package org.datadog.jenkins.plugins.datadog.apm;
 import hudson.FilePath;
 import hudson.model.Node;
 import hudson.model.TaskListener;
+import org.datadog.jenkins.plugins.datadog.steps.TestVisibility;
 import java.io.File;
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,7 +15,7 @@ public class DotnetConfigurator implements TracerConfigurator {
     private static final int SHOW_TRACER_VARS_TIMEOUT_MILLIS = 30_000;
 
     @Override
-    public Map<String, String> configure(DatadogTracerJobProperty<?> tracerConfig, Node node, FilePath workspacePath, Map<String, String> envs, TaskListener listener) throws Exception {
+    public Map<String, String> configure(TestVisibility testVisibility, Node node, FilePath workspacePath, Map<String, String> envs, TaskListener listener) throws Exception {
         String dotnetVersion = workspacePath.act(new ShellCommandCallable(Collections.emptyMap(), GET_DOTNET_VERSION_TIMEOUT_MILLIS, "dotnet", "--version"));
         listener.getLogger().println("[datadog] Configuring DD .NET tracer: got .NET version " + dotnetVersion + " from " + workspacePath + " on " + node);
 

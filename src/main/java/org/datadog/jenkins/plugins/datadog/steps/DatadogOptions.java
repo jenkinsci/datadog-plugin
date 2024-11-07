@@ -15,6 +15,8 @@ import jenkins.YesNoMaybe;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.logs.DatadogTaskListenerDecorator;
 import org.datadog.jenkins.plugins.datadog.apm.DatadogTracerJobProperty;
+import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.log.TaskListenerDecorator;
 import org.jenkinsci.plugins.workflow.steps.BodyExecutionCallback;
@@ -97,16 +99,13 @@ public class DatadogOptions extends Step implements Serializable {
                 return false;
             }
             WorkflowRun workflowRun = (WorkflowRun) run;
-            if (run.getAction(DatadogPipelineAction.class) == null) {
-                run.addAction(action);
-            } else {
-                taskLogger.println("You already defined a datadog step");
-            }
 
-            TestVisibility testVisibility = action.getTestVisibility();
-            if (testVisibility != null) {
-                Job<?, ?> job = run.getParent();
-                job.addProperty(new DatadogTracerJobProperty<>(testVisibility.getEnabled(), testVisibility.getServiceName(), testVisibility.getLanguages(), testVisibility.getAdditionalVariables()));
+            FlowNode optionsNode = context.get(FlowNode.class);
+            BlockStartNode stageNode = DatadogUtilities.getEnclosingStageNode(optionsNode);
+            if (stageNode != null) {
+                stageNode.addOrReplaceAction(action);
+            } else {
+                run.addOrReplaceAction(action);
             }
 
             BodyInvoker invoker = context.newBodyInvoker().withCallback(BodyExecutionCallback.wrap(context));

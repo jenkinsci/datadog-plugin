@@ -29,7 +29,7 @@ public class DatadogTracerEnvironmentContributor extends EnvironmentContributor 
 
         Computer computer = executor.getOwner();
         Node node = computer.getNode();
-        Map<String, String> additionalEnvVars = DatadogTracerConfigurator.INSTANCE.configure(run, computer, node, envs, listener);
+        Map<String, String> additionalEnvVars = DatadogTracerConfigurator.INSTANCE.configure(run, computer, node, null, envs, listener);
         envs.putAll(additionalEnvVars);
     }
 }

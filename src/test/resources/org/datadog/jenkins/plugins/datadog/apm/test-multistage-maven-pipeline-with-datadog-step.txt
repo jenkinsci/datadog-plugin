@@ -1,0 +1,33 @@
+pipeline {
+    agent {
+      label 'built-in'
+    }
+    stages {
+        stage('Stage 1') {
+            steps {
+                sh '''
+                env | grep javaagent && echo "${STAGE_NAME} has tracer" || echo "${STAGE_NAME} has no tracer"
+                '''
+            }
+        }
+
+        stage('Stage 2') {
+            options {
+              datadog(testVisibility: [ enabled: true, serviceName: "my-service", languages: ["JAVA"], additionalVariables: ["my-var": "value"] ])
+            }
+            steps {
+                sh '''
+                env | grep javaagent && echo "${STAGE_NAME} has tracer" || echo "${STAGE_NAME} has no tracer"
+                '''
+            }
+        }
+
+        stage('Stage 3') {
+            steps {
+                sh '''
+                env | grep javaagent && echo "${STAGE_NAME} has tracer" || echo "${STAGE_NAME} has no tracer"
+                '''
+            }
+        }
+    }
+}

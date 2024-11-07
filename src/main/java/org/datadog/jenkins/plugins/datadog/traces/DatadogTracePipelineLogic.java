@@ -219,9 +219,8 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
             tags.put(PipelineStepData.StepType.STAGE.getTagName() + CITags._NAME, current.getStageName());
         }
 
-        // CI Tags propagation
         Map<String, String> globalTags = new HashMap<>(buildData.getTagsForTraces());
-        globalTags.putAll(TagsUtil.convertTagsToMapSingleValues(DatadogUtilities.getTagsFromPipelineAction(run)));
+        globalTags.putAll(TagsUtil.convertTagsToMapSingleValues(current.getTags()));
         tags.putAll(globalTags);
 
         return tags;

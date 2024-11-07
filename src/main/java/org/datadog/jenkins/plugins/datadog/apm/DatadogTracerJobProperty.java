@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import net.sf.json.JSONObject;
+import org.datadog.jenkins.plugins.datadog.steps.TestVisibility;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -58,6 +59,10 @@ public class DatadogTracerJobProperty<T extends Job<?, ?>> extends JobProperty<T
             list.add(new DatadogTracerEnvironmentProperty(e.getKey(), e.getValue()));
         }
         return list;
+    }
+
+    public TestVisibility getTestVisibility() {
+        return new TestVisibility(on, serviceName, languages, additionalVariables);
     }
 
     @Extension
