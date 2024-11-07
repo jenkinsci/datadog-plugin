@@ -1,5 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.apm;
 
+import static org.junit.Assume.assumeTrue;
+
 import hudson.FilePath;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
@@ -146,6 +148,7 @@ public class TracerInjectionIT {
 
     @Test
     public void testTracerInjectionViaPipelineStepInSingleStage() throws Exception {
+        assumeTrue(!isRunningOnWindows()); // the feature is platform-independent, but the test is not
         WorkflowJob pipeline = givenPipelineProjectWithTracerEnabledStepInOneStage();
         try {
             WorkflowRun build = whenRunningBuild(pipeline);

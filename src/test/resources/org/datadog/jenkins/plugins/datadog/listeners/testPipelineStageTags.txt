@@ -5,9 +5,7 @@ pipeline {
     stages {
         stage('Stage 1') {
             steps {
-                sh '''
-                echo "Stage 1"
-                '''
+                echo 'Stage 1'
             }
         }
 
@@ -18,9 +16,7 @@ pipeline {
             stages {
                 stage('Stage 2.1') {
                     steps {
-                        sh '''
-                        echo "Stage 2.1"
-                        '''
+                        echo 'Stage 2.1'
                     }
                 }
 
@@ -29,17 +25,13 @@ pipeline {
                         datadog(tags: ["inner_tag:another_value"])
                     }
                     steps {
-                        sh '''
-                        echo "Stage 2.2"
-                        '''
+                        echo 'Stage 2.2'
                     }
                 }
 
                 stage('Stage 2.3') {
                     steps {
-                        sh '''
-                        echo "Stage 2.3"
-                        '''
+                        echo 'Stage 2.3'
                     }
                 }
             }
@@ -47,9 +39,7 @@ pipeline {
 
         stage('Stage 3') {
             steps {
-                sh '''
-                echo "Stage 3"
-                '''
+                echo 'Stage 3'
             }
         }
     }
