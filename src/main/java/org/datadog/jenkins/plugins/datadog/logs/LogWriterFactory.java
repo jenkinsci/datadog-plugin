@@ -15,8 +15,8 @@ public class LogWriterFactory {
     private static final String POLLING_TIMEOUT_ENV_VAR = "DD_JENKINS_LOGS_POLLING_TIMEOUT_SECONDS";
     private static final String BATCH_SIZE_LIMIT_ENV_VAR = "DD_JENKINS_LOGS_BATCH_SIZE_LIMIT";
 
-    private static final int DEFAULT_QUEUE_CAPACITY = 5_000;
-    private static final int DEFAULT_SUBMIT_TIMEOUT_SECONDS = 5;
+    private static final int DEFAULT_QUEUE_CAPACITY = 10_000;
+    private static final int DEFAULT_SUBMIT_TIMEOUT_SECONDS = 0;
     private static final int DEFAULT_STOP_TIMEOUT_SECONDS = 10;
     private static final int DEFAULT_POLLING_TIMEOUT_SECONDS = 2;
     private static final int DEFAULT_BATCH_SIZE_LIMIT = 100;

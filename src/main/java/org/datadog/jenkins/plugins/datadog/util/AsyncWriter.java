@@ -1,8 +1,5 @@
 package org.datadog.jenkins.plugins.datadog.util;
 
-import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -10,7 +7,10 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.Nullable;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 
 public final class AsyncWriter<T> {
 
@@ -63,7 +63,9 @@ public final class AsyncWriter<T> {
 
     public void submit(@Nullable T element) throws InterruptedException, TimeoutException {
         if (element != null && !queue.offer(element, submitTimeoutSeconds, TimeUnit.SECONDS)) {
-            throw new TimeoutException("Timed out while submitting span: " + name);
+            if (logger.isLoggable(Level.FINE)) {
+                logger.log(Level.FINE, "Timed out while doing async submit: " + name);
+            }
         }
     }
 
