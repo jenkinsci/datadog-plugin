@@ -19,7 +19,7 @@ public class LogWriterFactory {
     private static final int DEFAULT_SUBMIT_TIMEOUT_SECONDS = 0;
     private static final int DEFAULT_STOP_TIMEOUT_SECONDS = 10;
     private static final int DEFAULT_POLLING_TIMEOUT_SECONDS = 2;
-    private static final int DEFAULT_BATCH_SIZE_LIMIT = 100;
+    private static final int DEFAULT_BATCH_SIZE_LIMIT = 500;
 
     private static volatile AsyncWriter<String> LOG_WRITER;
 

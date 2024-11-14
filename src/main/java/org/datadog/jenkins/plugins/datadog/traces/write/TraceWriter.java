@@ -21,7 +21,7 @@ public final class TraceWriter {
     private static final int DEFAULT_SUBMIT_TIMEOUT_SECONDS = 0;
     private static final int DEFAULT_STOP_TIMEOUT_SECONDS = 10;
     private static final int DEFAULT_POLLING_TIMEOUT_SECONDS = 5;
-    private static final int DEFAULT_BATCH_SIZE_LIMIT = 100;
+    private static final int DEFAULT_BATCH_SIZE_LIMIT = 500;
 
     private final TraceWriteStrategy traceWriteStrategy;
     private final AsyncWriter<Payload> asyncWriter;
