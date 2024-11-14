@@ -119,7 +119,11 @@ public abstract class DatadogBaseBuildLogic {
         Queue<FlowNode> nodes = new ArrayDeque<>(heads);
         while (!nodes.isEmpty()) {
             FlowNode node = nodes.poll();
-            nodes.addAll(node.getParents());
+            for (FlowNode parent : node.getParents()) {
+                if (parent != null){
+                    nodes.add(parent);
+                }
+            }
 
             if (!(node instanceof BlockEndNode)) {
                 continue;

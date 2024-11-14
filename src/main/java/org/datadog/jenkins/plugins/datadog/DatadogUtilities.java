@@ -923,12 +923,19 @@ public class DatadogUtilities {
      * Never returns the node itself.
      */
     public static BlockStartNode getEnclosingStageNode(FlowNode node) {
-        for (BlockStartNode block : node.iterateEnclosingBlocks()) {
-            if (DatadogUtilities.isStageNode(block)) {
-                return block;
+        try {
+            for (BlockStartNode block : node.iterateEnclosingBlocks()) {
+                if (DatadogUtilities.isStageNode(block)) {
+                    return block;
+                }
             }
+            return null;
+
+        } catch (NullPointerException e) {
+            // FlowNode#iterateEnclosingBlocks may throw an NPE
+            severe(logger, e, "Error while looking for enclosing stage node");
+            return null;
         }
-        return null;
     }
 
     /**
