@@ -368,7 +368,18 @@ public class DatadogAgentClient implements DatadogClient {
 
     @Override
     public TraceWriteStrategy createTraceWriteStrategy() {
-        TraceWriteStrategyImpl evpStrategy = new TraceWriteStrategyImpl(Track.WEBHOOK, this::sendSpansToWebhook);
+        DatadogGlobalConfiguration datadogGlobalDescriptor = DatadogUtilities.getDatadogGlobalDescriptor();
+        String urlParameters = datadogGlobalDescriptor != null ? "?service=" + datadogGlobalDescriptor.getCiInstanceName() : "";
+        String url = String.format("http://%s:%d/evp_proxy/v1/api/v2/webhook/%s", hostname, traceCollectionPort, urlParameters);
+
+        Map<String, String> headers = Map.of(
+                "X-Datadog-EVP-Subdomain", "webhook-intake",
+                "DD-CI-PROVIDER-NAME", "jenkins",
+                "Content-Encoding", "gzip");
+
+        JsonPayloadBatcher jsonPayloadBatcher = new JsonPayloadBatcher(client, url, headers);
+
+        TraceWriteStrategyImpl evpStrategy = new TraceWriteStrategyImpl(Track.WEBHOOK, payloads -> jsonPayloadBatcher.postInCompressedBatches(payloads, p -> p.getJson().toString(), PAYLOAD_SIZE_LIMIT));
         TraceWriteStrategyImpl apmStrategy = new TraceWriteStrategyImpl(Track.APM, this::sendSpansToApm);
         return new AgentTraceWriteStrategy(evpStrategy, apmStrategy, this::isEvpProxySupported);
     }
@@ -407,36 +418,6 @@ public class DatadogAgentClient implements DatadogClient {
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Could not get the list of agent endpoints");
             return Collections.emptySet();
-        }
-    }
-
-    /**
-     * Posts a given payload to the Agent EVP Proxy, so it is forwarded to the Webhook Intake.
-     */
-    private void sendSpansToWebhook(Collection<Payload> spans) {
-        DatadogGlobalConfiguration datadogGlobalDescriptor = DatadogUtilities.getDatadogGlobalDescriptor();
-        String urlParameters = datadogGlobalDescriptor != null ? "?service=" + datadogGlobalDescriptor.getCiInstanceName() : "";
-        String url = String.format("http://%s:%d/evp_proxy/v1/api/v2/webhook/%s", hostname, traceCollectionPort, urlParameters);
-
-        Map<String, String> headers = new HashMap<>();
-        headers.put("X-Datadog-EVP-Subdomain", "webhook-intake");
-        headers.put("DD-CI-PROVIDER-NAME", "jenkins");
-
-        for (Payload span : spans) {
-            if (span.getTrack() != Track.WEBHOOK) {
-                logger.severe("Expected webhook track, got " + span.getTrack() + ", dropping span");
-                continue;
-            }
-
-            byte[] body = span.getJson().toString().getBytes(StandardCharsets.UTF_8);
-            if (body.length > PAYLOAD_SIZE_LIMIT) {
-                logger.severe("Dropping span because payload size (" + body.length + ") exceeds the allowed limit of " + PAYLOAD_SIZE_LIMIT);
-                continue;
-            }
-
-            // webhook intake does not support batch requests
-            logger.fine("Sending webhook");
-            client.postAsynchronously(url, headers, "application/json", body);
         }
     }
 

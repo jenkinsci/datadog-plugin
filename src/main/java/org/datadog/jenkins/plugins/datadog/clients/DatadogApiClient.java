@@ -26,6 +26,12 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.clients;
 
 import hudson.util.Secret;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.logging.Logger;
 import net.sf.json.JSON;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -36,22 +42,12 @@ import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.logs.LogWriteStrategy;
 import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
-import org.datadog.jenkins.plugins.datadog.traces.write.Payload;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategyImpl;
 import org.datadog.jenkins.plugins.datadog.traces.write.Track;
 import org.datadog.jenkins.plugins.datadog.util.CircuitBreaker;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.logging.Logger;
-import java.util.zip.GZIPOutputStream;
 
 /**
  * This class is used to collect all methods that has to do with transmitting
@@ -67,7 +63,6 @@ public class DatadogApiClient implements DatadogClient {
     private static final String METRIC = "v1/series";
     private static final String SERVICECHECK = "v1/check_run";
     private static final String VALIDATE = "v1/validate";
-
 
     /* Timeout of 1 minutes for connecting and reading.
      * this prevents this plugin from causing jobs to hang in case of
@@ -176,7 +171,7 @@ public class DatadogApiClient implements DatadogClient {
 
         byte[] body = payload.getBytes(StandardCharsets.UTF_8);
         try {
-            httpClient.postAsynchronously(logIntakeUrl, headers, "application/json", body);
+            httpClient.post(logIntakeUrl, headers, "application/json", body, Function.identity());
             return true;
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to post logs");
@@ -325,20 +320,10 @@ public class DatadogApiClient implements DatadogClient {
     }
 
     private static final class ApiLogWriteStrategy implements LogWriteStrategy {
-        private static final byte[] BEGIN_JSON_ARRAY = "[".getBytes(StandardCharsets.UTF_8);
-        private static final byte[] END_JSON_ARRAY = "]".getBytes(StandardCharsets.UTF_8);
-        private static final byte[] COMMA = ",".getBytes(StandardCharsets.UTF_8);
-
-        private final String logIntakeUrl;
-        private final Secret apiKey;
-        private final HttpClient httpClient;
-
         private final CircuitBreaker<List<String>> circuitBreaker;
+        private final JsonPayloadBatcher jsonPayloadBatcher;
 
         public ApiLogWriteStrategy(String logIntakeUrl, Secret apiKey, HttpClient httpClient) {
-            this.logIntakeUrl = logIntakeUrl;
-            this.apiKey = apiKey;
-            this.httpClient = httpClient;
             this.circuitBreaker = new CircuitBreaker<>(
                     this::doSend,
                     this::fallback,
@@ -346,6 +331,14 @@ public class DatadogApiClient implements DatadogClient {
                     100,
                     CircuitBreaker.DEFAULT_MAX_HEALTH_CHECK_DELAY_MILLIS,
                     CircuitBreaker.DEFAULT_DELAY_FACTOR);
+
+            Map<String, String> headers = Map.of(
+                    "DD-API-KEY", Secret.toString(apiKey),
+                    "Content-Encoding", "gzip");
+            this.jsonPayloadBatcher = new JsonPayloadBatcher(
+                    httpClient,
+                    logIntakeUrl,
+                    headers);
         }
 
         @Override
@@ -354,39 +347,7 @@ public class DatadogApiClient implements DatadogClient {
         }
 
         private void doSend(List<String> payloads) throws Exception {
-            Map<String, String> headers = new HashMap<>();
-            headers.put("DD-API-KEY", Secret.toString(apiKey));
-            headers.put("Content-Encoding", "gzip");
-
-            ByteArrayOutputStream request = new ByteArrayOutputStream();
-            GZIPOutputStream gzip = new GZIPOutputStream(request);
-            // the backend checks the size limit against the uncompressed body of the request
-            int uncompressedRequestLength = 0;
-
-            for (String payload : payloads) {
-                byte[] body = payload.getBytes(StandardCharsets.UTF_8);
-                if (body.length + 2 > PAYLOAD_SIZE_LIMIT) { // + 2 is for array beginning and end: [<payload>]
-                    logger.severe("Dropping a log because payload size (" + body.length + ") exceeds the allowed limit of " + PAYLOAD_SIZE_LIMIT);
-                    continue;
-                }
-
-                if (uncompressedRequestLength + body.length + 2 > PAYLOAD_SIZE_LIMIT) { // + 2 is for comma and array end: ,<payload>]
-                    gzip.write(END_JSON_ARRAY);
-                    gzip.close();
-                    httpClient.post(logIntakeUrl, headers, "application/json", request.toByteArray(), Function.identity());
-                    request = new ByteArrayOutputStream();
-                    gzip = new GZIPOutputStream(request);
-                    uncompressedRequestLength = 0;
-                }
-
-                gzip.write(uncompressedRequestLength == 0 ? BEGIN_JSON_ARRAY : COMMA);
-                gzip.write(body);
-                uncompressedRequestLength += body.length + 1;
-            }
-
-            gzip.write(END_JSON_ARRAY);
-            gzip.close();
-            httpClient.post(logIntakeUrl, headers, "application/json", request.toByteArray(), Function.identity());
+            jsonPayloadBatcher.postInCompressedBatches(payloads, Function.identity(), PAYLOAD_SIZE_LIMIT);
         }
 
         private void handleError(Exception e) {
@@ -405,34 +366,17 @@ public class DatadogApiClient implements DatadogClient {
 
     @Override
     public TraceWriteStrategy createTraceWriteStrategy() {
-        return new TraceWriteStrategyImpl(Track.WEBHOOK, this::sendSpans);
-    }
-
-    private void sendSpans(Collection<Payload> spans) {
         DatadogGlobalConfiguration datadogGlobalDescriptor = DatadogUtilities.getDatadogGlobalDescriptor();
         String urlParameters = datadogGlobalDescriptor != null ? "?service=" + datadogGlobalDescriptor.getCiInstanceName() : "";
         String url = webhookIntakeUrl + urlParameters;
 
-        Map<String, String> headers = new HashMap<>();
-        headers.put("DD-API-KEY", Secret.toString(apiKey));
-        headers.put("DD-CI-PROVIDER-NAME", "jenkins");
+        Map<String, String> headers = Map.of(
+                "DD-API-KEY", Secret.toString(apiKey),
+                "DD-CI-PROVIDER-NAME", "jenkins",
+                "Content-Encoding", "gzip");
 
-        for (Payload span : spans) {
-            if (span.getTrack() != Track.WEBHOOK) {
-                logger.severe("Expected webhook track, got " + span.getTrack() + ", dropping span");
-                continue;
-            }
-
-            byte[] body = span.getJson().toString().getBytes(StandardCharsets.UTF_8);
-            if (body.length > PAYLOAD_SIZE_LIMIT) {
-                logger.severe("Dropping span because payload size (" + body.length + ") exceeds the allowed limit of " + PAYLOAD_SIZE_LIMIT);
-                continue;
-            }
-
-            // webhook intake does not support batch requests
-            logger.fine("Sending webhook");
-            httpClient.postAsynchronously(url, headers, "application/json", body);
-        }
+        JsonPayloadBatcher jsonPayloadBatcher = new JsonPayloadBatcher(httpClient, url, headers);
+        return new TraceWriteStrategyImpl(Track.WEBHOOK, payloads -> jsonPayloadBatcher.postInCompressedBatches(payloads, p -> p.getJson().toString(), PAYLOAD_SIZE_LIMIT));
     }
 
     @Override
