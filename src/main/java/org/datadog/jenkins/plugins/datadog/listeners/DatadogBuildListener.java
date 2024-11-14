@@ -47,6 +47,7 @@ import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriter;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
+import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import javax.annotation.Nonnull;
@@ -533,6 +534,7 @@ public class DatadogBuildListener extends RunListener<Run> {
         return run != null && run.getResult() != Result.SUCCESS;
     }
 
+    @SuppressFBWarnings("DCN_NULLPOINTER_EXCEPTION")
     public RunExt getRunExtForRun(WorkflowRun run) {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         try {
