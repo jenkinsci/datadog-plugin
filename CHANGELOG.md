@@ -20,6 +20,18 @@ https://github.com/jenkinsci/datadog-plugin/compare/datadog-7.2.1...datadog-8.0.
 * [Fixed] Refactor logs submission. See [#451](https://github.com/jenkinsci/datadog-plugin/pull/451).
 * [Fixed] Delay sending start event for pipelines. See [#461](https://github.com/jenkinsci/datadog-plugin/pull/461).
 
+> [!IMPORTANT]  
+> 💥 The Jenkins Configuration as Code (JCasC) attribute `retryLogs` is not supported anymore.
+>
+> If you use a JCasC YAML configuration, either:
+> - Ensure the attribute `unclassified.datadogGlobalConfiguration.retryLogs` is removed
+> - Or set `unclassified.datadogGlobalConfiguration.deprecated` to `warn` to avoid the error
+> ```text
+> Error Loading Configuration 'retryLogs' is deprecated
+> ```
+>
+> See https://github.com/jenkinsci/datadog-plugin/issues/467 for details
+
 ## 7.2.1 / 2024-09-24
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-7.2.0...datadog-7.2.1
