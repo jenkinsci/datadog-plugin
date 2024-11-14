@@ -87,11 +87,10 @@ public class DatadogBuildListener extends RunListener<Run> {
             }
             logger.fine("Start DatadogBuildListener#onInitialize");
 
-            // Get Datadog Client Instance
-            DatadogClient client = getDatadogClient();
-            if (client == null) {
-                return;
-            }
+            run.addAction(new GitCommitAction());
+            run.addAction(new GitRepositoryAction());
+            run.addAction(new TraceInfoAction());
+            run.addAction(new PipelineQueueInfoAction());
 
             // Collect Build Data
             BuildData buildData;
@@ -122,11 +121,6 @@ public class DatadogBuildListener extends RunListener<Run> {
 
             final BuildSpanAction buildSpanAction = new BuildSpanAction(buildSpanContext, upstreamBuildSpanContext);
             run.addAction(buildSpanAction);
-
-            run.addAction(new GitCommitAction());
-            run.addAction(new GitRepositoryAction());
-            run.addAction(new TraceInfoAction());
-            run.addAction(new PipelineQueueInfoAction());
 
             logger.fine("End DatadogBuildListener#onInitialize");
         } catch (Exception e) {
