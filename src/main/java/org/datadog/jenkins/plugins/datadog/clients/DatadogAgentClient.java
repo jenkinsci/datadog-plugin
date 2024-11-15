@@ -374,16 +374,18 @@ public class DatadogAgentClient implements DatadogClient {
         String urlParameters = datadogGlobalDescriptor != null ? "?service=" + datadogGlobalDescriptor.getCiInstanceName() : "";
         String url = String.format("http://%s:%d/evp_proxy/v1/api/v2/webhook/%s", hostname, traceCollectionPort, urlParameters);
 
-        Map<String, String> headers = Map.of(
-                "X-Datadog-EVP-Subdomain", "webhook-intake",
-                "DD-CI-PROVIDER-NAME", "jenkins",
-                "Content-Encoding", "gzip");
-
         // TODO use CompressedBatchSender unconditionally in the next release
         JsonPayloadSender<Payload> payloadSender;
         if (DatadogUtilities.envVar(ENABLE_TRACES_BATCHING_ENV_VAR, false)) {
+            Map<String, String> headers = Map.of(
+                    "X-Datadog-EVP-Subdomain", "webhook-intake",
+                    "DD-CI-PROVIDER-NAME", "jenkins",
+                    "Content-Encoding", "gzip");
             payloadSender = new CompressedBatchSender<>(client, url, headers, PAYLOAD_SIZE_LIMIT, p -> p.getJson().toString());
         } else {
+            Map<String, String> headers = Map.of(
+                    "X-Datadog-EVP-Subdomain", "webhook-intake",
+                    "DD-CI-PROVIDER-NAME", "jenkins");
             payloadSender = new SimpleSender<>(client, url, headers, p -> p.getJson().toString());
         }
 
