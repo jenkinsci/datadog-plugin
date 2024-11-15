@@ -25,6 +25,8 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.clients;
 
+import static org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy.ENABLE_TRACES_BATCHING_ENV_VAR;
+
 import hudson.util.Secret;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -338,7 +340,8 @@ public class DatadogApiClient implements DatadogClient {
             this.jsonPayloadBatcher = new JsonPayloadBatcher(
                     httpClient,
                     logIntakeUrl,
-                    headers);
+                    headers,
+                    true);
         }
 
         @Override
@@ -375,7 +378,7 @@ public class DatadogApiClient implements DatadogClient {
                 "DD-CI-PROVIDER-NAME", "jenkins",
                 "Content-Encoding", "gzip");
 
-        JsonPayloadBatcher jsonPayloadBatcher = new JsonPayloadBatcher(httpClient, url, headers);
+        JsonPayloadBatcher jsonPayloadBatcher = new JsonPayloadBatcher(httpClient, url, headers, DatadogUtilities.envVar(ENABLE_TRACES_BATCHING_ENV_VAR, false));
         return new TraceWriteStrategyImpl(Track.WEBHOOK, payloads -> jsonPayloadBatcher.postInCompressedBatches(payloads, p -> p.getJson().toString(), PAYLOAD_SIZE_LIMIT));
     }
 

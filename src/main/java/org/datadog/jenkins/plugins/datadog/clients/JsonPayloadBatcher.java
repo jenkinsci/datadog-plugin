@@ -19,11 +19,13 @@ public class JsonPayloadBatcher {
     private final HttpClient httpClient;
     private final String url;
     private final Map<String, String> headers;
+    private final boolean enableBatching; // TODO remove this flag in the next release
 
-    public JsonPayloadBatcher(HttpClient httpClient, String url, Map<String, String> headers) {
+    public JsonPayloadBatcher(HttpClient httpClient, String url, Map<String, String> headers, boolean enableBatching) {
         this.httpClient = httpClient;
         this.url = url;
         this.headers = headers;
+        this.enableBatching = enableBatching;
     }
 
     public <T> void postInCompressedBatches(Collection<T> payloads, Function<T, String> payloadToString, int batchLimitBytes) throws Exception {
@@ -39,7 +41,8 @@ public class JsonPayloadBatcher {
                 continue;
             }
 
-            if (uncompressedRequestLength + body.length + 2 > batchLimitBytes) { // + 2 is for comma and array end: ,<payload>]
+            if (!enableBatching && uncompressedRequestLength > 0 ||
+                    uncompressedRequestLength + body.length + 2 > batchLimitBytes) { // + 2 is for comma and array end: ,<payload>]
                 gzip.write(END_JSON_ARRAY);
                 gzip.close();
                 httpClient.post(url, headers, "application/json", request.toByteArray(), Function.identity());

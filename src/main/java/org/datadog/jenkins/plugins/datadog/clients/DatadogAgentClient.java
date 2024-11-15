@@ -25,6 +25,8 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.clients;
 
+import static org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy.ENABLE_TRACES_BATCHING_ENV_VAR;
+
 import com.timgroup.statsd.Event;
 import com.timgroup.statsd.NonBlockingStatsDClient;
 import com.timgroup.statsd.ServiceCheck;
@@ -377,7 +379,7 @@ public class DatadogAgentClient implements DatadogClient {
                 "DD-CI-PROVIDER-NAME", "jenkins",
                 "Content-Encoding", "gzip");
 
-        JsonPayloadBatcher jsonPayloadBatcher = new JsonPayloadBatcher(client, url, headers);
+        JsonPayloadBatcher jsonPayloadBatcher = new JsonPayloadBatcher(client, url, headers, DatadogUtilities.envVar(ENABLE_TRACES_BATCHING_ENV_VAR, false));
 
         TraceWriteStrategyImpl evpStrategy = new TraceWriteStrategyImpl(Track.WEBHOOK, payloads -> jsonPayloadBatcher.postInCompressedBatches(payloads, p -> p.getJson().toString(), PAYLOAD_SIZE_LIMIT));
         TraceWriteStrategyImpl apmStrategy = new TraceWriteStrategyImpl(Track.APM, this::sendSpansToApm);

@@ -1237,24 +1237,24 @@ public class DatadogUtilities {
     }
 
     public static int envVar(String name, int defaultValue) {
-        String value = System.getenv(name);
-        if (value != null) {
-            try {
-                return Integer.parseInt(value);
-            } catch (Exception e) {
-                DatadogUtilities.severe(logger, null, "Invalid value " + value + " provided for env var " + name + ": integer number expected");
-            }
-        }
-        return defaultValue;
+        return envVar(name, Integer::parseInt, defaultValue);
     }
 
     public static double envVar(String name, double defaultValue) {
+        return envVar(name, Double::parseDouble, defaultValue);
+    }
+
+    public static boolean envVar(String name, boolean defaultValue) {
+        return envVar(name, Boolean::parseBoolean, defaultValue);
+    }
+
+    public static <T> T envVar(String name, Function<String, T> parser, T defaultValue) {
         String value = System.getenv(name);
         if (value != null) {
             try {
-                return Double.parseDouble(value);
+                return parser.apply(value);
             } catch (Exception e) {
-                DatadogUtilities.severe(logger, null, "Invalid value " + value + " provided for env var " + name + ": floating point number expected");
+                DatadogUtilities.severe(logger, null, "Invalid value " + value + " provided for env var " + name);
             }
         }
         return defaultValue;
