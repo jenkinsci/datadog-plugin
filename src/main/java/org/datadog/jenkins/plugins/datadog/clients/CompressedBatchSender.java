@@ -8,9 +8,9 @@ import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
 
-public class JsonPayloadBatcher {
+public class CompressedBatchSender<T> implements JsonPayloadSender<T> {
 
-    private static final Logger logger = Logger.getLogger(JsonPayloadBatcher.class.getName());
+    private static final Logger logger = Logger.getLogger(CompressedBatchSender.class.getName());
 
     private static final byte[] BEGIN_JSON_ARRAY = "[".getBytes(StandardCharsets.UTF_8);
     private static final byte[] END_JSON_ARRAY = "]".getBytes(StandardCharsets.UTF_8);
@@ -19,16 +19,23 @@ public class JsonPayloadBatcher {
     private final HttpClient httpClient;
     private final String url;
     private final Map<String, String> headers;
-    private final boolean enableBatching; // TODO remove this flag in the next release
+    private final int batchLimitBytes;
+    private final Function<T, String> payloadToString;
 
-    public JsonPayloadBatcher(HttpClient httpClient, String url, Map<String, String> headers, boolean enableBatching) {
+    public CompressedBatchSender(HttpClient httpClient,
+                                 String url,
+                                 Map<String, String> headers,
+                                 int batchLimitBytes,
+                                 Function<T, String> payloadToString) {
         this.httpClient = httpClient;
         this.url = url;
         this.headers = headers;
-        this.enableBatching = enableBatching;
+        this.batchLimitBytes = batchLimitBytes;
+        this.payloadToString = payloadToString;
     }
 
-    public <T> void postInCompressedBatches(Collection<T> payloads, Function<T, String> payloadToString, int batchLimitBytes) throws Exception {
+    @Override
+    public void send(Collection<T> payloads) throws Exception {
         ByteArrayOutputStream request = new ByteArrayOutputStream();
         GZIPOutputStream gzip = new GZIPOutputStream(request);
         // the backend checks the size limit against the uncompressed body of the request
@@ -41,8 +48,7 @@ public class JsonPayloadBatcher {
                 continue;
             }
 
-            if (!enableBatching && uncompressedRequestLength > 0 ||
-                    uncompressedRequestLength + body.length + 2 > batchLimitBytes) { // + 2 is for comma and array end: ,<payload>]
+            if (uncompressedRequestLength + body.length + 2 > batchLimitBytes) { // + 2 is for comma and array end: ,<payload>]
                 gzip.write(END_JSON_ARRAY);
                 gzip.close();
                 httpClient.post(url, headers, "application/json", request.toByteArray(), Function.identity());

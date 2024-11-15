@@ -44,6 +44,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.logs.LogWriteStrategy;
 import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
+import org.datadog.jenkins.plugins.datadog.traces.write.Payload;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategyImpl;
 import org.datadog.jenkins.plugins.datadog.traces.write.Track;
@@ -323,34 +324,30 @@ public class DatadogApiClient implements DatadogClient {
 
     private static final class ApiLogWriteStrategy implements LogWriteStrategy {
         private final CircuitBreaker<List<String>> circuitBreaker;
-        private final JsonPayloadBatcher jsonPayloadBatcher;
 
         public ApiLogWriteStrategy(String logIntakeUrl, Secret apiKey, HttpClient httpClient) {
+            Map<String, String> headers = Map.of(
+                    "DD-API-KEY", Secret.toString(apiKey),
+                    "Content-Encoding", "gzip");
+            JsonPayloadSender<String> payloadSender = new CompressedBatchSender<>(
+                    httpClient,
+                    logIntakeUrl,
+                    headers,
+                    PAYLOAD_SIZE_LIMIT,
+                    Function.identity());
+
             this.circuitBreaker = new CircuitBreaker<>(
-                    this::doSend,
+                    payloadSender::send,
                     this::fallback,
                     this::handleError,
                     100,
                     CircuitBreaker.DEFAULT_MAX_HEALTH_CHECK_DELAY_MILLIS,
                     CircuitBreaker.DEFAULT_DELAY_FACTOR);
-
-            Map<String, String> headers = Map.of(
-                    "DD-API-KEY", Secret.toString(apiKey),
-                    "Content-Encoding", "gzip");
-            this.jsonPayloadBatcher = new JsonPayloadBatcher(
-                    httpClient,
-                    logIntakeUrl,
-                    headers,
-                    true);
         }
 
         @Override
         public void send(List<String> logs) {
             circuitBreaker.accept(logs);
-        }
-
-        private void doSend(List<String> payloads) throws Exception {
-            jsonPayloadBatcher.postInCompressedBatches(payloads, Function.identity(), PAYLOAD_SIZE_LIMIT);
         }
 
         private void handleError(Exception e) {
@@ -378,8 +375,15 @@ public class DatadogApiClient implements DatadogClient {
                 "DD-CI-PROVIDER-NAME", "jenkins",
                 "Content-Encoding", "gzip");
 
-        JsonPayloadBatcher jsonPayloadBatcher = new JsonPayloadBatcher(httpClient, url, headers, DatadogUtilities.envVar(ENABLE_TRACES_BATCHING_ENV_VAR, false));
-        return new TraceWriteStrategyImpl(Track.WEBHOOK, payloads -> jsonPayloadBatcher.postInCompressedBatches(payloads, p -> p.getJson().toString(), PAYLOAD_SIZE_LIMIT));
+        // TODO use CompressedBatchSender unconditionally in the next release
+        JsonPayloadSender<Payload> payloadSender;
+        if (DatadogUtilities.envVar(ENABLE_TRACES_BATCHING_ENV_VAR, false)) {
+            payloadSender = new CompressedBatchSender<>(httpClient, url, headers, PAYLOAD_SIZE_LIMIT, p -> p.getJson().toString());
+        } else {
+            payloadSender = new SimpleSender<>(httpClient, url, headers, p -> p.getJson().toString());
+        }
+
+        return new TraceWriteStrategyImpl(Track.WEBHOOK, payloadSender::send);
     }
 
     @Override

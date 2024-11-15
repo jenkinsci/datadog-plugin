@@ -379,9 +379,15 @@ public class DatadogAgentClient implements DatadogClient {
                 "DD-CI-PROVIDER-NAME", "jenkins",
                 "Content-Encoding", "gzip");
 
-        JsonPayloadBatcher jsonPayloadBatcher = new JsonPayloadBatcher(client, url, headers, DatadogUtilities.envVar(ENABLE_TRACES_BATCHING_ENV_VAR, false));
+        // TODO use CompressedBatchSender unconditionally in the next release
+        JsonPayloadSender<Payload> payloadSender;
+        if (DatadogUtilities.envVar(ENABLE_TRACES_BATCHING_ENV_VAR, false)) {
+            payloadSender = new CompressedBatchSender<>(client, url, headers, PAYLOAD_SIZE_LIMIT, p -> p.getJson().toString());
+        } else {
+            payloadSender = new SimpleSender<>(client, url, headers, p -> p.getJson().toString());
+        }
 
-        TraceWriteStrategyImpl evpStrategy = new TraceWriteStrategyImpl(Track.WEBHOOK, payloads -> jsonPayloadBatcher.postInCompressedBatches(payloads, p -> p.getJson().toString(), PAYLOAD_SIZE_LIMIT));
+        TraceWriteStrategyImpl evpStrategy = new TraceWriteStrategyImpl(Track.WEBHOOK, payloadSender::send);
         TraceWriteStrategyImpl apmStrategy = new TraceWriteStrategyImpl(Track.APM, this::sendSpansToApm);
         return new AgentTraceWriteStrategy(evpStrategy, apmStrategy, this::isEvpProxySupported);
     }
