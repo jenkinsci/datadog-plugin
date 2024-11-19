@@ -24,7 +24,7 @@ public class WritersHealthFlare implements FlareContributor {
 
     @Override
     public int order() {
-        return 0;
+        return ORDER.WRITERS_HEALTH;
     }
 
     @Override

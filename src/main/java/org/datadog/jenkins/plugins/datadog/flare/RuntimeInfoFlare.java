@@ -15,7 +15,7 @@ public class RuntimeInfoFlare implements FlareContributor {
 
     @Override
     public int order() {
-        return 0;
+        return ORDER.RUNTIME_INFO;
     }
 
     @Override

@@ -21,7 +21,7 @@ public class DatadogConfigFlare implements FlareContributor {
 
     @Override
     public int order() {
-        return 1;
+        return ORDER.CONFIG;
     }
 
     @Override

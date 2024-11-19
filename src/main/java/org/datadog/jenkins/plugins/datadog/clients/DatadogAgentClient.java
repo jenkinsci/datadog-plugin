@@ -303,7 +303,7 @@ public class DatadogAgentClient implements DatadogClient {
         private final String host;
         private final int port;
 
-        private final CircuitBreaker<List<String>> circuitBreaker;
+        private final CircuitBreaker<List<net.sf.json.JSONObject>> circuitBreaker;
 
         private Socket socket;
         private OutputStream out;
@@ -320,17 +320,17 @@ public class DatadogAgentClient implements DatadogClient {
                     CircuitBreaker.DEFAULT_DELAY_FACTOR);
         }
 
-        public void send(List<String> payloads) {
+        public void send(List<net.sf.json.JSONObject> payloads) {
             circuitBreaker.accept(payloads);
         }
 
-        private void doSend(List<String> payloads) throws Exception {
+        private void doSend(List<net.sf.json.JSONObject> payloads) throws Exception {
             if (socket == null || socket.isClosed() || !socket.isConnected()) {
                 socket = new Socket(host, port);
                 out = new BufferedOutputStream(socket.getOutputStream());
             }
-            for (String payload : payloads) {
-                out.write(payload.getBytes(StandardCharsets.UTF_8));
+            for (net.sf.json.JSONObject payload : payloads) {
+                out.write(payload.toString().getBytes(StandardCharsets.UTF_8));
                 out.write(LINE_SEPARATOR);
             }
         }
@@ -340,7 +340,7 @@ public class DatadogAgentClient implements DatadogClient {
             DatadogUtilities.severe(logger, e, "Could not write logs to agent");
         }
 
-        private void fallback(List<String> payloads) {
+        private void fallback(List<net.sf.json.JSONObject> payloads) {
             // cannot establish connection to agent, do nothing
         }
 
@@ -381,12 +381,12 @@ public class DatadogAgentClient implements DatadogClient {
                     "X-Datadog-EVP-Subdomain", "webhook-intake",
                     "DD-CI-PROVIDER-NAME", "jenkins",
                     "Content-Encoding", "gzip");
-            payloadSender = new CompressedBatchSender<>(client, url, headers, PAYLOAD_SIZE_LIMIT, p -> p.getJson().toString());
+            payloadSender = new CompressedBatchSender<>(client, url, headers, PAYLOAD_SIZE_LIMIT, p -> p.getJson());
         } else {
             Map<String, String> headers = Map.of(
                     "X-Datadog-EVP-Subdomain", "webhook-intake",
                     "DD-CI-PROVIDER-NAME", "jenkins");
-            payloadSender = new SimpleSender<>(client, url, headers, p -> p.getJson().toString());
+            payloadSender = new SimpleSender<>(client, url, headers, p -> p.getJson());
         }
 
         TraceWriteStrategyImpl evpStrategy = new TraceWriteStrategyImpl(Track.WEBHOOK, payloadSender::send);

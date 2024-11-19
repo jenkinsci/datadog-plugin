@@ -1,5 +1,6 @@
 package org.datadog.jenkins.plugins.datadog.clients;
 
+import net.sf.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -20,18 +21,18 @@ public class CompressedBatchSender<T> implements JsonPayloadSender<T> {
     private final String url;
     private final Map<String, String> headers;
     private final int batchLimitBytes;
-    private final Function<T, String> payloadToString;
+    private final Function<T, JSONObject> payloadToJson;
 
     public CompressedBatchSender(HttpClient httpClient,
                                  String url,
                                  Map<String, String> headers,
                                  int batchLimitBytes,
-                                 Function<T, String> payloadToString) {
+                                 Function<T, JSONObject> payloadToJson) {
         this.httpClient = httpClient;
         this.url = url;
         this.headers = headers;
         this.batchLimitBytes = batchLimitBytes;
-        this.payloadToString = payloadToString;
+        this.payloadToJson = payloadToJson;
     }
 
     @Override
@@ -42,7 +43,8 @@ public class CompressedBatchSender<T> implements JsonPayloadSender<T> {
         int uncompressedRequestLength = 0;
 
         for (T payload : payloads) {
-            byte[] body = payloadToString.apply(payload).getBytes(StandardCharsets.UTF_8);
+            JSONObject json = payloadToJson.apply(payload);
+            byte[] body = json.toString().getBytes(StandardCharsets.UTF_8);
             if (body.length + 2 > batchLimitBytes) { // + 2 is for array beginning and end: [<payload>]
                 logger.severe("Dropping a payload because size (" + body.length + ") exceeds the allowed limit of " + batchLimitBytes);
                 continue;

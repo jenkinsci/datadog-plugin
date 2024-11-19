@@ -72,9 +72,9 @@ public class DatadogWriter {
             payload.put("timestamp", System.currentTimeMillis());
             payload.put(PipelineStepData.StepType.PIPELINE.getTagName() + CITags._NAME, this.buildData.getJobName());
 
-            AsyncWriter<String> logWriter = LogWriterFactory.getLogWriter();
+            AsyncWriter<JSONObject> logWriter = LogWriterFactory.getLogWriter();
             if (logWriter != null) {
-                logWriter.submit(payload.toString());
+                logWriter.submit(payload);
             }
 
         } catch (Exception e) {

@@ -18,7 +18,7 @@ public class ExceptionsFlare implements FlareContributor {
 
     @Override
     public int order() {
-        return 4;
+        return ORDER.EXCEPTIONS;
     }
 
     @Override

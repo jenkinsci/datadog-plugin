@@ -157,24 +157,17 @@ public class DatadogApiClient implements DatadogClient {
     }
 
     public static boolean validateLogIntakeConnection(String logsIntakeUrl, Secret apiKey) {
-        String payload = "{\"message\":\"[datadog-plugin] Check connection\", " +
-                "\"ddsource\":\"Jenkins\", \"service\":\"Jenkins\", " +
-                "\"hostname\":\"" + DatadogUtilities.getHostname(null) + "\"}";
-        return postLogs(new HttpClient(HTTP_TIMEOUT_MS), logsIntakeUrl, apiKey, payload);
-    }
-
-    private static boolean postLogs(HttpClient httpClient, String logIntakeUrl, Secret apiKey, String payload) {
-        if(payload == null){
-            logger.fine("No payload to post");
-            return true;
-        }
+        HttpClient httpClient = new HttpClient(HTTP_TIMEOUT_MS);
 
         Map<String, String> headers = new HashMap<>();
         headers.put("DD-API-KEY", Secret.toString(apiKey));
 
+        String payload = "{\"message\":\"[datadog-plugin] Check connection\", " +
+                "\"ddsource\":\"Jenkins\", \"service\":\"Jenkins\", " +
+                "\"hostname\":\"" + DatadogUtilities.getHostname(null) + "\"}";
         byte[] body = payload.getBytes(StandardCharsets.UTF_8);
         try {
-            httpClient.post(logIntakeUrl, headers, "application/json", body, Function.identity());
+            httpClient.post(logsIntakeUrl, headers, "application/json", body, Function.identity());
             return true;
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to post logs");
@@ -323,13 +316,13 @@ public class DatadogApiClient implements DatadogClient {
     }
 
     private static final class ApiLogWriteStrategy implements LogWriteStrategy {
-        private final CircuitBreaker<List<String>> circuitBreaker;
+        private final CircuitBreaker<List<JSONObject>> circuitBreaker;
 
         public ApiLogWriteStrategy(String logIntakeUrl, Secret apiKey, HttpClient httpClient) {
             Map<String, String> headers = Map.of(
                     "DD-API-KEY", Secret.toString(apiKey),
                     "Content-Encoding", "gzip");
-            JsonPayloadSender<String> payloadSender = new CompressedBatchSender<>(
+            JsonPayloadSender<JSONObject> payloadSender = new CompressedBatchSender<>(
                     httpClient,
                     logIntakeUrl,
                     headers,
@@ -346,7 +339,7 @@ public class DatadogApiClient implements DatadogClient {
         }
 
         @Override
-        public void send(List<String> logs) {
+        public void send(List<JSONObject> logs) {
             circuitBreaker.accept(logs);
         }
 
@@ -354,7 +347,7 @@ public class DatadogApiClient implements DatadogClient {
             DatadogUtilities.severe(logger, e, "Failed to post logs");
         }
 
-        private void fallback(List<String> payloads) {
+        private void fallback(List<JSONObject> payloads) {
             // cannot establish connection to API, do nothing
         }
 
@@ -377,12 +370,12 @@ public class DatadogApiClient implements DatadogClient {
                     "DD-API-KEY", Secret.toString(apiKey),
                     "DD-CI-PROVIDER-NAME", "jenkins",
                     "Content-Encoding", "gzip");
-            payloadSender = new CompressedBatchSender<>(httpClient, url, headers, PAYLOAD_SIZE_LIMIT, p -> p.getJson().toString());
+            payloadSender = new CompressedBatchSender<>(httpClient, url, headers, PAYLOAD_SIZE_LIMIT, p -> p.getJson());
         } else {
             Map<String, String> headers = Map.of(
                     "DD-API-KEY", Secret.toString(apiKey),
                     "DD-CI-PROVIDER-NAME", "jenkins");
-            payloadSender = new SimpleSender<>(httpClient, url, headers, p -> p.getJson().toString());
+            payloadSender = new SimpleSender<>(httpClient, url, headers, p -> p.getJson());
         }
 
         return new TraceWriteStrategyImpl(Track.WEBHOOK, payloadSender::send);

@@ -12,7 +12,7 @@ public class ThreadDumpFlare implements FlareContributor {
 
     @Override
     public int order() {
-        return 7;
+        return ORDER.THREAD_DUMP;
     }
 
     @Override
