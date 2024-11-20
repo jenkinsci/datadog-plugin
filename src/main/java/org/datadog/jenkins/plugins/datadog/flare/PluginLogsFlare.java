@@ -56,7 +56,7 @@ public class PluginLogsFlare implements FlareContributor {
 
     @Override
     public int order() {
-        return 5;
+        return ORDER.PLUGIN_LOGS;
     }
 
     @Override

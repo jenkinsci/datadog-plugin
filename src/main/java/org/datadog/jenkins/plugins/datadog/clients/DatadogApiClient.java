@@ -25,7 +25,15 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.clients;
 
+import static org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy.ENABLE_TRACES_BATCHING_ENV_VAR;
+
 import hudson.util.Secret;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.logging.Logger;
 import net.sf.json.JSON;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -44,15 +52,6 @@ import org.datadog.jenkins.plugins.datadog.util.CircuitBreaker;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.logging.Logger;
-import java.util.zip.GZIPOutputStream;
-
 /**
  * This class is used to collect all methods that has to do with transmitting
  * data to Datadog.
@@ -67,7 +66,6 @@ public class DatadogApiClient implements DatadogClient {
     private static final String METRIC = "v1/series";
     private static final String SERVICECHECK = "v1/check_run";
     private static final String VALIDATE = "v1/validate";
-
 
     /* Timeout of 1 minutes for connecting and reading.
      * this prevents this plugin from causing jobs to hang in case of
@@ -159,24 +157,17 @@ public class DatadogApiClient implements DatadogClient {
     }
 
     public static boolean validateLogIntakeConnection(String logsIntakeUrl, Secret apiKey) {
-        String payload = "{\"message\":\"[datadog-plugin] Check connection\", " +
-                "\"ddsource\":\"Jenkins\", \"service\":\"Jenkins\", " +
-                "\"hostname\":\"" + DatadogUtilities.getHostname(null) + "\"}";
-        return postLogs(new HttpClient(HTTP_TIMEOUT_MS), logsIntakeUrl, apiKey, payload);
-    }
-
-    private static boolean postLogs(HttpClient httpClient, String logIntakeUrl, Secret apiKey, String payload) {
-        if(payload == null){
-            logger.fine("No payload to post");
-            return true;
-        }
+        HttpClient httpClient = new HttpClient(HTTP_TIMEOUT_MS);
 
         Map<String, String> headers = new HashMap<>();
         headers.put("DD-API-KEY", Secret.toString(apiKey));
 
+        String payload = "{\"message\":\"[datadog-plugin] Check connection\", " +
+                "\"ddsource\":\"Jenkins\", \"service\":\"Jenkins\", " +
+                "\"hostname\":\"" + DatadogUtilities.getHostname(null) + "\"}";
         byte[] body = payload.getBytes(StandardCharsets.UTF_8);
         try {
-            httpClient.postAsynchronously(logIntakeUrl, headers, "application/json", body);
+            httpClient.post(logsIntakeUrl, headers, "application/json", body, Function.identity());
             return true;
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to post logs");
@@ -325,22 +316,21 @@ public class DatadogApiClient implements DatadogClient {
     }
 
     private static final class ApiLogWriteStrategy implements LogWriteStrategy {
-        private static final byte[] BEGIN_JSON_ARRAY = "[".getBytes(StandardCharsets.UTF_8);
-        private static final byte[] END_JSON_ARRAY = "]".getBytes(StandardCharsets.UTF_8);
-        private static final byte[] COMMA = ",".getBytes(StandardCharsets.UTF_8);
-
-        private final String logIntakeUrl;
-        private final Secret apiKey;
-        private final HttpClient httpClient;
-
-        private final CircuitBreaker<List<String>> circuitBreaker;
+        private final CircuitBreaker<List<JSONObject>> circuitBreaker;
 
         public ApiLogWriteStrategy(String logIntakeUrl, Secret apiKey, HttpClient httpClient) {
-            this.logIntakeUrl = logIntakeUrl;
-            this.apiKey = apiKey;
-            this.httpClient = httpClient;
+            Map<String, String> headers = Map.of(
+                    "DD-API-KEY", Secret.toString(apiKey),
+                    "Content-Encoding", "gzip");
+            JsonPayloadSender<JSONObject> payloadSender = new CompressedBatchSender<>(
+                    httpClient,
+                    logIntakeUrl,
+                    headers,
+                    PAYLOAD_SIZE_LIMIT,
+                    Function.identity());
+
             this.circuitBreaker = new CircuitBreaker<>(
-                    this::doSend,
+                    payloadSender::send,
                     this::fallback,
                     this::handleError,
                     100,
@@ -349,51 +339,15 @@ public class DatadogApiClient implements DatadogClient {
         }
 
         @Override
-        public void send(List<String> logs) {
+        public void send(List<JSONObject> logs) {
             circuitBreaker.accept(logs);
-        }
-
-        private void doSend(List<String> payloads) throws Exception {
-            Map<String, String> headers = new HashMap<>();
-            headers.put("DD-API-KEY", Secret.toString(apiKey));
-            headers.put("Content-Encoding", "gzip");
-
-            ByteArrayOutputStream request = new ByteArrayOutputStream();
-            GZIPOutputStream gzip = new GZIPOutputStream(request);
-            // the backend checks the size limit against the uncompressed body of the request
-            int uncompressedRequestLength = 0;
-
-            for (String payload : payloads) {
-                byte[] body = payload.getBytes(StandardCharsets.UTF_8);
-                if (body.length + 2 > PAYLOAD_SIZE_LIMIT) { // + 2 is for array beginning and end: [<payload>]
-                    logger.severe("Dropping a log because payload size (" + body.length + ") exceeds the allowed limit of " + PAYLOAD_SIZE_LIMIT);
-                    continue;
-                }
-
-                if (uncompressedRequestLength + body.length + 2 > PAYLOAD_SIZE_LIMIT) { // + 2 is for comma and array end: ,<payload>]
-                    gzip.write(END_JSON_ARRAY);
-                    gzip.close();
-                    httpClient.post(logIntakeUrl, headers, "application/json", request.toByteArray(), Function.identity());
-                    request = new ByteArrayOutputStream();
-                    gzip = new GZIPOutputStream(request);
-                    uncompressedRequestLength = 0;
-                }
-
-                gzip.write(uncompressedRequestLength == 0 ? BEGIN_JSON_ARRAY : COMMA);
-                gzip.write(body);
-                uncompressedRequestLength += body.length + 1;
-            }
-
-            gzip.write(END_JSON_ARRAY);
-            gzip.close();
-            httpClient.post(logIntakeUrl, headers, "application/json", request.toByteArray(), Function.identity());
         }
 
         private void handleError(Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to post logs");
         }
 
-        private void fallback(List<String> payloads) {
+        private void fallback(List<JSONObject> payloads) {
             // cannot establish connection to API, do nothing
         }
 
@@ -405,34 +359,26 @@ public class DatadogApiClient implements DatadogClient {
 
     @Override
     public TraceWriteStrategy createTraceWriteStrategy() {
-        return new TraceWriteStrategyImpl(Track.WEBHOOK, this::sendSpans);
-    }
-
-    private void sendSpans(Collection<Payload> spans) {
         DatadogGlobalConfiguration datadogGlobalDescriptor = DatadogUtilities.getDatadogGlobalDescriptor();
         String urlParameters = datadogGlobalDescriptor != null ? "?service=" + datadogGlobalDescriptor.getCiInstanceName() : "";
         String url = webhookIntakeUrl + urlParameters;
 
-        Map<String, String> headers = new HashMap<>();
-        headers.put("DD-API-KEY", Secret.toString(apiKey));
-        headers.put("DD-CI-PROVIDER-NAME", "jenkins");
-
-        for (Payload span : spans) {
-            if (span.getTrack() != Track.WEBHOOK) {
-                logger.severe("Expected webhook track, got " + span.getTrack() + ", dropping span");
-                continue;
-            }
-
-            byte[] body = span.getJson().toString().getBytes(StandardCharsets.UTF_8);
-            if (body.length > PAYLOAD_SIZE_LIMIT) {
-                logger.severe("Dropping span because payload size (" + body.length + ") exceeds the allowed limit of " + PAYLOAD_SIZE_LIMIT);
-                continue;
-            }
-
-            // webhook intake does not support batch requests
-            logger.fine("Sending webhook");
-            httpClient.postAsynchronously(url, headers, "application/json", body);
+        // TODO use CompressedBatchSender unconditionally in the next release
+        JsonPayloadSender<Payload> payloadSender;
+        if (DatadogUtilities.envVar(ENABLE_TRACES_BATCHING_ENV_VAR, false)) {
+            Map<String, String> headers = Map.of(
+                    "DD-API-KEY", Secret.toString(apiKey),
+                    "DD-CI-PROVIDER-NAME", "jenkins",
+                    "Content-Encoding", "gzip");
+            payloadSender = new CompressedBatchSender<>(httpClient, url, headers, PAYLOAD_SIZE_LIMIT, p -> p.getJson());
+        } else {
+            Map<String, String> headers = Map.of(
+                    "DD-API-KEY", Secret.toString(apiKey),
+                    "DD-CI-PROVIDER-NAME", "jenkins");
+            payloadSender = new SimpleSender<>(httpClient, url, headers, p -> p.getJson());
         }
+
+        return new TraceWriteStrategyImpl(Track.WEBHOOK, payloadSender::send);
     }
 
     @Override

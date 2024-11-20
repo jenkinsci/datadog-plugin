@@ -336,10 +336,9 @@ public class DatadogClientStub implements DatadogClient {
         public final List<JSONObject> logLines = new CopyOnWriteArrayList<>();
 
         @Override
-        public void send(List<String> logs) {
-            for (String log : logs) {
-                JSONObject payload = JSONObject.fromObject(log);
-                this.logLines.add(payload);
+        public void send(List<JSONObject> logs) {
+            for (JSONObject log : logs) {
+                this.logLines.add(log);
             }
         }
 

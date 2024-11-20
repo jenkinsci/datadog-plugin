@@ -25,6 +25,8 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.clients;
 
+import static org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy.ENABLE_TRACES_BATCHING_ENV_VAR;
+
 import com.timgroup.statsd.Event;
 import com.timgroup.statsd.NonBlockingStatsDClient;
 import com.timgroup.statsd.ServiceCheck;
@@ -301,7 +303,7 @@ public class DatadogAgentClient implements DatadogClient {
         private final String host;
         private final int port;
 
-        private final CircuitBreaker<List<String>> circuitBreaker;
+        private final CircuitBreaker<List<net.sf.json.JSONObject>> circuitBreaker;
 
         private Socket socket;
         private OutputStream out;
@@ -318,17 +320,17 @@ public class DatadogAgentClient implements DatadogClient {
                     CircuitBreaker.DEFAULT_DELAY_FACTOR);
         }
 
-        public void send(List<String> payloads) {
+        public void send(List<net.sf.json.JSONObject> payloads) {
             circuitBreaker.accept(payloads);
         }
 
-        private void doSend(List<String> payloads) throws Exception {
+        private void doSend(List<net.sf.json.JSONObject> payloads) throws Exception {
             if (socket == null || socket.isClosed() || !socket.isConnected()) {
                 socket = new Socket(host, port);
                 out = new BufferedOutputStream(socket.getOutputStream());
             }
-            for (String payload : payloads) {
-                out.write(payload.getBytes(StandardCharsets.UTF_8));
+            for (net.sf.json.JSONObject payload : payloads) {
+                out.write(payload.toString().getBytes(StandardCharsets.UTF_8));
                 out.write(LINE_SEPARATOR);
             }
         }
@@ -338,7 +340,7 @@ public class DatadogAgentClient implements DatadogClient {
             DatadogUtilities.severe(logger, e, "Could not write logs to agent");
         }
 
-        private void fallback(List<String> payloads) {
+        private void fallback(List<net.sf.json.JSONObject> payloads) {
             // cannot establish connection to agent, do nothing
         }
 
@@ -368,7 +370,26 @@ public class DatadogAgentClient implements DatadogClient {
 
     @Override
     public TraceWriteStrategy createTraceWriteStrategy() {
-        TraceWriteStrategyImpl evpStrategy = new TraceWriteStrategyImpl(Track.WEBHOOK, this::sendSpansToWebhook);
+        DatadogGlobalConfiguration datadogGlobalDescriptor = DatadogUtilities.getDatadogGlobalDescriptor();
+        String urlParameters = datadogGlobalDescriptor != null ? "?service=" + datadogGlobalDescriptor.getCiInstanceName() : "";
+        String url = String.format("http://%s:%d/evp_proxy/v1/api/v2/webhook/%s", hostname, traceCollectionPort, urlParameters);
+
+        // TODO use CompressedBatchSender unconditionally in the next release
+        JsonPayloadSender<Payload> payloadSender;
+        if (DatadogUtilities.envVar(ENABLE_TRACES_BATCHING_ENV_VAR, false)) {
+            Map<String, String> headers = Map.of(
+                    "X-Datadog-EVP-Subdomain", "webhook-intake",
+                    "DD-CI-PROVIDER-NAME", "jenkins",
+                    "Content-Encoding", "gzip");
+            payloadSender = new CompressedBatchSender<>(client, url, headers, PAYLOAD_SIZE_LIMIT, p -> p.getJson());
+        } else {
+            Map<String, String> headers = Map.of(
+                    "X-Datadog-EVP-Subdomain", "webhook-intake",
+                    "DD-CI-PROVIDER-NAME", "jenkins");
+            payloadSender = new SimpleSender<>(client, url, headers, p -> p.getJson());
+        }
+
+        TraceWriteStrategyImpl evpStrategy = new TraceWriteStrategyImpl(Track.WEBHOOK, payloadSender::send);
         TraceWriteStrategyImpl apmStrategy = new TraceWriteStrategyImpl(Track.APM, this::sendSpansToApm);
         return new AgentTraceWriteStrategy(evpStrategy, apmStrategy, this::isEvpProxySupported);
     }
@@ -407,36 +428,6 @@ public class DatadogAgentClient implements DatadogClient {
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Could not get the list of agent endpoints");
             return Collections.emptySet();
-        }
-    }
-
-    /**
-     * Posts a given payload to the Agent EVP Proxy, so it is forwarded to the Webhook Intake.
-     */
-    private void sendSpansToWebhook(Collection<Payload> spans) {
-        DatadogGlobalConfiguration datadogGlobalDescriptor = DatadogUtilities.getDatadogGlobalDescriptor();
-        String urlParameters = datadogGlobalDescriptor != null ? "?service=" + datadogGlobalDescriptor.getCiInstanceName() : "";
-        String url = String.format("http://%s:%d/evp_proxy/v1/api/v2/webhook/%s", hostname, traceCollectionPort, urlParameters);
-
-        Map<String, String> headers = new HashMap<>();
-        headers.put("X-Datadog-EVP-Subdomain", "webhook-intake");
-        headers.put("DD-CI-PROVIDER-NAME", "jenkins");
-
-        for (Payload span : spans) {
-            if (span.getTrack() != Track.WEBHOOK) {
-                logger.severe("Expected webhook track, got " + span.getTrack() + ", dropping span");
-                continue;
-            }
-
-            byte[] body = span.getJson().toString().getBytes(StandardCharsets.UTF_8);
-            if (body.length > PAYLOAD_SIZE_LIMIT) {
-                logger.severe("Dropping span because payload size (" + body.length + ") exceeds the allowed limit of " + PAYLOAD_SIZE_LIMIT);
-                continue;
-            }
-
-            // webhook intake does not support batch requests
-            logger.fine("Sending webhook");
-            client.postAsynchronously(url, headers, "application/json", body);
         }
     }
 

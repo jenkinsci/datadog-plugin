@@ -12,7 +12,7 @@ public class DatadogEnvVarsFlare implements FlareContributor {
 
     @Override
     public int order() {
-        return 3;
+        return ORDER.ENV_VARS;
     }
 
     @Override

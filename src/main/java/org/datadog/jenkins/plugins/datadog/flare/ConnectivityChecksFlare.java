@@ -17,7 +17,7 @@ public class ConnectivityChecksFlare implements FlareContributor {
 
     @Override
     public int order() {
-        return 2;
+        return ORDER.CONNECTIVITY_CHECKS;
     }
 
     @Override

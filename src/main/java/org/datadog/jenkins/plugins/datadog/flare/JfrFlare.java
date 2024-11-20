@@ -21,7 +21,7 @@ public class JfrFlare implements FlareContributor {
 
     @Override
     public int order() {
-        return 8;
+        return ORDER.JFR;
     }
 
     @Override

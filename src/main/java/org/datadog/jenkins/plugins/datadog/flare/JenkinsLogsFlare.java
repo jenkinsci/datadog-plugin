@@ -25,7 +25,7 @@ public class JenkinsLogsFlare implements FlareContributor {
 
     @Override
     public int order() {
-        return 6;
+        return ORDER.JENKINS_LOGS;
     }
 
     @Override
