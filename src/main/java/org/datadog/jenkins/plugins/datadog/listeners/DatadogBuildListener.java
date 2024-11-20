@@ -47,6 +47,7 @@ import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriter;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
+import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import javax.annotation.Nonnull;
@@ -87,11 +88,10 @@ public class DatadogBuildListener extends RunListener<Run> {
             }
             logger.fine("Start DatadogBuildListener#onInitialize");
 
-            // Get Datadog Client Instance
-            DatadogClient client = getDatadogClient();
-            if (client == null) {
-                return;
-            }
+            run.addAction(new GitCommitAction());
+            run.addAction(new GitRepositoryAction());
+            run.addAction(new TraceInfoAction());
+            run.addAction(new PipelineQueueInfoAction());
 
             // Collect Build Data
             BuildData buildData;
@@ -122,11 +122,6 @@ public class DatadogBuildListener extends RunListener<Run> {
 
             final BuildSpanAction buildSpanAction = new BuildSpanAction(buildSpanContext, upstreamBuildSpanContext);
             run.addAction(buildSpanAction);
-
-            run.addAction(new GitCommitAction());
-            run.addAction(new GitRepositoryAction());
-            run.addAction(new TraceInfoAction());
-            run.addAction(new PipelineQueueInfoAction());
 
             logger.fine("End DatadogBuildListener#onInitialize");
         } catch (Exception e) {
@@ -317,16 +312,18 @@ public class DatadogBuildListener extends RunListener<Run> {
 
             if (run instanceof WorkflowRun) {
                 RunExt extRun = getRunExtForRun((WorkflowRun) run);
-                long pauseDurationMillis = 0;
-                for (StageNodeExt stage : extRun.getStages()) {
-                    pauseDurationMillis += stage.getPauseDurationMillis();
+                if (extRun != null){
+                    long pauseDurationMillis = 0;
+                    for (StageNodeExt stage : extRun.getStages()) {
+                        pauseDurationMillis += stage.getPauseDurationMillis();
+                    }
+                    metrics.gauge("jenkins.job.pause_duration", TimeUnit.MILLISECONDS.toSeconds(pauseDurationMillis), hostname, tags);
+                    logger.fine(String.format("[%s]: Pause Duration: %s", buildData.getJobName(), toTimeString(pauseDurationMillis)));
+                    long buildDurationMillis = run.getDuration() - pauseDurationMillis;
+                    metrics.gauge("jenkins.job.build_duration", TimeUnit.MILLISECONDS.toSeconds(buildDurationMillis), hostname, tags);
+                    logger.fine(
+                            String.format("[%s]: Build Duration (without pause): %s", buildData.getJobName(), toTimeString(buildDurationMillis)));
                 }
-                metrics.gauge("jenkins.job.pause_duration", TimeUnit.MILLISECONDS.toSeconds(pauseDurationMillis), hostname, tags);
-                logger.fine(String.format("[%s]: Pause Duration: %s", buildData.getJobName(), toTimeString(pauseDurationMillis)));
-                long buildDurationMillis = run.getDuration() - pauseDurationMillis;
-                metrics.gauge("jenkins.job.build_duration", TimeUnit.MILLISECONDS.toSeconds(buildDurationMillis), hostname, tags);
-                logger.fine(
-                        String.format("[%s]: Build Duration (without pause): %s", buildData.getJobName(), toTimeString(buildDurationMillis)));
             }
 
             Metrics.getInstance().incrementCounter("jenkins.job.completed", hostname, tags);
@@ -537,12 +534,19 @@ public class DatadogBuildListener extends RunListener<Run> {
         return run != null && run.getResult() != Result.SUCCESS;
     }
 
+    @SuppressFBWarnings("DCN_NULLPOINTER_EXCEPTION")
     public RunExt getRunExtForRun(WorkflowRun run) {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
-        if (cfg.isCacheBuildRuns()) {
-            return RunExt.create(run);
-        } else {
-            return RunExt.createNew(run);
+        try {
+            if (cfg.isCacheBuildRuns()) {
+                return RunExt.create(run);
+            } else {
+                return RunExt.createNew(run);
+            }
+        } catch (NullPointerException e) {
+            // RunExt#create and RunExt#createNew may throw an NPE
+            DatadogUtilities.severe(logger, e, "Error while getting RunExt");
+            return null;
         }
     }
 

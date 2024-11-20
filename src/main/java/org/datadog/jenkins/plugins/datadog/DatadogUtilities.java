@@ -922,13 +922,21 @@ public class DatadogUtilities {
      * Returns enclosing stage node for the given node.
      * Never returns the node itself.
      */
+    @SuppressFBWarnings("DCN_NULLPOINTER_EXCEPTION")
     public static BlockStartNode getEnclosingStageNode(FlowNode node) {
-        for (BlockStartNode block : node.iterateEnclosingBlocks()) {
-            if (DatadogUtilities.isStageNode(block)) {
-                return block;
+        try {
+            for (BlockStartNode block : node.iterateEnclosingBlocks()) {
+                if (DatadogUtilities.isStageNode(block)) {
+                    return block;
+                }
             }
+            return null;
+
+        } catch (NullPointerException e) {
+            // FlowNode#iterateEnclosingBlocks may throw an NPE
+            severe(logger, e, "Error while looking for enclosing stage node");
+            return null;
         }
-        return null;
     }
 
     /**
