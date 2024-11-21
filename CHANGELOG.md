@@ -1,5 +1,12 @@
 Changes
 =======
+## 8.2.0 / 2024-11-21
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-8.1.0...datadog-8.2.0
+
+* [Fixed] Add NPE checks for jobs started with scripting. See [#471](https://github.com/jenkinsci/datadog-plugin/pull/471).
+* [Fixed] Implement batch submission for traces. See [#469](https://github.com/jenkinsci/datadog-plugin/pull/469).
+
 ## 8.1.0 / 2024-11-06
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-8.0.0...datadog-8.1.0
