@@ -25,7 +25,6 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.clients;
 
-import static org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy.ENABLE_TRACES_BATCHING_ENV_VAR;
 
 import com.timgroup.statsd.Event;
 import com.timgroup.statsd.NonBlockingStatsDClient;
@@ -374,20 +373,11 @@ public class DatadogAgentClient implements DatadogClient {
         String urlParameters = datadogGlobalDescriptor != null ? "?service=" + datadogGlobalDescriptor.getCiInstanceName() : "";
         String url = String.format("http://%s:%d/evp_proxy/v1/api/v2/webhook/%s", hostname, traceCollectionPort, urlParameters);
 
-        // TODO use CompressedBatchSender unconditionally in the next release
-        JsonPayloadSender<Payload> payloadSender;
-        if (DatadogUtilities.envVar(ENABLE_TRACES_BATCHING_ENV_VAR, false)) {
-            Map<String, String> headers = Map.of(
-                    "X-Datadog-EVP-Subdomain", "webhook-intake",
-                    "DD-CI-PROVIDER-NAME", "jenkins",
-                    "Content-Encoding", "gzip");
-            payloadSender = new CompressedBatchSender<>(client, url, headers, PAYLOAD_SIZE_LIMIT, p -> p.getJson());
-        } else {
-            Map<String, String> headers = Map.of(
-                    "X-Datadog-EVP-Subdomain", "webhook-intake",
-                    "DD-CI-PROVIDER-NAME", "jenkins");
-            payloadSender = new SimpleSender<>(client, url, headers, p -> p.getJson());
-        }
+        Map<String, String> headers = Map.of(
+              "X-Datadog-EVP-Subdomain", "webhook-intake",
+              "DD-CI-PROVIDER-NAME", "jenkins",
+              "Content-Encoding", "gzip");
+        JsonPayloadSender<Payload> payloadSender = new CompressedBatchSender<>(client, url, headers, PAYLOAD_SIZE_LIMIT, p -> p.getJson());
 
         TraceWriteStrategyImpl evpStrategy = new TraceWriteStrategyImpl(Track.WEBHOOK, payloadSender::send);
         TraceWriteStrategyImpl apmStrategy = new TraceWriteStrategyImpl(Track.APM, this::sendSpansToApm);

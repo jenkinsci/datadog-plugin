@@ -10,8 +10,6 @@ import java.util.Collection;
 
 public interface TraceWriteStrategy {
 
-    String ENABLE_TRACES_BATCHING_ENV_VAR = "DD_JENKINS_ENABLE_TRACES_BATCHING";
-
     @Nullable
     Payload serialize(BuildData buildData, Run<?, ?> run);
 
