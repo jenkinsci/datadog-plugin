@@ -54,6 +54,7 @@ public class PipelineStepData {
     private String nodeName;
     private Set<String> nodeLabels;
     private String nodeHostname;
+    private String executorNumber;
     private long startTimeMillis;
     private long endTimeMillis;
     private long queueTimeMillis;
@@ -86,6 +87,7 @@ public class PipelineStepData {
             this.nodeHostname = nodeInfoAction.getNodeHostname();
             this.nodeLabels = nodeInfoAction.getNodeLabels();
             this.workspace = nodeInfoAction.getNodeWorkspace();
+            this.executorNumber = nodeInfoAction.getExecutorNumber();
         }
     }
 
@@ -107,6 +109,7 @@ public class PipelineStepData {
                 this.nodeHostname = enclosingStageInfoAction.getNodeHostname();
                 this.nodeLabels = enclosingStageInfoAction.getNodeLabels();
                 this.workspace = enclosingStageInfoAction.getNodeWorkspace();
+                this.executorNumber = enclosingStageInfoAction.getExecutorNumber();
             }
         }
     }
@@ -203,6 +206,10 @@ public class PipelineStepData {
 
     public String getWorkspace() {
         return workspace;
+    }
+
+    public String getExecutorNumber() {
+        return executorNumber;
     }
 
     public String getNodeName() {

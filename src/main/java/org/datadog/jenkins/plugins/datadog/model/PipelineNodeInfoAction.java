@@ -17,12 +17,14 @@ public class PipelineNodeInfoAction extends DatadogPluginAction {
     private final Set<String> nodeLabels;
     private final String nodeHostname;
     private final String workspace;
+    private final String executorNumber;
 
-    public PipelineNodeInfoAction(final String nodeName, final Set<String> nodeLabels, final String nodeHostname, String workspace) {
+    public PipelineNodeInfoAction(final String nodeName, final Set<String> nodeLabels, final String nodeHostname, String workspace, String executorNumber) {
         this.nodeName = nodeName;
         this.nodeLabels = nodeLabels;
         this.nodeHostname = nodeHostname;
         this.workspace = workspace;
+        this.executorNumber = executorNumber;
     }
 
     public String getNodeName() {
@@ -41,17 +43,25 @@ public class PipelineNodeInfoAction extends DatadogPluginAction {
         return workspace;
     }
 
+    public String getExecutorNumber() {
+        return executorNumber;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PipelineNodeInfoAction that = (PipelineNodeInfoAction) o;
-        return Objects.equals(nodeName, that.nodeName) && Objects.equals(nodeLabels, that.nodeLabels) && Objects.equals(nodeHostname, that.nodeHostname) && Objects.equals(workspace, that.workspace);
+        return Objects.equals(nodeName, that.nodeName)
+            && Objects.equals(nodeLabels, that.nodeLabels)
+            && Objects.equals(nodeHostname, that.nodeHostname)
+            && Objects.equals(workspace, that.workspace)
+            && Objects.equals(executorNumber, that.executorNumber);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(nodeName, nodeLabels, nodeHostname, workspace);
+        return Objects.hash(nodeName, nodeLabels, nodeHostname, workspace, executorNumber);
     }
 
     @Override
@@ -61,12 +71,13 @@ public class PipelineNodeInfoAction extends DatadogPluginAction {
                 ", nodeLabels=" + nodeLabels +
                 ", nodeHostname='" + nodeHostname + '\'' +
                 ", workspace='" + workspace + '\'' +
+                ", executorNumber='" + executorNumber + '\'' +
                 '}';
     }
 
     public static final class ConverterImpl extends DatadogActionConverter<PipelineNodeInfoAction> {
         public ConverterImpl(XStream xs) {
-            super(new ConverterV1());
+            super(new ConverterV1(), new ConverterV2());
         }
     }
 
@@ -124,7 +135,72 @@ public class PipelineNodeInfoAction extends DatadogPluginAction {
                 reader.moveUp();
             }
 
-            return new PipelineNodeInfoAction(nodeName, nodeLabels, nodeHostname, workspace);
+            return new PipelineNodeInfoAction(nodeName, nodeLabels, nodeHostname, workspace, null);
+        }
+    }
+
+    public static final class ConverterV2 extends VersionedConverter<PipelineNodeInfoAction> {
+
+        private static final int VERSION = 2;
+
+        public ConverterV2() {
+            super(VERSION);
+        }
+
+        @Override
+        public void marshal(PipelineNodeInfoAction action, HierarchicalStreamWriter writer, MarshallingContext context) {
+            if (action.nodeName != null) {
+                writeField("nodeName", action.nodeName, writer, context);
+            }
+            if (action.nodeHostname != null) {
+                writeField("nodeHostname", action.nodeHostname, writer, context);
+            }
+            if (action.nodeLabels != null && !action.nodeLabels.isEmpty()) {
+                writeField("nodeLabels", action.nodeLabels, writer, context);
+            }
+            if (action.workspace != null) {
+                writeField("workspace", action.workspace, writer, context);
+            }
+            if (action.executorNumber != null) {
+                writeField("executorNumber", action.executorNumber, writer, context);
+            }
+        }
+
+        @Override
+        public PipelineNodeInfoAction unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
+            String nodeName = null;
+            String nodeHostname = null;
+            Set<String> nodeLabels = Collections.emptySet();
+            String workspace = null;
+            String executorNumber = null;
+
+            while (reader.hasMoreChildren()) {
+                reader.moveDown();
+                String fieldName = reader.getNodeName();
+                switch (fieldName) {
+                    case "nodeName":
+                        nodeName = (String) context.convertAnother(null, String.class);
+                        break;
+                    case "nodeHostname":
+                        nodeHostname = (String) context.convertAnother(null, String.class);
+                        break;
+                    case "nodeLabels":
+                        nodeLabels = (Set) context.convertAnother(null, Set.class);
+                        break;
+                    case "workspace":
+                        workspace = (String) context.convertAnother(null, String.class);
+                        break;
+                    case "executorNumber":
+                        executorNumber = (String) context.convertAnother(null, String.class);
+                        break;
+                    default:
+                        // unknown tag, could be something serialized by a different version of the plugin
+                        break;
+                }
+                reader.moveUp();
+            }
+
+            return new PipelineNodeInfoAction(nodeName, nodeLabels, nodeHostname, workspace, executorNumber);
         }
     }
 }

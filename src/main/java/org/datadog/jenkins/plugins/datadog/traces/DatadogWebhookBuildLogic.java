@@ -114,7 +114,12 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
             tagsPayload.add(CITags._DD_CI_INTERNAL + ":" + "false");
             tagsPayload.add(CITags.JENKINS_PLUGIN_VERSION + ":" + DatadogUtilities.getDatadogPluginVersion());
             tagsPayload.add(CITags.JENKINS_TAG + ":" + buildData.getBuildTag(""));
-            tagsPayload.add(CITags.JENKINS_EXECUTOR_NUMBER  + ":" + buildData.getExecutorNumber(""));
+
+            String executorNumber = buildData.getExecutorNumber("");
+            if (StringUtils.isNotEmpty(executorNumber)) {
+                tagsPayload.add(CITags.JENKINS_EXECUTOR_NUMBER  + ":" + executorNumber);
+            }
+
             if (StringUtils.isNotEmpty(jenkinsResult)) {
                 tagsPayload.add(CITags.JENKINS_RESULT + ":" + jenkinsResult.toLowerCase());
             }

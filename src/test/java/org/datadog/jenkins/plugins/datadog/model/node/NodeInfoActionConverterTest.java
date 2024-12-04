@@ -16,15 +16,15 @@ public class NodeInfoActionConverterTest extends ActionConverterTest<NodeInfoAct
     @Parameterized.Parameters(name = "{0}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
-                {new NodeInfoAction("nodeName", "nodeHostname", Collections.singleton("nodeLabel"), "nodeWorkspace")},
-                {new NodeInfoAction("nodeName", "nodeHostname", new HashSet<>(Arrays.asList("nodeLabel1", "nodeLabel2")), null)},
-                {new NodeInfoAction(null, "nodeHostname", new HashSet<>(Arrays.asList("nodeLabel1", "nodeLabel2")), "nodeWorkspace")},
-                {new NodeInfoAction("nodeName", null, new HashSet<>(Arrays.asList("nodeLabel1", "nodeLabel2")), null)},
-                {new NodeInfoAction("nodeName", "nodeHostname", Collections.emptySet(), "nodeWorkspace")},
-                {new NodeInfoAction(null, null, new HashSet<>(Arrays.asList("nodeLabel1", "nodeLabel2")), null)},
-                {new NodeInfoAction(null, "nodeHostname", Collections.emptySet(), "nodeWorkspace")},
-                {new NodeInfoAction("nodeName", null, Collections.emptySet(), null)},
-                {new NodeInfoAction(null, null, Collections.emptySet(), null)},
+                {new NodeInfoAction("nodeName", "nodeHostname", Collections.singleton("nodeLabel"), "nodeWorkspace", "0")},
+                {new NodeInfoAction("nodeName", "nodeHostname", new HashSet<>(Arrays.asList("nodeLabel1", "nodeLabel2")), null, null)},
+                {new NodeInfoAction(null, "nodeHostname", new HashSet<>(Arrays.asList("nodeLabel1", "nodeLabel2")), "nodeWorkspace", "0")},
+                {new NodeInfoAction("nodeName", null, new HashSet<>(Arrays.asList("nodeLabel1", "nodeLabel2")), null, null)},
+                {new NodeInfoAction("nodeName", "nodeHostname", Collections.emptySet(), "nodeWorkspace", "0")},
+                {new NodeInfoAction(null, null, new HashSet<>(Arrays.asList("nodeLabel1", "nodeLabel2")), null, null)},
+                {new NodeInfoAction(null, "nodeHostname", Collections.emptySet(), "nodeWorkspace", "0")},
+                {new NodeInfoAction("nodeName", null, Collections.emptySet(), null, null)},
+                {new NodeInfoAction(null, null, Collections.emptySet(), null, "0")},
         });
     }
 
