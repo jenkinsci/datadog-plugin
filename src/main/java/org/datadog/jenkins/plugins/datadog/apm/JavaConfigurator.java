@@ -8,7 +8,7 @@ import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.apm.signature.SignatureVerifier;
 import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
-import org.datadog.jenkins.plugins.datadog.steps.TestVisibility;
+import org.datadog.jenkins.plugins.datadog.steps.TestOptimization;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -40,21 +40,21 @@ final class JavaConfigurator implements TracerConfigurator {
     private final HttpClient httpClient = new HttpClient(TRACER_DOWNLOAD_TIMEOUT_MILLIS);
 
     @Override
-    public Map<String, String> configure(TestVisibility testVisibility, Node node, FilePath workspacePath, Map<String, String> envs, TaskListener listener) throws Exception {
-        FilePath tracerFile = downloadTracer(testVisibility, workspacePath,node, listener);
-        return getEnvVariables(testVisibility, node, tracerFile, envs);
+    public Map<String, String> configure(TestOptimization testOptimization, Node node, FilePath workspacePath, Map<String, String> envs, TaskListener listener) throws Exception {
+        FilePath tracerFile = downloadTracer(testOptimization, workspacePath,node, listener);
+        return getEnvVariables(testOptimization, node, tracerFile, envs);
     }
 
-    private FilePath downloadTracer(TestVisibility testVisibility, FilePath workspacePath, Node node, TaskListener listener) throws Exception {
+    private FilePath downloadTracer(TestOptimization testOptimization, FilePath workspacePath, Node node, TaskListener listener) throws Exception {
         FilePath datadogTracerFile = getDatadogTracerFile(workspacePath);
         long minutesSinceModification = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - datadogTracerFile.lastModified());
-        if (minutesSinceModification < getTracerJarCacheTtlMinutes(testVisibility)) {
+        if (minutesSinceModification < getTracerJarCacheTtlMinutes(testOptimization)) {
             listener.getLogger().println("[datadog] Configuring DD Java tracer: using existing tracer available at " + datadogTracerFile);
             // downloaded tracer is fresh enough
             return datadogTracerFile.absolutize();
         }
 
-        String tracerDistributionUrl = getTracerDistributionUrl(testVisibility);
+        String tracerDistributionUrl = getTracerDistributionUrl(testOptimization);
         httpClient.getBinary(tracerDistributionUrl, Collections.emptyMap(), is -> {
             try {
                 datadogTracerFile.copyFrom(is);
@@ -68,7 +68,7 @@ final class JavaConfigurator implements TracerConfigurator {
         if (!DEFAULT_TRACER_DISTRIBUTION_URL.equals(tracerDistributionUrl)) {
             // verify signature if downloading from Maven Central
             String signatureFileUrl = tracerDistributionUrl + ".asc";
-            byte[] signaturePublicKey = getTracerSignaturePublicKey(testVisibility);
+            byte[] signaturePublicKey = getTracerSignaturePublicKey(testOptimization);
 
             httpClient.getBinary(signatureFileUrl, Collections.emptyMap(), signatureStream -> {
                 try (InputStream tracerStream = datadogTracerFile.read();
@@ -92,20 +92,20 @@ final class JavaConfigurator implements TracerConfigurator {
         return datadogFolder.child(TRACER_FILE_NAME);
     }
 
-    private int getTracerJarCacheTtlMinutes(TestVisibility testVisibility) {
-        return getSetting(testVisibility, TRACER_JAR_CACHE_TTL_ENV_VAR, DEFAULT_TRACER_JAR_CACHE_TTL_MINUTES, Integer::parseInt);
+    private int getTracerJarCacheTtlMinutes(TestOptimization testOptimization) {
+        return getSetting(testOptimization, TRACER_JAR_CACHE_TTL_ENV_VAR, DEFAULT_TRACER_JAR_CACHE_TTL_MINUTES, Integer::parseInt);
     }
 
-    private String getTracerDistributionUrl(TestVisibility testVisibility) {
-        return getSetting(testVisibility, TRACER_DISTRIBUTION_URL_ENV_VAR, DEFAULT_TRACER_DISTRIBUTION_URL, this::validateUserSuppliedTracerUrl);
+    private String getTracerDistributionUrl(TestOptimization testOptimization) {
+        return getSetting(testOptimization, TRACER_DISTRIBUTION_URL_ENV_VAR, DEFAULT_TRACER_DISTRIBUTION_URL, this::validateUserSuppliedTracerUrl);
     }
 
-    private byte[] getTracerSignaturePublicKey(TestVisibility testVisibility) {
-        return getSetting(testVisibility, DATADOG_PUBLIC_KEY_ENV_VAR, SignatureVerifier.DATADOG_PUBLIC_KEY.getBytes(StandardCharsets.UTF_8), String::getBytes);
+    private byte[] getTracerSignaturePublicKey(TestOptimization testOptimization) {
+        return getSetting(testOptimization, DATADOG_PUBLIC_KEY_ENV_VAR, SignatureVerifier.DATADOG_PUBLIC_KEY.getBytes(StandardCharsets.UTF_8), String::getBytes);
     }
 
-    private <T> T getSetting(TestVisibility testVisibility, String envVariableName, T defaultValue, Function<String, T> parser) {
-        String envVariable = getEnvVariable(testVisibility, envVariableName);
+    private <T> T getSetting(TestOptimization testOptimization, String envVariableName, T defaultValue, Function<String, T> parser) {
+        String envVariable = getEnvVariable(testOptimization, envVariableName);
         if (envVariable != null) {
             try {
                 return parser.apply(envVariable);
@@ -117,8 +117,8 @@ final class JavaConfigurator implements TracerConfigurator {
         return defaultValue;
     }
 
-    private String getEnvVariable(TestVisibility testVisibility, String name) {
-        Map<String, String> additionalVariables = testVisibility.getAdditionalVariables();
+    private String getEnvVariable(TestOptimization testOptimization, String name) {
+        Map<String, String> additionalVariables = testOptimization.getAdditionalVariables();
         if (additionalVariables != null) {
             String envVariable = additionalVariables.get(name);
             if (envVariable != null) {
@@ -137,7 +137,7 @@ final class JavaConfigurator implements TracerConfigurator {
         }
     }
 
-    private static Map<String, String> getEnvVariables(TestVisibility testVisibility,
+    private static Map<String, String> getEnvVariables(TestOptimization testOptimization,
                                                        Node node,
                                                        FilePath tracerFile,
                                                        Map<String, String> envs) {
@@ -150,12 +150,12 @@ final class JavaConfigurator implements TracerConfigurator {
         variables.put("ANT_OPTS", PropertyUtils.prepend(envs, "ANT_OPTS", tracerAgent));
         variables.put("GRADLE_OPTS", PropertyUtils.prepend(envs, "GRADLE_OPTS", "-Dorg.gradle.jvmargs=" + tracerAgent));
 
-        String proxyConfiguration = getProxyConfiguration(testVisibility, node);
+        String proxyConfiguration = getProxyConfiguration(testOptimization, node);
         if (proxyConfiguration != null) {
             variables.put("JAVA_TOOL_OPTIONS", PropertyUtils.prepend(variables, "JAVA_TOOL_OPTIONS", proxyConfiguration));
         }
 
-        Map<String, String> additionalVariables = testVisibility.getAdditionalVariables();
+        Map<String, String> additionalVariables = testOptimization.getAdditionalVariables();
         if (additionalVariables != null) {
             variables.putAll(additionalVariables);
         }
@@ -163,7 +163,7 @@ final class JavaConfigurator implements TracerConfigurator {
         return variables;
     }
 
-    private static String getProxyConfiguration(TestVisibility testVisibility, Node node) {
+    private static String getProxyConfiguration(TestOptimization testOptimization, Node node) {
         if (!(node instanceof Jenkins)) {
             // only apply Jenkins proxy settings if tracer will be run on master node
             return null;
@@ -178,7 +178,7 @@ final class JavaConfigurator implements TracerConfigurator {
             return null;
         }
 
-        Map<String, String> additionalVariables = testVisibility.getAdditionalVariables();
+        Map<String, String> additionalVariables = testOptimization.getAdditionalVariables();
         if (Boolean.parseBoolean(additionalVariables.get(TRACER_IGNORE_JENKINS_PROXY_ENV_VAR))) {
             return null;
         }

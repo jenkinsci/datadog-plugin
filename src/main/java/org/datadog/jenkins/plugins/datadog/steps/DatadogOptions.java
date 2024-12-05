@@ -1,7 +1,6 @@
 package org.datadog.jenkins.plugins.datadog.steps;
 
 import hudson.Extension;
-import hudson.model.Job;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import java.io.PrintStream;
@@ -14,7 +13,6 @@ import javax.annotation.Nonnull;
 import jenkins.YesNoMaybe;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.logs.DatadogTaskListenerDecorator;
-import org.datadog.jenkins.plugins.datadog.apm.DatadogTracerJobProperty;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
@@ -36,7 +34,7 @@ public class DatadogOptions extends Step implements Serializable {
     private static final long serialVersionUID = 1L;
     private boolean collectLogs = false;
     private List<String> tags = new ArrayList<>();
-    private TestVisibility testVisibility;
+    private TestOptimization testOptimization;
 
     /** Constructor. */
     @DataBoundConstructor
@@ -52,13 +50,30 @@ public class DatadogOptions extends Step implements Serializable {
         this.collectLogs = collectLogs;
     }
 
-    public TestVisibility getTestVisibility() {
-        return testVisibility;
+    public TestOptimization getTestOptimization() {
+        return testOptimization;
     }
 
     @DataBoundSetter
-    public void setTestVisibility(TestVisibility testVisibility) {
-        this.testVisibility = testVisibility;
+    public void setTestOptimization(TestOptimization testOptimization) {
+        this.testOptimization = testOptimization;
+    }
+
+    /**
+     * @deprecated Use {@link #getTestOptimization()} instead.
+     */
+    @Deprecated
+    public TestOptimization getTestVisibility() {
+        return testOptimization;
+    }
+
+    /**
+     * @deprecated Use {@link #setTestOptimization(TestOptimization)} instead.
+     */
+    @Deprecated
+    @DataBoundSetter
+    public void setTestVisibility(TestOptimization testOptimization) {
+        this.testOptimization = testOptimization;
     }
 
     public List<String> getTags() {
@@ -72,7 +87,7 @@ public class DatadogOptions extends Step implements Serializable {
 
     @Override
     public StepExecution start(StepContext context) {
-        DatadogPipelineAction action = new DatadogPipelineAction(this.collectLogs, this.tags, this.testVisibility);
+        DatadogPipelineAction action = new DatadogPipelineAction(this.collectLogs, this.tags, this.testOptimization);
         return new ExecutionImpl(context, action);
     }
 

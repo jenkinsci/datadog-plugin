@@ -2,6 +2,9 @@ pipeline {
     agent {
       label 'built-in'
     }
+    options {
+        datadog(tags: ["root_tag:root-tag-value", "common_tag:root-value"])
+    }
     stages {
         stage('Stage 1') {
             steps {
@@ -11,7 +14,7 @@ pipeline {
 
         stage('Stage 2') {
             options {
-                datadog(tags: ["outer_tag:value"])
+                datadog(tags: ["outer_tag:value", "common_tag:outer-value"])
             }
             stages {
                 stage('Stage 2.1') {
@@ -22,7 +25,7 @@ pipeline {
 
                 stage('Stage 2.2') {
                     options {
-                        datadog(tags: ["inner_tag:another_value"])
+                        datadog(tags: ["inner_tag:another_value", "common_tag:inner-value"])
                     }
                     steps {
                         echo 'Stage 2.2'

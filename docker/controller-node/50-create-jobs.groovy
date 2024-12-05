@@ -17,6 +17,8 @@ Files.newDirectoryStream(Paths.get("/var/jenkins_home/sample-jobs")).forEach { p
     TopLevelItem project = jenkins.getItemByFullName(jobName)
     if (project != null) {
         println("Job already exists: $jobName")
+        return
+
     } else {
         Class<? extends TopLevelItem> projectType
         if (jobName.contains("freestyle")) {

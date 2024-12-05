@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -47,7 +48,7 @@ public class TagsUtil {
             for (Map.Entry<String, Set<String>> entry : orig.entrySet()) {
                 final String oName = entry.getKey();
                 Set<String> oValues = entry.getValue();
-                Set<String> dValues = dest.computeIfAbsent(oName, k -> new HashSet<>());
+                Set<String> dValues = dest.computeIfAbsent(oName, k -> new LinkedHashSet<>());
                 if (oValues != null) {
                     dValues.addAll(oValues);
                 }
@@ -109,11 +110,16 @@ public class TagsUtil {
 
         final Map<String, String> result = new HashMap<>();
         for (Map.Entry<String, Set<String>> entry : tags.entrySet()) {
-            if(entry.getValue() != null && entry.getValue().size() == 1) {
-                result.put(entry.getKey(), entry.getValue().iterator().next());
-            } else {
-                LOGGER.warning("Unsupported multi-value tag in this context: Tag '"+ entry.getKey() + "' will be ignored.");
+            Set<String> tagValues = entry.getValue();
+            if (tagValues == null || tagValues.isEmpty()) {
+                continue;
             }
+
+            String tagName = entry.getKey();
+            if (tagValues.size() > 1) {
+                LOGGER.warning("Unsupported multi-value tag in this context: '"+ tagName + "' - the first value will be used");
+            }
+            result.put(tagName, tagValues.iterator().next());
         }
 
         return result;

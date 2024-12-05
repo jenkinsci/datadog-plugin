@@ -8,17 +8,17 @@ import org.datadog.jenkins.plugins.datadog.apm.TracerLanguage;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
-public class TestVisibility implements Serializable {
+public class TestOptimization implements Serializable {
     private boolean enabled;
     private String serviceName;
     private Collection<TracerLanguage> languages = Collections.emptyList();
     private Map<String, String> additionalVariables = Collections.emptyMap();
 
     @DataBoundConstructor
-    public TestVisibility() {
+    public TestOptimization() {
     }
 
-    public TestVisibility(boolean enabled, String serviceName, Collection<TracerLanguage> languages, Map<String, String> additionalVariables) {
+    public TestOptimization(boolean enabled, String serviceName, Collection<TracerLanguage> languages, Map<String, String> additionalVariables) {
         this.enabled = enabled;
         this.serviceName = serviceName;
         this.languages = languages;

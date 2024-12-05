@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.steps.TestVisibility;
+import org.datadog.jenkins.plugins.datadog.steps.TestOptimization;
 
 final class PythonConfigurator implements TracerConfigurator {
 
@@ -21,7 +21,7 @@ final class PythonConfigurator implements TracerConfigurator {
     private static final int SHOW_TRACER_PACKAGE_DETAILS_TIMEOUT_MILLIS = 300_000;
 
     @Override
-    public Map<String, String> configure(TestVisibility testVisibility, Node node, FilePath workspacePath, Map<String, String> envs, TaskListener listener) throws Exception {
+    public Map<String, String> configure(TestOptimization testOptimization, Node node, FilePath workspacePath, Map<String, String> envs, TaskListener listener) throws Exception {
         String pipVersion = workspacePath.act(new ShellCommandCallable(Collections.emptyMap(), GET_PIP_VERSION_TIMEOUT_MILLIS, "pip", "-V"));
         listener.getLogger().println("[datadog] Configuring DD Python tracer: got pip version " + pipVersion + " from " + workspacePath + " on " + node);
 

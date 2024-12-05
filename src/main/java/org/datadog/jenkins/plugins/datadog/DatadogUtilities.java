@@ -153,10 +153,7 @@ public class DatadogUtilities {
     public static Map<String, Set<String>> getTagsFromPipelineAction(Run<?, ?> run, @Nullable FlowNode node) {
         Map<String, Set<String>> mergedTags = new HashMap<>();
         List<DatadogPipelineAction> actions = getDatadogPipelineActions(run, node);
-        // iterating from outer actions to inner ones to preserve priority
-        ListIterator<DatadogPipelineAction> it = actions.listIterator(actions.size());
-        while (it.hasPrevious()) {
-            DatadogPipelineAction action = it.previous();
+        for (DatadogPipelineAction action : actions) {
             Map<String, Set<String>> tags = getTagsFromPipelineAction(action);
             TagsUtil.merge(mergedTags, tags);
         }

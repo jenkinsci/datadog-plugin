@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.steps.TestVisibility;
+import org.datadog.jenkins.plugins.datadog.steps.TestOptimization;
 
 final class JavascriptConfigurator implements TracerConfigurator {
 
@@ -23,7 +23,7 @@ final class JavascriptConfigurator implements TracerConfigurator {
     private static final String RELATIVE_TRACER_PATH = "lib/node_modules/dd-trace";
 
     @Override
-    public Map<String, String> configure(TestVisibility testVisibility, Node node, FilePath workspacePath, Map<String, String> envs, TaskListener listener) throws Exception {
+    public Map<String, String> configure(TestOptimization testOptimization, Node node, FilePath workspacePath, Map<String, String> envs, TaskListener listener) throws Exception {
         String nodeVersion = workspacePath.act(new ShellCommandCallable(Collections.emptyMap(), GET_NPM_VERSION_TIMEOUT_MILLIS, "npm", "-v"));
         listener.getLogger().println("[datadog] Configuring DD JS tracer: got npm version " + nodeVersion + " from " + workspacePath + " on " + node);
 

@@ -28,7 +28,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.DatadogPluginAction;
 import org.datadog.jenkins.plugins.datadog.steps.DatadogPipelineAction;
-import org.datadog.jenkins.plugins.datadog.steps.TestVisibility;
+import org.datadog.jenkins.plugins.datadog.steps.TestOptimization;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 public class DatadogTracerConfigurator {
@@ -45,12 +45,12 @@ public class DatadogTracerConfigurator {
         configurators.put(TracerLanguage.PYTHON, new PythonConfigurator());
     }
 
-    private TestVisibility getTestVisibility(FlowNode node, Run<?, ?> run) {
+    private TestOptimization getTestOptimization(FlowNode node, Run<?, ?> run) {
         List<DatadogPipelineAction> actions = DatadogUtilities.getDatadogPipelineActions(run, node);
         for (DatadogPipelineAction action : actions) {
-            TestVisibility testVisibility = action.getTestVisibility();
-            if (testVisibility != null) {
-                return testVisibility;
+            TestOptimization testOptimization = action.getTestOptimization();
+            if (testOptimization != null) {
+                return testOptimization;
             }
         }
 
@@ -58,15 +58,15 @@ public class DatadogTracerConfigurator {
         DatadogTracerJobProperty<?> tracerJobProperty = job.getProperty(DatadogTracerJobProperty.class);
         if (tracerJobProperty != null) {
             // configured via UI
-            return tracerJobProperty.getTestVisibility();
+            return tracerJobProperty.getTestOptimization();
         }
 
         return null;
     }
 
     public Map<String, String> configure(Run<?, ?> run, Computer computer, Node node, FlowNode flowNode, EnvVars envs, TaskListener listener) {
-        TestVisibility testVisibility = getTestVisibility(flowNode, run);
-        if (testVisibility == null || !testVisibility.getEnabled()){
+        TestOptimization testOptimization = getTestOptimization(flowNode, run);
+        if (testOptimization == null || !testOptimization.getEnabled()){
             return Collections.emptyMap();
         }
 
@@ -78,7 +78,7 @@ public class DatadogTracerConfigurator {
         }
 
         String nodeHostname = DatadogUtilities.getNodeHostname(envs, computer);
-        Collection<TracerLanguage> languages = testVisibility.getLanguages();
+        Collection<TracerLanguage> languages = testOptimization.getLanguages();
         for (ConfigureTracerAction action : run.getActions(ConfigureTracerAction.class)) {
             if (nodeHostname != null && nodeHostname.equals(action.nodeHostname) && action.languages.containsAll(languages)) {
                 boolean previousConfigurationValid = true;
@@ -100,7 +100,7 @@ public class DatadogTracerConfigurator {
             return Collections.emptyMap();
         }
 
-        Map<String, String> variables = new HashMap<>(getCommonEnvVariables(datadogConfig, testVisibility));
+        Map<String, String> variables = new HashMap<>(getCommonEnvVariables(datadogConfig, testOptimization));
         for (TracerLanguage language : languages) {
             TracerConfigurator tracerConfigurator = configurators.get(language);
             if (tracerConfigurator == null) {
@@ -109,7 +109,7 @@ public class DatadogTracerConfigurator {
             }
 
             try {
-                Map<String, String> languageVariables = tracerConfigurator.configure(testVisibility, node, workspacePath, envs, listener);
+                Map<String, String> languageVariables = tracerConfigurator.configure(testOptimization, node, workspacePath, envs, listener);
                 variables.putAll(languageVariables);
             } catch (Exception e) {
                 ExceptionUtils.printRootCauseStackTrace(e, listener.error("[datadog] Error while configuring " + language + " Datadog Tracer for run " + run + " and node " + node));
@@ -140,12 +140,12 @@ public class DatadogTracerConfigurator {
     }
 
     private static Map<String, String> getCommonEnvVariables(DatadogGlobalConfiguration datadogConfig,
-                                                             TestVisibility testVisibility) {
+                                                             TestOptimization testOptimization) {
         Map<String, String> variables = new HashMap<>();
         variables.put("DD_CIVISIBILITY_AUTO_INSTRUMENTATION_PROVIDER", "jenkins");
         variables.put("DD_CIVISIBILITY_ENABLED", "true");
         variables.put("DD_ENV", "ci");
-        variables.put("DD_SERVICE", testVisibility.getServiceName());
+        variables.put("DD_SERVICE", testOptimization.getServiceName());
 
         DatadogClient.ClientType clientType = DatadogClient.ClientType.valueOf(datadogConfig.getReportWith());
         switch (clientType) {
@@ -162,7 +162,7 @@ public class DatadogTracerConfigurator {
                 throw new IllegalArgumentException("Unexpected client type: " + clientType);
         }
 
-        Map<String, String> additionalVariables = testVisibility.getAdditionalVariables();
+        Map<String, String> additionalVariables = testOptimization.getAdditionalVariables();
         if (additionalVariables != null) {
             variables.putAll(additionalVariables);
         }

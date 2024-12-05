@@ -1318,31 +1318,40 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         clientStub.waitForTraces(12);
         final List<TraceSpan> spans = clientStub.getSpans();
 
+        assertTagValue(spans, "root_tag", "root-tag-value");
+
         TraceSpan rootSpan = searchSpan(spans, "pipelineIntegration-StageTagsPropagation_job");
+        assertTagValue(Collections.singletonList(rootSpan), "common_tag", "root-value");
         assertTagValue(Collections.singletonList(rootSpan), "outer_tag", null);
         assertTagValue(Collections.singletonList(rootSpan), "inner_tag", null);
 
         List<TraceSpan> stage1Spans = searchSpansByStageName(spans, "Stage 1");
+        assertTagValue(stage1Spans, "common_tag", "root-value");
         assertTagValue(stage1Spans, "outer_tag", null);
         assertTagValue(stage1Spans, "inner_tag", null);
 
         List<TraceSpan> stage2Spans = searchSpansByStageName(spans, "Stage 2");
+        assertTagValue(stage2Spans, "common_tag", "outer-value");
         assertTagValue(stage2Spans, "outer_tag", "value");
         assertTagValue(stage2Spans, "inner_tag", null);
 
         List<TraceSpan> stage21Spans = searchSpansByStageName(spans, "Stage 2.1");
+        assertTagValue(stage21Spans, "common_tag", "outer-value");
         assertTagValue(stage21Spans, "outer_tag", "value");
         assertTagValue(stage21Spans, "inner_tag", null);
 
         List<TraceSpan> stage22Spans = searchSpansByStageName(spans, "Stage 2.2");
+        assertTagValue(stage22Spans, "common_tag", "inner-value");
         assertTagValue(stage22Spans, "outer_tag", "value");
         assertTagValue(stage22Spans, "inner_tag", "another_value");
 
         List<TraceSpan> stage23Spans = searchSpansByStageName(spans, "Stage 2.3");
+        assertTagValue(stage23Spans, "common_tag", "outer-value");
         assertTagValue(stage23Spans, "outer_tag", "value");
         assertTagValue(stage23Spans, "inner_tag", null);
 
         List<TraceSpan> stage3Spans = searchSpansByStageName(spans, "Stage 3");
+        assertTagValue(stage3Spans, "common_tag", "root-value");
         assertTagValue(stage3Spans, "outer_tag", null);
         assertTagValue(stage3Spans, "inner_tag", null);
     }
