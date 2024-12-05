@@ -114,15 +114,14 @@ public class TagsUtilTest {
         Assert.assertEquals("tagValue1", resultSingleValues.get("tagKey1"));
         Assert.assertEquals("tagValue2", resultSingleValues.get("tagKey2"));
 
-
         Map<String, Set<String>> multipleValueTags = new HashMap<>();
         DatadogClientStub.addTagToMap(multipleValueTags, "tagKey1", "tagValue1");
         DatadogClientStub.addTagToMap(multipleValueTags, "tagKey2", "tagValue2_1");
         DatadogClientStub.addTagToMap(multipleValueTags, "tagKey2", "tagValue2_2");
         Map<String, String> resultMultipleValues = TagsUtil.convertTagsToMapSingleValues(multipleValueTags);
-        Assert.assertEquals(1, resultMultipleValues.size());
+        Assert.assertEquals(2, resultMultipleValues.size());
         Assert.assertEquals("tagValue1", resultMultipleValues.get("tagKey1"));
-        Assert.assertNull(resultMultipleValues.get("tagKey2"));
+        Assert.assertEquals("tagValue2_1", resultMultipleValues.get("tagKey2"));
     }
 
 }
