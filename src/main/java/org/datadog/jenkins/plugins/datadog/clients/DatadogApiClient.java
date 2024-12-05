@@ -25,7 +25,6 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.clients;
 
-import static org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy.ENABLE_TRACES_BATCHING_ENV_VAR;
 
 import hudson.util.Secret;
 import java.io.IOException;
@@ -363,20 +362,11 @@ public class DatadogApiClient implements DatadogClient {
         String urlParameters = datadogGlobalDescriptor != null ? "?service=" + datadogGlobalDescriptor.getCiInstanceName() : "";
         String url = webhookIntakeUrl + urlParameters;
 
-        // TODO use CompressedBatchSender unconditionally in the next release
-        JsonPayloadSender<Payload> payloadSender;
-        if (DatadogUtilities.envVar(ENABLE_TRACES_BATCHING_ENV_VAR, false)) {
-            Map<String, String> headers = Map.of(
-                    "DD-API-KEY", Secret.toString(apiKey),
-                    "DD-CI-PROVIDER-NAME", "jenkins",
-                    "Content-Encoding", "gzip");
-            payloadSender = new CompressedBatchSender<>(httpClient, url, headers, PAYLOAD_SIZE_LIMIT, p -> p.getJson());
-        } else {
-            Map<String, String> headers = Map.of(
-                    "DD-API-KEY", Secret.toString(apiKey),
-                    "DD-CI-PROVIDER-NAME", "jenkins");
-            payloadSender = new SimpleSender<>(httpClient, url, headers, p -> p.getJson());
-        }
+        Map<String, String> headers = Map.of(
+            "DD-API-KEY", Secret.toString(apiKey),
+            "DD-CI-PROVIDER-NAME", "jenkins",
+            "Content-Encoding", "gzip");
+        JsonPayloadSender<Payload> payloadSender = new CompressedBatchSender<>(httpClient, url, headers, PAYLOAD_SIZE_LIMIT, p -> p.getJson());
 
         return new TraceWriteStrategyImpl(Track.WEBHOOK, payloadSender::send);
     }
