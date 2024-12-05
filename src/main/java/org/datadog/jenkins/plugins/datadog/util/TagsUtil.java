@@ -116,10 +116,11 @@ public class TagsUtil {
             }
 
             String tagName = entry.getKey();
+            String innermostTagValue = tagValues.iterator().next();
             if (tagValues.size() > 1) {
-                LOGGER.warning("Unsupported multi-value tag in this context: '"+ tagName + "' - the first value will be used");
+                LOGGER.warning("Unsupported multi-value tag in this context: '"+ tagName + "' - the value '" + innermostTagValue + "' from the innermost context will be used (all values: " + tagValues + ")");
             }
-            result.put(tagName, tagValues.iterator().next());
+            result.put(tagName, innermostTagValue);
         }
 
         return result;
