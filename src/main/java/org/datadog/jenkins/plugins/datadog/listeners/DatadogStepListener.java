@@ -78,7 +78,8 @@ public class DatadogStepListener implements StepListener {
             String nodeHostname = getNodeHostname(context);
             Set<String> nodeLabels = getNodeLabels(context);
             String nodeWorkspace = getNodeWorkspace(context);
-            NodeInfoAction nodeInfoAction = new NodeInfoAction(nodeName, nodeHostname, nodeLabels, nodeWorkspace);
+            String executorNumber = envVars.get("EXECUTOR_NUMBER");
+            NodeInfoAction nodeInfoAction = new NodeInfoAction(nodeName, nodeHostname, nodeLabels, nodeWorkspace, executorNumber);
 
             if (DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
                 // propagate node info to stage node
@@ -319,7 +320,12 @@ public class DatadogStepListener implements StepListener {
             if(blockStartNodes.hasNext()) {
                 final FlowNode candidate = blockStartNodes.next();
                 if("Start of Pipeline".equals(candidate.getDisplayName())) {
-                    run.addOrReplaceAction(new PipelineNodeInfoAction(nodeInfoAction.getNodeName() != null ? nodeInfoAction.getNodeName() : "master", nodeInfoAction.getNodeLabels(), nodeInfoAction.getNodeHostname(), nodeInfoAction.getNodeWorkspace()));
+                    PipelineNodeInfoAction pipelineNodeInfoAction = new PipelineNodeInfoAction(
+                        nodeInfoAction.getNodeName() != null ? nodeInfoAction.getNodeName() : "master",
+                        nodeInfoAction.getNodeLabels(), nodeInfoAction.getNodeHostname(),
+                        nodeInfoAction.getNodeWorkspace(),
+                        nodeInfoAction.getExecutorNumber());
+                    run.addOrReplaceAction(pipelineNodeInfoAction);
 
                     if (DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
                         // we have node info available now - submit a pipeline event so the backend could update its data

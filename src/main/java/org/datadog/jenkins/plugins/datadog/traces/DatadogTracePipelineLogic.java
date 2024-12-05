@@ -125,6 +125,11 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
             tags.put(CITags.JENKINS_RESULT, jenkinsResult.toLowerCase());
         }
 
+        String executorNumber = current.getExecutorNumber();
+        if (StringUtils.isNotEmpty(executorNumber))  {
+            tags.put(CITags.JENKINS_EXECUTOR_NUMBER, executorNumber);
+        }
+
         tags.put(CITags.ERROR, String.valueOf(current.isError() || current.isUnstable()));
 
         //Git Info

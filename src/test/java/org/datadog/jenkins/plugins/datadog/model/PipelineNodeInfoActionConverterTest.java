@@ -18,13 +18,13 @@ public class PipelineNodeInfoActionConverterTest extends ActionConverterTest<Pip
     @Parameterized.Parameters(name = "{0}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
-                {new PipelineNodeInfoAction("nodeName", Collections.singleton("nodeLabels"), "nodeHostname", "workspace")},
-                {new PipelineNodeInfoAction("nodeName", new HashSet<>(Arrays.asList("label1", "label2")), "nodeHostname", "workspace")},
-                {new PipelineNodeInfoAction(null, Collections.singleton("nodeLabels"), "nodeHostname", "workspace")},
-                {new PipelineNodeInfoAction("nodeName", Collections.emptySet(), "nodeHostname", "workspace")},
-                {new PipelineNodeInfoAction("nodeName", Collections.singleton("nodeLabels"), null, "workspace")},
-                {new PipelineNodeInfoAction("nodeName", Collections.singleton("nodeLabels"), "nodeHostname", null)},
-                {new PipelineNodeInfoAction(null, Collections.emptySet(), null, null)},
+                {new PipelineNodeInfoAction("nodeName", Collections.singleton("nodeLabels"), "nodeHostname", "workspace", "1")},
+                {new PipelineNodeInfoAction("nodeName", new HashSet<>(Arrays.asList("label1", "label2")), "nodeHostname", "workspace", null)},
+                {new PipelineNodeInfoAction(null, Collections.singleton("nodeLabels"), "nodeHostname", "workspace", null)},
+                {new PipelineNodeInfoAction("nodeName", Collections.emptySet(), "nodeHostname", "workspace", "1")},
+                {new PipelineNodeInfoAction("nodeName", Collections.singleton("nodeLabels"), null, "workspace", null)},
+                {new PipelineNodeInfoAction("nodeName", Collections.singleton("nodeLabels"), "nodeHostname", null, null)},
+                {new PipelineNodeInfoAction(null, Collections.emptySet(), null, null, "1")},
         });
     }
 

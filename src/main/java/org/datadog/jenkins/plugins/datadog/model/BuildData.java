@@ -299,6 +299,10 @@ public class BuildData implements Serializable {
             this.workspace = envVars.get("WORKSPACE");
         }
 
+        if (pipelineInfo != null && pipelineInfo.getExecutorNumber() != null){
+            this.executorNumber = pipelineInfo.getExecutorNumber();
+        }
+
         // Save charset canonical name
         this.charsetName = run.getCharset().name();
 
@@ -457,7 +461,10 @@ public class BuildData implements Serializable {
             this.buildTag = "jenkins-" + envVars.get("JOB_NAME") + "-" + envVars.get("BUILD_NUMBER");
         }
 
-        this.executorNumber = envVars.get("EXECUTOR_NUMBER");
+        String executorNumber = envVars.get("EXECUTOR_NUMBER");
+        if (StringUtils.isNotBlank(executorNumber)){
+            this.executorNumber = executorNumber;
+        }
         this.javaHome = envVars.get("JAVA_HOME");
         if (isGit(envVars)) {
             this.branch = GitUtils.resolveGitBranch(envVars);

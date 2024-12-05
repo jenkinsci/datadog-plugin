@@ -12,7 +12,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -256,6 +255,11 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
                 if ("script".equals(entry.getKey())) {
                     tagsPayload.add(prefix + ".script" + ":" + entry.getValue());
                 }
+            }
+
+            final String executorNumber = current.getExecutorNumber();
+            if (StringUtils.isNotEmpty(executorNumber)) {
+                tagsPayload.add(CITags.JENKINS_EXECUTOR_NUMBER  + ":" + executorNumber);
             }
 
             payload.put("tags", tagsPayload);

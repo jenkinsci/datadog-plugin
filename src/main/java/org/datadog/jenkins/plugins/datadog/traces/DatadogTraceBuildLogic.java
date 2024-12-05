@@ -204,7 +204,11 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
 
         // Jenkins specific
         buildSpan.putMeta(CITags.JENKINS_TAG, buildData.getBuildTag(""));
-        buildSpan.putMeta(CITags.JENKINS_EXECUTOR_NUMBER, buildData.getExecutorNumber(""));
+
+        String executorNumber = buildData.getExecutorNumber("");
+        if (StringUtils.isNotEmpty(executorNumber))  {
+            buildSpan.putMeta(CITags.JENKINS_EXECUTOR_NUMBER, executorNumber);
+        }
 
         final String jenkinsResult = buildData.getResult("");
         final String pipelineResult = statusFromResult(jenkinsResult);
