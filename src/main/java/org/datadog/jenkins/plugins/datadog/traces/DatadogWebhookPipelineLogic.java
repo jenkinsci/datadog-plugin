@@ -229,7 +229,7 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
             JSONArray tagsPayload = new JSONArray();
 
             Map<String, String> globalTags = new HashMap<>(buildData.getTagsForTraces());
-            globalTags.putAll(TagsUtil.convertTagsToMapSingleValues(DatadogUtilities.getTagsFromPipelineAction(run)));
+            globalTags.putAll(TagsUtil.convertTagsToMapSingleValues(current.getTags()));
 
             for (Map.Entry<String, String> globalTagEntry : globalTags.entrySet()) {
                 tagsPayload.add(globalTagEntry.getKey() + ":" + globalTagEntry.getValue());

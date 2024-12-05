@@ -1,0 +1,49 @@
+pipeline {
+    agent {
+      label 'built-in'
+    }
+    options {
+        datadog(tags: ["root_tag:root-tag-value", "common_tag:root-value"])
+    }
+    stages {
+        stage('Stage 1') {
+            steps {
+                echo 'Stage 1'
+            }
+        }
+
+        stage('Stage 2') {
+            options {
+                datadog(tags: ["outer_tag:value", "common_tag:outer-value"])
+            }
+            stages {
+                stage('Stage 2.1') {
+                    steps {
+                        echo 'Stage 2.1'
+                    }
+                }
+
+                stage('Stage 2.2') {
+                    options {
+                        datadog(tags: ["inner_tag:another_value", "common_tag:inner-value"])
+                    }
+                    steps {
+                        echo 'Stage 2.2'
+                    }
+                }
+
+                stage('Stage 2.3') {
+                    steps {
+                        echo 'Stage 2.3'
+                    }
+                }
+            }
+        }
+
+        stage('Stage 3') {
+            steps {
+                echo 'Stage 3'
+            }
+        }
+    }
+}

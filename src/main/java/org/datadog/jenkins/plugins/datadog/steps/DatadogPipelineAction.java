@@ -8,14 +8,14 @@ import javax.annotation.CheckForNull;
 public class DatadogPipelineAction implements Action, Serializable {
     private static final long serialVersionUID = 1L;
 
-    private boolean collectLogs;
-    private List<String> tags;
-    private TestVisibility testVisibility;
+    private final boolean collectLogs;
+    private final List<String> tags;
+    private final TestOptimization testOptimization;
 
-    public DatadogPipelineAction(boolean collectLogs, List<String> tags, TestVisibility testVisibility) {
+    public DatadogPipelineAction(boolean collectLogs, List<String> tags, TestOptimization testOptimization) {
         this.collectLogs = collectLogs;
         this.tags = tags;
-        this.testVisibility = testVisibility;
+        this.testOptimization = testOptimization;
     }
 
     public List<String> getTags() {
@@ -26,8 +26,8 @@ public class DatadogPipelineAction implements Action, Serializable {
         return collectLogs;
     }
 
-    public TestVisibility getTestVisibility() {
-        return testVisibility;
+    public TestOptimization getTestOptimization() {
+        return testOptimization;
     }
 
     @CheckForNull

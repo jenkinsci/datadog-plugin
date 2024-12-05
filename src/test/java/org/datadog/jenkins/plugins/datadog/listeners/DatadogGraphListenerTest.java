@@ -897,6 +897,16 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         return null;
     }
 
+    private List<TraceSpan> searchSpansByStageName(List<TraceSpan> spans, String stageName) {
+        List<TraceSpan> stageSpans = new ArrayList<>();
+        for(TraceSpan span : spans) {
+            if(stageName.equalsIgnoreCase(span.getMeta().get("ci.stage.name"))) {
+                stageSpans.add(span);
+            }
+        }
+        return stageSpans;
+    }
+
     private JSONObject searchWebhook(List<JSONObject> webhooks, String resourceName) {
         for(JSONObject webhook : webhooks) {
             if (resourceName.equalsIgnoreCase(webhook.getString("name"))) {
@@ -976,7 +986,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
                 "result:SUCCESS",
                 "stage_depth:0",
                 "stage_name:test",
-                "parent_stage_name:root"               
+                "parent_stage_name:root"
         };
         clientStub.assertMetric("jenkins.job.stage_duration", hostname, tags);
         clientStub.assertMetric("jenkins.job.stage_pause_duration", 0, hostname, tags);
@@ -1295,6 +1305,62 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals("value", stepSpanMeta.get("global_job_tag"));
         assertEquals("pipeline_tag_v2", stepSpanMeta.get("pipeline_tag"));
         assertEquals("pipeline_tag", stepSpanMeta.get("pipeline_tag_v2"));
+    }
+
+    @Test
+    public void testStageTagsPropagationTraces() throws Exception {
+        jenkinsRule.createOnlineSlave(new LabelAtom("testStageTags"));
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration-StageTagsPropagation_job");
+        String definition = getPipelineDefinition("testPipelineStageTags.txt");
+        job.setDefinition(new CpsFlowDefinition(definition, true));
+        job.scheduleBuild2(0).get();
+
+        clientStub.waitForTraces(12);
+        final List<TraceSpan> spans = clientStub.getSpans();
+
+        assertTagValue(spans, "root_tag", "root-tag-value");
+
+        TraceSpan rootSpan = searchSpan(spans, "pipelineIntegration-StageTagsPropagation_job");
+        assertTagValue(Collections.singletonList(rootSpan), "common_tag", "root-value");
+        assertTagValue(Collections.singletonList(rootSpan), "outer_tag", null);
+        assertTagValue(Collections.singletonList(rootSpan), "inner_tag", null);
+
+        List<TraceSpan> stage1Spans = searchSpansByStageName(spans, "Stage 1");
+        assertTagValue(stage1Spans, "common_tag", "root-value");
+        assertTagValue(stage1Spans, "outer_tag", null);
+        assertTagValue(stage1Spans, "inner_tag", null);
+
+        List<TraceSpan> stage2Spans = searchSpansByStageName(spans, "Stage 2");
+        assertTagValue(stage2Spans, "common_tag", "outer-value");
+        assertTagValue(stage2Spans, "outer_tag", "value");
+        assertTagValue(stage2Spans, "inner_tag", null);
+
+        List<TraceSpan> stage21Spans = searchSpansByStageName(spans, "Stage 2.1");
+        assertTagValue(stage21Spans, "common_tag", "outer-value");
+        assertTagValue(stage21Spans, "outer_tag", "value");
+        assertTagValue(stage21Spans, "inner_tag", null);
+
+        List<TraceSpan> stage22Spans = searchSpansByStageName(spans, "Stage 2.2");
+        assertTagValue(stage22Spans, "common_tag", "inner-value");
+        assertTagValue(stage22Spans, "outer_tag", "value");
+        assertTagValue(stage22Spans, "inner_tag", "another_value");
+
+        List<TraceSpan> stage23Spans = searchSpansByStageName(spans, "Stage 2.3");
+        assertTagValue(stage23Spans, "common_tag", "outer-value");
+        assertTagValue(stage23Spans, "outer_tag", "value");
+        assertTagValue(stage23Spans, "inner_tag", null);
+
+        List<TraceSpan> stage3Spans = searchSpansByStageName(spans, "Stage 3");
+        assertTagValue(stage3Spans, "common_tag", "root-value");
+        assertTagValue(stage3Spans, "outer_tag", null);
+        assertTagValue(stage3Spans, "inner_tag", null);
+    }
+
+    private static void assertTagValue(List<TraceSpan> spans, String tagName, String expectedValue) {
+        for (TraceSpan span : spans) {
+            final Map<String, String> meta = span.getMeta();
+            assertEquals(expectedValue, meta.get(tagName));
+        }
     }
 
     @Test

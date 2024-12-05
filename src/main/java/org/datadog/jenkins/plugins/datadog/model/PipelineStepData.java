@@ -71,6 +71,8 @@ public class PipelineStepData {
     private long parentSpanId = -1;
     private long traceId;
 
+    private final Map<String, Set<String>> tags;
+
     public PipelineStepData(final Run<?, ?> run, final BlockStartNode startNode, final BlockEndNode<?> endNode) {
         this(run, (FlowNode) startNode, (FlowNode) endNode);
 
@@ -182,6 +184,8 @@ public class PipelineStepData {
         if (endTimeMillis < 0) {
             throw new IllegalStateException("Step " + endNode.getId() + " (" + endNode.getDisplayName() + ") has no end time info");
         }
+
+        this.tags = DatadogUtilities.getTagsFromPipelineAction(run, startNode);
     }
 
     public String getId() {
@@ -274,6 +278,10 @@ public class PipelineStepData {
 
     public StepType getType() {
         return type;
+    }
+
+    public Map<String, Set<String>> getTags() {
+        return tags;
     }
 
     private static Status getStatus(FlowNode node, String jenkinsResult) {

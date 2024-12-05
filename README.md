@@ -232,15 +232,15 @@ From a job specific configuration page:
 | Custom tags                           | Set from a `File` in the job workspace (not compatible with pipeline jobs) or as text `Properties` directly from the configuration page. If set, this overrides the `Global Job Tags` configuration. |
 | Send source control management events | Submits the `Source Control Management Events Type` of events and metrics (enabled by default).                                                                                                         |
 
-### Test Visibility Configuration
+### Test Optimization Configuration
 
-The plugin can automatically configure Datadog [Test Visibility][19] for a job or a pipeline (see the Test Visibility [documentation for your language][20] to make sure that the testing framework that you use is supported; also note that automatic configuration is not supported for tests that are executed inside containers - follow [manual instrumentation steps][20] to enable Test Visibility for containerized test runs).
+The plugin can automatically configure Datadog [Test Optimization][19] for a job or a pipeline (see the Test Optimization [documentation for your language][20] to make sure that the testing framework that you use is supported; also note that automatic configuration is not supported for tests that are executed inside containers - follow [manual instrumentation steps][20] to enable Test Optimization for containerized test runs).
 
-Before enabling Test Visibility, be sure to properly configure the plugin to submit data to Datadog.
+Before enabling Test Optimization, be sure to properly configure the plugin to submit data to Datadog.
 
-There are two options to enable automatic Test Visibility configuration:
+There are two options to enable automatic Test Optimization configuration:
 
-1. Using Jenkins UI (available in the plugin v5.6.0 or newer): go to the **Configure** page of the job or pipeline whose tests need to be traced, tick the **Enable Datadog Test Visibility** checkbox in the **General** section, and save your changes. This option is unavailable if you are using Multibranch Pipelines, Organization Folders, or other types of pipelines that are configured entirely with `Jenkinsfile`.
+1. Using Jenkins UI (available in the plugin v5.6.0 or newer): go to the **Configure** page of the job or pipeline whose tests need to be traced, tick the **Enable Datadog Test Optimization** checkbox in the **General** section, and save your changes. This option is unavailable if you are using Multibranch Pipelines, Organization Folders, or other types of pipelines that are configured entirely with `Jenkinsfile`.
 2. Using `datadog` pipeline step (available in the plugin v5.6.2 or newer):
 
 In declarative pipelines, add the step to a top-level `options` block like so:
@@ -249,7 +249,7 @@ In declarative pipelines, add the step to a top-level `options` block like so:
 pipeline {
     agent any
     options {
-        datadog(testVisibility: [ 
+        datadog(testOptimization: [ 
             enabled: true, 
             serviceName: "my-service", // the name of service or library being tested
             languages: ["JAVA"], // languages that should be instrumented (available options are "JAVA", "JAVASCRIPT", "PYTHON", "DOTNET")
@@ -269,7 +269,7 @@ pipeline {
 In scripted pipelines, wrap the relevant section with the `datadog` step like so:
 
 ```groovy
-datadog(testVisibility: [ enabled: true, serviceName: "my-service", languages: ["JAVA"], additionalVariables: [:] ]) {
+datadog(testOptimization: [ enabled: true, serviceName: "my-service", languages: ["JAVA"], additionalVariables: [:] ]) {
   node {
     stage('Example') {
       echo "Hello world."
@@ -278,9 +278,9 @@ datadog(testVisibility: [ enabled: true, serviceName: "my-service", languages: [
 }
 ```
 
-The other `datadog` settings, such as `collectLogs` or `tags` can be added alongside the `testVisibility` block.
+The other `datadog` settings, such as `collectLogs` or `tags` can be added alongside the `testOptimization` block.
 
-Please bear in mind that Test Visibility is a separate Datadog product that is billed separately.
+Please bear in mind that Test Optimization is a separate Datadog product that is billed separately.
 
 ## Data collected
 

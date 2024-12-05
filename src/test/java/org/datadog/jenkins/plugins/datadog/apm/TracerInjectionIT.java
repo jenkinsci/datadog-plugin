@@ -1,5 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.apm;
 
+import static org.junit.Assume.assumeTrue;
+
 import hudson.FilePath;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
@@ -144,6 +146,20 @@ public class TracerInjectionIT {
         }
     }
 
+    @Test
+    public void testTracerInjectionViaPipelineStepInSingleStage() throws Exception {
+        assumeTrue(!isRunningOnWindows()); // the feature is platform-independent, but the test is not
+        WorkflowJob pipeline = givenPipelineProjectWithTracerEnabledStepInOneStage();
+        try {
+            WorkflowRun build = whenRunningBuild(pipeline);
+            jenkinsRule.assertLogContains("Stage 1 has no tracer", build);
+            jenkinsRule.assertLogContains("Stage 2 has tracer", build);
+            jenkinsRule.assertLogContains("Stage 3 has no tracer", build);
+        } finally {
+            pipeline.delete();
+        }
+    }
+
     private FreeStyleProject givenFreestyleProject() throws IOException {
         return jenkinsRule.createFreeStyleProject("freestyleProject");
     }
@@ -169,7 +185,7 @@ public class TracerInjectionIT {
 
     private WorkflowJob givenPipelineProjectWithTracerEnabledStep() throws Exception {
         Map<String, String> replacements = new HashMap<>();
-        replacements.put("DATADOG_STEP_SETTINGS", "testVisibility: [ enabled: true, serviceName: \"my-service\", languages: [\"JAVA\"], additionalVariables: [\"my-var\": \"value\"] ]");
+        replacements.put("DATADOG_STEP_SETTINGS", "testOptimization: [ enabled: true, serviceName: \"my-service\", languages: [\"JAVA\"], additionalVariables: [\"my-var\": \"value\"] ]");
         replacements.put("PIPELINE_STEPS", getMavenCommand());
 
         String pipelineDefinition = buildPipelineDefinition("test-maven-pipeline-with-datadog-step.txt", replacements);
@@ -178,9 +194,16 @@ public class TracerInjectionIT {
         return job;
     }
 
+    private WorkflowJob givenPipelineProjectWithTracerEnabledStepInOneStage() throws Exception {
+        String pipelineDefinition = buildPipelineDefinition("test-multistage-maven-pipeline-with-datadog-step.txt", Collections.emptyMap());
+        WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineProject");
+        job.setDefinition(new CpsFlowDefinition(pipelineDefinition, true));
+        return job;
+    }
+
     private WorkflowJob givenPipelineProjectWithTracerDisabledStep() throws Exception {
         Map<String, String> replacements = new HashMap<>();
-        replacements.put("DATADOG_STEP_SETTINGS", "testVisibility: [ enabled: false, serviceName: \"my-service\", languages: [\"JAVA\"], additionalVariables: [\"my-var\": \"value\"] ]");
+        replacements.put("DATADOG_STEP_SETTINGS", "testOptimization: [ enabled: false, serviceName: \"my-service\", languages: [\"JAVA\"], additionalVariables: [\"my-var\": \"value\"] ]");
         replacements.put("PIPELINE_STEPS", getMavenCommand());
 
         String pipelineDefinition = buildPipelineDefinition("test-maven-pipeline-with-datadog-step.txt", replacements);

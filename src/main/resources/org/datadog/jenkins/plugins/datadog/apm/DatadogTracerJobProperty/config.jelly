@@ -3,7 +3,7 @@
 
     <f:optionalBlock name="on"
                      field="on"
-                     title="Enable Datadog Test Visibility"
+                     title="Enable Datadog Test Optimization"
                      checked="${instance != null and instance.on}"
                      inline="true">
 

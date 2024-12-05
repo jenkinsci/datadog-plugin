@@ -16,12 +16,13 @@ import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import net.sf.json.JSONObject;
+import org.datadog.jenkins.plugins.datadog.steps.TestOptimization;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
 public class DatadogTracerJobProperty<T extends Job<?, ?>> extends JobProperty<T> {
 
-    private static final String DISPLAY_NAME = "Enable Datadog Test Visibility";
+    private static final String DISPLAY_NAME = "Enable Datadog Test Optimization";
 
     private final boolean on;
     private final String serviceName;
@@ -58,6 +59,10 @@ public class DatadogTracerJobProperty<T extends Job<?, ?>> extends JobProperty<T
             list.add(new DatadogTracerEnvironmentProperty(e.getKey(), e.getValue()));
         }
         return list;
+    }
+
+    public TestOptimization getTestOptimization() {
+        return new TestOptimization(on, serviceName, languages, additionalVariables);
     }
 
     @Extension
