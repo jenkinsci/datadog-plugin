@@ -43,9 +43,10 @@ import hudson.util.FormValidation.Kind;
 import hudson.util.Secret;
 import hudson.util.XStream2;
 import java.io.File;
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
@@ -159,8 +160,30 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     }
 
     @Override
+    public synchronized void load() {
+        XmlFile file = getConfigFile().exists() ? getConfigFile() : getLegacyConfigFile();
+        if (!file.exists()) {
+            return;
+        }
+        try {
+            file.unmarshal(this);
+        } catch (IOException e) {
+            logger.log(Level.WARNING, "Failed to load " + file, e);
+        }
+    }
+
+    @Override
     protected XmlFile getConfigFile() {
-        return new XmlFile(XSTREAM, new File(Jenkins.get().getRootDir(), getId() + ".xml"));
+        File rootDir = Jenkins.get().getRootDir();
+        File currentConfigFile = new File(rootDir, getId() + "_v2.xml");
+        return new XmlFile(XSTREAM, currentConfigFile);
+    }
+
+    // TODO remove this method and `load()` method override when we are confident that all users have migrated to the new config file
+    private XmlFile getLegacyConfigFile() {
+        File rootDir = Jenkins.get().getRootDir();
+        File legacyConfigFile = new File(rootDir, getId() + ".xml");
+        return new XmlFile(XSTREAM, legacyConfigFile);
     }
 
     @Initializer(after = InitMilestone.SYSTEM_CONFIG_LOADED)
@@ -774,8 +797,8 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             return FormValidation.error("The excluded events list is not correctly written in a comma-separated list.");
         }
 
-        List<String> includedEventsList = (includeEvents.isEmpty()) ? new ArrayList<>() : Arrays.asList(includeEvents.split(","));
-        List<String> excludedEventsList = (excludeEvents.isEmpty()) ? new ArrayList<>() : Arrays.asList(excludeEvents.split(","));
+        List<String> includedEventsList = (includeEvents.isEmpty()) ? Collections.emptyList() : Arrays.asList(includeEvents.split(","));
+        List<String> excludedEventsList = (excludeEvents.isEmpty()) ? Collections.emptyList() : Arrays.asList(excludeEvents.split(","));
 
         List<String> allEvents = Arrays.asList(
                 String.format("%s,%s,%s", SYSTEM_EVENTS, SECURITY_EVENTS, DEFAULT_EVENTS).split(","));

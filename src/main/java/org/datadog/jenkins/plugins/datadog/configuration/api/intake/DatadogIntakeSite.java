@@ -78,7 +78,7 @@ public class DatadogIntakeSite extends DatadogIntake {
             String site = System.getenv().get(DATADOG_SITE_PROPERTY);
             if (site != null) {
                 try {
-                    return DatadogSite.valueOf(site);
+                    return DatadogSite.valueOf(site.toUpperCase());
                 } catch (IllegalArgumentException e) {
                     throw new IllegalArgumentException(
                             "Illegal " + DATADOG_SITE_PROPERTY + " environment property value set: " + site +
