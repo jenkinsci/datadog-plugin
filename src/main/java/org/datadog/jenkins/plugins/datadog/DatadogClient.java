@@ -35,13 +35,6 @@ import java.util.Set;
 
 public interface DatadogClient {
 
-    enum ClientType {
-        HTTP,
-        DSD;
-
-        ClientType() { }
-    }
-
     enum Status {
         OK(0),
         WARNING(1),
