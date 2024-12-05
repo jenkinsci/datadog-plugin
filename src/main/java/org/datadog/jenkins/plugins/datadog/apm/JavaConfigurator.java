@@ -147,7 +147,7 @@ final class JavaConfigurator implements TracerConfigurator {
         variables.put("MAVEN_OPTS", PropertyUtils.prepend(envs, "MAVEN_OPTS", tracerAgent));
         variables.put("SBT_OPTS", PropertyUtils.prepend(envs, "SBT_OPTS", tracerAgent));
         variables.put("ANT_OPTS", PropertyUtils.prepend(envs, "ANT_OPTS", tracerAgent));
-        variables.put("GRADLE_OPTS", PropertyUtils.prepend(envs, "GRADLE_OPTS", "-Dorg.gradle.jvmargs=" + tracerAgent));
+        variables.put("GRADLE_OPTS", PropertyUtils.prepend(envs, "GRADLE_OPTS", tracerAgent));
 
         String proxyConfiguration = getProxyConfiguration(tracerConfig, node);
         if (proxyConfiguration != null) {
