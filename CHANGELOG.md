@@ -1,5 +1,14 @@
 Changes
 =======
+## 8.3.0 / 2024-12-09
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-8.2.0...datadog-8.3.0
+
+* [Added] Enable traces batching by default. See [#473](https://github.com/jenkinsci/datadog-plugin/pull/473).
+* [Fixed] Fix Datadog pipeline options scope. See [#468](https://github.com/jenkinsci/datadog-plugin/pull/468).
+* [Fixed] Fix auto-instrumentation to inject tracer into Gradle Launcher instead of Gradle Daemon. See [#474](https://github.com/jenkinsci/datadog-plugin/pull/474).
+* [Fixed] Propagate executor number data from step trace to stage trace and pipeline trace. See [#475](https://github.com/jenkinsci/datadog-plugin/pull/475).
+
 ## 8.2.0 / 2024-11-21
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-8.1.0...datadog-8.2.0
