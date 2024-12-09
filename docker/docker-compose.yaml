@@ -16,7 +16,7 @@ services:
     environment:
       GITHUB_SSH_KEY: $GITHUB_SSH_KEY
       GITHUB_SSH_KEY_PASSPHRASE: $GITHUB_SSH_KEY_PASSPHRASE
-      JENKINS_AGENT_NAMES: "agent-dotnet agent-python agent-js"
+      JENKINS_AGENT_NAMES: "agent-dotnet agent-python agent-js agent-ruby"
       DATADOG_JENKINS_PLUGIN_REPORT_WITH: DSD
       DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS: true
       DATADOG_JENKINS_PLUGIN_TARGET_HOST: datadog # `dogstatsd` or `datadog` based on the container you wish to use
@@ -65,6 +65,19 @@ services:
     environment:
       JENKINS_URL: http://jenkins-controller:8080
       JENKINS_AGENT_NAME: agent-js
+      JENKINS_AGENT_WORKDIR: /jenkins/agent
+    volumes:
+      - jenkins_shared:/shared
+
+  jenkins-agent-ruby:
+    build:
+      context: ./agent-node
+      dockerfile: Dockerfile-ruby
+    depends_on:
+      - jenkins-controller
+    environment:
+      JENKINS_URL: http://jenkins-controller:8080
+      JENKINS_AGENT_NAME: agent-ruby
       JENKINS_AGENT_WORKDIR: /jenkins/agent
     volumes:
       - jenkins_shared:/shared

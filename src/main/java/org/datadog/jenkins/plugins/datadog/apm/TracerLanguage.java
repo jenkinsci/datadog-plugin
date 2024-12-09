@@ -4,7 +4,8 @@ public enum TracerLanguage {
     DOTNET(".NET"),
     JAVA("Java"),
     JAVASCRIPT("JS"),
-    PYTHON("Python");
+    PYTHON("Python"),
+    RUBY("Ruby");
 
     private final String label;
 
