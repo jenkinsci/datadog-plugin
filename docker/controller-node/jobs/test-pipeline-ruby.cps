@@ -6,7 +6,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 git url: 'git@github.com:freeCodeCamp/devdocs.git',
-                        credentialsId: 'github-ssh'
+                        credentialsId: 'github-ssh', branch: 'main'
             }
         }
 
