@@ -69,6 +69,19 @@ services:
     volumes:
       - jenkins_shared:/shared
 
+  jenkins-agent-ruby:
+    build:
+      context: ./agent-node
+      dockerfile: Dockerfile-ruby
+    depends_on:
+      - jenkins-controller
+    environment:
+      JENKINS_URL: http://jenkins-controller:8080
+      JENKINS_AGENT_NAME: agent-ruby
+      JENKINS_AGENT_WORKDIR: /jenkins/agent
+    volumes:
+      - jenkins_shared:/shared
+
   ## Uncomment the section below to use the standalone DogStatsD server to send metrics to Datadog
   #  dogstatsd:
   #    image: datadog/dogstatsd:latest
