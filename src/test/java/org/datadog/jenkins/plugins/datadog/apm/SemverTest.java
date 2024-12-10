@@ -14,6 +14,14 @@ public class SemverTest {
     }
 
     @Test
+    public void testParseValidVersionWithSpaces() {
+        Semver version = Semver.parse("\t\t1.2.3\n");
+        assertEquals(1, version.getMajor());
+        assertEquals(2, version.getMinor());
+        assertEquals(3, version.getPatch());
+    }
+
+    @Test
     public void testParseValidVersionWithPreRelease() {
         Semver version = Semver.parse("1.2.3-alpha");
         assertEquals(1, version.getMajor());

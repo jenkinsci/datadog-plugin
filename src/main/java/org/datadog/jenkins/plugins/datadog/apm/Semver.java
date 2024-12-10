@@ -2,6 +2,7 @@ package org.datadog.jenkins.plugins.datadog.apm;
 
 public class Semver {
     public static Semver parse(String version) {
+        version = version.trim();
         String[] mainAndPreRelease = version.split("-", 2);
         String[] parts = mainAndPreRelease[0].split("\\.");
         if (parts.length != 3) {
