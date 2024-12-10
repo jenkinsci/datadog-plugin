@@ -50,6 +50,7 @@ public class SemverTest {
 
         assertEquals(version1.compareTo(version1), 0);
         assertEquals(version1.compareTo(version5), 0);
+        assertEquals(version1, version5);
 
         assertTrue(version2.compareTo(version3) < 0);
         assertTrue(version3.compareTo(version4) < 0);

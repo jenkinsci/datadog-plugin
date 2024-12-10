@@ -1,5 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.apm;
 
+import java.util.Objects;
+
 public class Semver {
     public static Semver parse(String version) {
         version = version.trim();
@@ -88,5 +90,22 @@ public class Semver {
     @Override
     public String toString() {
         return String.format("%d.%d.%d%s", getMajor(), getMinor(), getPatch(), getPreRelease() != null ? "-" + getPreRelease() : "");
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        Semver other = (Semver) obj;
+        return toString().equals(other.toString());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(major, minor, patch, preRelease);
     }
 }
