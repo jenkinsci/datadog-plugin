@@ -1,0 +1,28 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+
+    <f:entry title="Agent Host" field="agentHost">
+        <f:textbox default="${descriptor.defaultAgentHost}"/>
+    </f:entry>
+
+    <f:entry title="DogStatsD Port" field="agentPort">
+        <f:number default="${descriptor.defaultAgentPort}" min="0" max="65535"/>
+    </f:entry>
+
+    <f:entry title="Log Collection Port" field="agentLogCollectionPort">
+        <f:number default="${descriptor.defaultAgentLogCollectionPort}" min="0" max="65535"/>
+    </f:entry>
+
+    <f:validateButton title="Test logs connection" progress="${%Connecting...}" description="(Optional)"
+        method="checkLogConnectivity" with="agentHost,agentLogCollectionPort"
+    />
+
+    <f:entry title="Traces Collection Port" field="agentTraceCollectionPort">
+        <f:number default="${descriptor.defaultAgentTraceCollectionPort}" min="0" max="65535" />
+    </f:entry>
+
+    <f:validateButton title="Test traces connection" progress="${%Connecting...}" description="(Optional) (Required for CI Visibility)"
+        method="checkTraceConnectivity" with="agentHost,agentTraceCollectionPort"
+    />
+
+</j:jelly>
