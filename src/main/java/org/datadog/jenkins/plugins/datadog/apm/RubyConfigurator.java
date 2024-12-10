@@ -23,11 +23,15 @@ public class RubyConfigurator implements TracerConfigurator {
         validateBundler(node, workspacePath, listener);
         validateRubygems(node, workspacePath, listener);
 
-        String unfreezeBundleOutput = workspacePath.act(new ShellCommandCallable(Collections.emptyMap(), INSTALL_TRACER_TIMEOUT_MILLIS, "bundle", "config", "set", "frozen", "false"));
-        listener.getLogger().println("[datadog] Configuring DD Ruby tracer: unfrozen bundle in " + workspacePath + " on " + node + "; output" + unfreezeBundleOutput);
+        if (!isConfigurationValid(node, workspacePath)) {
+            String unfreezeBundleOutput = workspacePath.act(new ShellCommandCallable(Collections.emptyMap(), INSTALL_TRACER_TIMEOUT_MILLIS, "bundle", "config", "set", "frozen", "false"));
+            listener.getLogger().println("[datadog] Configuring DD Ruby tracer: unfrozen bundle in " + workspacePath + " on " + node + "; output" + unfreezeBundleOutput);
 
-        String installTracerOutput = workspacePath.act(new ShellCommandCallable(Collections.emptyMap(), INSTALL_TRACER_TIMEOUT_MILLIS, "bundle", "add", "datadog-ci"));
-        listener.getLogger().println("[datadog] Configuring DD Ruby tracer: tracer installed in " + workspacePath + " on " + node + "; output: " + installTracerOutput);
+            String installTracerOutput = workspacePath.act(new ShellCommandCallable(Collections.emptyMap(), INSTALL_TRACER_TIMEOUT_MILLIS, "bundle", "add", "datadog-ci"));
+            listener.getLogger().println("[datadog] Configuring DD Ruby tracer: tracer installed in " + workspacePath + " on " + node + "; output: " + installTracerOutput);
+        } else {
+            listener.getLogger().println("[datadog] Datadog ruby gem is already installed");
+        }
 
         Map<String, String> variables = new HashMap<>();
         variables.put("RUBYOPT", "-rbundler/setup -rdatadog/ci/auto_instrument");
@@ -37,8 +41,10 @@ public class RubyConfigurator implements TracerConfigurator {
     @Override
     public boolean isConfigurationValid(Node node, FilePath workspacePath) {
         try {
-            String tracerLocation = getTracerLocation(workspacePath);
-            return workspacePath.child(tracerLocation).exists();
+            // check that bundle show datadog-ci returns a valid output
+            workspacePath.act(new ShellCommandCallable(Collections.emptyMap(), GET_VERSION_TIMEOUT_MILLIS, "bundle", "show", "datadog-ci"));
+
+            return true;
         } catch (Exception e) {
             return false;
         }
@@ -65,9 +71,5 @@ public class RubyConfigurator implements TracerConfigurator {
         if (rubyVersion.compareTo(MIN_RUBY_VERSION) < 0) {
             throw new IllegalStateException("Ruby version " + rubyVersion + " is less than the minimum required version " + MIN_RUBY_VERSION);
         }
-    }
-
-    private static String getTracerLocation(FilePath workspacePath) throws IOException, InterruptedException {
-        return workspacePath.act(new ShellCommandCallable(Collections.emptyMap(), GET_VERSION_TIMEOUT_MILLIS, "bundle", "show", "datadog-ci")).trim();
     }
 }
