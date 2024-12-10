@@ -4,6 +4,7 @@ import hudson.FilePath;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import org.datadog.jenkins.plugins.datadog.steps.TestOptimization;
+import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -38,6 +39,7 @@ public class RubyConfigurator implements TracerConfigurator {
         return variables;
     }
 
+    @SuppressFBWarnings("REC_CATCH_EXCEPTION")
     @Override
     public boolean isConfigurationValid(Node node, FilePath workspacePath) {
         try {
