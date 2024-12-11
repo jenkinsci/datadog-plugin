@@ -30,6 +30,24 @@ import com.timgroup.statsd.Event;
 import com.timgroup.statsd.NonBlockingStatsDClient;
 import com.timgroup.statsd.ServiceCheck;
 import com.timgroup.statsd.StatsDClient;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.logging.Logger;
+import javax.annotation.concurrent.GuardedBy;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
@@ -43,18 +61,6 @@ import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.json.JSONArray;
 import org.json.JSONObject;
-
-import javax.annotation.concurrent.GuardedBy;
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.function.Function;
-import java.util.logging.Logger;
 
 /**
  * This class is used to collect all methods that has to do with transmitting
@@ -91,38 +97,11 @@ public class DatadogAgentClient implements DatadogClient {
     }
 
     public DatadogAgentClient(String hostname, Integer port, Integer logCollectionPort, Integer traceCollectionPort, long evpProxyTimeoutMillis) {
-        validate(hostname, port, logCollectionPort, traceCollectionPort);
-
         this.hostname = hostname;
         this.port = port;
         this.logCollectionPort = logCollectionPort;
         this.traceCollectionPort = traceCollectionPort;
         this.client = new HttpClient(evpProxyTimeoutMillis);
-    }
-
-    private static void validate(String hostname, Integer port, Integer logCollectionPort, Integer traceCollectionPort) {
-        if (hostname == null || hostname.isEmpty()) {
-            throw new IllegalArgumentException("Datadog Target URL is not set properly");
-        }
-        if (port == null) {
-            throw new IllegalArgumentException("Datadog Target Port is not set properly");
-        }
-        if (DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs()  && logCollectionPort == null) {
-            logger.warning("Datadog Log Collection Port is not set properly");
-        }
-
-        if (DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()  && traceCollectionPort == null) {
-            logger.warning("Datadog Trace Collection Port is not set properly");
-        }
-    }
-
-    public static ConnectivityResult checkConnectivity(final String host, final int port) {
-        try(Socket ignored = new Socket(host, port)) {
-            return ConnectivityResult.SUCCESS;
-        } catch (Exception ex) {
-            DatadogUtilities.severe(logger, ex, "Failed to create socket to host: " + host + ", port: " +port + ". Error: " + ex);
-            return new ConnectivityResult(true, ex.toString());
-        }
     }
 
     public static class ConnectivityResult {

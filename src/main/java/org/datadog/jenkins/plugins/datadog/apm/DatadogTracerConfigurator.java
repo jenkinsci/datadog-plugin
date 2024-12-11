@@ -10,11 +10,6 @@ import hudson.model.Node;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.TopLevelItem;
-import hudson.util.Secret;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -23,9 +18,9 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.configuration.DatadogClientConfiguration;
 import org.datadog.jenkins.plugins.datadog.model.DatadogPluginAction;
 import org.datadog.jenkins.plugins.datadog.steps.DatadogPipelineAction;
 import org.datadog.jenkins.plugins.datadog.steps.TestOptimization;
@@ -148,20 +143,9 @@ public class DatadogTracerConfigurator {
         variables.put("DD_ENV", "ci");
         variables.put("DD_SERVICE", testOptimization.getServiceName());
 
-        DatadogClient.ClientType clientType = DatadogClient.ClientType.valueOf(datadogConfig.getReportWith());
-        switch (clientType) {
-            case HTTP:
-                variables.put("DD_CIVISIBILITY_AGENTLESS_ENABLED", "true");
-                variables.put("DD_SITE", getSite(datadogConfig.getTargetApiURL()));
-                variables.put("DD_API_KEY", Secret.toString(datadogConfig.getUsedApiKey()));
-                break;
-            case DSD:
-                variables.put("DD_AGENT_HOST", datadogConfig.getTargetHost());
-                variables.put("DD_TRACE_AGENT_PORT", getAgentPort(datadogConfig.getTargetTraceCollectionPort()));
-                break;
-            default:
-                throw new IllegalArgumentException("Unexpected client type: " + clientType);
-        }
+        DatadogClientConfiguration clientConfiguration = datadogConfig.getDatadogClientConfiguration();
+        Map<String, String> clientEnvironmentVariables = clientConfiguration.toEnvironmentVariables();
+        variables.putAll(clientEnvironmentVariables);
 
         Map<String, String> additionalVariables = testOptimization.getAdditionalVariables();
         if (additionalVariables != null) {
@@ -171,31 +155,6 @@ public class DatadogTracerConfigurator {
         return variables;
     }
 
-    private static String getSite(String apiUrl) {
-        // what users configure for Pipelines looks like "https://api.datadoghq.com/api/"
-        // while what the tracer needs "datadoghq.com"
-        try {
-            URI uri = new URL(apiUrl).toURI();
-            String host = uri.getHost();
-            if (host == null) {
-                throw new IllegalArgumentException("Cannot find host in Datadog API URL: " + uri);
-            }
-
-            String[] parts = host.split("\\.");
-            return (parts.length >= 2 ? parts[parts.length - 2] + "." : "") + parts[parts.length - 1];
-
-        } catch (MalformedURLException | URISyntaxException e) {
-            throw new IllegalArgumentException("Cannot parse Datadog API URL", e);
-        }
-    }
-
-    private static String getAgentPort(Integer traceCollectionPort) {
-        if (traceCollectionPort == null) {
-            throw new IllegalArgumentException("Traces collection port is not set");
-        } else {
-            return traceCollectionPort.toString();
-        }
-    }
 
     private static final class ConfigureTracerAction extends DatadogPluginAction {
         private final String nodeHostname;

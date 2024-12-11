@@ -1,16 +1,15 @@
 package org.datadog.jenkins.plugins.datadog.flare;
 
 import hudson.Extension;
-import net.sf.json.JSONObject;
-import org.apache.commons.io.IOUtils;
-import org.datadog.jenkins.plugins.datadog.DatadogClient;
-import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
-import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.clients.DatadogApiClient;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import net.sf.json.JSONObject;
+import org.apache.commons.io.IOUtils;
+import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration;
+import org.datadog.jenkins.plugins.datadog.configuration.DatadogClientConfiguration;
 
 @Extension
 public class ConnectivityChecksFlare implements FlareContributor {
@@ -34,26 +33,33 @@ public class ConnectivityChecksFlare implements FlareContributor {
     public void writeFileContents(OutputStream out) throws IOException {
         JSONObject payload = new JSONObject();
 
-        // TODO rework the checks below following configuration refactoring
         DatadogGlobalConfiguration globalConfiguration = DatadogUtilities.getDatadogGlobalDescriptor();
-        DatadogClient.ClientType clientType = DatadogClient.ClientType.valueOf(globalConfiguration.getReportWith());
+        DatadogClientConfiguration clientConfiguration = globalConfiguration.getDatadogClientConfiguration();
 
-        if (clientType == DatadogClient.ClientType.DSD) {
-            payload.put("client-type", DatadogClient.ClientType.DSD);
-            payload.put("logs-connectivity", globalConfiguration.doCheckAgentConnectivityLogs(globalConfiguration.getTargetHost(), String.valueOf(globalConfiguration.getTargetLogCollectionPort())).toString());
-            payload.put("traces-connectivity", globalConfiguration.doCheckAgentConnectivityTraces(globalConfiguration.getTargetHost(), String.valueOf(globalConfiguration.getTargetTraceCollectionPort())).toString());
+        payload.put("client-type", clientConfiguration.getClass().getSimpleName());
+        payload.put("traces-connectivity", validateConnectivity(clientConfiguration::validateTracesConnection));
+        payload.put("logs-connectivity", validateConnectivity(clientConfiguration::validateLogsConnection));
 
-        } else if (clientType == DatadogClient.ClientType.HTTP) {
-            payload.put("client-type", DatadogClient.ClientType.HTTP);
-            payload.put("api-connectivity", DatadogApiClient.validateDefaultIntakeConnection(globalConfiguration.getTargetApiURL(), globalConfiguration.getUsedApiKey()));
-            payload.put("logs-connectivity", DatadogApiClient.validateLogIntakeConnection(globalConfiguration.getTargetLogIntakeURL(), globalConfiguration.getUsedApiKey()));
-            payload.put("traces-connectivity", DatadogApiClient.validateWebhookIntakeConnection(globalConfiguration.getTargetWebhookIntakeURL(), globalConfiguration.getUsedApiKey()));
-
-        } else {
-            throw new IllegalArgumentException("Unsupported client type: " + clientType);
+        if (clientConfiguration instanceof DatadogApiConfiguration){
+            DatadogApiConfiguration apiConfiguration = (DatadogApiConfiguration) clientConfiguration;
+            payload.put("api-connectivity", validateConnectivity(apiConfiguration::validateApiConnection));
         }
 
         String payloadString = payload.toString(2);
         IOUtils.write(payloadString, out, StandardCharsets.UTF_8);
+    }
+
+    private String validateConnectivity(ConnectivityValidator validator) {
+        try {
+            validator.validate();
+            return "OK";
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+    }
+
+    @FunctionalInterface
+    private interface ConnectivityValidator {
+        void validate() throws Exception;
     }
 }

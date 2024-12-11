@@ -48,9 +48,15 @@ To spin up a development environment for the *jenkins-datadog* plugin repository
   - You can set Global Tag. For example `.*, owner:$1, release_env:$2, optional:Tag3`.
 
 To test Configuration as Code update `docker/docker-compose.yaml`, uncommenting `CASC_JENKINS_CONFIG`.
-The applied configuration is stored in `docker/controller-node/jenkins-casc.yaml` (note that it is placed inside the container at image build time). 
+The applied configuration is stored in `docker/controller-node/jenkins-casc.yaml` (note that it is placed inside the container at image build time).
+You can find some examples of the plugin's configuration with CasC in `src/test/resources/org/datadog/jenkins/plugins/datadog`.
  
 Jenkins controller container exposes port 5055 for remote debugging via JDWP. 
+
+#### Known errors
+
+If docker-compose fails with a message that looks like `error mounting ".../datadog-plugin/target/datadog.hpi" to rootfs at "/var/jenkins_home/plugins/datadog.hpi"`, 
+make sure that you have properly set the `JENKINS_PLUGIN` env var and that you have built the plugin by running `mvn clean package -DskipTests`. 
 
 #### Manual Testing without an Agent
 
