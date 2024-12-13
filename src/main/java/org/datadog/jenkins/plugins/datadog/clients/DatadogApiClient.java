@@ -319,14 +319,14 @@ public class DatadogApiClient implements DatadogClient {
 
         public ApiLogWriteStrategy(String logIntakeUrl, Secret apiKey, HttpClient httpClient) {
             Map<String, String> headers = Map.of(
-                    "DD-API-KEY", Secret.toString(apiKey),
-                    "Content-Encoding", "gzip");
-            JsonPayloadSender<JSONObject> payloadSender = new CompressedBatchSender<>(
+                    "DD-API-KEY", Secret.toString(apiKey));
+            JsonPayloadSender<JSONObject> payloadSender = new BatchSender<>(
                     httpClient,
                     logIntakeUrl,
                     headers,
                     PAYLOAD_SIZE_LIMIT,
-                    Function.identity());
+                    Function.identity(),
+                    true);
 
             this.circuitBreaker = new CircuitBreaker<>(
                     payloadSender::send,
@@ -364,9 +364,8 @@ public class DatadogApiClient implements DatadogClient {
 
         Map<String, String> headers = Map.of(
             "DD-API-KEY", Secret.toString(apiKey),
-            "DD-CI-PROVIDER-NAME", "jenkins",
-            "Content-Encoding", "gzip");
-        JsonPayloadSender<Payload> payloadSender = new CompressedBatchSender<>(httpClient, url, headers, PAYLOAD_SIZE_LIMIT, p -> p.getJson());
+            "DD-CI-PROVIDER-NAME", "jenkins");
+        JsonPayloadSender<Payload> payloadSender = new BatchSender<>(httpClient, url, headers, PAYLOAD_SIZE_LIMIT, p -> p.getJson(), true);
 
         return new TraceWriteStrategyImpl(Track.WEBHOOK, payloadSender::send);
     }

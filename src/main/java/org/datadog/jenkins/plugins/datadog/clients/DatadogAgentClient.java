@@ -30,6 +30,17 @@ import com.timgroup.statsd.Event;
 import com.timgroup.statsd.NonBlockingStatsDClient;
 import com.timgroup.statsd.ServiceCheck;
 import com.timgroup.statsd.StatsDClient;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.function.Function;
+import java.util.logging.Logger;
+import javax.annotation.concurrent.GuardedBy;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
@@ -43,18 +54,6 @@ import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.json.JSONArray;
 import org.json.JSONObject;
-
-import javax.annotation.concurrent.GuardedBy;
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.function.Function;
-import java.util.logging.Logger;
 
 /**
  * This class is used to collect all methods that has to do with transmitting
@@ -369,25 +368,24 @@ public class DatadogAgentClient implements DatadogClient {
 
     @Override
     public TraceWriteStrategy createTraceWriteStrategy() {
-        DatadogGlobalConfiguration datadogGlobalDescriptor = DatadogUtilities.getDatadogGlobalDescriptor();
-        String urlParameters = datadogGlobalDescriptor != null ? "?service=" + datadogGlobalDescriptor.getCiInstanceName() : "";
-        String url = String.format("http://%s:%d/evp_proxy/v1/api/v2/webhook/%s", hostname, traceCollectionPort, urlParameters);
+        Set<String> agentEndpoints = fetchAgentEndpoints();
+        boolean evpProxyExists = agentEndpoints.contains("/evp_proxy/v3/");
+        if (evpProxyExists) {
+            DatadogGlobalConfiguration datadogGlobalDescriptor = DatadogUtilities.getDatadogGlobalDescriptor();
+            String urlParameters = datadogGlobalDescriptor != null ? "?service=" + datadogGlobalDescriptor.getCiInstanceName() : "";
+            String url = String.format("http://%s:%d/evp_proxy/v1/api/v2/webhook/%s", hostname, traceCollectionPort, urlParameters);
 
-        Map<String, String> headers = Map.of(
-              "X-Datadog-EVP-Subdomain", "webhook-intake",
-              "DD-CI-PROVIDER-NAME", "jenkins",
-              "Content-Encoding", "gzip");
-        JsonPayloadSender<Payload> payloadSender = new CompressedBatchSender<>(client, url, headers, PAYLOAD_SIZE_LIMIT, p -> p.getJson());
+            Map<String, String> headers = Map.of(
+                "X-Datadog-EVP-Subdomain", "webhook-intake",
+                "DD-CI-PROVIDER-NAME", "jenkins");
 
-        TraceWriteStrategyImpl evpStrategy = new TraceWriteStrategyImpl(Track.WEBHOOK, payloadSender::send);
-        TraceWriteStrategyImpl apmStrategy = new TraceWriteStrategyImpl(Track.APM, this::sendSpansToApm);
-        return new AgentTraceWriteStrategy(evpStrategy, apmStrategy, this::isEvpProxySupported);
-    }
+            boolean evpProxySupportsGzip = agentEndpoints.contains("/evp_proxy/v4/");
+            JsonPayloadSender<Payload> payloadSender = new BatchSender<>(client, url, headers, PAYLOAD_SIZE_LIMIT, p -> p.getJson(), evpProxySupportsGzip);
+            return new TraceWriteStrategyImpl(Track.WEBHOOK, payloadSender::send);
 
-    boolean isEvpProxySupported() {
-        logger.info("Checking for EVP Proxy support in the Agent.");
-        Set<String> supportedAgentEndpoints = fetchAgentSupportedEndpoints();
-        return supportedAgentEndpoints.contains("/evp_proxy/v3/");
+        } else {
+            return new TraceWriteStrategyImpl(Track.APM, this::sendSpansToApm);
+        }
     }
 
     /**
@@ -396,7 +394,7 @@ public class DatadogAgentClient implements DatadogClient {
      * @return a set of endpoints (if /info wasn't available, it will be empty)
      */
     @SuppressFBWarnings("REC_CATCH_EXCEPTION")
-    Set<String> fetchAgentSupportedEndpoints() {
+    Set<String> fetchAgentEndpoints() {
         logger.fine("Fetching Agent info");
 
         String url = String.format("http://%s:%d/info", hostname, traceCollectionPort);
