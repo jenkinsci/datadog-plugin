@@ -8,6 +8,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -21,24 +22,41 @@ import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.mockito.ArgumentCaptor;
 
-public class CompressedBatchSenderTest {
+@RunWith(Parameterized.class)
+public class BatchSenderTest {
 
     private static final String URL = "dummyUrl";
-
-    public static final Map<String, String> HEADERS;
-    static {
-        HEADERS = new HashMap<>();
-        HEADERS.put("header1", "value1");
-        HEADERS.put("header2", "value2");
-    }
 
     private static final int BATCH_SIZE = 30;
 
     private final HttpClient httpClient = mock(HttpClient.class);
 
-    private final CompressedBatchSender<Map<String, String>> sender = new CompressedBatchSender<>(httpClient, URL, HEADERS, BATCH_SIZE, JSONObject::fromObject);
+    private final Map<String, String> expectedHeaders;
+    private final BatchSender<Map<String, String>> sender;
+
+    @Parameterized.Parameters
+    public static Collection<Object[]> compress() {
+        return Arrays.asList(new Object[][]{
+            {true},
+            {false},
+        });
+    }
+
+    public BatchSenderTest(boolean compress) {
+        Map<String, String> headers = Map.of(
+            "header1", "value1",
+            "header2", "value2"
+        );
+        this.sender = new BatchSender<>(httpClient, URL, headers, BATCH_SIZE, JSONObject::fromObject, compress);
+        this.expectedHeaders = new HashMap<>(headers);
+        if (compress) {
+            expectedHeaders.put("Content-Encoding", "gzip");
+        }
+    }
 
     @Test
     public void testOneElementBatch() throws Exception{
@@ -107,11 +125,11 @@ public class CompressedBatchSenderTest {
 
         List<Collection<Map<String, String>>> batches = new ArrayList<>();
         ArgumentCaptor<byte[]> captor = ArgumentCaptor.forClass(byte[].class);
-        verify(httpClient, atLeast(1)).post(eq(URL), eq(HEADERS), eq("application/json"), captor.capture(), any());
+        verify(httpClient, atLeast(1)).post(eq(URL), eq(expectedHeaders), eq("application/json"), captor.capture(), any());
         List<byte[]> requestsBytes = captor.getAllValues();
         for (byte[] requestBytes : requestsBytes) {
-            try (GZIPInputStream gzip = new GZIPInputStream(new ByteArrayInputStream(requestBytes))) {
-                byte[] uncompressedRequestBytes = IOUtils.toByteArray(gzip);
+            try (InputStream is = "gzip".equalsIgnoreCase(expectedHeaders.get("Content-Encoding")) ? new GZIPInputStream(new ByteArrayInputStream(requestBytes)) : new ByteArrayInputStream(requestBytes)) {
+                byte[] uncompressedRequestBytes = IOUtils.toByteArray(is);
                 String uncompressedRequest = new String(uncompressedRequestBytes);
                 JSONArray requestJson = JSONArray.fromObject(uncompressedRequest);
 
