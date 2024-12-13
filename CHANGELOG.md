@@ -1,5 +1,11 @@
 Changes
 =======
+## 8.3.1 / 2024-12-13
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-8.3.0...datadog-8.3.1
+
+* [Fixed] Do not compress traces and logs batches when sending to old EVP proxy. See [#479](https://github.com/jenkinsci/datadog-plugin/pull/479).
+
 ## 8.3.0 / 2024-12-09
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-8.2.0...datadog-8.3.0
