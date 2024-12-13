@@ -71,6 +71,7 @@ public class DatadogApiClient implements DatadogClient {
      * flaky network or Datadog being down. Left intentionally long.
      */
     private static final int HTTP_TIMEOUT_MS = 60 * 1000;
+    public static final boolean COMPRESS_REQUEST = true;
 
     private final String url;
     private final String logIntakeUrl;
@@ -326,7 +327,7 @@ public class DatadogApiClient implements DatadogClient {
                     headers,
                     PAYLOAD_SIZE_LIMIT,
                     Function.identity(),
-                    true);
+                    COMPRESS_REQUEST);
 
             this.circuitBreaker = new CircuitBreaker<>(
                     payloadSender::send,
@@ -365,7 +366,7 @@ public class DatadogApiClient implements DatadogClient {
         Map<String, String> headers = Map.of(
             "DD-API-KEY", Secret.toString(apiKey),
             "DD-CI-PROVIDER-NAME", "jenkins");
-        JsonPayloadSender<Payload> payloadSender = new BatchSender<>(httpClient, url, headers, PAYLOAD_SIZE_LIMIT, p -> p.getJson(), true);
+        JsonPayloadSender<Payload> payloadSender = new BatchSender<>(httpClient, url, headers, PAYLOAD_SIZE_LIMIT, p -> p.getJson(), COMPRESS_REQUEST);
 
         return new TraceWriteStrategyImpl(Track.WEBHOOK, payloadSender::send);
     }

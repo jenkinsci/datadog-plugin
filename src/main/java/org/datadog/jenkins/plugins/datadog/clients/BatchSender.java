@@ -39,6 +39,8 @@ public class BatchSender<T> implements JsonPayloadSender<T> {
         this.payloadToJson = payloadToJson;
         this.compress = compress;
 
+        // older Datadog Agent versions do not support compressed payloads
+        // because EVP Proxy prior to v3 drops Content-Encoding header
         if (compress) {
             this.headers.put("Content-Encoding", "gzip");
         }
