@@ -87,29 +87,11 @@ public class DatadogClientTest {
     }
 
     @Test
-    public void testEvpProxyEnabled() {
-        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
-        cfg.setEnableCiVisibility(true);
-        DatadogAgentClient client = Mockito.spy(new DatadogAgentClient("test", 1234, 1235, 1236, 1_000));
-        Mockito.doReturn(new HashSet<>(Collections.singletonList("/evp_proxy/v3/"))).when(client).fetchAgentSupportedEndpoints();
-        Assert.assertTrue(client.isEvpProxySupported());
-    }
-
-    @Test
-    public void testEvpProxyDisabled() {
-        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
-        cfg.setEnableCiVisibility(true);
-        DatadogAgentClient client = Mockito.spy(new DatadogAgentClient("test", 1234, 1235, 1236, 1_000));
-        Mockito.doReturn(new HashSet<String>()).when(client).fetchAgentSupportedEndpoints();
-        Assert.assertFalse(client.isEvpProxySupported());
-    }
-
-    @Test
     public void testEmptyAgentSupportedEndpointsWithNoAgent() {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEnableCiVisibility(true);
         DatadogAgentClient client = new DatadogAgentClient("test", 1234, 1235, 1236, 1_000);
-        Assert.assertTrue(client.fetchAgentSupportedEndpoints().isEmpty());
+        Assert.assertTrue(client.fetchAgentEndpoints().isEmpty());
     }
 
     @Test

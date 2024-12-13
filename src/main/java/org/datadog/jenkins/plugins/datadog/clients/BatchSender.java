@@ -2,16 +2,18 @@ package org.datadog.jenkins.plugins.datadog.clients;
 
 import net.sf.json.JSONObject;
 import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
 
-public class CompressedBatchSender<T> implements JsonPayloadSender<T> {
+public class BatchSender<T> implements JsonPayloadSender<T> {
 
-    private static final Logger logger = Logger.getLogger(CompressedBatchSender.class.getName());
+    private static final Logger logger = Logger.getLogger(BatchSender.class.getName());
 
     private static final byte[] BEGIN_JSON_ARRAY = "[".getBytes(StandardCharsets.UTF_8);
     private static final byte[] END_JSON_ARRAY = "]".getBytes(StandardCharsets.UTF_8);
@@ -22,23 +24,33 @@ public class CompressedBatchSender<T> implements JsonPayloadSender<T> {
     private final Map<String, String> headers;
     private final int batchLimitBytes;
     private final Function<T, JSONObject> payloadToJson;
+    private final boolean compress;
 
-    public CompressedBatchSender(HttpClient httpClient,
-                                 String url,
-                                 Map<String, String> headers,
-                                 int batchLimitBytes,
-                                 Function<T, JSONObject> payloadToJson) {
+    public BatchSender(HttpClient httpClient,
+                       String url,
+                       Map<String, String> headers,
+                       int batchLimitBytes,
+                       Function<T, JSONObject> payloadToJson,
+                       boolean compress) {
         this.httpClient = httpClient;
         this.url = url;
-        this.headers = headers;
+        this.headers = new HashMap<>(headers);
         this.batchLimitBytes = batchLimitBytes;
         this.payloadToJson = payloadToJson;
+        this.compress = compress;
+
+        // older Datadog Agent versions do not support compressed payloads
+        // because EVP Proxy prior to v3 drops Content-Encoding header
+        if (compress) {
+            this.headers.put("Content-Encoding", "gzip");
+        }
     }
 
     @Override
     public void send(Collection<T> payloads) throws Exception {
         ByteArrayOutputStream request = new ByteArrayOutputStream();
-        GZIPOutputStream gzip = new GZIPOutputStream(request);
+        OutputStream output = compress ? new GZIPOutputStream(request) : request;
+
         // the backend checks the size limit against the uncompressed body of the request
         int uncompressedRequestLength = 0;
 
@@ -51,21 +63,21 @@ public class CompressedBatchSender<T> implements JsonPayloadSender<T> {
             }
 
             if (uncompressedRequestLength + body.length + 2 > batchLimitBytes) { // + 2 is for comma and array end: ,<payload>]
-                gzip.write(END_JSON_ARRAY);
-                gzip.close();
+                output.write(END_JSON_ARRAY);
+                output.close();
                 httpClient.post(url, headers, "application/json", request.toByteArray(), Function.identity());
                 request = new ByteArrayOutputStream();
-                gzip = new GZIPOutputStream(request);
+                output = compress ? new GZIPOutputStream(request) : request;
                 uncompressedRequestLength = 0;
             }
 
-            gzip.write(uncompressedRequestLength == 0 ? BEGIN_JSON_ARRAY : COMMA);
-            gzip.write(body);
+            output.write(uncompressedRequestLength == 0 ? BEGIN_JSON_ARRAY : COMMA);
+            output.write(body);
             uncompressedRequestLength += body.length + 1;
         }
 
-        gzip.write(END_JSON_ARRAY);
-        gzip.close();
+        output.write(END_JSON_ARRAY);
+        output.close();
         httpClient.post(url, headers, "application/json", request.toByteArray(), Function.identity());
     }
 }
