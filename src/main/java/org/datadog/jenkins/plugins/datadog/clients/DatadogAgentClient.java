@@ -353,6 +353,7 @@ public class DatadogAgentClient implements DatadogClient {
         if (evpProxyExists) {
             DatadogGlobalConfiguration datadogGlobalDescriptor = DatadogUtilities.getDatadogGlobalDescriptor();
             String urlParameters = datadogGlobalDescriptor != null ? "?service=" + datadogGlobalDescriptor.getCiInstanceName() : "";
+            // sending to evp_proxy/v1 as the Agent does not seem to care which version is set in the URL
             String url = String.format("http://%s:%d/evp_proxy/v1/api/v2/webhook/%s", hostname, traceCollectionPort, urlParameters);
 
             Map<String, String> headers = Map.of(
