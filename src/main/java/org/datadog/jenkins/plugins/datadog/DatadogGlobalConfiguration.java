@@ -25,6 +25,7 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog;
 
+import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.*;
 import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentHost;
 import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentLogCollectionPort;
 import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentPort;
@@ -44,6 +45,7 @@ import hudson.util.Secret;
 import hudson.util.XStream2;
 import java.io.File;
 import java.io.IOException;
+import java.util.*;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -51,7 +53,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -66,6 +72,7 @@ import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogApiKey;
 import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogCredentialsApiKey;
 import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogTextApiKey;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
+import org.datadog.jenkins.plugins.datadog.util.conversion.PatternListConverter;
 import org.datadog.jenkins.plugins.datadog.util.conversion.PolymorphicReflectionConverter;
 import org.kohsuke.stapler.*;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -135,10 +142,15 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
     @XStreamConverter(PolymorphicReflectionConverter.class)
     private DatadogClientConfiguration datadogClientConfiguration;
+
+    @XStreamConverter(PatternListConverter.class)
+    private List<Pattern> excluded = null;
+
+    @XStreamConverter(PatternListConverter.class)
+    private List<Pattern> included = null;
+
     private String ciInstanceName = DEFAULT_CI_INSTANCE_NAME;
     private String hostname = null;
-    private String excluded = null;
-    private String included = null;
     private String globalTagFile = null;
     private String globalTags = null;
     private String globalJobTags = null;
@@ -221,25 +233,25 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         }
 
         String excludedEnvVar = System.getenv(EXCLUDED_PROPERTY);
-        if(StringUtils.isBlank(excludedEnvVar)){
+        if (StringUtils.isNotBlank(excludedEnvVar)) {
+            this.excluded = DatadogUtilities.cstrToList(excludedEnvVar, Pattern::compile);
+        } else {
             // backwards compatibility
             excludedEnvVar = System.getenv(BLACKLIST_PROPERTY);
             if(StringUtils.isNotBlank(excludedEnvVar)){
-                this.excluded = excludedEnvVar;
+                this.excluded = DatadogUtilities.cstrToList(excludedEnvVar, Pattern::compile);
             }
-        } else {
-            this.excluded = excludedEnvVar;
         }
 
         String includedEnvVar = System.getenv(INCLUDED_PROPERTY);
-        if(StringUtils.isBlank(includedEnvVar)){
+        if (StringUtils.isNotBlank(includedEnvVar)) {
+            this.included = DatadogUtilities.cstrToList(excludedEnvVar, Pattern::compile);
+        } else {
             // backwards compatibility
             includedEnvVar = System.getenv(WHITELIST_PROPERTY);
             if(StringUtils.isNotBlank(includedEnvVar)){
-                this.included = includedEnvVar;
+                this.included = DatadogUtilities.cstrToList(excludedEnvVar, Pattern::compile);
             }
-        } else {
-            this.included = includedEnvVar;
         }
 
         String globalTagFileEnvVar = System.getenv(GLOBAL_TAG_FILE_PROPERTY);
@@ -357,6 +369,28 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         return FormValidation.ok();
     }
 
+    @RequirePOST
+    public FormValidation doCheckIncluded(@QueryParameter("included") final String included) {
+        return doCheckPatterns(included);
+    }
+
+    @RequirePOST
+    public FormValidation doCheckExcluded(@QueryParameter("excluded") final String excluded) {
+        return doCheckPatterns(excluded);
+    }
+
+    private static FormValidation doCheckPatterns(String commaSeparatedPatterns) {
+        List<String> patterns = DatadogUtilities.cstrToList(commaSeparatedPatterns);
+        for (String pattern : patterns) {
+            try {
+                Pattern.compile(pattern);
+            } catch (PatternSyntaxException e) {
+                return FormValidation.error(pattern + " is not a valid regular expression");
+            }
+        }
+        return FormValidation.ok();
+    }
+
     /**
      * Indicates if this builder can be used with all kinds of project types.
      *
@@ -426,8 +460,23 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             }
 
             setHostname(formData.getString("hostname"));
-            setExcluded(formData.getString("excluded"));
-            setIncluded(formData.getString("included"));
+
+            String excludedFormData = formData.getString("excluded");
+            FormValidation excludedValidation = doCheckExcluded(excludedFormData);
+            if (excludedValidation.kind == Kind.ERROR) {
+                throw new FormException(excludedValidation.getMessage(), "excluded");
+            } else {
+                setExcluded(excludedFormData);
+            }
+
+            String includedFormData = formData.getString("included");
+            FormValidation includedValidation = doCheckIncluded(includedFormData);
+            if (includedValidation.kind == Kind.ERROR) {
+                throw new FormException(includedValidation.getMessage(), "included");
+            } else {
+                setIncluded(includedFormData);
+            }
+
             setGlobalTagFile(formData.getString("globalTagFile"));
             setGlobalTags(formData.getString("globalTags"));
             setGlobalJobTags(formData.getString("globalJobTags"));
@@ -440,7 +489,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             String includeEvents = formData.getString("includeEvents");
             String excludeEvents = formData.getString("excludeEvents");
             FormValidation configStatus = validateEventFilteringConfig(emitSecurityEvents, emitSystemEvents, includeEvents, excludeEvents);
-
             if (configStatus.kind == Kind.ERROR) {
                 String message = configStatus.getMessage();
                 String formField = !message.contains("included") ? "excludeEvents" : "includeEvents";
@@ -515,6 +563,19 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         this.hostname = hostname;
     }
 
+    public boolean isJobExcluded(@Nonnull final String jobName) {
+        if (excluded == null || excluded.isEmpty()) {
+            return false;
+        }
+        for (Pattern pattern : excluded) {
+            Matcher matcher = pattern.matcher(jobName);
+            if (matcher.matches()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Getter function for the excluded global configuration, containing
      * a comma-separated list of jobs to exclude from monitoring.
@@ -522,7 +583,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @return a String array containing the excluded global configuration.
      */
     public String getExcluded() {
-        return excluded;
+        return DatadogUtilities.listToCstr(excluded, Pattern::toString);
     }
 
     /**
@@ -532,7 +593,20 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @param jobs - a comma-separated list of jobs to exclude from monitoring.
      */
     public void setExcluded(final String jobs) {
-        this.excluded = jobs;
+        this.excluded = DatadogUtilities.cstrToList(jobs, Pattern::compile);
+    }
+
+    public boolean isJobIncluded(@Nonnull final String jobName) {
+        if (included == null || included.isEmpty()) {
+            return true;
+        }
+        for (Pattern pattern : included) {
+            Matcher matcher = pattern.matcher(jobName);
+            if (matcher.matches()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -542,7 +616,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @return a String array containing the included global configuration.
      */
     public String getIncluded() {
-        return included;
+        return DatadogUtilities.listToCstr(included, Pattern::toString);
     }
 
     /**
@@ -552,7 +626,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * @param jobs - a comma-separated list of jobs to include for monitoring.
      */
     public void setIncluded(final String jobs) {
-        this.included = jobs;
+        this.included = DatadogUtilities.cstrToList(jobs, Pattern::compile);
     }
 
     /**
@@ -1014,13 +1088,13 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     /** @deprecated use {@link #getExcluded()} */
     @Deprecated
     public String getBlacklist() {
-        return excluded;
+        return DatadogUtilities.listToCstr(excluded, Pattern::toString);
     }
 
     /** @deprecated use {@link #getIncluded()} */
     @Deprecated
     public String getWhitelist() {
-        return included;
+        return DatadogUtilities.listToCstr(included, Pattern::toString);
     }
 
     /** @deprecated use {@link #getEnableCiVisibility()} */
@@ -1161,10 +1235,10 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.ciInstanceName = this.traceServiceName;
         }
         if (StringUtils.isNotBlank(this.blacklist)) {
-            this.excluded = this.blacklist;
+            this.excluded = DatadogUtilities.cstrToList(this.blacklist, Pattern::compile);
         }
         if (StringUtils.isNotBlank(this.whitelist)) {
-            this.included = this.whitelist;
+            this.included = DatadogUtilities.cstrToList(this.whitelist, Pattern::compile);
         }
         if (DATADOG_AGENT_CLIENT_TYPE.equals(reportWith)) {
             this.datadogClientConfiguration = new DatadogAgentConfiguration(this.targetHost, this.targetPort, this.targetLogCollectionPort, this.targetTraceCollectionPort);
