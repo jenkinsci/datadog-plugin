@@ -1,5 +1,6 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
+import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -29,7 +30,7 @@ public class GitInfoUtils {
      * @return normalized git tag
      */
     public static String normalizeBranch(String branchName) {
-        if(branchName == null || branchName.isEmpty() || branchName.contains("tags")) {
+        if(branchName == null || branchName.isEmpty() || branchName.contains("tags") || isSha(branchName)) {
             return null;
         }
 
