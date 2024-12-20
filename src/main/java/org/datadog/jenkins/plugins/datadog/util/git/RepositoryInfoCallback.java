@@ -81,7 +81,7 @@ public final class RepositoryInfoCallback implements RepositoryCallback<Reposito
         // Iterate over available refs to see if any of them points to the checked out commit.
         for (Ref ref : repository.getRefDatabase().getRefs()) {
             String refName = ref.getName();
-            if (Constants.HEAD.equals(refName) || GitInfoUtils.isSha(branch)) {
+            if (Constants.HEAD.equals(refName) || GitInfoUtils.isSha(refName)) {
                 continue;
             }
             ObjectId refObjectId = ref.getObjectId();
