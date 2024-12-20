@@ -163,6 +163,9 @@ public class DatadogSCMListener extends SCMListener {
     }
 
     private boolean isSharedLibraryCheckout(Run<?, ?> build, FilePath workspace) {
+        if (workspace == null){
+            return false;
+        }
         FilePath parent = workspace.getParent();
         if (parent == null) {
             return false;
