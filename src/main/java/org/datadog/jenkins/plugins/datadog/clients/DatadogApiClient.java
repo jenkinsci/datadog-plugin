@@ -154,6 +154,10 @@ public class DatadogApiClient implements DatadogClient {
             metric.put("points", points);
             metric.put("type", type);
             metric.put("host", hostname);
+
+            JSONObject metadata = this.getOriginMetadata();
+            metric.put("metadata", metadata);
+
             if(type.equals("rate")) {
                 metric.put("interval", RATE_INTERVAL);
             }
@@ -174,6 +178,21 @@ public class DatadogApiClient implements DatadogClient {
 
             logger.fine(String.format("payload: %s", payload));
             postApi(payload, METRIC);
+        }
+
+        public JSONObject getOriginMetadata() {
+            JSONObject metadata = new JSONObject();
+            JSONObject origin = new JSONObject();
+
+            // Agent
+            origin.put("origin_product", 10);
+            // Integration
+            origin.put("origin_sub_product", 11);
+            // Jenkins
+            origin.put("origin_product_detail", 436);
+
+            metadata.put("origin", origin);
+            return metadata;
         }
     }
 
