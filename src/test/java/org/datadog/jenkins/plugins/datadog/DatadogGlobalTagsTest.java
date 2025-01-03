@@ -105,7 +105,7 @@ public class DatadogGlobalTagsTest {
       Run run = mock(Run.class);
       when(run.getResult()).thenReturn(null);
       when(run.getParent()).thenReturn(job);
-      when(run.getEnvironment(any())).thenReturn(new EnvVars());
+      when(run.getEnvironment(any(TaskListener.class))).thenReturn(new EnvVars());
 
       this.datadogBuildListener.onInitialize(run);
       assertAllJobMetricsAndEvents();
