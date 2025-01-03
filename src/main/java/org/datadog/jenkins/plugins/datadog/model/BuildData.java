@@ -92,7 +92,7 @@ public class BuildData implements Serializable {
     static {
       try {
           // exceptions below should never happen
-          // since constructor exists immediately if run is null
+          // since constructor exits immediately if run is null
           EMPTY = new BuildData(null, null);
       } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
