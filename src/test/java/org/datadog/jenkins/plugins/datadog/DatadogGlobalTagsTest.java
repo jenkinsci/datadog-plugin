@@ -25,6 +25,7 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -104,6 +105,7 @@ public class DatadogGlobalTagsTest {
       Run run = mock(Run.class);
       when(run.getResult()).thenReturn(null);
       when(run.getParent()).thenReturn(job);
+      when(run.getEnvironment(any())).thenReturn(new EnvVars());
 
       this.datadogBuildListener.onInitialize(run);
       assertAllJobMetricsAndEvents();
