@@ -10,6 +10,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
@@ -17,6 +18,7 @@ import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogAgentClient;
+import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -77,24 +79,28 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
 
     @Override
     public void validateTracesConnection() throws Descriptor.FormException {
-        if (StringUtils.isBlank(agentHost)) {
-            throw new Descriptor.FormException("CI Visibility requires agent host to be set", "agentHost");
-        }
-        if (agentTraceCollectionPort == null) {
-            throw new Descriptor.FormException("CI Visibility requires agent trace collection port to be set", "agentTraceCollectionPort");
-        }
-        String errorMessage = checkConnectivity(agentHost, agentTraceCollectionPort);
-        if (errorMessage != null) {
-            throw new Descriptor.FormException("CI Visibility connectivity check failed: " + errorMessage, "ciVisibilityData");
+        FormValidation connectivityCheckResult = checkTracesConnectivity(agentHost, agentTraceCollectionPort);
+        if (connectivityCheckResult.kind == FormValidation.Kind.ERROR) {
+            throw new Descriptor.FormException("CI Visibility connectivity check failed: " + connectivityCheckResult.getMessage(), "ciVisibilityData");
         }
     }
 
-    private static String checkConnectivity(final String host, final int port) {
-        try (Socket ignored = new Socket(host, port)) {
-            return null;
-        } catch (Exception ex) {
-            DatadogUtilities.severe(logger, ex, "Failed to create socket to host: " + host + ", port: " + port);
-            return ex.getMessage();
+    private static FormValidation checkTracesConnectivity(String agentHost, Integer agentTraceCollectionPort) {
+        if (StringUtils.isBlank(agentHost)) {
+            return FormValidation.error("Host name missing");
+        }
+        if (agentTraceCollectionPort == null) {
+            return FormValidation.error("Trace collection port missing");
+        }
+        try {
+            Set<String> endpoints = DatadogAgentClient.fetchAgentEndpoints(new HttpClient(10_000), agentHost, agentTraceCollectionPort);
+            if (!endpoints.isEmpty()) {
+                return FormValidation.ok("Success!");
+            } else {
+                return FormValidation.error("The agent returned empty endpoints list");
+            }
+        } catch (Exception e) {
+            return FormValidation.error(e.getMessage());
         }
     }
 
@@ -106,9 +112,18 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
         if (agentLogCollectionPort == null) {
             throw new Descriptor.FormException("Logs collection requires agent log collection port to be set", "agentLogCollectionPort");
         }
-        String errorMessage = checkConnectivity(agentHost, agentLogCollectionPort);
+        String errorMessage = checkTcpConnectivity(agentHost, agentLogCollectionPort);
         if (errorMessage != null) {
             throw new Descriptor.FormException("Logs collection connectivity check failed: " + errorMessage, "collectBuildLogs");
+        }
+    }
+
+    private static String checkTcpConnectivity(final String host, final int port) {
+        try (Socket ignored = new Socket(host, port)) {
+            return null;
+        } catch (Exception ex) {
+            DatadogUtilities.severe(logger, ex, "Failed to create socket to host: " + host + ", port: " + port);
+            return ex.getMessage();
         }
     }
 
@@ -194,7 +209,7 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
             if (agentLogCollectionPort == null) {
                 return FormValidation.error("Please enter log collection port value");
             }
-            String errorMessage = checkConnectivity(agentHost, agentLogCollectionPort);
+            String errorMessage = checkTcpConnectivity(agentHost, agentLogCollectionPort);
             if (errorMessage != null) {
                 return FormValidation.error("Connectivity check failed: " + errorMessage);
             }
@@ -205,17 +220,7 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
         @SuppressWarnings("lgtm[jenkins/no-permission-check]") // no side effects, no private information returned
         public FormValidation doCheckTraceConnectivity(@QueryParameter("agentHost") final String agentHost,
                                                        @QueryParameter("agentTraceCollectionPort") Integer agentTraceCollectionPort) {
-            if (StringUtils.isBlank(agentHost)) {
-                return FormValidation.error("Please enter host value");
-            }
-            if (agentTraceCollectionPort == null) {
-                return FormValidation.error("Please enter trace collection port value");
-            }
-            String errorMessage = checkConnectivity(agentHost, agentTraceCollectionPort);
-            if (errorMessage != null) {
-                return FormValidation.error("Connectivity check failed: " + errorMessage);
-            }
-            return FormValidation.ok("Success!");
+            return checkTracesConnectivity(agentHost, agentTraceCollectionPort);
         }
 
         public static String getDefaultAgentHost() {
