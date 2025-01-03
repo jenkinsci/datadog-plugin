@@ -105,18 +105,7 @@ public class DatadogSCMListener extends SCMListener {
                         + (scm != null ? scm.getType() : null));
             }
 
-            // Collect Build Data
-            BuildData buildData;
-            try {
-                buildData = new BuildData(build, listener);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                DatadogUtilities.severe(logger, e, "Interrupted while trying to parse checked out build data");
-                return;
-            } catch (IOException e) {
-                DatadogUtilities.severe(logger, e, "Failed to parse checked out build data");
-                return;
-            }
+            BuildData buildData = BuildData.create(build, listener);
 
             // We have Git info available now - submit a pipeline event so the backend could update its data
             if (DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {

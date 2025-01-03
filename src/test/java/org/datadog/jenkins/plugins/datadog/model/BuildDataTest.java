@@ -145,7 +145,7 @@ public class BuildDataTest {
 
     private BuildData whenCreatingBuildData(Run run) throws IOException, InterruptedException {
         TaskListener listener = mock(TaskListener.class);
-        return new BuildData(run, listener);
+        return BuildData.create(run, listener);
     }
 
     @Test

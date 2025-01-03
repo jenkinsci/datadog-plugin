@@ -25,6 +25,7 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -48,6 +49,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Test suite for global tags configuration of Jenkins plugin
@@ -104,6 +106,9 @@ public class DatadogGlobalTagsTest {
       Run run = mock(Run.class);
       when(run.getResult()).thenReturn(null);
       when(run.getParent()).thenReturn(job);
+      when(run.getEnvironment(any(TaskListener.class))).thenReturn(new EnvVars());
+      when(run.getQueueId()).thenReturn(Run.QUEUE_ID_UNKNOWN);
+      when(run.getCharset()).thenReturn(StandardCharsets.UTF_8);
 
       this.datadogBuildListener.onInitialize(run);
       assertAllJobMetricsAndEvents();

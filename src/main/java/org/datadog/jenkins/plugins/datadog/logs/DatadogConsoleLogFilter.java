@@ -60,17 +60,15 @@ public class DatadogConsoleLogFilter extends ConsoleLogFilter implements Seriali
             }
 
             if (DatadogUtilities.isJobTracked(build)) {
-                DatadogWriter writer = new DatadogWriter(new BuildData(build, null));
+                DatadogWriter writer = new DatadogWriter(BuildData.create(build, null));
                 return new DatadogOutputStream(outputStream, writer);
             } else if (DatadogUtilities.isJobTracked(run)) {
-                DatadogWriter writer = new DatadogWriter(new BuildData(run, null));
+                DatadogWriter writer = new DatadogWriter(BuildData.create(run, null));
                 return new DatadogOutputStream(outputStream, writer);
             } else {
                 return outputStream;
             }
-        } catch (InterruptedException e){
-            Thread.currentThread().interrupt();
-            DatadogUtilities.severe(logger, e, "Interrupted while trying to wrap logger, logs will not be collected");
+
         } catch (Exception e){
             DatadogUtilities.severe(logger, e, "Failed to wrap logger, logs will not be collected");
         }

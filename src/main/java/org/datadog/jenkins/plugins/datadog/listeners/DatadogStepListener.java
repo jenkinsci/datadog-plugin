@@ -345,7 +345,7 @@ public class DatadogStepListener implements StepListener {
             return;
         }
         try {
-            BuildData buildData = new BuildData(run, null);
+            BuildData buildData = BuildData.create(run, null);
             traceWriter.submitBuild(buildData, run);
 
         } catch (InterruptedException e) {

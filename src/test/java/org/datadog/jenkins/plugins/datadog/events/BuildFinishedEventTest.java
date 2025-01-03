@@ -55,7 +55,7 @@ public class BuildFinishedEventTest {
         Run run = new BuildStub(job, null, null, null, 0L, 0, null, 0L, null);
 
         TaskListener listener = mock(TaskListener.class);
-        BuildData bd = new BuildData(run, listener);
+        BuildData bd = BuildData.create(run, listener);
         DatadogEvent event = new BuildFinishedEventImpl(bd);
 
         String hostname = DatadogUtilities.getHostname(null);
@@ -85,7 +85,7 @@ public class BuildFinishedEventTest {
         Run run = new BuildStub(job, null, null, null, 0L, 0, null, 0L, null);
 
         TaskListener listener = mock(TaskListener.class);
-        BuildData bd = new BuildData(run, listener);
+        BuildData bd = BuildData.create(run, listener);
         DatadogEvent event = new BuildFinishedEventImpl(bd);
 
         String hostname = DatadogUtilities.getHostname(null);
@@ -111,7 +111,7 @@ public class BuildFinishedEventTest {
         Run run = new BuildStub(job, null, null, null, 0L, 0, null, 0L, null);
 
         TaskListener listener = mock(TaskListener.class);
-        BuildData bd = new BuildData(run, listener);
+        BuildData bd = BuildData.create(run, listener);
         DatadogEvent event = new BuildFinishedEventImpl(bd);
 
         String hostname = DatadogUtilities.getHostname(null);
@@ -137,7 +137,7 @@ public class BuildFinishedEventTest {
         Run run = new BuildStub(job, null, null, null, 0L, 0, null, 0L, null);
 
         TaskListener listener = mock(TaskListener.class);
-        BuildData bd = new BuildData(run, listener);
+        BuildData bd = BuildData.create(run, listener);
         DatadogEvent event = new BuildFinishedEventImpl(bd);
 
         String hostname = DatadogUtilities.getHostname(null);
@@ -164,7 +164,7 @@ public class BuildFinishedEventTest {
         Run run = new BuildStub(job, Result.FAILURE, null, null, 0L, 0, null, 0L, null);
 
         TaskListener listener = mock(TaskListener.class);
-        BuildData bd = new BuildData(run, listener);
+        BuildData bd = BuildData.create(run, listener);
         DatadogEvent event = new BuildFinishedEventImpl(bd);
 
         String hostname = DatadogUtilities.getHostname(null);
@@ -195,7 +195,7 @@ public class BuildFinishedEventTest {
         Run run = new BuildStub(job, Result.UNSTABLE, null, null, 0L, 0, null, 0L, null);
 
         TaskListener listener = mock(TaskListener.class);
-        BuildData bd = new BuildData(run, listener);
+        BuildData bd = BuildData.create(run, listener);
         DatadogEvent event = new BuildFinishedEventImpl(bd);
 
         String hostname = DatadogUtilities.getHostname(null);
@@ -233,7 +233,7 @@ public class BuildFinishedEventTest {
 
         TaskListener listener = mock(TaskListener.class);
 
-        BuildData bd = new BuildData(run, listener);
+        BuildData bd = BuildData.create(run, listener);
         bd.setHostname("test-hostname-2");
         bd.setJenkinsUrl("https://jenkins.com");
         DatadogEvent event = new BuildFinishedEventImpl(bd);
@@ -273,7 +273,7 @@ public class BuildFinishedEventTest {
         TaskListener listener = mock(TaskListener.class);
 
         String hostname = DatadogUtilities.getHostname(null);
-        BuildData bd = new BuildData(run, listener);
+        BuildData bd = BuildData.create(run, listener);
         Map<String, Set<String>> tags = new HashMap<>();
         tags = DatadogClientStub.addTagToMap(tags, "tag1", "value1");
         tags = DatadogClientStub.addTagToMap(tags, "tag2", "value2");
