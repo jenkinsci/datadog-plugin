@@ -45,7 +45,7 @@ public class DatadogTextApiKey extends DatadogApiKey {
     }
 
     @Extension
-    public static final class DatadogTextApiKeyDescriptor extends DatadogApiKeyDescriptor {
+    public static final class DatadogTextApiKeyDescriptor extends DatadogApiKey.DatadogApiKeyDescriptor {
         public DatadogTextApiKeyDescriptor() {
             load();
         }

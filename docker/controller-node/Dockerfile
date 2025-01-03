@@ -45,4 +45,4 @@ RUN cat /tmp/jenkins-casc.yaml | envsubst > /var/jenkins_home/casc/jenkins-casc.
 
 RUN mkdir -p /var/jenkins_home/shared
 RUN mkdir -p /var/jenkins_home/plugins
-ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5055"
+ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false -XX:+PrintConcurrentLocks -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5055"
