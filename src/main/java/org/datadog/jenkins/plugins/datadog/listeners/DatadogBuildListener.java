@@ -93,19 +93,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             run.addAction(new TraceInfoAction());
             run.addAction(new PipelineQueueInfoAction());
 
-            // Collect Build Data
-            BuildData buildData;
-            try {
-                buildData = new BuildData(run, null);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                DatadogUtilities.severe(logger, e, "Interrupted while trying to parse initialized build data");
-                return;
-            } catch (IOException e) {
-                DatadogUtilities.severe(logger, e, "Failed to parse initialized build data");
-                return;
-            }
-
+            BuildData buildData = BuildData.create(run, null);
             TraceSpan.TraceSpanContext buildSpanContext = new TraceSpan.TraceSpanContext();
             BuildSpanManager.get().put(buildData.getBuildTag(""), buildSpanContext);
 
@@ -206,18 +194,7 @@ public class DatadogBuildListener extends RunListener<Run> {
                 waitingMs = null;
             }
 
-            // Collect Build Data
-            BuildData buildData;
-            try {
-                buildData = new BuildData(run, listener);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                DatadogUtilities.severe(logger, e, "Interrupted while trying to parse started build data");
-                return;
-            } catch (IOException e) {
-                DatadogUtilities.severe(logger, e, "Failed to parse started build data");
-                return;
-            }
+            BuildData buildData = BuildData.create(run, listener);
 
             // Send an event
             if (DatadogUtilities.shouldSendEvent(BuildStartedEventImpl.BUILD_STARTED_EVENT_NAME)) {
@@ -289,14 +266,7 @@ public class DatadogBuildListener extends RunListener<Run> {
         }
 
         try (MetricsClient metrics = client.metrics()) {
-            // Collect Build Data
-            BuildData buildData;
-            try {
-                buildData = new BuildData(run, listener);
-            } catch (IOException | InterruptedException e) {
-                DatadogUtilities.severe(logger, e, "Failed to parse completed build data");
-                return;
-            }
+            BuildData buildData = BuildData.create(run, listener);
 
             final boolean shouldSendEvent = DatadogUtilities.shouldSendEvent(BuildFinishedEventImpl.BUILD_FINISHED_EVENT_NAME);
             if (shouldSendEvent) {
@@ -398,19 +368,7 @@ public class DatadogBuildListener extends RunListener<Run> {
                 return;
             }
 
-            // Collect Build Data
-            BuildData buildData;
-            try {
-                buildData = new BuildData(run, null);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                DatadogUtilities.severe(logger, e, "Interrupted while trying to parse finalized build data");
-                return;
-            } catch (IOException e) {
-                DatadogUtilities.severe(logger, e, "Failed to parse finalized build data");
-                return;
-            }
-
+            BuildData buildData = BuildData.create(run, null);
             traceWriter.submitBuild(buildData, run);
             logger.fine("End DatadogBuildListener#onFinalized");
 
@@ -440,18 +398,7 @@ public class DatadogBuildListener extends RunListener<Run> {
                 return;
             }
 
-            // Collect Build Data
-            BuildData buildData;
-            try {
-                buildData = new BuildData(run, null);
-            } catch (InterruptedException e){
-                Thread.currentThread().interrupt();
-                DatadogUtilities.severe(logger, e, "Interrupted while trying to parse deleted build data");
-                return;
-            } catch (IOException e) {
-                DatadogUtilities.severe(logger, e, "Failed to parse deleted build data");
-                return;
-            }
+            BuildData buildData = BuildData.create(run, null);
 
             // If the build already complete, this could be a Jenkins cleanup operation
             if (buildData.isCompleted()) {

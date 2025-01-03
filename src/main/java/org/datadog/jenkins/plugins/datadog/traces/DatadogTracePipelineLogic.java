@@ -43,7 +43,7 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
     // hook for tests
     @Nonnull
     public TraceSpan toSpan(PipelineStepData current, Run<?, ?> run) throws IOException, InterruptedException {
-        BuildData buildData = new BuildData(run, DatadogUtilities.getTaskListener(run));
+        BuildData buildData = BuildData.create(run, DatadogUtilities.getTaskListener(run));
 
         final long startTimeNanos = TimeUnit.MILLISECONDS.toNanos(current.getStartTimeMillis());
         final long endTimeNanos = TimeUnit.MILLISECONDS.toNanos(current.getEndTimeMillis());

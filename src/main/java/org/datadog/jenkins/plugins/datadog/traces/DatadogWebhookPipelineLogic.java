@@ -31,7 +31,7 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
     @Nonnull
     @Override
     public JSONObject toJson(PipelineStepData current, Run<?, ?> run) throws IOException, InterruptedException {
-        BuildData buildData = new BuildData(run, DatadogUtilities.getTaskListener(run));
+        BuildData buildData = BuildData.create(run, DatadogUtilities.getTaskListener(run));
 
         JSONObject payload = new JSONObject();
         payload.put("partial_retry", false);

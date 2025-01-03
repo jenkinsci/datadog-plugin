@@ -41,17 +41,11 @@ import org.jenkinsci.plugins.workflow.log.TaskListenerDecorator;
 public class DatadogTaskListenerDecorator extends TaskListenerDecorator {
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(DatadogTaskListenerDecorator.class.getName());
-    private BuildData buildData;
+
+    private final BuildData buildData;
 
     public DatadogTaskListenerDecorator(WorkflowRun run) {
-        try {
-            this.buildData = new BuildData(run, null);
-        } catch (InterruptedException e){
-            Thread.currentThread().interrupt();
-            DatadogUtilities.severe(LOGGER, e, null);
-        } catch (Exception e) {
-            DatadogUtilities.severe(LOGGER, e, null);
-        }
+        this.buildData = BuildData.create(run, null);
     }
 
     @Nonnull
