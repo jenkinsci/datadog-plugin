@@ -49,6 +49,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Test suite for global tags configuration of Jenkins plugin
@@ -106,6 +107,8 @@ public class DatadogGlobalTagsTest {
       when(run.getResult()).thenReturn(null);
       when(run.getParent()).thenReturn(job);
       when(run.getEnvironment(any(TaskListener.class))).thenReturn(new EnvVars());
+      when(run.getQueueId()).thenReturn(Run.QUEUE_ID_UNKNOWN);
+      when(run.getCharset()).thenReturn(StandardCharsets.UTF_8);
 
       this.datadogBuildListener.onInitialize(run);
       assertAllJobMetricsAndEvents();
