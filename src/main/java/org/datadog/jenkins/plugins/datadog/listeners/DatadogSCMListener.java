@@ -31,6 +31,7 @@ import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_D
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
+import hudson.model.Action;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.listeners.SCMListener;
@@ -82,12 +83,16 @@ public class DatadogSCMListener extends SCMListener {
      * @param listener        - Current build listener
      * @param changelogFile   - Changelog
      * @param pollingBaseline - Polling
-     * @throws Exception if an error is encountered
      */
     @Override
     public void onCheckout(Run<?, ?> build, SCM scm, FilePath workspace, TaskListener listener,
-                           File changelogFile, SCMRevisionState pollingBaseline) throws Exception {
+                           File changelogFile, SCMRevisionState pollingBaseline) {
         try {
+            if (isSharedLibraryCheckout(build, workspace)) {
+                // We do not want to tag traces with shared library Git info
+                return;
+            }
+
             // Process only if job is NOT in excluded and is in included
             if (!DatadogUtilities.isJobTracked(build)) {
                 return;
@@ -155,6 +160,28 @@ public class DatadogSCMListener extends SCMListener {
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to process build checkout event");
         }
+    }
+
+    private boolean isSharedLibraryCheckout(Run<?, ?> build, FilePath workspace) {
+        if (workspace == null){
+            return false;
+        }
+        FilePath parent = workspace.getParent();
+        if (parent == null) {
+            return false;
+        }
+        String name = parent.getName();
+        if (!name.endsWith("@libs")) {
+            return false;
+        }
+        // The workspace name ends with @libs, this is most likely a shared library checkout.
+        // Double-check if the build has a org.jenkinsci.plugins.workflow.libs.LibrariesAction
+        for (Action action : build.getAllActions()) {
+            if (action.getClass().getName().equals("org.jenkinsci.plugins.workflow.libs.LibrariesAction")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isGit(SCM scm) {

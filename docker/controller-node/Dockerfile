@@ -35,6 +35,7 @@ COPY 40-create-datadog-key_credentials.groovy /usr/share/jenkins/ref/init.groovy
 COPY 50-create-jobs.groovy /usr/share/jenkins/ref/init.groovy.d/50-create-jobs.groovy
 COPY 51-create-multi-branch-pipeline.groovy /usr/share/jenkins/ref/init.groovy.d/51-create-multi-branch-pipeline.groovy
 COPY 60-add-script-signature-approvals.groovy /usr/share/jenkins/ref/init.groovy.d/60-add-script-signature-approvals.groovy
+COPY 70-configure-shared-library.groovy /usr/share/jenkins/ref/init.groovy.d/70-configure-shared-library.groovy
 
 RUN /var/jenkins_home/add-github-to-known-hosts.sh
 
