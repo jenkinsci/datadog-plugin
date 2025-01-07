@@ -42,13 +42,14 @@ To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure S
 
 ##### HTTP forwarding
 
-1. Select the radio button next to **Use Datadog API URL and Key to report to Datadog** (selected by default).
-2. Paste your [Datadog API key][4] in the `API Key` textbox on the Jenkins configuration screen. If you would like to store your API key with the [Credentails Manager][18], create a Credential for the API key and select that credential in the `Datadog API Key (Select from Credentials)` dropdown.
-3. Test your Datadog API key by using the `Test Key` button on the Jenkins configuration screen directly below the API key textbox.
-4. (optional) Enter the hostname of the Jenkins server in the Advanced tab to include it with the events.
-5. (optional) Enter your [Datadog Log Intake URL][15] and select "Enable Log Collection" in the Advanced tab.
-6. (optional) Select "Enable CI Visibility", optionally configuring your CI Instance name.
-7. Save your configuration.
+1. Select the radio button next to **Use Datadog site and API key to report to Datadog** (selected by default).
+2. Select your [Datadog site][21] in the **Pick a site** dropdown. 
+3. Paste your [Datadog API key][4] in the `API Key` textbox on the Jenkins configuration screen. If you would like to store your API key with the [Credentails Manager][18], create a Credential for the API key and select that credential in the `Select from credentials` dropdown.
+4. Test your Datadog API key by using the `Test Key` button on the Jenkins configuration screen directly below the API key textbox.
+5. (optional) Enter the hostname of the Jenkins server in the Advanced tab to include it with the events.
+6. (optional) Enter your [Datadog Log Intake URL][15] and select "Enable Log Collection" in the Advanced tab.
+7. (optional) Select "Enable CI Visibility", optionally configuring your CI Instance name.
+8. Save your configuration.
 
 ##### Datadog Agent forwarding
 
@@ -66,54 +67,55 @@ Configure your Datadog plugin to forward data through HTTP or DogStatsD using th
 ##### HTTP forwarding using Groovy
 
 ```groovy
-import jenkins.model.*
+import hudson.util.Secret
+import jenkins.model.Jenkins
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration
+import org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration
+import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeSite
+import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogSite
+import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogTextApiKey
 
-def j = Jenkins.getInstance()
-def d = j.getDescriptor("org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration")
+def jenkins = Jenkins.getInstance()
+def datadog = jenkins.getDescriptorByType(DatadogGlobalConfiguration)
 
-// If you want to use Datadog API URL and Key to report to Datadog
-d.setReportWith('HTTP')
-d.setTargetApiURL('https://api.datadoghq.com/api/')
-d.setTargetApiKey('<DATADOG_API_KEY>')
+def site = new DatadogIntakeSite(DatadogSite.US1) // pick your Datadog site
+def apiKey = new DatadogTextApiKey(Secret.fromString("<YOUR_API_KEY>")) // or `new DatadogCredentialsApiKey("<YOUR_CREDENTIALS_ID>")`
+datadog.setDatadogClientConfiguration(new DatadogApiConfiguration(site, apiKey))
+
+datadog.collectBuildLogs = true // if you want to collect logs
+datadog.enableCiVisibility = true // if you want to enable CI Visibility
 
 // Customization, see dedicated section below
-d.setExcluded('job1,job2')
-
-// If you want to collect logs
-d.setLogIntakeUrl('https://http-intake.logs.datadoghq.com/v1/input/')
+datadog.setExcluded('job1,job2')
 
 // Save config
-d.save()
+datadog.save()
 ```
 
 ##### Datadog Agent forwarding using Groovy
 
 ```groovy
-import jenkins.model.*
+import jenkins.model.Jenkins
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration
+import org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration
 
-def j = Jenkins.getInstance()
-def d = j.getDescriptor("org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration")
+def jenkins = Jenkins.getInstance()
+def datadog = jenkins.getDescriptorByType(DatadogGlobalConfiguration)
 
-d.setReportWith('DSD')
-d.setTargetHost('localhost')
-d.setTargetPort(8125)
+def agentHost = 'localhost'
+def agentPort = 8125
+def agentLogCollectionPort = 10518
+def agentTraceCollectionPort = 8126
+datadog.setDatadogClientConfiguration(new DatadogAgentConfiguration(agentHost, agentPort, agentLogCollectionPort, agentTraceCollectionPort))
 
-// If you want to collect logs
-d.setTargetLogCollectionPort(10518)
-d.setCollectBuildLogs(true)
-
-// If you want to enable CI Visibility
-d.setTargetTraceCollectionPort(8126)
-d.setEnableCiVisibility(true)
-d.setCiInstanceName("jenkins")
+datadog.collectBuildLogs = true // if you want to collect logs
+datadog.enableCiVisibility = true // if you want to enable CI Visibility
 
 // Customization, see dedicated section below
-d.setExcluded('job1,job2')
+datadog.setExcluded('job1,job2')
 
 // Save config
-d.save()
+datadog.save()
 ```
 
 #### Environment variables
@@ -123,14 +125,12 @@ Configure your Datadog plugin using environment variables with the `DATADOG_JENK
 ##### HTTP forwarding using environment variables
 
 1. Set the `DATADOG_JENKINS_PLUGIN_REPORT_WITH` variable to `HTTP`.
-2. Set the `DATADOG_JENKINS_PLUGIN_TARGET_API_URL` variable, which specifies the Datadog API endpoint (defaults to `https://api.datadoghq.com/api/`).
+2. Set the `DATADOG_JENKINS_PLUGIN_DATADOG_SITE` variable, which specifies the [Datadog site][21] (defaults to US1).
 3. Set the `DATADOG_JENKINS_PLUGIN_TARGET_API_KEY` variable, which specifies your [Datadog API key][4].
 4. (optional) Log Collection:
   - Set the `DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS` variable to `true` in order to enable log collection (disabled by default).
-  - Set the `DATADOG_JENKINS_PLUGIN_TARGET_LOG_INTAKE_URL` variable, which specifies the Datadog Log Intake URL (defaults to `https://http-intake.logs.datadoghq.com/v1/input/`).
 5. (optional) CI Visibility (trace collection):
   - Set the `DATADOG_JENKINS_PLUGIN_ENABLE_CI_VISIBILITY` variable to `true` in order to enable CI Visibility (disabled by default).
-  - Set the `DATADOG_JENKINS_TARGET_WEBHOOK_INTAKE_URL` variable, which specifies the Datadog Webhook Intake URL (defaults to `https://webhook-intake.datadoghq.com/api/v2/webhook/`).
   - Set the `DATADOG_JENKINS_PLUGIN_CI_VISIBILITY_CI_INSTANCE_NAME` variable, which specifies the name of the Jenkins instance for CI Visibility (defaults to `jenkins`).
 
 ##### Datadog Agent forwarding using environment variables
@@ -482,3 +482,4 @@ Checkout the [development document][12] for tips on spinning up a quick developm
 [18]: https://www.jenkins.io/doc/book/using/using-credentials/
 [19]: https://docs.datadoghq.com/tests/
 [20]: https://docs.datadoghq.com/tests/setup/
+[21]: https://docs.datadoghq.com/getting_started/site/#access-the-datadog-site
