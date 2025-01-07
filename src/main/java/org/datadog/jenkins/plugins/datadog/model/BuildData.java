@@ -128,10 +128,10 @@ public class BuildData implements Serializable {
     public static BuildData create(@Nullable Run<?, ?> run, @Nullable TaskListener listener) {
         if (!BUILD_DATA_BEING_CREATED.get().add(run)) {
             String runName = run != null ? run.getDisplayName() : null;
+            DatadogUtilities.severe(LOGGER, null, "BuildData creation is in progress for run " + runName + "; using empty data");
             // there is another call up the stack that is creating BuildData for the same Run,
             // so the initial caller will get fully populated data
             // (empty data will only be used by the nested calls triggered by the original BuildData init)
-            DatadogUtilities.severe(LOGGER, null, "BuildData creation is in progress for run " + runName + "; using empty data");
             return BuildData.EMPTY;
         }
         try {
