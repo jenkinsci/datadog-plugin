@@ -79,14 +79,14 @@ def jenkins = Jenkins.getInstance()
 def datadog = jenkins.getDescriptorByType(DatadogGlobalConfiguration)
 
 def site = new DatadogIntakeSite(DatadogSite.US1) // pick your Datadog site
-def apiKey = new DatadogTextApiKey(Secret.fromString("<YOUR_API_KEY>")) // or `new DatadogCredentialsApiKey("<YOUR_CREDENTIALS_ID>")`
-datadog.setDatadogClientConfiguration(new DatadogApiConfiguration(site, apiKey))
+def apiKey = new DatadogTextApiKey(Secret.fromString('<YOUR_API_KEY>')) // or `new DatadogCredentialsApiKey('<YOUR_CREDENTIALS_ID>')`
+datadog.datadogClientConfiguration = new DatadogApiConfiguration(site, apiKey)
 
 datadog.collectBuildLogs = true // if you want to collect logs
 datadog.enableCiVisibility = true // if you want to enable CI Visibility
 
 // Customization, see dedicated section below
-datadog.setExcluded('job1,job2')
+datadog.excluded = 'job1,job2'
 
 // Save config
 datadog.save()
@@ -106,13 +106,13 @@ def agentHost = 'localhost'
 def agentPort = 8125
 def agentLogCollectionPort = 10518
 def agentTraceCollectionPort = 8126
-datadog.setDatadogClientConfiguration(new DatadogAgentConfiguration(agentHost, agentPort, agentLogCollectionPort, agentTraceCollectionPort))
+datadog.datadogClientConfiguration = new DatadogAgentConfiguration(agentHost, agentPort, agentLogCollectionPort, agentTraceCollectionPort)
 
 datadog.collectBuildLogs = true // if you want to collect logs
 datadog.enableCiVisibility = true // if you want to enable CI Visibility
 
 // Customization, see dedicated section below
-datadog.setExcluded('job1,job2')
+datadog.excluded = 'job1,job2'
 
 // Save config
 datadog.save()
