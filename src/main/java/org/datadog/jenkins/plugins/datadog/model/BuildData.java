@@ -61,8 +61,10 @@ import hudson.util.LogTaskListener;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -84,6 +86,70 @@ import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.workflow.cps.EnvActionImpl;
 
 public class BuildData implements Serializable {
+
+    private static final BuildData EMPTY;
+
+    static {
+      try {
+          // exceptions below should never happen
+          // since constructor exits immediately if run is null
+          EMPTY = new BuildData(null, null);
+      } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          throw new RuntimeException(e);
+      } catch (IOException e) {
+          throw new RuntimeException(e);
+      }
+    }
+
+    private static final ThreadLocal<Set<Run<?, ?>>> BUILD_DATA_BEING_CREATED = ThreadLocal.withInitial(BuildData::identityHashSet);
+
+    private static <T> Set<T> identityHashSet() {
+        return Collections.newSetFromMap(new IdentityHashMap<>());
+    }
+
+    /**
+     * This is a workaround for a BuildData initialization issue.
+     * <p>
+     * Some of the fields in this class are initialized with the values obtained from a Run instance.
+     * Querying Run fields can trigger run initialization in some cases (e.g. loading run data from disk when resuming a run after Jenkins restart).
+     * During run initialization some logs are written.
+     * Writing logs, in turn, requires creating a TaskListener associated with the run.
+     * Creating the listener triggers initialization of DatadogTaskListenerDecorator, as the listener's logger needs to be decorated.
+     * The decorator creates another BuildData instance, whose creation starts the whole cycle from the beginning.
+     * As the result, the code enters an endless cycle of initializing BuildData while initializing BuildData, which terminates with a stack overflow.
+     * <p>
+     * The code below checks that BuildData for the provided run is already being created in the current thread.
+     * If that is the case, empty BuildData instance is returned for the nested calls in order to break the cycle.
+     * As a side effect, whatever logs are written while Run instance is being initialized will not be tagged with that run's data.
+     */
+    // TODO split BuildData fields that are used by DatadogWriter into a separate class whose initialization will not trigger run data load
+    @Nonnull
+    public static BuildData create(@Nullable Run<?, ?> run, @Nullable TaskListener listener) {
+        if (!BUILD_DATA_BEING_CREATED.get().add(run)) {
+            String runName = run != null ? run.getDisplayName() : null;
+            DatadogUtilities.severe(LOGGER, null, "BuildData creation is in progress for run " + runName + "; using empty data");
+            // there is another call up the stack that is creating BuildData for the same Run,
+            // so the initial caller will get fully populated data
+            // (empty data will only be used by the nested calls triggered by the original BuildData init)
+            return BuildData.EMPTY;
+        }
+        try {
+            return new BuildData(run, listener);
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            DatadogUtilities.severe(LOGGER, e, "Interrupted while creating build data");
+            return BuildData.EMPTY;
+
+        } catch (Exception e) {
+            DatadogUtilities.severe(LOGGER, e, "Error creating build data");
+            return BuildData.EMPTY;
+
+        } finally {
+            BUILD_DATA_BEING_CREATED.get().remove(run);
+        }
+    }
 
     private static final long serialVersionUID = 1L;
 
@@ -186,7 +252,7 @@ public class BuildData implements Serializable {
     @Nullable
     private Long upstreamPipelineTraceId;
 
-    public BuildData(Run<?, ?> run, @Nullable TaskListener listener) throws IOException, InterruptedException {
+    private BuildData(Run<?, ?> run, @Nullable TaskListener listener) throws IOException, InterruptedException {
         if (run == null) {
             return;
         }

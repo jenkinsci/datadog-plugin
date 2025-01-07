@@ -130,7 +130,7 @@ public class DatadogGraphListener implements GraphListener {
                 }
             }
 
-            BuildData buildData = new BuildData(run, flowNode.getExecution().getOwner().getListener());
+            BuildData buildData = BuildData.create(run, flowNode.getExecution().getOwner().getListener());
             if (hostname == null) {
                 hostname = buildData.getHostname(DatadogUtilities.getHostname(null));
             }

@@ -38,15 +38,16 @@ import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
+import javax.annotation.Nonnull;
 
 public class DatadogWriter {
 
     private static final Logger logger = Logger.getLogger(DatadogWriter.class.getName());
 
-    private Charset charset;
-    private BuildData buildData;
+    private final Charset charset;
+    private final BuildData buildData;
 
-    public DatadogWriter(BuildData buildData) {
+    public DatadogWriter(@Nonnull BuildData buildData) {
         this.charset = buildData.getCharset();
         this.buildData = buildData;
     }
@@ -61,7 +62,7 @@ public class DatadogWriter {
                 return;
             }
 
-            JSONObject payload = buildData.addLogAttributes();
+            JSONObject payload = this.buildData.addLogAttributes();
 
             Map<String, Set<String>> ddtags = this.buildData.getTags();
             TagsUtil.addTagToTags(ddtags, "datadog.product", "cipipeline");
