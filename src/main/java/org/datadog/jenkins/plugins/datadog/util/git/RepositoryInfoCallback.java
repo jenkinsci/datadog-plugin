@@ -1,13 +1,12 @@
 package org.datadog.jenkins.plugins.datadog.util.git;
 
 import hudson.remoting.VirtualChannel;
-import org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils;
-import org.eclipse.jgit.lib.*;
-import org.jenkinsci.plugins.gitclient.RepositoryCallback;
-
 import java.io.IOException;
 import java.util.Set;
 import java.util.logging.Logger;
+import org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils;
+import org.eclipse.jgit.lib.*;
+import org.jenkinsci.plugins.gitclient.RepositoryCallback;
 
 /**
  * Returns the RepositoryInfo instance for a certain repository
@@ -74,20 +73,22 @@ public final class RepositoryInfoCallback implements RepositoryCallback<Reposito
 
     private static String getBranch(Repository repository) throws IOException {
         String branch = repository.getBranch();
-        if (GitInfoUtils.isSha(branch)) {
-            // A detached HEAD is checked out.
-            // Iterate over available refs to see if any of them points to the checked out commit.
-            for (Ref ref : repository.getRefDatabase().getRefs()) {
-                String refName = ref.getName();
-                if (Constants.HEAD.equals(refName)) {
-                    continue;
-                }
-                ObjectId refObjectId = ref.getObjectId();
-                if (branch.equals(refObjectId.getName())) {
-                    return refName;
-                }
+        if (!GitInfoUtils.isSha(branch)) {
+          return branch;
+        }
+
+        // A detached HEAD is checked out.
+        // Iterate over available refs to see if any of them points to the checked out commit.
+        for (Ref ref : repository.getRefDatabase().getRefs()) {
+            String refName = ref.getName();
+            if (Constants.HEAD.equals(refName) || GitInfoUtils.isSha(refName)) {
+                continue;
+            }
+            ObjectId refObjectId = ref.getObjectId();
+            if (branch.equals(refObjectId.getName())) {
+                return refName;
             }
         }
-        return branch;
+        return null;
     }
 }
