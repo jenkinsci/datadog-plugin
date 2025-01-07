@@ -1,5 +1,16 @@
 Changes
 =======
+## 9.0.0 / 2025-01-07
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-8.3.1...datadog-9.0.0
+
+* [Added] [PLINT-589] Add metric origins for jenkins. See [#485](https://github.com/jenkinsci/datadog-plugin/pull/485).
+* [Added] Implement automatic Test Optimization instrumentation for Ruby projects. See [#476](https://github.com/jenkinsci/datadog-plugin/pull/476). Thanks [anmarchenko](https://github.com/anmarchenko).
+* [Fixed] Add a guard check against stack overflow when initializing BuildData. See [#486](https://github.com/jenkinsci/datadog-plugin/pull/486).
+* [Fixed] Do not tag traces with shared libraries Git metadata. See [#483](https://github.com/jenkinsci/datadog-plugin/pull/483).
+* [Fixed] Do not use commit SHA as branch name. See [#482](https://github.com/jenkinsci/datadog-plugin/pull/482).
+* [Fixed] Refactor global configuration. See [#446](https://github.com/jenkinsci/datadog-plugin/pull/446).
+
 ## 8.3.1 / 2024-12-13
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-8.3.0...datadog-8.3.1
