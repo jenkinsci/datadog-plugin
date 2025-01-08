@@ -37,6 +37,7 @@ import hudson.model.TaskListener;
 import hudson.model.listeners.SCMListener;
 import hudson.scm.SCM;
 import hudson.scm.SCMRevisionState;
+import hudson.slaves.WorkspaceList;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -199,8 +200,12 @@ public class DatadogSCMListener extends SCMListener {
             return false;
         }
         String name = parent.getName();
-        return name.endsWith("@libs");
+        return name.endsWith(FILE_PATH_SUFFIX + "libs");
     }
+
+    // Taken from https://github.com/jenkinsci/pipeline-groovy-lib-plugin/blob/master/src/main/java/org/jenkinsci/plugins/workflow/libs/SCMBasedRetriever.java#L250
+    // Also see https://docs.cloudbees.com/docs/cloudbees-ci-kb/latest/troubleshooting-guides/changing-the-at-separator-character-for-workspace-folders-when-concurrent-builds-are-enabled
+    private static final String FILE_PATH_SUFFIX = System.getProperty(WorkspaceList.class.getName(), "@");
 
     private boolean isGit(SCM scm) {
         if (scm == null) {
