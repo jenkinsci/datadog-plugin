@@ -38,7 +38,8 @@ import hudson.model.listeners.SCMListener;
 import hudson.scm.SCM;
 import hudson.scm.SCMRevisionState;
 import java.io.File;
-import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -152,6 +153,44 @@ public class DatadogSCMListener extends SCMListener {
     }
 
     private boolean isSharedLibraryCheckout(Run<?, ?> build, FilePath workspace) {
+      try {
+          return hasLibrariesAction(build) && (isCommonSharedLibraryClone(workspace) || isFreshSharedLibraryClone(build, workspace));
+      } catch (Exception e) {
+          DatadogUtilities.severe(logger, e, "Failed to check if checkout is a shared library: " + workspace);
+          return false;
+      }
+    }
+
+    /**
+     * Verifies that a build has Libraries action associated with it.
+     * Acts as additional safety/sanity check, because the other use heuristics based on libraries folder structure
+     */
+    private static boolean hasLibrariesAction(Run<?, ?> build) {
+        for (Action action : build.getAllActions()) {
+            // using class name instead of class literal, as the class is not public
+            if (action.getClass().getName().equals("org.jenkinsci.plugins.workflow.libs.LibrariesAction")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Returns true if workspace correspond to a shared library that has "Fresh clone per build" setting enabled
+     */
+    private boolean isFreshSharedLibraryClone(Run<?, ?> build, FilePath workspace) {
+        // example of workspace: <JENKINS_HOME>/jobs/<PIPELINE_NAME>/builds/<BUILD_NUMBER>/libs/<LIBRARY_FOLDER>/root
+        Path rootPath = build.getRootDir().toPath();
+        Path workspacePath = Paths.get(workspace.getRemote());
+        Path relativePath = rootPath.relativize(workspacePath);
+        return relativePath.startsWith("libs");
+    }
+
+    /**
+     * Returns true if workspace correspond to a shared library that does NOT have "Fresh clone per build" setting enabled
+     */
+    private boolean isCommonSharedLibraryClone(FilePath workspace) {
+        // example of workspace: <JENKINS_HOME>/workspace/<PIPELINE_NAME>@libs/<LIBRARY_FOLDER>
         if (workspace == null){
             return false;
         }
@@ -160,17 +199,7 @@ public class DatadogSCMListener extends SCMListener {
             return false;
         }
         String name = parent.getName();
-        if (!name.endsWith("@libs")) {
-            return false;
-        }
-        // The workspace name ends with @libs, this is most likely a shared library checkout.
-        // Double-check if the build has a org.jenkinsci.plugins.workflow.libs.LibrariesAction
-        for (Action action : build.getAllActions()) {
-            if (action.getClass().getName().equals("org.jenkinsci.plugins.workflow.libs.LibrariesAction")) {
-                return true;
-            }
-        }
-        return false;
+        return name.endsWith("@libs");
     }
 
     private boolean isGit(SCM scm) {
