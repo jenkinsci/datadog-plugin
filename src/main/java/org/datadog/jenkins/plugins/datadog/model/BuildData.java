@@ -84,6 +84,7 @@ import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.workflow.cps.EnvActionImpl;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 public class BuildData implements Serializable {
 
@@ -198,6 +199,7 @@ public class BuildData implements Serializable {
     private String result;
     private boolean isCompleted;
     private boolean isBuilding;
+    private boolean isWorkflowRun;
     private String hostname;
     private String userId;
     private String userEmail;
@@ -300,6 +302,8 @@ public class BuildData implements Serializable {
             this.isCompleted = false;
         }
         this.isBuilding = run.isBuilding();
+
+        this.isWorkflowRun = run instanceof WorkflowRun;
 
         PipelineQueueInfoAction action = run.getAction(PipelineQueueInfoAction.class);
         if (action != null) {
@@ -1088,5 +1092,13 @@ public class BuildData implements Serializable {
             DatadogUtilities.severe(LOGGER, e, "Failed to construct log attributes");
             return new JSONObject();
         }
+    }
+
+    /**
+     * The accurate start time for a pipeline (WorkflowRun) is only known once the first step starts executing
+     * (everything before that counts as queued time: see the definition of {@link #propagatedMillisInQueue})
+     */
+    public boolean isStartTimeKnown() {
+        return !this.isBuilding || !this.isWorkflowRun || this.propagatedMillisInQueue >= 0;
     }
 }
