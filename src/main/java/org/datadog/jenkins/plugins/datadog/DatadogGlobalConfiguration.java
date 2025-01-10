@@ -30,6 +30,7 @@ import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConf
 import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentLogCollectionPort;
 import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentPort;
 import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentTraceCollectionPort;
+import static org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeSite.DatadogIntakeSiteDescriptor.getSite;
 import static org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogTextApiKey.DatadogTextApiKeyDescriptor.getDefaultKey;
 
 import com.thoughtworks.xstream.annotations.XStreamConverter;
@@ -214,7 +215,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             String clientType = System.getenv(REPORT_WITH_PROPERTY);
             if (DATADOG_AGENT_CLIENT_TYPE.equals(clientType)) {
                 this.datadogClientConfiguration = new DatadogAgentConfiguration(
-                        getDefaultAgentHost(), getDefaultAgentPort(), getDefaultAgentLogCollectionPort(), getDefaultAgentTraceCollectionPort());
+                        getDefaultAgentHost(), getDefaultAgentPort(), getDefaultAgentLogCollectionPort(), getDefaultAgentTraceCollectionPort(), getSite());
             } else {
                 DatadogIntake intake = DatadogIntake.getDefaultIntake();
                 DatadogTextApiKey apiKey = new DatadogTextApiKey(getDefaultKey());
@@ -1241,7 +1242,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.included = DatadogUtilities.cstrToList(this.whitelist, Pattern::compile);
         }
         if (DATADOG_AGENT_CLIENT_TYPE.equals(reportWith)) {
-            this.datadogClientConfiguration = new DatadogAgentConfiguration(this.targetHost, this.targetPort, this.targetLogCollectionPort, this.targetTraceCollectionPort);
+            this.datadogClientConfiguration = new DatadogAgentConfiguration(this.targetHost, this.targetPort, this.targetLogCollectionPort, this.targetTraceCollectionPort, getSite());
         }
         if (DATADOG_API_CLIENT_TYPE.equals(reportWith)) {
             DatadogIntakeUrls intake = new DatadogIntakeUrls(this.targetApiURL, this.targetLogIntakeURL, this.targetWebhookIntakeURL);

@@ -132,6 +132,11 @@ public class DatadogApiConfiguration extends DatadogClientConfiguration {
     }
 
     @Override
+    public String getSiteName() {
+        return intake.getSiteName();
+    }
+
+    @Override
     public Descriptor<DatadogClientConfiguration> getDescriptor() {
         Jenkins jenkins = Jenkins.getInstanceOrNull();
         if (jenkins == null) {

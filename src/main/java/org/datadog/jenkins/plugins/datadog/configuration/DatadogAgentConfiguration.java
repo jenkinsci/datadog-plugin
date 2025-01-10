@@ -4,6 +4,7 @@ import hudson.Extension;
 import hudson.RelativePath;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
@@ -19,6 +20,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogAgentClient;
 import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
+import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogSite;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -49,13 +51,19 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
     private final Integer agentPort;
     private final Integer agentLogCollectionPort;
     private final Integer agentTraceCollectionPort;
+    private final DatadogSite site;
 
     @DataBoundConstructor
-    public DatadogAgentConfiguration(String agentHost, Integer agentPort, Integer agentLogCollectionPort, Integer agentTraceCollectionPort) {
+    public DatadogAgentConfiguration(String agentHost, Integer agentPort, Integer agentLogCollectionPort, Integer agentTraceCollectionPort, String site) {
+        this(agentHost, agentPort, agentLogCollectionPort, agentTraceCollectionPort, StringUtils.isNotBlank(site) ? DatadogSite.valueOf(site) : null);
+    }
+
+    public DatadogAgentConfiguration(String agentHost, Integer agentPort, Integer agentLogCollectionPort, Integer agentTraceCollectionPort, DatadogSite site) {
         this.agentHost = agentHost;
         this.agentPort = agentPort;
         this.agentLogCollectionPort = agentLogCollectionPort;
         this.agentTraceCollectionPort = agentTraceCollectionPort;
+        this.site = site;
     }
 
     public String getAgentHost() {
@@ -72,6 +80,10 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
 
     public Integer getAgentTraceCollectionPort() {
         return agentTraceCollectionPort;
+    }
+
+    public DatadogSite getSite() {
+        return site;
     }
 
     @Override
@@ -142,6 +154,11 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
         variables.put("DD_AGENT_HOST", agentHost);
         variables.put("DD_TRACE_AGENT_PORT", agentTraceCollectionPort.toString());
         return variables;
+    }
+
+    @Override
+    public String getSiteName() {
+        return site != null ? site.getSiteName() : null;
     }
 
     @Override
@@ -223,6 +240,17 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
         public FormValidation doCheckTraceConnectivity(@QueryParameter("agentHost") final String agentHost,
                                                        @QueryParameter("agentTraceCollectionPort") Integer agentTraceCollectionPort) {
             return checkTracesConnectivity(agentHost, agentTraceCollectionPort);
+        }
+
+        @RequirePOST
+        public ListBoxModel doFillSiteItems() {
+            DatadogSite[] siteValues = DatadogSite.values();
+            ListBoxModel.Option[] values = new ListBoxModel.Option[siteValues.length + 1];
+            values[0] = new ListBoxModel.Option("");
+            for (int i = 0; i < siteValues.length; i++) {
+                values[i + 1] = new ListBoxModel.Option(siteValues[i].name());
+            }
+            return new ListBoxModel(values);
         }
 
         public static String getDefaultAgentHost() {
@@ -338,11 +366,12 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
         return Objects.equals(agentHost, that.agentHost)
                 && Objects.equals(agentPort, that.agentPort)
                 && Objects.equals(agentLogCollectionPort, that.agentLogCollectionPort)
-                && Objects.equals(agentTraceCollectionPort, that.agentTraceCollectionPort);
+                && Objects.equals(agentTraceCollectionPort, that.agentTraceCollectionPort)
+                && Objects.equals(site, that.site);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(agentHost, agentPort, agentLogCollectionPort, agentTraceCollectionPort);
+        return Objects.hash(agentHost, agentPort, agentLogCollectionPort, agentTraceCollectionPort, site);
     }
 }
