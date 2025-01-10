@@ -153,7 +153,7 @@ public class DatadogSCMListener extends SCMListener {
         }
     }
 
-    private boolean isSharedLibraryCheckout(Run<?, ?> build, FilePath workspace) {
+    private static boolean isSharedLibraryCheckout(Run<?, ?> build, FilePath workspace) {
       try {
           return hasLibrariesAction(build) && (isCommonSharedLibraryClone(workspace) || isFreshSharedLibraryClone(build, workspace));
       } catch (Exception e) {
@@ -179,7 +179,7 @@ public class DatadogSCMListener extends SCMListener {
     /**
      * Returns true if workspace correspond to a shared library that has "Fresh clone per build" setting enabled
      */
-    private boolean isFreshSharedLibraryClone(Run<?, ?> build, FilePath workspace) {
+    static boolean isFreshSharedLibraryClone(Run<?, ?> build, FilePath workspace) {
         // example of workspace: <JENKINS_HOME>/jobs/<PIPELINE_NAME>/builds/<BUILD_NUMBER>/libs/<LIBRARY_FOLDER>/root
         Path rootPath = build.getRootDir().toPath();
         Path workspacePath = Paths.get(workspace.getRemote());
@@ -190,7 +190,7 @@ public class DatadogSCMListener extends SCMListener {
     /**
      * Returns true if workspace correspond to a shared library that does NOT have "Fresh clone per build" setting enabled
      */
-    private boolean isCommonSharedLibraryClone(FilePath workspace) {
+    static boolean isCommonSharedLibraryClone(FilePath workspace) {
         // example of workspace: <JENKINS_HOME>/workspace/<PIPELINE_NAME>@libs/<LIBRARY_FOLDER>
         if (workspace == null){
             return false;
