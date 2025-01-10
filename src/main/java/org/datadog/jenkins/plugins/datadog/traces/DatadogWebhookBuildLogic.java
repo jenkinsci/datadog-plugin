@@ -42,6 +42,13 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
             return null;
         }
 
+        // Do not submit pipeline trace if start time is not known:
+        // the backend relies on start time being constant
+        // (otherwise finished pipeline record will not converge with its running pipeline record)
+        if (!buildData.isStartTimeKnown()) {
+            return null;
+        }
+
         final String jenkinsResult = buildData.getResult("");
         final String status = buildData.isBuilding() ? CITags.STATUS_RUNNING : statusFromResult(jenkinsResult);
         final String prefix = PipelineStepData.StepType.PIPELINE.getTagName();

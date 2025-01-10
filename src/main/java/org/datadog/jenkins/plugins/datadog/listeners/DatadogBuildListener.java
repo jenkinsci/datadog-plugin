@@ -214,16 +214,9 @@ public class DatadogBuildListener extends RunListener<Run> {
             Metrics.getInstance().incrementCounter("jenkins.job.started", hostname, tags);
 
             if (DatadogUtilities.getDatadogGlobalDescriptor().getEnableCiVisibility()) {
-                // Do not submit start events for pipelines:
-                // the accurate start time for a pipeline is only known once the first step starts executing
-                // (everything before that counts as queued time).
-                // The backend relies on start time being consistent, so for pipelines
-                // we submit the first event when the "Start of Pipeline" FlowNode is encountered.
-                if (!(run instanceof WorkflowRun)) {
-                    TraceWriter traceWriter = TraceWriterFactory.getTraceWriter();
-                    if (traceWriter != null) {
-                        traceWriter.submitBuild(buildData, run);
-                    }
+                TraceWriter traceWriter = TraceWriterFactory.getTraceWriter();
+                if (traceWriter != null) {
+                    traceWriter.submitBuild(buildData, run);
                 }
             }
 
