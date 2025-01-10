@@ -30,6 +30,7 @@ import com.timgroup.statsd.Event;
 import com.timgroup.statsd.NonBlockingStatsDClient;
 import com.timgroup.statsd.ServiceCheck;
 import com.timgroup.statsd.StatsDClient;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -57,7 +58,6 @@ import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
 import org.datadog.jenkins.plugins.datadog.traces.mapper.JsonTraceSpanMapper;
 import org.datadog.jenkins.plugins.datadog.traces.write.*;
 import org.datadog.jenkins.plugins.datadog.util.CircuitBreaker;
-import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -348,7 +348,7 @@ public class DatadogAgentClient implements DatadogClient {
 
     @Override
     public TraceWriteStrategy createTraceWriteStrategy() {
-        Set<String> agentEndpoints = fetchAgentEndpoints();
+        Set<String> agentEndpoints = fetchAgentEndpoints(client, hostname, traceCollectionPort);
         boolean evpProxyExists = agentEndpoints.contains("/evp_proxy/v3/");
         if (evpProxyExists) {
             DatadogGlobalConfiguration datadogGlobalDescriptor = DatadogUtilities.getDatadogGlobalDescriptor();
@@ -375,7 +375,7 @@ public class DatadogAgentClient implements DatadogClient {
      * @return a set of endpoints (if /info wasn't available, it will be empty)
      */
     @SuppressFBWarnings("REC_CATCH_EXCEPTION")
-    Set<String> fetchAgentEndpoints() {
+    public static Set<String> fetchAgentEndpoints(HttpClient client, String hostname, Integer traceCollectionPort) {
         logger.fine("Fetching Agent info");
 
         String url = String.format("http://%s:%d/info", hostname, traceCollectionPort);
