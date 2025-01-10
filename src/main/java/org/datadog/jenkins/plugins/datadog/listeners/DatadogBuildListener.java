@@ -25,23 +25,40 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.listeners;
 
+import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.cleanUpTraceActions;
+import static org.datadog.jenkins.plugins.datadog.traces.TracerConstants.SPAN_ID_ENVVAR_KEY;
+import static org.datadog.jenkins.plugins.datadog.traces.TracerConstants.TRACE_ID_ENVVAR_KEY;
+
 import com.cloudbees.workflow.rest.external.RunExt;
 import com.cloudbees.workflow.rest.external.StageNodeExt;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.*;
 import hudson.model.listeners.RunListener;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
+import javax.annotation.Nonnull;
+import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
+import org.datadog.jenkins.plugins.datadog.configuration.DatadogClientConfiguration;
 import org.datadog.jenkins.plugins.datadog.events.BuildAbortedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildFinishedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildStartedEventImpl;
 import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
 import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
 import org.datadog.jenkins.plugins.datadog.model.*;
+import org.datadog.jenkins.plugins.datadog.model.BuildData;
+import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
+import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
+import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.TraceInfoAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
@@ -49,18 +66,6 @@ import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriter;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-
-import javax.annotation.Nonnull;
-import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
-
-import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.cleanUpTraceActions;
-import static org.datadog.jenkins.plugins.datadog.traces.TracerConstants.SPAN_ID_ENVVAR_KEY;
-import static org.datadog.jenkins.plugins.datadog.traces.TracerConstants.TRACE_ID_ENVVAR_KEY;
-
 
 /**
  * This class registers an {@link RunListener} to trigger events and calculate metrics:
@@ -362,6 +367,16 @@ public class DatadogBuildListener extends RunListener<Run> {
             }
 
             BuildData buildData = BuildData.create(run, null);
+
+            DatadogGlobalConfiguration datadogConfiguration = DatadogUtilities.getDatadogGlobalDescriptor();
+            if (datadogConfiguration != null && datadogConfiguration.getEnableCiVisibility()) {
+                DatadogClientConfiguration clientConfiguration = datadogConfiguration.getDatadogClientConfiguration();
+                String siteName = clientConfiguration.getSiteName();
+                if (StringUtils.isNotBlank(siteName)) {
+                    run.addAction(new DatadogLinkAction(buildData, siteName));
+                }
+            }
+
             traceWriter.submitBuild(buildData, run);
             logger.fine("End DatadogBuildListener#onFinalized");
 
