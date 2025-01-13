@@ -58,7 +58,7 @@ public class DatadogIntakeSite extends DatadogIntake {
     }
 
     @Extension
-    public static final class DatadogIntakeSiteDescriptor extends DatadogIntakeDescriptor {
+    public static final class DatadogIntakeSiteDescriptor extends DatadogIntake.DatadogIntakeDescriptor {
         public DatadogIntakeSiteDescriptor() {
             load();
         }

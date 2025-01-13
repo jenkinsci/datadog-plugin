@@ -73,7 +73,7 @@ public class DatadogCredentialsApiKey extends DatadogApiKey {
     }
 
     @Extension
-    public static final class DatadogCredentialsApiKeyDescriptor extends DatadogApiKeyDescriptor {
+    public static final class DatadogCredentialsApiKeyDescriptor extends DatadogApiKey.DatadogApiKeyDescriptor {
         public DatadogCredentialsApiKeyDescriptor() {
             load();
         }
