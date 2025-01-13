@@ -2,6 +2,7 @@ package org.datadog.jenkins.plugins.datadog;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.thoughtworks.xstream.XStream;
@@ -259,6 +260,39 @@ public class DatadogGlobalConfigurationTest {
         assertEquals("my-jenkins-service-name", configuration.getCiInstanceName());
         assertEquals("my-hostname", configuration.getHostname());
         assertEquals("my-blacklist", configuration.getExcluded());
+        assertEquals("my-whitelist", configuration.getIncluded());
+        assertEquals("my-global-tag-file", configuration.getGlobalTagFile());
+        assertEquals("my-global-tags", configuration.getGlobalTags());
+        assertEquals("my-global-job-tags", configuration.getGlobalJobTags());
+        assertEquals("my-include-events", configuration.getIncludeEvents());
+        assertEquals("my-exclude-evens", configuration.getExcludeEvents());
+        assertFalse(configuration.isEmitSecurityEvents());
+        assertFalse(configuration.isEmitSystemEvents());
+        assertTrue(configuration.isCollectBuildLogs());
+        assertTrue(configuration.getEnableCiVisibility());
+        assertTrue(configuration.isRefreshDogstatsdClient());
+        assertFalse(configuration.isCacheBuildRuns());
+        assertTrue(configuration.isUseAwsInstanceHostname());
+    }
+
+    @Test
+    public void canLoadGlobalConfigurationThatContainsInvalidExcludeRegex() {
+        DatadogGlobalConfiguration configuration = parseConfigurationFromResource("globalConfigurationInvalidExcludeRegex.xml");
+        assertTrue(configuration.getDatadogClientConfiguration() instanceof DatadogApiConfiguration);
+        DatadogApiConfiguration datadogClientConfiguration = (DatadogApiConfiguration) configuration.getDatadogClientConfiguration();
+
+        DatadogIntake intake = datadogClientConfiguration.getIntake();
+        assertEquals("https://my-api-url.com/api/", intake.getApiUrl());
+        assertEquals("https://my-log-intake-url.com/v1/input/", intake.getLogsUrl());
+        assertEquals("https://my-webhook-intake-url.com/api/v2/webhook/", intake.getWebhooksUrl());
+
+        assertTrue(datadogClientConfiguration.getApiKey() instanceof DatadogTextApiKey);
+        DatadogTextApiKey textApiKey = (DatadogTextApiKey) datadogClientConfiguration.getApiKey();
+        assertEquals("{AQAAABAAAAAwB78atDHwzelG9W0Fw5FRNq0ZUaLh1BwpQPKhvs2u84lxkRPDqeUNoVZel+MKwfyTOjuetnituHYGMdvE9bc3kg==}", Secret.toString(textApiKey.getKey()));
+
+        assertEquals("my-jenkins-service-name", configuration.getCiInstanceName());
+        assertEquals("my-hostname", configuration.getHostname());
+        assertNull(configuration.getExcluded()); // this is null since the regex is invalid
         assertEquals("my-whitelist", configuration.getIncluded());
         assertEquals("my-global-tag-file", configuration.getGlobalTagFile());
         assertEquals("my-global-tags", configuration.getGlobalTags());

@@ -1,0 +1,30 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration plugin="datadog@6.0.3">
+    <datadogClientConfiguration class="org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration">
+        <intake class="org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeUrls">
+            <apiUrl>https://my-api-url.com/api/</apiUrl>
+            <logsUrl>https://my-log-intake-url.com/v1/input/</logsUrl>
+            <webhooksUrl>https://my-webhook-intake-url.com/api/v2/webhook/</webhooksUrl>
+        </intake>
+        <apiKey class="org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogTextApiKey">
+            <key>{AQAAABAAAAAwB78atDHwzelG9W0Fw5FRNq0ZUaLh1BwpQPKhvs2u84lxkRPDqeUNoVZel+MKwfyTOjuetnituHYGMdvE9bc3kg==}</key>
+        </apiKey>
+    </datadogClientConfiguration>
+    <ciInstanceName>my-jenkins-service-name</ciInstanceName>
+    <hostname>my-hostname</hostname>
+    <excluded>*my-blacklist*</excluded>
+    <included>my-whitelist</included>
+    <globalTagFile>my-global-tag-file</globalTagFile>
+    <globalTags>my-global-tags</globalTags>
+    <globalJobTags>my-global-job-tags</globalJobTags>
+    <includeEvents>my-include-events</includeEvents>
+    <excludeEvents>my-exclude-evens</excludeEvents>
+    <emitSecurityEvents>false</emitSecurityEvents>
+    <emitSystemEvents>false</emitSystemEvents>
+    <collectBuildLogs>true</collectBuildLogs>
+    <enableCiVisibility>true</enableCiVisibility>
+    <retryLogs>false</retryLogs>
+    <refreshDogstatsdClient>true</refreshDogstatsdClient>
+    <cacheBuildRuns>false</cacheBuildRuns>
+    <useAwsInstanceHostname>true</useAwsInstanceHostname>
+</org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration>
