@@ -19,7 +19,9 @@
   <packaging>hpi</packaging>
 
   <properties>
-    <jenkins.version>2.361.4</jenkins.version>
+    <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
+    <jenkins.baseline>2.361</jenkins.baseline>
+    <jenkins.version>${jenkins.baseline}.4</jenkins.version>
     <hpi.compatibleSinceVersion>1.0.0</hpi.compatibleSinceVersion>
     <!-- byte-buddy is needed with java 11: https://stackoverflow.com/questions/69929229/mockito-shipped-within-spring-boot-fails-to-attach-to-jvm-openjdk-11/72912290#72912290 -->
     <byte-buddy.version>1.12.14</byte-buddy.version>
@@ -66,7 +68,7 @@
     <dependencies>
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
-        <artifactId>bom-2.361.x</artifactId>
+        <artifactId>bom-${jenkins.baseline}.x</artifactId>
         <version>2102.v854b_fec19c92</version>
         <scope>import</scope>
         <type>pom</type>
