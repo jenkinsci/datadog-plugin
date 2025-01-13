@@ -42,6 +42,8 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
     static final Integer DEFAULT_AGENT_PORT_VALUE = 8125;
     static final Integer DEFAULT_TRACE_COLLECTION_PORT_VALUE = 8126;
     static final Integer DEFAULT_LOG_COLLECTION_PORT_VALUE = null;
+o
+    private static final int AGENT_CONNECTIVITY_CHECK_TIMEOUT_MILLIS = 3_000;
 
     private final String agentHost;
     private final Integer agentPort;
@@ -93,11 +95,11 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
             return FormValidation.error("Trace collection port missing");
         }
         try {
-            Set<String> endpoints = DatadogAgentClient.fetchAgentEndpoints(new HttpClient(10_000), agentHost, agentTraceCollectionPort);
+            Set<String> endpoints = DatadogAgentClient.fetchAgentEndpoints(new HttpClient(AGENT_CONNECTIVITY_CHECK_TIMEOUT_MILLIS), agentHost, agentTraceCollectionPort);
             if (!endpoints.isEmpty()) {
                 return FormValidation.ok("Success!");
             } else {
-                return FormValidation.error("The agent returned empty endpoints list");
+                return FormValidation.error("Failed to reach Datadog Agent using host " + agentHost + " and port " + agentTraceCollectionPort);
             }
         } catch (Exception e) {
             return FormValidation.error(e.getMessage());
