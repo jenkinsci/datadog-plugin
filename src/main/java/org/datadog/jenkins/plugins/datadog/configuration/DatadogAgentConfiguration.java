@@ -42,8 +42,8 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
     static final Integer DEFAULT_AGENT_PORT_VALUE = 8125;
     static final Integer DEFAULT_TRACE_COLLECTION_PORT_VALUE = 8126;
     static final Integer DEFAULT_LOG_COLLECTION_PORT_VALUE = null;
-o
-    private static final int AGENT_CONNECTIVITY_CHECK_TIMEOUT_MILLIS = 3_000;
+
+    private static final int AGENT_CONNECTIVITY_CHECK_TIMEOUT_MILLIS = 2_000;
 
     private final String agentHost;
     private final Integer agentPort;
