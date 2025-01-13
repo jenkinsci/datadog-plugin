@@ -1,5 +1,12 @@
 Changes
 =======
+## 9.0.1 / 2025-01-13
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.0.0...datadog-9.0.1
+
+* [Fixed] Fix freshly-cloned shared library checkout detection. See [#489](https://github.com/jenkinsci/datadog-plugin/pull/489).
+* [Fixed] Do not submit running pipelines data until accurate start time is known. See [#490](https://github.com/jenkinsci/datadog-plugin/pull/490).
+
 ## 9.0.0 / 2025-01-07
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-8.3.1...datadog-9.0.0
