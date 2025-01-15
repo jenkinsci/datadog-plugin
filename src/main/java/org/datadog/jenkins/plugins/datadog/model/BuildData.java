@@ -25,15 +25,6 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.model;
 
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_DATE;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_EMAIL;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_NAME;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_DATE;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_EMAIL;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_NAME;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_MESSAGE;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_BRANCH;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isUserSuppliedGit;
 
 import com.cloudbees.plugins.credentials.CredentialsParameterValue;
 import hudson.EnvVars;
@@ -62,7 +53,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -77,6 +67,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
+import org.datadog.jenkins.plugins.datadog.model.git.GitMetadata;
 import org.datadog.jenkins.plugins.datadog.traces.BuildConfigurationParser;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
@@ -170,19 +161,6 @@ public class BuildData implements Serializable {
     private String executorNumber;
     private String javaHome;
     private String workspace;
-    // Branch contains either env variable - SVN_REVISION or CVS_BRANCH or GIT_BRANCH
-    private String branch;
-    private String gitUrl;
-    private String gitCommit;
-    private String gitMessage;
-    private String gitAuthorName;
-    private String gitAuthorEmail;
-    private String gitAuthorDate;
-    private String gitCommitterName;
-    private String gitCommitterEmail;
-    private String gitCommitterDate;
-    private String gitDefaultBranch;
-    private String gitTag;
 
     // Environment variable from the promoted build plugin
     // - See https://plugins.jenkins.io/promoted-builds
@@ -208,6 +186,9 @@ public class BuildData implements Serializable {
     private Long startTime;
     private Long endTime;
     private Long duration;
+
+    private GitMetadata gitMetadata = GitMetadata.EMPTY;
+    private GitMetadata pipelineDefinitionGitMetadata = GitMetadata.EMPTY;
 
     /**
      * Queue time that is reported by the Jenkins Queue API.
@@ -278,10 +259,6 @@ public class BuildData implements Serializable {
 
         // Populate instance using environment variables.
         populateEnvVariables(envVars);
-
-        // Populate instance using Git info if possible.
-        // Set all Git commit related variables.
-        populateGitVariables(run);
 
         // Set Jenkins Url
         this.jenkinsUrl = DatadogUtilities.getJenkinsUrl();
@@ -390,10 +367,35 @@ public class BuildData implements Serializable {
         // Build parameters
         populateBuildParameters(run);
 
-        populateUpstreamPipelineData(run, envVars);
+        populateUpstreamPipelineData(run);
+
+        this.gitMetadata = getGitMetadata(run, envVars);
+        this.pipelineDefinitionGitMetadata = getPipelineDefinitionGitMetadata(run);
     }
 
-    private void populateUpstreamPipelineData(Run<?, ?> run, EnvVars envVars) {
+    private static GitMetadata getGitMetadata(Run<?, ?> run, EnvVars environment) {
+        GitMetadata gitMetadata = GitMetadata.EMPTY;
+
+        GitMetadataAction gitMetadataAction = run.getAction(GitMetadataAction.class);
+        if (gitMetadataAction != null) {
+            gitMetadata = GitMetadata.merge(gitMetadata, gitMetadataAction.getMetadata());
+        }
+
+        gitMetadata = GitMetadata.merge(gitMetadata, GitUtils.buildGitMetadataWithJenkinsEnvVars(environment));
+        gitMetadata = GitMetadata.merge(gitMetadata, GitUtils.buildGitMetadataWithUserSuppliedEnvVars(environment));
+        return gitMetadata;
+    }
+
+    private static GitMetadata getPipelineDefinitionGitMetadata(Run<?, ?> run) {
+        GitMetadataAction gitMetadataAction = run.getAction(GitMetadataAction.class);
+        if (gitMetadataAction != null) {
+            return gitMetadataAction.getPipelineDefinitionMetadata();
+        } else {
+            return GitMetadata.EMPTY;
+        }
+    }
+
+    private void populateUpstreamPipelineData(Run<?, ?> run) {
         CauseAction causeAction = run.getAction(CauseAction.class);
         if (causeAction == null) {
             return;
@@ -518,7 +520,7 @@ public class BuildData implements Serializable {
         }
     }
 
-    private void populateEnvVariables(EnvVars envVars){
+    private void populateEnvVariables(EnvVars envVars) {
         if (envVars == null) {
             return;
         }
@@ -536,42 +538,7 @@ public class BuildData implements Serializable {
             this.executorNumber = executorNumber;
         }
         this.javaHome = envVars.get("JAVA_HOME");
-        if (isGit(envVars)) {
-            this.branch = GitUtils.resolveGitBranch(envVars);
-            this.gitUrl = GitUtils.resolveGitRepositoryUrl(envVars);
-            this.gitCommit = GitUtils.resolveGitCommit(envVars);
-            this.gitTag = GitUtils.resolveGitTag(envVars);
 
-            // Git data supplied by the user has prevalence. We set them first.
-            // Only the data that has not been set will be updated later.
-            // If any value is not provided, we maintained the original value if any.
-            this.gitMessage = envVars.get(DD_GIT_COMMIT_MESSAGE, this.gitMessage);
-            this.gitAuthorName = envVars.get(DD_GIT_COMMIT_AUTHOR_NAME, this.gitAuthorName);
-            this.gitAuthorEmail = envVars.get(DD_GIT_COMMIT_AUTHOR_EMAIL, this.gitAuthorEmail);
-            this.gitCommitterName = envVars.get(DD_GIT_COMMIT_COMMITTER_NAME, this.gitCommitterName);
-            this.gitCommitterEmail = envVars.get(DD_GIT_COMMIT_COMMITTER_EMAIL, this.gitCommitterEmail);
-
-            String gitAuthorDate = envVars.get(DD_GIT_COMMIT_AUTHOR_DATE, this.gitAuthorDate);
-            if (StringUtils.isNotBlank(gitAuthorDate)) {
-                if (DatadogUtilities.isValidISO8601Date(gitAuthorDate)) {
-                    this.gitAuthorDate = gitAuthorDate;
-                } else {
-                    LOGGER.log(Level.WARNING, "Invalid date specified in " + DD_GIT_COMMIT_AUTHOR_DATE + ": expected ISO8601 format (" + DatadogUtilities.toISO8601(new Date()) + "), got " + gitAuthorDate);
-                }
-            }
-
-            String gitCommitterDate = envVars.get(DD_GIT_COMMIT_COMMITTER_DATE, this.gitCommitterDate);
-            if (StringUtils.isNotBlank(gitCommitterDate)) {
-                if (DatadogUtilities.isValidISO8601Date(gitCommitterDate)) {
-                    this.gitCommitterDate = gitCommitterDate;
-                } else {
-                    LOGGER.log(Level.WARNING, "Invalid date specified in " + DD_GIT_COMMIT_COMMITTER_DATE + ": expected ISO8601 format (" + DatadogUtilities.toISO8601(new Date()) + "), got " + gitCommitterDate);
-                }
-            }
-
-        } else if (envVars.get("CVS_BRANCH") != null) {
-            this.branch = envVars.get("CVS_BRANCH");
-        }
         this.promotedUrl = envVars.get("PROMOTED_URL");
         this.promotedJobName = envVars.get("PROMOTED_JOB_NAME");
         this.promotedNumber = envVars.get("PROMOTED_NUMBER");
@@ -580,121 +547,6 @@ public class BuildData implements Serializable {
         this.promotedUserName = envVars.get("PROMOTED_USER_NAME");
         this.promotedUserId = envVars.get("PROMOTED_USER_ID");
         this.promotedJobFullName = envVars.get("PROMOTED_JOB_FULL_NAME");
-    }
-
-    /**
-     * Populate git commit related information in the BuildData instance.
-     * The data is retrieved from {@link GitRepositoryAction} and {@link GitCommitAction} that are associated with the build.
-     * The actions are populated from two main sources:
-     * <ol>
-     *     <li>Environment variables of specific pipeline steps:
-     *     pipeline object has its own set of env variables, but it is minimal;
-     *     the whole set of env variables
-     *     (including those that are set by Jenkins Git Plugin or manually by the pipeline authors)
-     *     is only available for individual pipeline steps.
-     *     That is why in {@link org.datadog.jenkins.plugins.datadog.listeners.DatadogStepListener}
-     *     we examine the full set of env vars to see if we can extract any git-related info</li>
-     *     <li>Git repositories that were checked out during pipeline execution:
-     *     {@link org.datadog.jenkins.plugins.datadog.listeners.DatadogSCMListener} is notified of every source-code checkout.
-     *     If the checked out repo is a git repository, we create a git client and examine repository metadata</li>
-     * </ol>
-     */
-    private void populateGitVariables(Run<?,?> run) {
-        GitRepositoryAction gitRepositoryAction = run.getAction(GitRepositoryAction.class);
-        populateRepositoryInfo(gitRepositoryAction);
-
-        GitCommitAction gitCommitAction = run.getAction(GitCommitAction.class);
-        populateCommitInfo(gitCommitAction);
-    }
-
-    /**
-     * Populate the information related to the commit (message, author and committer) based on the GitCommitAction
-     * only if the user has not set the value manually.
-     */
-    private void populateCommitInfo(GitCommitAction gitCommitAction) {
-        if(gitCommitAction != null) {
-            // If any value is not empty, it means that
-            // the user supplied the value manually
-            // via environment variables.
-
-            String existingCommit = getGitCommit("");
-            if (!existingCommit.isEmpty() && !existingCommit.equals(gitCommitAction.getCommit())) {
-                // user-supplied commit is different
-                return;
-            }
-
-            if(existingCommit.isEmpty()){
-                this.gitCommit = gitCommitAction.getCommit();
-            }
-
-            if(getGitTag("").isEmpty()){
-                this.gitTag = gitCommitAction.getTag();
-            }
-
-            if(getGitMessage("").isEmpty()){
-                this.gitMessage = gitCommitAction.getMessage();
-            }
-
-            if(getGitAuthorName("").isEmpty()){
-                this.gitAuthorName = gitCommitAction.getAuthorName();
-            }
-
-            if(getGitAuthorEmail("").isEmpty()) {
-                this.gitAuthorEmail = gitCommitAction.getAuthorEmail();
-            }
-
-            if(getGitAuthorDate("").isEmpty()){
-                this.gitAuthorDate = gitCommitAction.getAuthorDate();
-            }
-
-            if(getGitCommitterName("").isEmpty()){
-                this.gitCommitterName = gitCommitAction.getCommitterName();
-            }
-
-            if(getGitCommitterEmail("").isEmpty()){
-                this.gitCommitterEmail = gitCommitAction.getCommitterEmail();
-            }
-
-            if(getGitCommitterDate("").isEmpty()){
-                this.gitCommitterDate = gitCommitAction.getCommitterDate();
-            }
-        }
-    }
-
-    private void populateRepositoryInfo(GitRepositoryAction gitRepositoryAction) {
-        if (gitRepositoryAction != null) {
-            if (gitUrl != null && !gitUrl.isEmpty() && !gitUrl.equals(gitRepositoryAction.getRepositoryURL())) {
-                // user-supplied URL is different
-                return;
-            }
-
-            if (gitUrl == null || gitUrl.isEmpty()) {
-                gitUrl = gitRepositoryAction.getRepositoryURL();
-            }
-
-            if (gitDefaultBranch == null || gitDefaultBranch.isEmpty()) {
-                gitDefaultBranch = gitRepositoryAction.getDefaultBranch();
-            }
-
-            if (branch == null || branch.isEmpty()) {
-                this.branch = gitRepositoryAction.getBranch();
-            }
-        }
-    }
-
-    /**
-     * Return if the Run is based on Git repository checking
-     * the GIT_BRANCH environment variable or the user supplied
-     * environment variables.
-     * @param envVars
-     * @return true if GIT_BRANCH is set or the user supplied GIT information via env vars.
-     */
-    private boolean isGit(EnvVars envVars) {
-        if(envVars == null){
-            return false;
-        }
-
-        return isUserSuppliedGit(envVars) || envVars.get(GIT_BRANCH) != null;
     }
 
     /**
@@ -728,7 +580,7 @@ public class BuildData implements Serializable {
         if (jenkinsUrl != null) {
             allTags = TagsUtil.addTagToTags(allTags, "jenkins_url", getJenkinsUrl("unknown"));
         }
-        if (branch != null) {
+        if (gitMetadata.getBranch() != null) {
             allTags = TagsUtil.addTagToTags(allTags, "branch", getBranch("unknown"));
         }
 
@@ -811,7 +663,7 @@ public class BuildData implements Serializable {
     }
 
     public String getBranch(String value) {
-        return defaultIfNull(branch, value);
+        return defaultIfNull(gitMetadata.getBranch(), value);
     }
 
     public String getBuildNumber(String value) {
@@ -878,47 +730,60 @@ public class BuildData implements Serializable {
     }
 
     public String getGitUrl(String value) {
-        return defaultIfNull(gitUrl, value);
+        return defaultIfNull(gitMetadata.getRepositoryURL(), value);
     }
 
     public String getGitCommit(String value) {
-        return defaultIfNull(gitCommit, value);
+        return defaultIfNull(gitMetadata.getCommitMetadata().getCommit(), value);
     }
 
     public String getGitMessage(String value) {
-        return defaultIfNull(gitMessage, value);
+        return defaultIfNull(gitMetadata.getCommitMetadata().getMessage(), value);
     }
 
     public String getGitAuthorName(final String value) {
-        return defaultIfNull(gitAuthorName, value);
+        return defaultIfNull(gitMetadata.getCommitMetadata().getAuthorName(), value);
     }
 
     public String getGitAuthorEmail(final String value) {
-        return defaultIfNull(gitAuthorEmail, value);
+        return defaultIfNull(gitMetadata.getCommitMetadata().getAuthorEmail(), value);
     }
 
     public String getGitCommitterName(final String value) {
-        return defaultIfNull(gitCommitterName, value);
+        return defaultIfNull(gitMetadata.getCommitMetadata().getCommitterName(), value);
     }
 
     public String getGitCommitterEmail(final String value) {
-        return defaultIfNull(gitCommitterEmail, value);
+        return defaultIfNull(gitMetadata.getCommitMetadata().getCommitterEmail(), value);
     }
 
     public String getGitAuthorDate(final String value) {
-        return defaultIfNull(gitAuthorDate, value);
+        return defaultIfNull(gitMetadata.getCommitMetadata().getAuthorDate(), value);
     }
 
     public String getGitCommitterDate(final String value) {
-        return defaultIfNull(gitCommitterDate, value);
+        return defaultIfNull(gitMetadata.getCommitMetadata().getCommitterDate(), value);
     }
 
     public String getGitDefaultBranch(String value) {
-        return defaultIfNull(gitDefaultBranch, value);
+        return defaultIfNull(gitMetadata.getDefaultBranch(), value);
     }
 
     public String getGitTag(String value) {
-        return defaultIfNull(gitTag, value);
+        return defaultIfNull(gitMetadata.getCommitMetadata().getTag(), value);
+    }
+
+    public GitMetadata getGitMetadata() {
+        return gitMetadata;
+    }
+
+    /**
+     * For multi-branch pipelines it is possible to check out pipeline definition from one repository,
+     * then, when executing the pipeline script, do another Git checkout from a different repository.
+     * This method returns Git metadata for original pipeline script checkout
+     */
+    public GitMetadata getPipelineDefinitionGitMetadata() {
+        return pipelineDefinitionGitMetadata;
     }
 
     public String getUserId() {
@@ -1069,9 +934,9 @@ public class BuildData implements Serializable {
             payload.put("jenkins", jenkins);
 
             JSONObject scm = new JSONObject();
-            scm.put("branch", this.branch);
-            scm.put("git_url", this.gitUrl);
-            scm.put("git_commit", this.gitCommit);
+            scm.put("branch", getBranch(null));
+            scm.put("git_url", getGitUrl(null));
+            scm.put("git_commit", getGitCommit(null));
             payload.put("scm", scm);
 
             JSONObject user = new JSONObject();

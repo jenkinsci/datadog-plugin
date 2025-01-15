@@ -2,10 +2,10 @@ package org.datadog.jenkins.plugins.datadog.traces;
 
 import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.statusFromResult;
 import static org.datadog.jenkins.plugins.datadog.traces.CITags.Values.ORIGIN_CIAPP_PIPELINE;
-import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.filterSensitiveInfo;
-import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
-import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommit;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.filterSensitiveInfo;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.normalizeBranch;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.normalizeTag;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommitSha;
 
 import hudson.model.Result;
 import hudson.model.Run;
@@ -122,7 +122,7 @@ public class DatadogTraceBuildLogic extends DatadogBaseBuildLogic {
         }
 
         final String gitCommit = buildData.getGitCommit("");
-        if(!isValidCommit(gitCommit)) {
+        if(!isValidCommitSha(gitCommit)) {
             logger.warning("Couldn't find a valid commit for pipelineID '"+buildData.getBuildTag("")+"'. GIT_COMMIT environment variable was not found or has invalid SHA1 string: " + gitCommit);
         }
 

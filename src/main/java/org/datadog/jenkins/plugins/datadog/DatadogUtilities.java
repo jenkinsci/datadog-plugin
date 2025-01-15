@@ -25,6 +25,7 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog;
 
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.*;
 import hudson.model.*;
@@ -1286,10 +1287,6 @@ public class DatadogUtilities {
 
     public static double envVar(String name, double defaultValue) {
         return envVar(name, Double::parseDouble, defaultValue);
-    }
-
-    public static boolean envVar(String name, boolean defaultValue) {
-        return envVar(name, Boolean::parseBoolean, defaultValue);
     }
 
     public static <T> T envVar(String name, Function<String, T> parser, T defaultValue) {

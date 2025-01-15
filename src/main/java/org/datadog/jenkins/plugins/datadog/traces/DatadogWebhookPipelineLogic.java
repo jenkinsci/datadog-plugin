@@ -1,8 +1,9 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
-import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.filterSensitiveInfo;
-import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
-import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.filterSensitiveInfo;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommitSha;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.normalizeBranch;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.normalizeTag;
 
 import hudson.model.Run;
 import java.io.IOException;
@@ -20,6 +21,8 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 import org.datadog.jenkins.plugins.datadog.model.Status;
+import org.datadog.jenkins.plugins.datadog.model.git.GitCommitMetadata;
+import org.datadog.jenkins.plugins.datadog.model.git.GitMetadata;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 /**
@@ -121,85 +124,8 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
             payload.put("node", nodePayload);
         }
 
-        // Git info
-        {
-            JSONObject gitPayload = new JSONObject();
-
-            String rawGitBranch = buildData.getBranch("");
-            String gitBranch;
-            String gitTag;
-            if (rawGitBranch != null && !rawGitBranch.isEmpty()) {
-                gitBranch = normalizeBranch(rawGitBranch);
-                if (gitBranch != null) {
-                    gitPayload.put("branch", gitBranch);
-                }
-                gitTag = normalizeTag(rawGitBranch);
-                if (gitTag != null) {
-                    gitPayload.put("tag", gitTag);
-                }
-            }
-
-            // If the user set DD_GIT_TAG manually,
-            // we override the git.tag value.
-            gitTag = buildData.getGitTag("");
-            if (StringUtils.isNotEmpty(gitTag)) {
-                gitPayload.put("tag", gitTag);
-            }
-
-            // If we could detect a valid commit, the buildData object will contain that commit.
-            // If we could not detect a valid commit, that means that the GIT_COMMIT environment variable
-            // was overridden by the user at top level, so we set the content what we have (despite it's not valid).
-            // We will show a logger.warning at the end of the pipeline.
-            String gitCommit = buildData.getGitCommit("");
-            if (gitCommit != null && !gitCommit.isEmpty()) {
-                gitPayload.put("sha", gitCommit);
-            }
-
-            String gitRepoUrl = buildData.getGitUrl("");
-            if (gitRepoUrl != null && !gitRepoUrl.isEmpty()) {
-                gitPayload.put("repository_url", filterSensitiveInfo(gitRepoUrl));
-            }
-
-            final String gitMessage = buildData.getGitMessage("");
-            if (gitMessage != null && !gitMessage.isEmpty()) {
-                gitPayload.put("message", gitMessage);
-            }
-
-            final String gitAuthorDate = buildData.getGitAuthorDate("");
-            if (gitAuthorDate != null && !gitAuthorDate.isEmpty()) {
-                gitPayload.put("author_time", gitAuthorDate);
-            }
-
-            final String gitCommitDate = buildData.getGitCommitterDate("");
-            if (gitCommitDate != null && !gitCommitDate.isEmpty()) {
-                gitPayload.put("commit_time", gitCommitDate);
-            }
-
-            final String gitCommitterName = buildData.getGitCommitterName("");
-            if (gitCommitterName != null && !gitCommitterName.isEmpty()) {
-                gitPayload.put("committer_name", gitCommitterName);
-            }
-
-            final String gitCommitterEmail = buildData.getGitCommitterEmail("");
-            if (gitCommitterEmail != null && !gitCommitterEmail.isEmpty()) {
-                gitPayload.put("committer_email", gitCommitterEmail);
-            }
-
-            final String gitAuthorName = buildData.getGitAuthorName("");
-            if (gitAuthorName != null && !gitAuthorName.isEmpty()) {
-                gitPayload.put("author_name", gitAuthorName);
-            }
-
-            final String gitAuthorEmail = buildData.getGitAuthorEmail("");
-            if (gitAuthorEmail != null && !gitAuthorEmail.isEmpty()) {
-                gitPayload.put("author_email", gitAuthorEmail);
-            }
-
-            final String gitDefaultBranch = buildData.getGitDefaultBranch("");
-            if (gitDefaultBranch != null && !gitDefaultBranch.isEmpty()) {
-                gitPayload.put("default_branch", gitDefaultBranch);
-            }
-
+        Map<String, String> gitPayload = createGitPayload(buildData.getGitMetadata());
+        if (!gitPayload.isEmpty()) {
             payload.put("git", gitPayload);
         }
 
@@ -262,7 +188,80 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
                 tagsPayload.add(CITags.JENKINS_EXECUTOR_NUMBER  + ":" + executorNumber);
             }
 
+            Map<String, String> pipelineDefinitionGitPayload = createGitPayload(buildData.getPipelineDefinitionGitMetadata());
+            for (Map.Entry<String, String> e : pipelineDefinitionGitPayload.entrySet()) {
+                tagsPayload.add(CITags.PIPELINE_DEFINITION_GIT + "." + e.getKey() + ":" + e.getValue());
+            }
+
             payload.put("tags", tagsPayload);
+        }
+
+        return payload;
+    }
+
+    private static Map<String, String> createGitPayload(GitMetadata gitMetadata) {
+        Map<String, String> payload = new HashMap<>();
+
+        String repoUrl = gitMetadata.getRepositoryURL();
+        if (repoUrl != null && !repoUrl.isEmpty()) {
+            payload.put("repository_url", filterSensitiveInfo(repoUrl));
+        }
+
+        String defaultBranch = gitMetadata.getDefaultBranch();
+        if (defaultBranch != null && !defaultBranch.isEmpty()) {
+            payload.put("default_branch", defaultBranch);
+        }
+
+        String branch = gitMetadata.getBranch();
+        if(StringUtils.isNotEmpty(branch)) {
+            payload.put("branch", branch);
+        }
+
+        GitCommitMetadata commitMetadata = gitMetadata.getCommitMetadata();
+
+        String commit = commitMetadata.getCommit();
+        if (isValidCommitSha(commit)) {
+            payload.put("sha", commit);
+        }
+
+        String tag = commitMetadata.getTag();
+        if(StringUtils.isNotEmpty(tag)) {
+            payload.put("tag", tag);
+        }
+
+        String message = commitMetadata.getMessage();
+        if (message != null && !message.isEmpty()) {
+            payload.put("message", message);
+        }
+
+        String authorDate = commitMetadata.getAuthorDate();
+        if (authorDate != null && !authorDate.isEmpty()) {
+            payload.put("author_time", authorDate);
+        }
+
+        String commitDate = commitMetadata.getCommitterDate();
+        if (commitDate != null && !commitDate.isEmpty()) {
+            payload.put("commit_time", commitDate);
+        }
+
+        String committerName = commitMetadata.getCommitterName();
+        if (committerName != null && !committerName.isEmpty()) {
+            payload.put("committer_name", committerName);
+        }
+
+        String committerEmail = commitMetadata.getCommitterEmail();
+        if (committerEmail != null && !committerEmail.isEmpty()) {
+            payload.put("committer_email", committerEmail);
+        }
+
+        String authorName = commitMetadata.getAuthorName();
+        if (authorName != null && !authorName.isEmpty()) {
+            payload.put("author_name", authorName);
+        }
+
+        String authorEmail = commitMetadata.getAuthorEmail();
+        if (authorEmail != null && !authorEmail.isEmpty()) {
+            payload.put("author_email", authorEmail);
         }
 
         return payload;

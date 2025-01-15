@@ -26,7 +26,6 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.listeners;
 
 import static org.datadog.jenkins.plugins.datadog.events.SCMCheckoutCompletedEventImpl.SCM_CHECKOUT_COMPLETED_EVENT_NAME;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_DEFAULT_BRANCH;
 
 import hudson.EnvVars;
 import hudson.Extension;
@@ -44,26 +43,19 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
-import javax.annotation.Nullable;
-import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogJobProperty;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
 import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
 import org.datadog.jenkins.plugins.datadog.events.SCMCheckoutCompletedEventImpl;
 import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
-import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
-import org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils;
+import org.datadog.jenkins.plugins.datadog.model.GitMetadataAction;
+import org.datadog.jenkins.plugins.datadog.model.git.Source;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriter;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
-import org.datadog.jenkins.plugins.datadog.util.git.RepositoryInfo;
-import org.eclipse.jgit.lib.PersonIdent;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.jenkinsci.plugins.gitclient.GitClient;
 
 /**
@@ -102,14 +94,19 @@ public class DatadogSCMListener extends SCMListener {
 
             logger.fine("Start DatadogSCMListener#onCheckout");
 
-            if (isGit(scm)) {
+            GitMetadataAction gitMetadataAction = build.getAction(GitMetadataAction.class);
+            if (gitMetadataAction != null) {
                 EnvVars environment = build.getEnvironment(listener);
-                GitClient gitClient = GitUtils.newGitClient(listener, environment, workspace);
-                populateCommitInfo(build, gitClient);
-                populateRepositoryInfo(build, gitClient, environment);
-            } else {
-                logger.fine("Will not populate git commit and repository info for non-git SCM: "
-                        + (scm != null ? scm.getType() : null));
+                gitMetadataAction.addMetadata(Source.JENKINS_ENV_VARS, GitUtils.buildGitMetadataWithJenkinsEnvVars(environment));
+                gitMetadataAction.addMetadata(Source.USER_SUPPLIED_ENV_VARS, GitUtils.buildGitMetadataWithUserSuppliedEnvVars(environment));
+
+                if (isGit(scm)) {
+                    GitClient gitClient = GitUtils.newGitClient(listener, environment, workspace);
+                    Source metadataSource = isPipelineScriptClone(workspace) ? Source.GIT_CLIENT_PIPELINE_DEFINITION : Source.GIT_CLIENT;
+                    gitMetadataAction.addMetadata(metadataSource, GitUtils.buildGitMetadata(gitClient));
+                } else {
+                    logger.fine("Non-git SCM checkout: " + (scm != null ? scm.getType() : null));
+                }
             }
 
             BuildData buildData = BuildData.create(build, listener);
@@ -203,6 +200,22 @@ public class DatadogSCMListener extends SCMListener {
         return name.endsWith(FILE_PATH_SUFFIX + "libs");
     }
 
+    /**
+     * Returns true if workspace correspond to a multi-branch pipeline script
+     */
+    static boolean isPipelineScriptClone(FilePath workspace) {
+        // example of workspace: <JENKINS_HOME>/workspace/<PIPELINE_NAME>@script/<SCRIPT_FOLDER>
+        if (workspace == null){
+            return false;
+        }
+        FilePath parent = workspace.getParent();
+        if (parent == null) {
+            return false;
+        }
+        String name = parent.getName();
+        return name.endsWith(FILE_PATH_SUFFIX + "script");
+    }
+
     // Taken from https://github.com/jenkinsci/pipeline-groovy-lib-plugin/blob/master/src/main/java/org/jenkinsci/plugins/workflow/libs/SCMBasedRetriever.java#L250
     // Also see https://docs.cloudbees.com/docs/cloudbees-ci-kb/latest/troubleshooting-guides/changing-the-at-separator-character-for-workspace-folders-when-concurrent-builds-are-enabled
     private static final String FILE_PATH_SUFFIX = System.getProperty(WorkspaceList.class.getName(), "@");
@@ -214,120 +227,4 @@ public class DatadogSCMListener extends SCMListener {
         String scmType = scm.getType();
         return scmType != null && scmType.toLowerCase().contains("git");
     }
-
-    private void populateCommitInfo(final Run<?, ?> run, @Nullable final GitClient gitClient) {
-        long start = System.currentTimeMillis();
-        try {
-            GitCommitAction commitAction = run.getAction(GitCommitAction.class);
-            if (commitAction == null) {
-                logger.fine("Unable to get git commit information. GitCommitAction is null.");
-                return;
-            }
-
-            String gitCommit = commitAction.getCommit();
-            if (gitCommit == null) {
-                gitCommit = "HEAD";
-            }
-
-            final RevCommit revCommit = GitUtils.searchRevCommit(gitClient, gitCommit);
-            if (revCommit == null) {
-                logger.fine("Unable to get git commit information. RevCommit is null. [gitCommit: " + gitCommit + "]");
-                return;
-            }
-
-            commitAction.setCommit(revCommit.getName());
-
-            String message;
-            try {
-                message = StringUtils.abbreviate(revCommit.getFullMessage(), 1500);
-            } catch (Exception e) {
-                logger.fine("Unable to obtain git commit full message. Selecting short message. Error: " + e);
-                message = revCommit.getShortMessage();
-            }
-            commitAction.setMessage(message);
-
-            final PersonIdent authorIdent = revCommit.getAuthorIdent();
-            if (authorIdent != null) {
-                commitAction.setAuthorName(authorIdent.getName());
-                commitAction.setAuthorEmail(authorIdent.getEmailAddress());
-                commitAction.setAuthorDate(DatadogUtilities.toISO8601(authorIdent.getWhen()));
-            }
-
-            final PersonIdent committerIdent = revCommit.getCommitterIdent();
-            if (committerIdent != null) {
-                commitAction.setCommitterName(committerIdent.getName());
-                commitAction.setCommitterEmail(committerIdent.getEmailAddress());
-                commitAction.setCommitterDate(DatadogUtilities.toISO8601(committerIdent.getWhen()));
-            }
-
-        } catch (Exception e) {
-            logger.fine("Unable to get git commit information. Error: " + e);
-
-        } finally {
-            long end = System.currentTimeMillis();
-            DatadogAudit.log("GitUtils.buildGitCommitAction", start, end);
-        }
-    }
-
-    private void populateRepositoryInfo(final Run<?, ?> run, @Nullable final GitClient gitClient, final EnvVars environment) {
-        long start = System.currentTimeMillis();
-        try {
-            GitRepositoryAction repoAction = run.getAction(GitRepositoryAction.class);
-            if (repoAction == null) {
-                logger.fine("Unable to get git repo information. GitCommitAction is null.");
-                return;
-            }
-
-            populateRepositoryInfoFromEnvVars(environment, repoAction);
-
-            RepositoryInfo repositoryInfo = GitUtils.searchRepositoryInfo(gitClient);
-            if (repositoryInfo == null) {
-                logger.fine("Unable to build GitRepositoryAction. RepositoryInfo is null");
-                return;
-            }
-
-            if (repoAction.getRepositoryURL() != null && !repoAction.getRepositoryURL().equals(repositoryInfo.getRepoUrl())) {
-                logger.fine("Git repo URL differs, stored in action: " + repoAction.getRepositoryURL() + ", found: " + repositoryInfo.getRepoUrl());
-                return;
-            }
-
-            if (repoAction.getRepositoryURL() == null) {
-                repoAction.setRepositoryURL(repositoryInfo.getRepoUrl());
-            }
-
-            if (repoAction.getBranch() == null) {
-                repoAction.setBranch(repositoryInfo.getBranch());
-            }
-
-            if (repoAction.getDefaultBranch() == null) {
-                repoAction.setDefaultBranch(repositoryInfo.getDefaultBranch());
-            }
-
-        } catch (Exception e) {
-            logger.fine("Unable to get git repo information. Error: " + e);
-
-        } finally {
-            long end = System.currentTimeMillis();
-            DatadogAudit.log("GitUtils.buildGitRepositoryAction", start, end);
-        }
-    }
-
-    /** This duplicates logic available in step listener, because step listener is not called for freestyle jobs. */
-    private static void populateRepositoryInfoFromEnvVars(EnvVars environment, GitRepositoryAction repoAction) {
-        final String gitUrl = GitUtils.resolveGitRepositoryUrl(environment);
-        if (gitUrl != null && !gitUrl.isEmpty()) {
-            repoAction.setRepositoryURL(gitUrl);
-        }
-
-        final String defaultBranch = GitInfoUtils.normalizeBranch(environment.get(DD_GIT_DEFAULT_BRANCH));
-        if (defaultBranch != null && !defaultBranch.isEmpty()) {
-            repoAction.setDefaultBranch(defaultBranch);
-        }
-
-        final String gitBranch = GitUtils.resolveGitBranch(environment);
-        if(gitBranch != null && !gitBranch.isEmpty()) {
-            repoAction.setBranch(gitBranch);
-        }
-    }
-
 }
