@@ -18,10 +18,10 @@ public class DatadogLinkAction implements Action {
 
     private final String url;
 
-    public DatadogLinkAction(BuildData buildData, String siteName) {
+    public DatadogLinkAction(BuildData buildData, String host) {
         String query = String.format("ci_level:pipeline @ci.pipeline.name:\"%s\" @ci.pipeline.number:%s", buildData.getJobName(), buildData.getBuildNumber(""));
         String urlEncodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
-        this.url = String.format("https://app.%s/ci/pipeline-executions?query=%s", siteName, urlEncodedQuery);
+        this.url = String.format("https://%s/ci/pipeline-executions?query=%s", host, urlEncodedQuery);
     }
 
     private DatadogLinkAction(String url) {

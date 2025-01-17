@@ -56,7 +56,7 @@ public class TracerInjectionIT {
         // There is no agent and the injected tracers will fail to actually send anything,
         // but for the purposes of this test this is enough, since it is only asserted that the tracer initialisation was reported in the logs
         datadogConfig.setDatadogClientConfiguration(new DatadogAgentConfiguration(
-                getDefaultAgentHost(), getDefaultAgentPort(), getDefaultAgentLogCollectionPort(), getDefaultAgentTraceCollectionPort(), ""));
+                getDefaultAgentHost(), getDefaultAgentPort(), getDefaultAgentLogCollectionPort(), getDefaultAgentTraceCollectionPort()));
 
         agentNode = jenkinsRule.createOnlineSlave();
     }

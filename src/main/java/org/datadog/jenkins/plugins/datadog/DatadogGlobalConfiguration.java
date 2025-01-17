@@ -107,6 +107,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     static final String REPORT_WITH_PROPERTY = "DATADOG_JENKINS_PLUGIN_REPORT_WITH";
     private static final String TARGET_TRACE_SERVICE_NAME_PROPERTY = "DATADOG_JENKINS_PLUGIN_TRACE_SERVICE_NAME";
     private static final String HOSTNAME_PROPERTY = "DATADOG_JENKINS_PLUGIN_HOSTNAME";
+    private static final String DATADOG_APP_HOSTNAME_PROPERTY = "DATADOG_JENKINS_PLUGIN_DATADOG_APP_HOSTNAME";
     private static final String EXCLUDED_PROPERTY = "DATADOG_JENKINS_PLUGIN_EXCLUDED";
     private static final String INCLUDED_PROPERTY = "DATADOG_JENKINS_PLUGIN_INCLUDED";
     //Deprecated
@@ -152,6 +153,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
     private String ciInstanceName = DEFAULT_CI_INSTANCE_NAME;
     private String hostname = null;
+    private String datadogAppHostname = null;
     private String globalTagFile = null;
     private String globalTags = null;
     private String globalJobTags = null;
@@ -215,7 +217,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             String clientType = System.getenv(REPORT_WITH_PROPERTY);
             if (DATADOG_AGENT_CLIENT_TYPE.equals(clientType)) {
                 this.datadogClientConfiguration = new DatadogAgentConfiguration(
-                        getDefaultAgentHost(), getDefaultAgentPort(), getDefaultAgentLogCollectionPort(), getDefaultAgentTraceCollectionPort(), getSite());
+                        getDefaultAgentHost(), getDefaultAgentPort(), getDefaultAgentLogCollectionPort(), getDefaultAgentTraceCollectionPort());
             } else {
                 DatadogIntake intake = DatadogIntake.getDefaultIntake();
                 DatadogTextApiKey apiKey = new DatadogTextApiKey(getDefaultKey());
@@ -231,6 +233,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         String hostnameEnvVar = System.getenv(HOSTNAME_PROPERTY);
         if(StringUtils.isNotBlank(hostnameEnvVar)){
             this.hostname = hostnameEnvVar;
+        }
+
+        String datadogAppHostnameEnvVar = System.getenv(DATADOG_APP_HOSTNAME_PROPERTY);
+        if (StringUtils.isNotBlank(datadogAppHostnameEnvVar)) {
+            this.datadogAppHostname = datadogAppHostnameEnvVar;
         }
 
         String excludedEnvVar = System.getenv(EXCLUDED_PROPERTY);
@@ -462,6 +469,13 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
             setHostname(formData.getString("hostname"));
 
+            String datadogAppHostname = formData.getString("datadogAppHostname");
+            if (StringUtils.isNotBlank(datadogAppHostname) && !DatadogUtilities.isValidHostname(datadogAppHostname)) {
+                throw new FormException("Your Datadog App hostname is invalid, likely because it violates the format set in RFC 1123", "datadogAppHostname");
+            } else {
+                setDatadogAppHostname(datadogAppHostname);
+            }
+
             String excludedFormData = formData.getString("excluded");
             FormValidation excludedValidation = doCheckExcluded(excludedFormData);
             if (excludedValidation.kind == Kind.ERROR) {
@@ -562,6 +576,14 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      */
     public void setHostname(final String hostname) {
         this.hostname = hostname;
+    }
+
+    public String getDatadogAppHostname() {
+        return datadogAppHostname;
+    }
+
+    public void setDatadogAppHostname(String datadogAppHostname) {
+        this.datadogAppHostname = datadogAppHostname;
     }
 
     public boolean isJobExcluded(@Nonnull final String jobName) {
@@ -1242,7 +1264,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.included = DatadogUtilities.cstrToList(this.whitelist, Pattern::compile);
         }
         if (DATADOG_AGENT_CLIENT_TYPE.equals(reportWith)) {
-            this.datadogClientConfiguration = new DatadogAgentConfiguration(this.targetHost, this.targetPort, this.targetLogCollectionPort, this.targetTraceCollectionPort, getSite());
+            this.datadogClientConfiguration = new DatadogAgentConfiguration(this.targetHost, this.targetPort, this.targetLogCollectionPort, this.targetTraceCollectionPort);
         }
         if (DATADOG_API_CLIENT_TYPE.equals(reportWith)) {
             DatadogIntakeUrls intake = new DatadogIntakeUrls(this.targetApiURL, this.targetLogIntakeURL, this.targetWebhookIntakeURL);

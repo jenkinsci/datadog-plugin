@@ -14,6 +14,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Logger;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
@@ -51,19 +52,13 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
     private final Integer agentPort;
     private final Integer agentLogCollectionPort;
     private final Integer agentTraceCollectionPort;
-    private final DatadogSite site;
 
     @DataBoundConstructor
-    public DatadogAgentConfiguration(String agentHost, Integer agentPort, Integer agentLogCollectionPort, Integer agentTraceCollectionPort, String site) {
-        this(agentHost, agentPort, agentLogCollectionPort, agentTraceCollectionPort, StringUtils.isNotBlank(site) ? DatadogSite.valueOf(site) : null);
-    }
-
-    public DatadogAgentConfiguration(String agentHost, Integer agentPort, Integer agentLogCollectionPort, Integer agentTraceCollectionPort, DatadogSite site) {
+    public DatadogAgentConfiguration(String agentHost, Integer agentPort, Integer agentLogCollectionPort, Integer agentTraceCollectionPort) {
         this.agentHost = agentHost;
         this.agentPort = agentPort;
         this.agentLogCollectionPort = agentLogCollectionPort;
         this.agentTraceCollectionPort = agentTraceCollectionPort;
-        this.site = site;
     }
 
     public String getAgentHost() {
@@ -80,10 +75,6 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
 
     public Integer getAgentTraceCollectionPort() {
         return agentTraceCollectionPort;
-    }
-
-    public DatadogSite getSite() {
-        return site;
     }
 
     @Override
@@ -156,9 +147,10 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
         return variables;
     }
 
+    @Nullable
     @Override
     public String getSiteName() {
-        return site != null ? site.getSiteName() : null;
+        return null;
     }
 
     @Override
@@ -366,12 +358,11 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
         return Objects.equals(agentHost, that.agentHost)
                 && Objects.equals(agentPort, that.agentPort)
                 && Objects.equals(agentLogCollectionPort, that.agentLogCollectionPort)
-                && Objects.equals(agentTraceCollectionPort, that.agentTraceCollectionPort)
-                && Objects.equals(site, that.site);
+                && Objects.equals(agentTraceCollectionPort, that.agentTraceCollectionPort);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(agentHost, agentPort, agentLogCollectionPort, agentTraceCollectionPort, site);
+        return Objects.hash(agentHost, agentPort, agentLogCollectionPort, agentTraceCollectionPort);
     }
 }

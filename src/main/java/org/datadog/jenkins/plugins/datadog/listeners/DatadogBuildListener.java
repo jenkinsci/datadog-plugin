@@ -370,10 +370,16 @@ public class DatadogBuildListener extends RunListener<Run> {
 
             DatadogGlobalConfiguration datadogConfiguration = DatadogUtilities.getDatadogGlobalDescriptor();
             if (datadogConfiguration != null && datadogConfiguration.getEnableCiVisibility()) {
-                DatadogClientConfiguration clientConfiguration = datadogConfiguration.getDatadogClientConfiguration();
-                String siteName = clientConfiguration.getSiteName();
-                if (StringUtils.isNotBlank(siteName)) {
-                    run.addAction(new DatadogLinkAction(buildData, siteName));
+                String datadogAppHostname = datadogConfiguration.getDatadogAppHostname();
+                if (StringUtils.isNotBlank(datadogAppHostname)){
+                    run.addAction(new DatadogLinkAction(buildData, datadogAppHostname));
+                } else {
+                    // no explicit Datadog App host configured, trying to infer Datadog site using client config
+                    DatadogClientConfiguration clientConfiguration = datadogConfiguration.getDatadogClientConfiguration();
+                    String siteName = clientConfiguration.getSiteName();
+                    if (StringUtils.isNotBlank(siteName)) {
+                        run.addAction(new DatadogLinkAction(buildData, "app." + siteName));
+                    }
                 }
             }
 
