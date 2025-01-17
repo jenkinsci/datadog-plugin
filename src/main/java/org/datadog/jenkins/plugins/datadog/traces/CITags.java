@@ -55,6 +55,7 @@ public class CITags {
     public static final String JENKINS_EXECUTOR_NUMBER = "jenkins.executor.number";
     public static final String JENKINS_RESULT = "jenkins.result";
     public static final String JENKINS_PLUGIN_VERSION = "jenkins.plugin.version";
+    public static final String JENKINS_PIPELINE_DEFINITION_GIT = "jenkins.pipeline.definition.git";
 
     public static final String STATUS_SUCCESS = "success";
     public static final String STATUS_ERROR = "error";

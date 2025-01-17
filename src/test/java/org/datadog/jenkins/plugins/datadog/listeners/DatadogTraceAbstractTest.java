@@ -8,8 +8,7 @@ import hudson.model.Run;
 import java.util.Map;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
-import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
+import org.datadog.jenkins.plugins.datadog.model.GitMetadataAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
@@ -51,8 +50,7 @@ public abstract class DatadogTraceAbstractTest {
 
     protected void assertCleanupActions(Run<?,?> run) {
         assertNull(run.getAction(BuildSpanAction.class));
-        assertNull(run.getAction(GitCommitAction.class));
-        assertNull(run.getAction(GitRepositoryAction.class));
+        assertNull(run.getAction(GitMetadataAction.class));
         assertNull(run.getAction(PipelineNodeInfoAction.class));
         assertNull(run.getAction(PipelineQueueInfoAction.class));
     }

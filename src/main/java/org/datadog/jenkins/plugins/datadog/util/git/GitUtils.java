@@ -1,40 +1,158 @@
 package org.datadog.jenkins.plugins.datadog.util.git;
 
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_BRANCH;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_SHA;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_REPOSITORY_URL;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_TAG;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_BRANCH;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_COMMIT;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_REPOSITORY_URL;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.GIT_REPOSITORY_URL_ALT;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.USER_SUPPLIED_GIT_ENVVARS;
-
 import hudson.EnvVars;
 import hudson.FilePath;
-import hudson.model.Run;
 import hudson.model.TaskListener;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Date;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import org.apache.commons.lang.StringUtils;
+import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
-import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
-import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
+import org.datadog.jenkins.plugins.datadog.model.git.GitCommitMetadata;
+import org.datadog.jenkins.plugins.datadog.model.git.GitMetadata;
+import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 
 public final class GitUtils {
 
+    // User Supplied Git Environment Variables
+    public static final String DD_GIT_REPOSITORY_URL = "DD_GIT_REPOSITORY_URL";
+    public static final String DD_GIT_BRANCH = "DD_GIT_BRANCH";
+    public static final String DD_GIT_TAG = "DD_GIT_TAG";
+    public static final String DD_GIT_DEFAULT_BRANCH = "DD_GIT_DEFAULT_BRANCH";
+    public static final String DD_GIT_COMMIT_SHA = "DD_GIT_COMMIT_SHA";
+    public static final String DD_GIT_COMMIT_MESSAGE = "DD_GIT_COMMIT_MESSAGE";
+    public static final String DD_GIT_COMMIT_AUTHOR_NAME = "DD_GIT_COMMIT_AUTHOR_NAME";
+    public static final String DD_GIT_COMMIT_AUTHOR_EMAIL = "DD_GIT_COMMIT_AUTHOR_EMAIL";
+    public static final String DD_GIT_COMMIT_AUTHOR_DATE = "DD_GIT_COMMIT_AUTHOR_DATE";
+    public static final String DD_GIT_COMMIT_COMMITTER_NAME = "DD_GIT_COMMIT_COMMITTER_NAME";
+    public static final String DD_GIT_COMMIT_COMMITTER_EMAIL = "DD_GIT_COMMIT_COMMITTER_EMAIL";
+    public static final String DD_GIT_COMMIT_COMMITTER_DATE = "DD_GIT_COMMIT_COMMITTER_DATE";
+
+    // Jenkins Git Environment Variables
+    public static final String GIT_REPOSITORY_URL = "GIT_URL";
+    public static final String GIT_REPOSITORY_URL_ALT = "GIT_URL_1";
+    public static final String GIT_BRANCH = "GIT_BRANCH";
+    public static final String GIT_COMMIT = "GIT_COMMIT";
+
     private static transient final Logger LOGGER = Logger.getLogger(GitUtils.class.getName());
-    private static transient final Pattern SHA1_PATTERN = Pattern.compile("\\b[a-f0-9]{40}\\b");
     private static transient final Pattern SCP_REPO_URI_REGEX = Pattern.compile("^([\\w.~-]+@)?(?<host>[\\w.-]+):(?<path>[\\w./-]+)(?:\\?|$)(.*)$");
 
     private GitUtils() {
+    }
+
+    /**
+     * Check if the git commit is a valid commit.
+     *
+     * @param gitCommit the git commit to evaluate
+     * @return true if the git commit is a valid SHA 40 (HEX)
+     */
+    public static boolean isValidCommitSha(String gitCommit) {
+        if (gitCommit == null || gitCommit.length() != 40) {
+            return false;
+        }
+        for (int i = 0; i < gitCommit.length(); i++) {
+            char c = gitCommit.charAt(i);
+            if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Check if the git repository URL is a valid repository
+     *
+     * @param gitRepositoryURL the current git repository
+     * @return true if the git repository url is a valid repository in either http or scp form.
+     */
+    public static boolean isValidRepositoryURL(String gitRepositoryURL) {
+        if (gitRepositoryURL == null || gitRepositoryURL.isEmpty()) {
+            return false;
+        }
+
+        try {
+            final URI uri = new URI(gitRepositoryURL);
+            return uri.getHost() != null;
+        } catch (URISyntaxException e) {
+            return SCP_REPO_URI_REGEX.matcher(gitRepositoryURL).matches();
+        }
+    }
+
+    public static GitMetadata buildGitMetadata(@Nullable final GitClient gitClient) {
+        try {
+            if (gitClient == null) {
+                LOGGER.fine("Unable to build Git metadata. GitClient is null");
+                return null;
+
+            } else {
+                GitMetadata.Builder builder = new GitMetadata.Builder();
+
+                GitMetadataBuilderCallback.Result result = gitClient.withRepository(new GitMetadataBuilderCallback());
+                builder.repositoryURL(result.repoUrl);
+                builder.defaultBranch(normalizeBranch(result.defaultBranch));
+                builder.branch(normalizeBranch(result.branch));
+
+                builder.commitMetadata(buildCommitMetadata(gitClient, result.branch));
+                return builder.build();
+            }
+
+        } catch (Exception e) {
+            DatadogUtilities.logException(LOGGER, Level.FINE, "Unable to build git metadata", e);
+            return null;
+        }
+    }
+
+    private static GitCommitMetadata buildCommitMetadata(@Nullable final GitClient gitClient, String branch) {
+        try {
+            GitCommitMetadata.Builder builder = new GitCommitMetadata.Builder();
+
+            final RevCommit revCommit = searchRevCommit(gitClient, "HEAD");
+            if (revCommit == null) {
+                LOGGER.fine("Unable to get git commit information. RevCommit is null");
+                return null;
+            }
+
+            builder.tag(normalizeTag(branch)); // it is possible that branch ref contains a tag
+            builder.commit(revCommit.getName());
+
+            String message;
+            try {
+                message = StringUtils.abbreviate(revCommit.getFullMessage(), 1500);
+            } catch (Exception e) {
+                DatadogUtilities.logException(LOGGER, Level.FINE, "Unable to obtain git commit full message. Selecting short message", e);
+                message = revCommit.getShortMessage();
+            }
+            builder.message(message);
+
+            final PersonIdent authorIdent = revCommit.getAuthorIdent();
+            if (authorIdent != null) {
+                builder.authorName(authorIdent.getName());
+                builder.authorEmail(authorIdent.getEmailAddress());
+                builder.authorDate(DatadogUtilities.toISO8601(authorIdent.getWhen()));
+            }
+
+            final PersonIdent committerIdent = revCommit.getCommitterIdent();
+            if (committerIdent != null) {
+                builder.committerName(committerIdent.getName());
+                builder.committerEmail(committerIdent.getEmailAddress());
+                builder.committerDate(DatadogUtilities.toISO8601(committerIdent.getWhen()));
+            }
+
+            return builder.build();
+
+        } catch (Exception e) {
+            DatadogUtilities.logException(LOGGER, Level.FINE, "Unable to get git commit information", e);
+            return null;
+        }
     }
 
     /**
@@ -45,7 +163,7 @@ public final class GitUtils {
      * @param gitClient the Git client used.
      * @return revCommit
      */
-    public static RevCommit searchRevCommit(@Nullable final GitClient gitClient, final String gitCommit) {
+    private static RevCommit searchRevCommit(@Nullable final GitClient gitClient, final String gitCommit) {
         try {
             if (gitClient == null) {
                 LOGGER.fine("Unable to search RevCommit. GitClient is null");
@@ -55,26 +173,6 @@ public final class GitUtils {
             return gitClient.withRepository(new RevCommitRepositoryCallback(gitCommit));
         } catch (Exception e) {
             LOGGER.fine("Unable to search RevCommit. Error: " + e);
-            return null;
-        }
-    }
-
-    /**
-     * Return the {@code RepositoryInfo} for a certain Git repository.
-     *
-     * @param gitClient The Git client to use to obtain the repository information
-     * @return repositoryInfo
-     */
-    public static RepositoryInfo searchRepositoryInfo(@Nullable final GitClient gitClient) {
-        try {
-            if (gitClient == null) {
-                LOGGER.fine("Unable to search RevCommit. GitClient is null");
-                return null;
-            }
-
-            return gitClient.withRepository(new RepositoryInfoCallback());
-        } catch (Exception e) {
-            LOGGER.fine("Unable to search Repository Info. Error: " + e);
             return null;
         }
     }
@@ -108,160 +206,118 @@ public final class GitUtils {
         }
     }
 
-    /**
-     * Check if the git commit is a valid commit.
-     *
-     * @param gitCommit the git commit to evaluate
-     * @return true if the git commit is a valid SHA 40 (HEX)
-     */
-    public static boolean isValidCommit(String gitCommit) {
-        if (gitCommit == null || gitCommit.isEmpty()) {
-            return false;
-        }
+    public static GitMetadata buildGitMetadataWithJenkinsEnvVars(Map<String, String> envVars) {
+        GitMetadata.Builder metadataBuilder = new GitMetadata.Builder();
+        metadataBuilder.repositoryURL(getRepositoryUrlFromJenkinsEnvVars(envVars));
+        metadataBuilder.branch(normalizeBranch(envVars.get(GIT_BRANCH)));
 
-        if (gitCommit.length() != 40) {
-            return false;
-        }
+        GitCommitMetadata.Builder commitMetadataBuilder = new GitCommitMetadata.Builder();
+        commitMetadataBuilder.commit(envVars.get(GIT_COMMIT));
+        commitMetadataBuilder.tag(normalizeTag(envVars.get(GIT_BRANCH)));
+        metadataBuilder.commitMetadata(commitMetadataBuilder.build());
 
-        return SHA1_PATTERN.matcher(gitCommit).matches();
+        return metadataBuilder.build();
+    }
+
+    private static String getRepositoryUrlFromJenkinsEnvVars(Map<String, String> envVars) {
+        String repoUrl = envVars.get(GIT_REPOSITORY_URL);
+        if (StringUtils.isNotBlank(repoUrl)) {
+            return repoUrl;
+        }
+        return envVars.get(GIT_REPOSITORY_URL_ALT);
+    }
+
+    public static GitMetadata buildGitMetadataWithUserSuppliedEnvVars(Map<String, String> envVars) {
+        GitCommitMetadata.Builder commitMetadataBuilder = new GitCommitMetadata.Builder();
+        commitMetadataBuilder.tag(envVars.get(DD_GIT_TAG));
+        commitMetadataBuilder.commit(envVars.get(DD_GIT_COMMIT_SHA));
+        commitMetadataBuilder.message(envVars.get(DD_GIT_COMMIT_MESSAGE));
+        commitMetadataBuilder.authorName(envVars.get(DD_GIT_COMMIT_AUTHOR_NAME));
+        commitMetadataBuilder.authorEmail(envVars.get(DD_GIT_COMMIT_AUTHOR_EMAIL));
+        commitMetadataBuilder.committerName(envVars.get(DD_GIT_COMMIT_COMMITTER_NAME));
+        commitMetadataBuilder.committerEmail(envVars.get(DD_GIT_COMMIT_COMMITTER_EMAIL));
+        commitMetadataBuilder.authorDate(getDateIfValid(envVars, DD_GIT_COMMIT_AUTHOR_DATE));
+        commitMetadataBuilder.committerDate(getDateIfValid(envVars, DD_GIT_COMMIT_COMMITTER_DATE));
+
+        GitMetadata.Builder metadataBuilder = new GitMetadata.Builder();
+        metadataBuilder.repositoryURL(envVars.get(DD_GIT_REPOSITORY_URL));
+        metadataBuilder.defaultBranch(normalizeBranch(envVars.get(DD_GIT_DEFAULT_BRANCH)));
+        metadataBuilder.branch(normalizeBranch(envVars.get(DD_GIT_BRANCH)));
+        metadataBuilder.commitMetadata(commitMetadataBuilder.build());
+        return metadataBuilder.build();
+    }
+
+    private static String getDateIfValid(Map<String, String> envVars, String envVarName) {
+        String envVar = envVars.get(envVarName);
+        if (DatadogUtilities.isValidISO8601Date(envVar)) {
+            return envVar;
+        } else {
+            if (StringUtils.isNotBlank(envVar)) {
+                LOGGER.log(Level.WARNING, "Invalid date specified in " + envVarName + ": expected ISO8601 format (" + DatadogUtilities.toISO8601(new Date()) + "), got " + envVar);
+            }
+            return null;
+        }
     }
 
     /**
-     * Check if the git repository URL is a valid repository
-     *
-     * @param gitRepositoryURL the current git repository
-     * @return true if the git repository url is a valid repository in either http or scp form.
+     * Returns a normalized git tag
+     * E.g: refs/heads/tags/0.1.0 or origin/tags/0.1.0 returns 0.1.0
+     * @param tagName the tag name to normalize
+     * @return normalized git tag
      */
-    public static boolean isValidRepositoryURL(String gitRepositoryURL) {
-        if (gitRepositoryURL == null || gitRepositoryURL.isEmpty()) {
-            return false;
+    public static String normalizeTag(String tagName) {
+        if(tagName == null || tagName.isEmpty() || !tagName.contains("tags")) {
+            return null;
+        }
+
+        final String tagNameNoSlash = (tagName.startsWith("/")) ? tagName.replaceFirst("/", "") : tagName;
+        return removeRefs(tagNameNoSlash).replace("tags/", "");
+    }
+
+    /**
+     * Returns a normalized git branch
+     * E.g. refs/heads/master or origin/master returns master
+     * @param branchName the branch name to normalize
+     * @return normalized git tag
+     */
+    public static String normalizeBranch(String branchName) {
+        if(branchName == null || branchName.isEmpty() || branchName.contains("tags") || isValidCommitSha(branchName)) {
+            return null;
+        }
+
+        final String branchNameNoSlash = (branchName.startsWith("/")) ? branchName.replaceFirst("/", "") : branchName;
+        return removeRefs(branchNameNoSlash);
+    }
+
+    private static String removeRefs(String gitReference) {
+        if(gitReference.startsWith("origin/")) {
+            return gitReference.replace("origin/", "");
+        } else if(gitReference.startsWith("refs/heads/")) {
+            return gitReference.replace("refs/heads/", "");
+        } else if(gitReference.startsWith("refs/remotes/")) {
+            // find the next slash after remotes/ to trim remote name ("origin" or anything else)
+            int idx = gitReference.indexOf('/', "refs/remotes/".length());
+            return idx >= 0 ? gitReference.substring(idx + 1) : gitReference.substring("refs/remotes/".length());
+        }
+        return gitReference;
+    }
+
+    /**
+     * Filters the user info given a valid HTTP URL.
+     * @param urlStr input URL
+     * @return URL without user info.
+     */
+    public static String filterSensitiveInfo(String urlStr) {
+        if (urlStr == null || urlStr.isEmpty()) {
+            return urlStr;
         }
 
         try {
-            final URI uri = new URI(gitRepositoryURL);
-            return uri.getHost() != null;
-        } catch (URISyntaxException e) {
-            return SCP_REPO_URI_REGEX.matcher(gitRepositoryURL).matches();
+            final URI url = new URI(urlStr);
+            final String userInfo = url.getRawUserInfo();
+            return urlStr.replace(userInfo + "@", "");
+        } catch (final URISyntaxException ex) {
+            return urlStr;
         }
-    }
-
-    /**
-     * Check if the GitRepositoryAction has been already created and populated.
-     * Typically this method is used to avoid calculating the action multiple times.
-     *
-     * @param run              the current run
-     * @param gitRepositoryUrl the current git respository
-     * @return true if the action has been created and populated.
-     */
-    public static boolean isRepositoryInfoAlreadyCreated(Run<?, ?> run, final String gitRepositoryUrl) {
-        final GitRepositoryAction repositoryAction = run.getAction(GitRepositoryAction.class);
-        return repositoryAction != null && repositoryAction.getRepositoryURL() != null && repositoryAction.getRepositoryURL().equals(gitRepositoryUrl);
-    }
-
-    /**
-     * Check if the GitCommitAction has been already created and populated.
-     * Typically this method is used to avoid calculating the action multiple times.
-     *
-     * @param run       the current run
-     * @param gitCommit the git commit to check for
-     * @return true if the action has been created and populated.
-     */
-    public static boolean isCommitInfoAlreadyCreated(Run<?, ?> run, final String gitCommit) {
-        GitCommitAction commitAction = run.getAction(GitCommitAction.class);
-        return commitAction != null && commitAction.getCommit() != null && commitAction.getCommit().equals(gitCommit);
-    }
-
-    /**
-     * Resolve the value for the git branch based
-     * 1: Check user supplied env var
-     * 2: Check Jenkins env var
-     * 3: Check BuildData already calculated
-     *
-     * @param envVars the user supplied env vars
-     * @return the branch value.
-     */
-    public static String resolveGitBranch(Map<String, String> envVars) {
-        if (StringUtils.isNotEmpty(envVars.get(DD_GIT_BRANCH))) {
-            return envVars.get(DD_GIT_BRANCH);
-        } else if (StringUtils.isNotEmpty(envVars.get(GIT_BRANCH))) {
-            return envVars.get(GIT_BRANCH);
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     * Resolve the value for the git commit sha based
-     * 1: Check user supplied env var
-     * 2: Check Jenkins env var
-     * 3: Check BuildData already calculated
-     *
-     * @param envVars the user supplied env vars
-     * @return the commit sha value.
-     */
-    public static String resolveGitCommit(Map<String, String> envVars) {
-        if (isValidCommit(envVars.get(DD_GIT_COMMIT_SHA))) {
-            return envVars.get(DD_GIT_COMMIT_SHA);
-        } else if (isValidCommit(envVars.get(GIT_COMMIT))) {
-            return envVars.get(GIT_COMMIT);
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     * Resolve the value for the git repository url based
-     * 1: Check user supplied env var
-     * 2: Check Jenkins env var
-     * 3: Check BuildData already calculated
-     *
-     * @param envVars the user supplied env vars
-     * @return the git repository url value.
-     */
-    public static String resolveGitRepositoryUrl(Map<String, String> envVars) {
-        if (StringUtils.isNotEmpty(envVars.get(DD_GIT_REPOSITORY_URL))) {
-            return envVars.get(DD_GIT_REPOSITORY_URL);
-        } else if (StringUtils.isNotEmpty(envVars.get(GIT_REPOSITORY_URL))) {
-            return envVars.get(GIT_REPOSITORY_URL);
-        } else if (StringUtils.isNotEmpty(envVars.get(GIT_REPOSITORY_URL_ALT))) {
-            return envVars.get(GIT_REPOSITORY_URL_ALT);
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     * Resolve the value for the git tag based
-     * 1: Check user supplied env var
-     * 3: Check BuildData already calculated
-     *
-     * @param envVars the user supplied environment variables
-     * @return the git tag value.
-     */
-    public static String resolveGitTag(Map<String, String> envVars) {
-        if (StringUtils.isNotEmpty(envVars.get(DD_GIT_TAG))) {
-            return envVars.get(DD_GIT_TAG);
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     * Check if the env vars map contains any environment variable with Git information supplied by the user manually.
-     *
-     * @param envVars the environment variables
-     * @return true if any of the env vars is not empty.
-     */
-    public static boolean isUserSuppliedGit(Map<String, String> envVars) {
-        if (envVars == null) {
-            return false;
-        }
-
-        for (final String key : USER_SUPPLIED_GIT_ENVVARS) {
-            if (StringUtils.isNotEmpty(envVars.get(key))) {
-                return true;
-            }
-        }
-        return false;
     }
 }

@@ -35,7 +35,6 @@ import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.*;
 import hudson.model.listeners.RunListener;
-import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -55,8 +54,6 @@ import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
 import org.datadog.jenkins.plugins.datadog.metrics.MetricsClient;
 import org.datadog.jenkins.plugins.datadog.model.*;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
-import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.TraceInfoAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
@@ -93,8 +90,7 @@ public class DatadogBuildListener extends RunListener<Run> {
             }
             logger.fine("Start DatadogBuildListener#onInitialize");
 
-            run.addAction(new GitCommitAction());
-            run.addAction(new GitRepositoryAction());
+            run.addAction(new GitMetadataAction());
             run.addAction(new TraceInfoAction());
             run.addAction(new PipelineQueueInfoAction());
 
