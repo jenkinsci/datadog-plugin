@@ -7,6 +7,7 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -74,7 +75,8 @@ public class DatadogIntakeSite extends DatadogIntake {
             return getHelpFile("siteBlock");
         }
 
-        public static DatadogSite getDefaultSite() {
+        @Nullable
+        public static DatadogSite getSite() {
             String site = System.getenv().get(DATADOG_SITE_PROPERTY);
             if (site != null) {
                 try {
@@ -84,6 +86,14 @@ public class DatadogIntakeSite extends DatadogIntake {
                             "Illegal " + DATADOG_SITE_PROPERTY + " environment property value set: " + site +
                                     ". Allowed values are " + Arrays.toString(DatadogSite.values()), e);
                 }
+            }
+            return null;
+        }
+
+        public static DatadogSite getDefaultSite() {
+            DatadogSite site = getSite();
+            if (site != null) {
+                return site;
             } else {
                 return DEFAULT_DATADOG_SITE_VALUE;
             }

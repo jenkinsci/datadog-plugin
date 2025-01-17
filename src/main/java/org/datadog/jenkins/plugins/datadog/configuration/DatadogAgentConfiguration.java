@@ -4,6 +4,7 @@ import hudson.Extension;
 import hudson.RelativePath;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
@@ -13,12 +14,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Logger;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogAgentClient;
 import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
+import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogSite;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -144,6 +147,12 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
         return variables;
     }
 
+    @Nullable
+    @Override
+    public String getSiteName() {
+        return null;
+    }
+
     @Override
     public Descriptor<DatadogClientConfiguration> getDescriptor() {
         Jenkins jenkins = Jenkins.getInstanceOrNull();
@@ -223,6 +232,17 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
         public FormValidation doCheckTraceConnectivity(@QueryParameter("agentHost") final String agentHost,
                                                        @QueryParameter("agentTraceCollectionPort") Integer agentTraceCollectionPort) {
             return checkTracesConnectivity(agentHost, agentTraceCollectionPort);
+        }
+
+        @RequirePOST
+        public ListBoxModel doFillSiteItems() {
+            DatadogSite[] siteValues = DatadogSite.values();
+            ListBoxModel.Option[] values = new ListBoxModel.Option[siteValues.length + 1];
+            values[0] = new ListBoxModel.Option("");
+            for (int i = 0; i < siteValues.length; i++) {
+                values[i + 1] = new ListBoxModel.Option(siteValues[i].name());
+            }
+            return new ListBoxModel(values);
         }
 
         public static String getDefaultAgentHost() {

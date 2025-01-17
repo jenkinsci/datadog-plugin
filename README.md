@@ -46,19 +46,21 @@ To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure S
 2. Select your [Datadog site][21] in the **Pick a site** dropdown. 
 3. Paste your [Datadog API key][4] in the `API Key` textbox on the Jenkins configuration screen. If you would like to store your API key with the [Credentails Manager][18], create a Credential for the API key and select that credential in the `Select from credentials` dropdown.
 4. Test your Datadog API key by using the `Test Key` button on the Jenkins configuration screen directly below the API key textbox.
-5. (optional) Enter the hostname of the Jenkins server in the Advanced tab to include it with the events.
-6. (optional) Enter your [Datadog Log Intake URL][15] and select "Enable Log Collection" in the Advanced tab.
-7. (optional) Select "Enable CI Visibility", optionally configuring your CI Instance name.
-8. Save your configuration.
+5. (optional) Enter the name of the host that you use to access Datadog UI (e.g. `app.datadoghq.com`) in the `Datadog App hostname` field.
+6. (optional) Enter the hostname of the Jenkins server in the Advanced tab to include it with the events.
+7. (optional) Enter your [Datadog Log Intake URL][15] and select "Enable Log Collection" in the Advanced tab.
+8. (optional) Select "Enable CI Visibility", optionally configuring your CI Instance name.
+9. Save your configuration.
 
 ##### Datadog Agent forwarding
 
 1. Select the radio button next to **Use the Datadog Agent to report to Datadog**.
 2. Specify your Datadog Agent `hostname` and `port`.
-3. (optional) Enter the hostname of the Jenkins server in the Advanced tab to include it with the events.
-4. (optional) Enter your Log Collection Port, configure [log collection](#log-collection-for-agents) in the Datadog Agent, and select "Enable Log Collection".
-5. (optional) Enter your Trace Collection Port and select "Enable CI Visibility", optionally configuring your CI Instance name.
-6. Save your configuration.
+3. (optional) Enter the name of the host that you use to access Datadog UI (e.g. `app.datadoghq.com`) in the `Datadog App hostname` field.
+4. (optional) Enter the hostname of the Jenkins server in the Advanced tab to include it with the events.
+5. (optional) Enter your Log Collection Port, configure [log collection](#log-collection-for-agents) in the Datadog Agent, and select "Enable Log Collection".
+6. (optional) Enter your Trace Collection Port and select "Enable CI Visibility", optionally configuring your CI Instance name.
+7. Save your configuration.
 
 #### Groovy script
 
@@ -82,6 +84,7 @@ def site = new DatadogIntakeSite(DatadogSite.US1) // pick your Datadog site
 def apiKey = new DatadogTextApiKey(Secret.fromString('<YOUR_API_KEY>')) // or `new DatadogCredentialsApiKey('<YOUR_CREDENTIALS_ID>')`
 datadog.datadogClientConfiguration = new DatadogApiConfiguration(site, apiKey)
 
+datadog.datadogAppHostname = 'app.datadoghq.com' // the name of the host that you use to access Datadog UI
 datadog.collectBuildLogs = true // if you want to collect logs
 datadog.enableCiVisibility = true // if you want to enable CI Visibility
 
@@ -108,6 +111,7 @@ def agentLogCollectionPort = 10518
 def agentTraceCollectionPort = 8126
 datadog.datadogClientConfiguration = new DatadogAgentConfiguration(agentHost, agentPort, agentLogCollectionPort, agentTraceCollectionPort)
 
+datadog.datadogAppHostname = 'app.datadoghq.com' // the name of the host that you use to access Datadog UI
 datadog.collectBuildLogs = true // if you want to collect logs
 datadog.enableCiVisibility = true // if you want to enable CI Visibility
 
@@ -127,9 +131,10 @@ Configure your Datadog plugin using environment variables with the `DATADOG_JENK
 1. Set the `DATADOG_JENKINS_PLUGIN_REPORT_WITH` variable to `HTTP`.
 2. Set the `DATADOG_JENKINS_PLUGIN_DATADOG_SITE` variable, which specifies the [Datadog site][21] (defaults to US1).
 3. Set the `DATADOG_JENKINS_PLUGIN_TARGET_API_KEY` variable, which specifies your [Datadog API key][4].
-4. (optional) Log Collection:
+4. (optional) Set the `DATADOG_JENKINS_PLUGIN_DATADOG_APP_HOSTNAME` variable to the name of the host that you use to access Datadog UI (e.g. `app.datadoghq.com`)  
+5. (optional) Log Collection:
   - Set the `DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS` variable to `true` in order to enable log collection (disabled by default).
-5. (optional) CI Visibility (trace collection):
+6. (optional) CI Visibility (trace collection):
   - Set the `DATADOG_JENKINS_PLUGIN_ENABLE_CI_VISIBILITY` variable to `true` in order to enable CI Visibility (disabled by default).
   - Set the `DATADOG_JENKINS_PLUGIN_CI_VISIBILITY_CI_INSTANCE_NAME` variable, which specifies the name of the Jenkins instance for CI Visibility (defaults to `jenkins`).
 
@@ -138,11 +143,12 @@ Configure your Datadog plugin using environment variables with the `DATADOG_JENK
 1. Set the `DATADOG_JENKINS_PLUGIN_REPORT_WITH` variable to `DSD`.
 2. Set the `DATADOG_JENKINS_PLUGIN_TARGET_HOST` variable, which specifies the DogStatsD server host (defaults to `localhost`).
 3. Set the `DATADOG_JENKINS_PLUGIN_TARGET_PORT` variable, which specifies the DogStatsD server port (defaults to `8125`).
-4. (optional) Log Collection:
+4. (optional) Set the `DATADOG_JENKINS_PLUGIN_DATADOG_APP_HOSTNAME` variable to the name of the host that you use to access Datadog UI (e.g. `app.datadoghq.com`)
+5. (optional) Log Collection:
    -  Enable [log collection](#log-collection-for-agents) in the Datadog Agent.
    - Set the `DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS` variable to `true` in order to enable log collection (disabled by default).
    - Set the `DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT` variable, which specifies the Datadog Agent log collection port.
-5. (optional) CI Visibility (trace collection): 
+6. (optional) CI Visibility (trace collection): 
    - Set the `DATADOG_JENKINS_PLUGIN_ENABLE_CI_VISIBILITY` variable to `true` in order to enable CI Visibility (disabled by default).
    - Set the `DATADOG_JENKINS_PLUGIN_TARGET_TRACE_COLLECTION_PORT` variable, which specifies the Datadog Agent trace collection port (defaults to `8126`).
    - Set the `DATADOG_JENKINS_PLUGIN_CI_VISIBILITY_CI_INSTANCE_NAME` variable, which specifies the name of the Jenkins instance for CI Visibility (defaults to `jenkins`).

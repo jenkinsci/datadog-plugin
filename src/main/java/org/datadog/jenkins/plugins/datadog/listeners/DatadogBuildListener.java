@@ -40,11 +40,13 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import javax.annotation.Nonnull;
+import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
+import org.datadog.jenkins.plugins.datadog.configuration.DatadogClientConfiguration;
 import org.datadog.jenkins.plugins.datadog.events.BuildAbortedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildFinishedEventImpl;
 import org.datadog.jenkins.plugins.datadog.events.BuildStartedEventImpl;
@@ -361,6 +363,22 @@ public class DatadogBuildListener extends RunListener<Run> {
             }
 
             BuildData buildData = BuildData.create(run, null);
+
+            DatadogGlobalConfiguration datadogConfiguration = DatadogUtilities.getDatadogGlobalDescriptor();
+            if (datadogConfiguration != null && datadogConfiguration.getEnableCiVisibility()) {
+                String datadogAppHostname = datadogConfiguration.getDatadogAppHostname();
+                if (StringUtils.isNotBlank(datadogAppHostname)){
+                    run.addAction(new DatadogLinkAction(buildData, datadogAppHostname));
+                } else {
+                    // no explicit Datadog App host configured, trying to infer Datadog site using client config
+                    DatadogClientConfiguration clientConfiguration = datadogConfiguration.getDatadogClientConfiguration();
+                    String siteName = clientConfiguration.getSiteName();
+                    if (StringUtils.isNotBlank(siteName)) {
+                        run.addAction(new DatadogLinkAction(buildData, "app." + siteName));
+                    }
+                }
+            }
+
             traceWriter.submitBuild(buildData, run);
             logger.fine("End DatadogBuildListener#onFinalized");
 

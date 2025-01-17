@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONSerializer;
 import org.apache.commons.lang.StringUtils;
@@ -129,6 +130,12 @@ public class DatadogApiConfiguration extends DatadogClientConfiguration {
         variables.put("DD_SITE", intake.getSiteName());
         variables.put("DD_API_KEY", Secret.toString(getApiKeyValue()));
         return variables;
+    }
+
+    @Nullable
+    @Override
+    public String getSiteName() {
+        return intake.getSiteName();
     }
 
     @Override

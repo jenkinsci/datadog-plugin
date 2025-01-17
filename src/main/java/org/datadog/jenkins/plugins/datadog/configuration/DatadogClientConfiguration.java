@@ -2,13 +2,15 @@ package org.datadog.jenkins.plugins.datadog.configuration;
 
 import hudson.model.Describable;
 import hudson.model.Descriptor;
+import jenkins.model.Jenkins;
+import org.datadog.jenkins.plugins.datadog.DatadogClient;
+
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import jenkins.model.Jenkins;
-import org.datadog.jenkins.plugins.datadog.DatadogClient;
 
 public abstract class DatadogClientConfiguration implements Describable<DatadogClientConfiguration>, Serializable {
 
@@ -19,6 +21,9 @@ public abstract class DatadogClientConfiguration implements Describable<DatadogC
     public abstract void validateLogsConnection() throws Descriptor.FormException;
 
     public abstract Map<String, String> toEnvironmentVariables();
+
+    @Nullable
+    public abstract String getSiteName();
 
     public static abstract class DatadogClientConfigurationDescriptor extends Descriptor<DatadogClientConfiguration> {
         public static List<DatadogClientConfigurationDescriptor> all() {
