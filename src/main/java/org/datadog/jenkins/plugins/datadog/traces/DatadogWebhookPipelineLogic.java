@@ -2,8 +2,6 @@ package org.datadog.jenkins.plugins.datadog.traces;
 
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.filterSensitiveInfo;
 import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.isValidCommitSha;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.normalizeBranch;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.normalizeTag;
 
 import hudson.model.Run;
 import java.io.IOException;
@@ -190,7 +188,7 @@ public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
 
             Map<String, String> pipelineDefinitionGitPayload = createGitPayload(buildData.getPipelineDefinitionGitMetadata());
             for (Map.Entry<String, String> e : pipelineDefinitionGitPayload.entrySet()) {
-                tagsPayload.add(CITags.PIPELINE_DEFINITION_GIT + "." + e.getKey() + ":" + e.getValue());
+                tagsPayload.add(CITags.JENKINS_PIPELINE_DEFINITION_GIT + "." + e.getKey() + ":" + e.getValue());
             }
 
             payload.put("tags", tagsPayload);

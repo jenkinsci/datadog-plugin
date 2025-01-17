@@ -143,7 +143,7 @@ public class DatadogWebhookBuildLogic extends DatadogBaseBuildLogic {
 
             Map<String, String> pipelineDefinitionGitPayload = createGitPayload(buildData.getPipelineDefinitionGitMetadata(), buildData.getBuildTag(""));
             for (Map.Entry<String, String> e : pipelineDefinitionGitPayload.entrySet()) {
-                tagsPayload.add(CITags.PIPELINE_DEFINITION_GIT + "." + e.getKey() + ":" + e.getValue());
+                tagsPayload.add(CITags.JENKINS_PIPELINE_DEFINITION_GIT + "." + e.getKey() + ":" + e.getValue());
             }
 
             payload.put("tags", tagsPayload);

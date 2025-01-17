@@ -374,14 +374,13 @@ public class BuildData implements Serializable {
     }
 
     private static GitMetadata getGitMetadata(Run<?, ?> run, EnvVars environment) {
-        GitMetadata gitMetadata = GitMetadata.EMPTY;
+        GitMetadata gitMetadata = GitUtils.buildGitMetadataWithJenkinsEnvVars(environment);
 
         GitMetadataAction gitMetadataAction = run.getAction(GitMetadataAction.class);
         if (gitMetadataAction != null) {
             gitMetadata = GitMetadata.merge(gitMetadata, gitMetadataAction.getMetadata());
         }
 
-        gitMetadata = GitMetadata.merge(gitMetadata, GitUtils.buildGitMetadataWithJenkinsEnvVars(environment));
         gitMetadata = GitMetadata.merge(gitMetadata, GitUtils.buildGitMetadataWithUserSuppliedEnvVars(environment));
         return gitMetadata;
     }
