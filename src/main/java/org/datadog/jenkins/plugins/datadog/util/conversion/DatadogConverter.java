@@ -90,7 +90,7 @@ public abstract class DatadogConverter<T> implements Converter {
 
     @Nullable
     @Override
-    public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
+    public T unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
         VersionedConverter<T> readConverter = getReadConverter(reader);
         if (readConverter != null) {
             return readConverter.unmarshal(reader, context);

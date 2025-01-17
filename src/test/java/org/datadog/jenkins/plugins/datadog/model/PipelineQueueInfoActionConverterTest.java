@@ -4,9 +4,6 @@ import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.converters.Converter;
 import java.util.Arrays;
 import java.util.Collection;
-import org.datadog.jenkins.plugins.datadog.model.ActionConverterTest;
-import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
-import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 

@@ -1,14 +1,5 @@
 package org.datadog.jenkins.plugins.datadog.listeners;
 
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_DATE;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_EMAIL;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_AUTHOR_NAME;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_DATE;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_EMAIL;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_COMMITTER_NAME;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_COMMIT_MESSAGE;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_DEFAULT_BRANCH;
-import static org.datadog.jenkins.plugins.datadog.util.git.GitConstants.DD_GIT_TAG;
 
 import hudson.EnvVars;
 import hudson.Extension;
@@ -16,25 +7,21 @@ import hudson.FilePath;
 import hudson.model.Computer;
 import hudson.model.Run;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
-import org.datadog.jenkins.plugins.datadog.model.GitCommitAction;
-import org.datadog.jenkins.plugins.datadog.model.GitRepositoryAction;
+import org.datadog.jenkins.plugins.datadog.model.GitMetadataAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.git.Source;
 import org.datadog.jenkins.plugins.datadog.model.node.NodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
-import org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriter;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
@@ -226,90 +213,18 @@ public class DatadogStepListener implements StepListener {
      * It could be variables that are set manually by the pipeline authors (such variables will have {@code DD_} prefix),
      * or variables that are automatically set by the Jenkins Git Plugin.
      * <p>
-     * Whatever data we manage to extract, we save in {@link GitCommitAction} that is associated with the pipeline.
+     * Whatever data we manage to extract, we save in {@link GitMetadataAction} that is associated with the pipeline.
      * It'll later be used to populate git tags both in the pipeline span, and in the spans that correspond to other pipeline steps.
      * <p>
      * The reason we examine step environment, rather than checking the pipeline environment (even though the pipeline has its own copy of {@link EnvVars})
      * is that the pipeline env is minimal and misses many env vars, including the ones that are set manually,
      * while the step env contains much more data.
      */
-    private static void updateGitData(Run<?, ?> run, Map<String, String> envVars) {
-        GitCommitAction commitAction = run.getAction(GitCommitAction.class);
-        if (commitAction != null) {
-            // Git tag can only be set manually by the user.
-            // Otherwise, Jenkins reports it in the branch.
-            final String gitTag = envVars.get(DD_GIT_TAG);
-            if(gitTag != null){
-                commitAction.setTag(gitTag);
-            }
-
-            final String gitCommit = GitUtils.resolveGitCommit(envVars);
-            if(gitCommit != null) {
-                commitAction.setCommit(gitCommit);
-            }
-
-            // Git data supplied by the user has prevalence. We set them first.
-            // Only the data that has not been set will be updated later.
-            final String ddGitMessage = envVars.get(DD_GIT_COMMIT_MESSAGE);
-            if(ddGitMessage != null) {
-                commitAction.setMessage(ddGitMessage);
-            }
-
-            final String ddGitAuthorName = envVars.get(DD_GIT_COMMIT_AUTHOR_NAME);
-            if(ddGitAuthorName != null) {
-                commitAction.setAuthorName(ddGitAuthorName);
-            }
-
-            final String ddGitAuthorEmail = envVars.get(DD_GIT_COMMIT_AUTHOR_EMAIL);
-            if(ddGitAuthorEmail != null) {
-                commitAction.setAuthorEmail(ddGitAuthorEmail);
-            }
-
-            final String ddGitCommitterName = envVars.get(DD_GIT_COMMIT_COMMITTER_NAME);
-            if(ddGitCommitterName != null) {
-                commitAction.setCommitterName(ddGitCommitterName);
-            }
-
-            final String ddGitCommitterEmail = envVars.get(DD_GIT_COMMIT_COMMITTER_EMAIL);
-            if(ddGitCommitterEmail != null) {
-                commitAction.setCommitterEmail(ddGitCommitterEmail);
-            }
-
-            final String ddGitAuthorDate = envVars.get(DD_GIT_COMMIT_AUTHOR_DATE);
-            if (StringUtils.isNotBlank(ddGitAuthorDate)) {
-                if (DatadogUtilities.isValidISO8601Date(ddGitAuthorDate)) {
-                    commitAction.setAuthorDate(ddGitAuthorDate);
-                } else {
-                    logger.log(Level.WARNING, "Invalid date specified in " + DD_GIT_COMMIT_AUTHOR_DATE + ": expected ISO8601 format (" + DatadogUtilities.toISO8601(new Date()) + "), got " + ddGitAuthorDate);
-                }
-            }
-
-            final String ddGitCommitterDate = envVars.get(DD_GIT_COMMIT_COMMITTER_DATE);
-            if (StringUtils.isNotBlank(ddGitCommitterDate)) {
-                if (DatadogUtilities.isValidISO8601Date(ddGitCommitterDate)) {
-                    commitAction.setCommitterDate(ddGitCommitterDate);
-                } else {
-                    logger.log(Level.WARNING, "Invalid date specified in " + DD_GIT_COMMIT_COMMITTER_DATE + ": expected ISO8601 format (" + DatadogUtilities.toISO8601(new Date()) + "), got " + ddGitCommitterDate);
-                }
-            }
-        }
-
-        GitRepositoryAction repositoryAction = run.getAction(GitRepositoryAction.class);
-        if (repositoryAction != null) {
-            final String gitUrl = GitUtils.resolveGitRepositoryUrl(envVars);
-            if (gitUrl != null && !gitUrl.isEmpty()) {
-                repositoryAction.setRepositoryURL(gitUrl);
-            }
-
-            final String defaultBranch = GitInfoUtils.normalizeBranch(envVars.get(DD_GIT_DEFAULT_BRANCH));
-            if (defaultBranch != null && !defaultBranch.isEmpty()) {
-                repositoryAction.setDefaultBranch(defaultBranch);
-            }
-
-            final String gitBranch = GitUtils.resolveGitBranch(envVars);
-            if(gitBranch != null && !gitBranch.isEmpty()) {
-                repositoryAction.setBranch(gitBranch);
-            }
+    private static void updateGitData(Run<?, ?> run, Map<String, String> environment) {
+        GitMetadataAction gitMetadataAction = run.getAction(GitMetadataAction.class);
+        if (gitMetadataAction != null) {
+            gitMetadataAction.addMetadata(Source.JENKINS_ENV_VARS, GitUtils.buildGitMetadataWithJenkinsEnvVars(environment));
+            gitMetadataAction.addMetadata(Source.USER_SUPPLIED_ENV_VARS, GitUtils.buildGitMetadataWithUserSuppliedEnvVars(environment));
         }
     }
 

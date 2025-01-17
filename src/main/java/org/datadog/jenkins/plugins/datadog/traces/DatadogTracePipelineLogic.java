@@ -2,9 +2,9 @@ package org.datadog.jenkins.plugins.datadog.traces;
 
 import static org.datadog.jenkins.plugins.datadog.model.PipelineStepData.StepType.PIPELINE;
 import static org.datadog.jenkins.plugins.datadog.traces.CITags.Values.ORIGIN_CIAPP_PIPELINE;
-import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.filterSensitiveInfo;
-import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeBranch;
-import static org.datadog.jenkins.plugins.datadog.traces.GitInfoUtils.normalizeTag;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.filterSensitiveInfo;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.normalizeBranch;
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.normalizeTag;
 
 import hudson.model.Run;
 import java.io.IOException;

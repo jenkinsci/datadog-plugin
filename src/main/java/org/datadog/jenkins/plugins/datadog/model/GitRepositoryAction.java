@@ -13,8 +13,11 @@ import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogConverter;
 import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
 
 /**
- * Keeps the Git repository related information.
+ * @deprecated use {@link GitMetadataAction}
+ * This action cannot be deleted right away, as there might be jobs persisted to disk that have it.
+ * Removing it can cause deserialization errors which may corrupt the job data.
  */
+@Deprecated
 public class GitRepositoryAction extends DatadogPluginAction {
 
     private static final long serialVersionUID = 1L;

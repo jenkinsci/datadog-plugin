@@ -255,7 +255,7 @@ public class BuildStartedEventTest {
 
         EnvVars envVars = new EnvVars();
         envVars.put("BUILD_URL", "http://build_url.com");
-        envVars.put("CVS_BRANCH", "csv-branch");
+        envVars.put("GIT_BRANCH", "git-branch");
 
         Run run = new BuildStub(job, null, envVars, null, 10L, 2, null, 0L, null);
 
@@ -280,7 +280,7 @@ public class BuildStartedEventTest {
         Assert.assertTrue(event.getTags().get("user_id").contains("anonymous"));
         Assert.assertTrue(event.getTags().get("jenkins_url").contains("unknown"));
         Assert.assertTrue(event.getTags().get("event_type").contains("default"));
-        Assert.assertTrue(event.getTags().get("branch").contains("csv-branch"));
+        Assert.assertTrue(event.getTags().get("branch").contains("git-branch"));
         Assert.assertTrue(event.getTitle().equals("Job ParentFullName/JobName build #2 started on " + hostname));
         Assert.assertTrue(event.getText(), event.getText().contains("User anonymous started the [job ParentFullName/JobName build #2](http://build_url.com) (0.01 secs)"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
