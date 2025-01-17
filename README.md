@@ -56,7 +56,7 @@ To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure S
 
 1. Select the radio button next to **Use the Datadog Agent to report to Datadog**.
 2. Specify your Datadog Agent `hostname` and `port`.
-5. (optional) Enter the name of the host that you use to access Datadog UI (e.g. `app.datadoghq.com`) in the `Datadog App hostname` field.
+3. (optional) Enter the name of the host that you use to access Datadog UI (e.g. `app.datadoghq.com`) in the `Datadog App hostname` field.
 4. (optional) Enter the hostname of the Jenkins server in the Advanced tab to include it with the events.
 5. (optional) Enter your Log Collection Port, configure [log collection](#log-collection-for-agents) in the Datadog Agent, and select "Enable Log Collection".
 6. (optional) Enter your Trace Collection Port and select "Enable CI Visibility", optionally configuring your CI Instance name.
