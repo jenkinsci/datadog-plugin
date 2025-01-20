@@ -214,7 +214,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     }
 
     public void loadEnvVariables() {
-        // config values set manually in the UI take precedence over the ones provided via environment variables
         if (this.datadogClientConfiguration == null) {
             String clientType = System.getenv(REPORT_WITH_PROPERTY);
             if (DATADOG_AGENT_CLIENT_TYPE.equals(clientType)) {
@@ -1293,6 +1292,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             }
             this.datadogClientConfiguration = new DatadogApiConfiguration(intake, apiKey);
         }
+        // "this" is the instance created by XStream when deserializing data
         return this;
     }
 }

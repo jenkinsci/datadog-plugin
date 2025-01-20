@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import com.github.stefanbirkner.systemlambda.SystemLambda;
 import com.thoughtworks.xstream.XStream;
 import hudson.util.Secret;
 import hudson.util.XStream2;
@@ -12,6 +13,8 @@ import java.net.URL;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration;
 import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntake;
+import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeSite;
+import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeUrls;
 import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogSite;
 import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogCredentialsApiKey;
 import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogTextApiKey;
@@ -306,6 +309,46 @@ public class DatadogGlobalConfigurationTest {
         assertTrue(configuration.isRefreshDogstatsdClient());
         assertFalse(configuration.isCacheBuildRuns());
         assertTrue(configuration.isUseAwsInstanceHostname());
+    }
+
+    @Test
+    public void environmentVariablesHaveHigherPrecedenceThanConfigPersistedOnDisk() throws Exception {
+        DatadogGlobalConfiguration configuration = SystemLambda
+            .withEnvironmentVariable(DatadogIntakeUrls.TARGET_API_URL_PROPERTY, "http://api-url-from-env-vars.com")
+            .and(DatadogIntakeUrls.TARGET_LOG_INTAKE_URL_PROPERTY, "http://log-url-from-env-vars.com")
+            .and(DatadogIntakeUrls.TARGET_WEBHOOK_INTAKE_URL_PROPERTY, "http://webhook-url-from-env-vars.com")
+            .and(DatadogTextApiKey.TARGET_API_KEY_PROPERTY, "target-key-from-env-vars")
+            .execute(() -> parseConfigurationFromResource("globalConfiguration.xml"));
+
+        assertTrue(configuration.getDatadogClientConfiguration() instanceof DatadogApiConfiguration);
+        DatadogApiConfiguration datadogClientConfiguration = (DatadogApiConfiguration) configuration.getDatadogClientConfiguration();
+
+        DatadogIntake intake = datadogClientConfiguration.getIntake();
+        assertEquals("http://api-url-from-env-vars.com", intake.getApiUrl());
+        assertEquals("http://log-url-from-env-vars.com", intake.getLogsUrl());
+        assertEquals("http://webhook-url-from-env-vars.com", intake.getWebhooksUrl());
+
+        assertTrue(datadogClientConfiguration.getApiKey() instanceof DatadogTextApiKey);
+        DatadogTextApiKey textApiKey = (DatadogTextApiKey) datadogClientConfiguration.getApiKey();
+        assertEquals("target-key-from-env-vars", Secret.toString(textApiKey.getKey()));
+    }
+
+    @Test
+    public void agentConfigEnvironmentVariablesHaveHigherPrecedenceThanConfigPersistedOnDisk() throws Exception {
+        DatadogGlobalConfiguration configuration = SystemLambda
+            .withEnvironmentVariable(DatadogAgentConfiguration.TARGET_HOST_PROPERTY, "target-host-from-env-vars")
+            .and(DatadogAgentConfiguration.TARGET_PORT_PROPERTY, "1000")
+            .and(DatadogAgentConfiguration.TARGET_LOG_COLLECTION_PORT_PROPERTY, "1001")
+            .and(DatadogAgentConfiguration.TARGET_TRACE_COLLECTION_PORT_PROPERTY, "1002")
+            .execute(() -> parseConfigurationFromResource("globalConfigurationAgent.xml"));
+
+        assertTrue(configuration.getDatadogClientConfiguration() instanceof DatadogAgentConfiguration);
+        DatadogAgentConfiguration datadogClientConfiguration = (DatadogAgentConfiguration) configuration.getDatadogClientConfiguration();
+
+        assertEquals("target-host-from-env-vars", datadogClientConfiguration.getAgentHost());
+        assertEquals((Integer) 1000, datadogClientConfiguration.getAgentPort());
+        assertEquals((Integer) 1001, datadogClientConfiguration.getAgentLogCollectionPort());
+        assertEquals((Integer) 1002, datadogClientConfiguration.getAgentTraceCollectionPort());
     }
 
     private static final XStream XSTREAM = new XStream2(XStream2.getDefaultDriver());
