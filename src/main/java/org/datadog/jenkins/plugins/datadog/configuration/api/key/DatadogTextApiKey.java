@@ -10,6 +10,7 @@ import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntake;
 import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeSite;
+import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeUrls;
 import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogSite;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -28,6 +29,19 @@ public class DatadogTextApiKey extends DatadogApiKey {
     @DataBoundConstructor
     public DatadogTextApiKey(Secret key) {
         this.key = key;
+    }
+
+    /**
+     * Invoked by XStream when this object is deserialized.
+     * Ensures environment variables have higher priority than configuration persisted on disk
+     */
+    protected Object readResolve() {
+        Secret defaultKey = DatadogTextApiKeyDescriptor.getDefaultKey();
+        if (defaultKey != null){
+            return new DatadogTextApiKey(defaultKey);
+        } else {
+            return this;
+        }
     }
 
     @Override

@@ -61,6 +61,18 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
         this.agentTraceCollectionPort = agentTraceCollectionPort;
     }
 
+    /**
+     * Invoked by XStream when this object is deserialized.
+     * Ensures environment variables have higher priority than configuration persisted on disk
+     */
+    protected Object readResolve() {
+        String agentHost = DatadogAgentConfigurationDescriptor.getAgentHostFromEnvVars(this.agentHost);
+        Integer agentPort = DatadogAgentConfigurationDescriptor.getAgentPortFromEnvVars(this.agentPort);
+        Integer agentLogCollectionPort = DatadogAgentConfigurationDescriptor.getAgentLogCollectionPortFromEnvVars(this.agentLogCollectionPort);
+        Integer agentTraceCollectionPort = DatadogAgentConfigurationDescriptor.getAgentTraceCollectionPortFromEnvVars(this.agentTraceCollectionPort);
+        return new DatadogAgentConfiguration(agentHost, agentPort, agentLogCollectionPort, agentTraceCollectionPort);
+    }
+
     public String getAgentHost() {
         return agentHost;
     }
@@ -246,6 +258,10 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
         }
 
         public static String getDefaultAgentHost() {
+            return getAgentHostFromEnvVars(DEFAULT_AGENT_HOST_VALUE);
+        }
+
+        private static String getAgentHostFromEnvVars(String defaultValue) {
             Map<String, String> envVars = System.getenv();
 
             String host = envVars.get(TARGET_HOST_PROPERTY);
@@ -265,11 +281,14 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
             if (StringUtils.isNotBlank(agentHost)) {
                 return agentHost;
             }
-
-            return DEFAULT_AGENT_HOST_VALUE;
+            return defaultValue;
         }
 
         public static Integer getDefaultAgentPort() {
+            return getAgentPortFromEnvVars(DEFAULT_AGENT_PORT_VALUE);
+        }
+
+        private static Integer getAgentPortFromEnvVars(Integer defaultValue) {
             Map<String, String> envVars = System.getenv();
             Integer port = getPort(envVars, TARGET_PORT_PROPERTY);
             if (port != null) {
@@ -279,19 +298,27 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
             if (agentPort != null) {
                 return agentPort;
             }
-            return DEFAULT_AGENT_PORT_VALUE;
+            return defaultValue;
         }
 
         public static Integer getDefaultAgentLogCollectionPort() {
+            return getAgentLogCollectionPortFromEnvVars(DEFAULT_LOG_COLLECTION_PORT_VALUE);
+        }
+
+        private static Integer getAgentLogCollectionPortFromEnvVars(Integer defaultValue) {
             Map<String, String> envVars = System.getenv();
             Integer logsPort = getPort(envVars, TARGET_LOG_COLLECTION_PORT_PROPERTY);
             if (logsPort != null) {
                 return logsPort;
             }
-            return DEFAULT_LOG_COLLECTION_PORT_VALUE;
+            return defaultValue;
         }
 
         public static Integer getDefaultAgentTraceCollectionPort() {
+            return getAgentTraceCollectionPortFromEnvVars(DEFAULT_TRACE_COLLECTION_PORT_VALUE);
+        }
+
+        private static Integer getAgentTraceCollectionPortFromEnvVars(Integer defaultValue) {
             Map<String, String> envVars = System.getenv();
             Integer traceCollectionPort = getPort(envVars, TARGET_TRACE_COLLECTION_PORT_PROPERTY);
             if (traceCollectionPort != null) {
@@ -307,7 +334,7 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
             if (traceAgentPort != null) {
                 return traceAgentPort;
             }
-            return DEFAULT_TRACE_COLLECTION_PORT_VALUE;
+            return defaultValue;
         }
 
         private static URL buildURL(String urlStr) {

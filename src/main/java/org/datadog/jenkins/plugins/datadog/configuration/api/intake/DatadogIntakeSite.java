@@ -25,6 +25,19 @@ public class DatadogIntakeSite extends DatadogIntake {
         this.site = site;
     }
 
+    /**
+     * Invoked by XStream when this object is deserialized.
+     * Ensures environment variables have higher priority than configuration persisted on disk
+     */
+    protected Object readResolve() {
+        DatadogSite site = DatadogIntakeSiteDescriptor.getSite();
+        if (site != null) {
+            return new DatadogIntakeSite(site);
+        } else {
+            return this;
+        }
+    }
+
     public DatadogSite getSite() {
         return site;
     }
