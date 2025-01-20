@@ -40,6 +40,8 @@ public class DatadogTextApiKey extends DatadogApiKey {
         if (defaultKey != null){
             return new DatadogTextApiKey(defaultKey);
         } else {
+            // "this" is the instance created by XStream when deserializing data
+            // in this branch we are not making any changes, so we're returning it as is
             return this;
         }
     }

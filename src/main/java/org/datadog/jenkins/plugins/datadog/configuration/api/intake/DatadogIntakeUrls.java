@@ -8,6 +8,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
@@ -45,9 +46,10 @@ public class DatadogIntakeUrls extends DatadogIntake {
      * Ensures environment variables have higher priority than configuration persisted on disk
      */
     protected Object readResolve() {
-        String apiUrl = System.getenv().getOrDefault(TARGET_API_URL_PROPERTY, this.apiUrl);
-        String logsUrl = System.getenv().getOrDefault(TARGET_LOG_INTAKE_URL_PROPERTY, this.logsUrl);
-        String webhooksUrl = System.getenv().getOrDefault(TARGET_WEBHOOK_INTAKE_URL_PROPERTY, this.webhooksUrl);
+        Map<String, String> env = System.getenv();
+        String apiUrl = env.getOrDefault(TARGET_API_URL_PROPERTY, this.apiUrl);
+        String logsUrl = env.getOrDefault(TARGET_LOG_INTAKE_URL_PROPERTY, this.logsUrl);
+        String webhooksUrl = env.getOrDefault(TARGET_WEBHOOK_INTAKE_URL_PROPERTY, this.webhooksUrl);
         return new DatadogIntakeUrls(apiUrl, logsUrl, webhooksUrl);
     }
 

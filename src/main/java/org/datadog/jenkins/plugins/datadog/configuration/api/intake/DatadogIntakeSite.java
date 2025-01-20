@@ -34,6 +34,8 @@ public class DatadogIntakeSite extends DatadogIntake {
         if (site != null) {
             return new DatadogIntakeSite(site);
         } else {
+            // "this" is the instance created by XStream when deserializing data
+            // in this branch we are not making any changes, so we're returning it as is
             return this;
         }
     }

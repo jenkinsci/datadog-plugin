@@ -1277,6 +1277,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             }
             this.datadogClientConfiguration = new DatadogApiConfiguration(intake, apiKey);
         }
+        // "this" is the instance created by XStream when deserializing data
         return this;
     }
 }
