@@ -1,5 +1,17 @@
 Changes
 =======
+## 9.1.0 / 2025-01-20
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.0.1...datadog-9.1.0
+
+* [Added] Add UI control and env var to configure if Datadog links are shown. See [#495](https://github.com/jenkinsci/datadog-plugin/pull/495).
+* [Added] Add a link to Datadog to job details page. See [#447](https://github.com/jenkinsci/datadog-plugin/pull/447).
+* [Added] Add validation to include/exlude jobs regular expressions. See [#450](https://github.com/jenkinsci/datadog-plugin/pull/450).
+* [Added] Validate HTTP connectivity for Agent traces port. See [#464](https://github.com/jenkinsci/datadog-plugin/pull/464).
+* [Added] Use `jenkins.baseline` to reduce bom update mistakes. See [#492](https://github.com/jenkinsci/datadog-plugin/pull/492). Thanks [strangelookingnerd](https://github.com/strangelookingnerd).
+* [Fixed] Ensure environment variables have higher priority than plugin configuration stored on disk. See [#496](https://github.com/jenkinsci/datadog-plugin/pull/496).
+* [Fixed] Fix Git metadata extraction for multi-branch pipelines. See [#493](https://github.com/jenkinsci/datadog-plugin/pull/493).
+
 ## 9.0.1 / 2025-01-13
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.0.0...datadog-9.0.1
