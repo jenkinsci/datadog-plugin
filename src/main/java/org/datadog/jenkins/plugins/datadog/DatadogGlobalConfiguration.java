@@ -125,6 +125,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private static final String REFRESH_DOGSTATSD_CLIENT_PROPERTY = "DATADOG_REFRESH_STATSD_CLIENT";
     private static final String CACHE_BUILD_RUNS_PROPERTY = "DATADOG_CACHE_BUILD_RUNS";
     private static final String USE_AWS_INSTANCE_HOSTNAME_PROPERTY = "DATADOG_USE_AWS_INSTANCE_HOSTNAME";
+    private static final String SHOW_DATADOG_LINKS_ENV_PROPERTY = "DATADOG_JENKINS_PLUGIN_SHOW_DATADOG_LINKS";
 
     private static final String ENABLE_CI_VISIBILITY_PROPERTY = "DATADOG_JENKINS_PLUGIN_ENABLE_CI_VISIBILITY";
     private static final String CI_VISIBILITY_CI_INSTANCE_NAME_PROPERTY = "DATADOG_JENKINS_PLUGIN_CI_VISIBILITY_CI_INSTANCE_NAME";
@@ -167,6 +168,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     private boolean refreshDogstatsdClient = DEFAULT_REFRESH_DOGSTATSD_CLIENT_VALUE;
     private boolean cacheBuildRuns = DEFAULT_CACHE_BUILD_RUNS_VALUE;
     private boolean useAwsInstanceHostname = DEFAULT_USE_AWS_INSTANCE_HOSTNAME_VALUE;
+    private boolean showDatadogLinks = true;
 
     @DataBoundConstructor
     public DatadogGlobalConfiguration() {
@@ -315,6 +317,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         String useAwsInstanceHostnameEnvVar = System.getenv(USE_AWS_INSTANCE_HOSTNAME_PROPERTY);
         if(StringUtils.isNotBlank(useAwsInstanceHostnameEnvVar)){
             this.useAwsInstanceHostname = Boolean.parseBoolean(useAwsInstanceHostnameEnvVar);
+        }
+
+        String showDatadogLinksEnvVar = System.getenv(SHOW_DATADOG_LINKS_ENV_PROPERTY);
+        if(StringUtils.isNotBlank(useAwsInstanceHostnameEnvVar)){
+            this.showDatadogLinks = Boolean.parseBoolean(showDatadogLinksEnvVar);
         }
 
         String enableCiVisibilityVar = System.getenv(ENABLE_CI_VISIBILITY_PROPERTY);
@@ -775,6 +782,14 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      */
     public void setUseAwsInstanceHostname(boolean useAwsInstanceHostname) {
         this.useAwsInstanceHostname = useAwsInstanceHostname;
+    }
+
+    public boolean isShowDatadogLinks() {
+        return showDatadogLinks;
+    }
+
+    public void setShowDatadogLinks(boolean showDatadogLinks) {
+        this.showDatadogLinks = showDatadogLinks;
     }
 
     /**
