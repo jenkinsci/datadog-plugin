@@ -957,47 +957,47 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
     /** @deprecated use {@link #ciInstanceName} */
     @Deprecated
-    private String traceServiceName;
+    private transient String traceServiceName;
     /** @deprecated use {@link #excluded} */
     @Deprecated
-    private String blacklist;
+    private transient String blacklist;
     /** @deprecated use {@link #included} */
     @Deprecated
-    private String whitelist;
+    private transient String whitelist;
     /** @deprecated use {@link #enableCiVisibility} */
     @Deprecated
-    boolean collectBuildTraces;
+    private transient boolean collectBuildTraces;
     /** @deprecated use {@link #datadogClientConfiguration} */
     @Deprecated
-    private String reportWith;
+    private transient String reportWith;
     /** @deprecated use {@link #datadogClientConfiguration} */
     @Deprecated
-    private String targetApiURL;
+    private transient String targetApiURL;
     /** @deprecated use {@link #datadogClientConfiguration} */
     @Deprecated
-    private String targetLogIntakeURL;
+    private transient String targetLogIntakeURL;
     /** @deprecated use {@link #datadogClientConfiguration} */
     @Deprecated
-    private String targetWebhookIntakeURL;
+    private transient String targetWebhookIntakeURL;
     /** @deprecated use {@link #datadogClientConfiguration} */
     @Deprecated
-    private Secret targetApiKey;
+    private transient Secret targetApiKey;
     /** @deprecated use {@link #datadogClientConfiguration} */
     @Deprecated
     @SuppressWarnings("lgtm[jenkins/plaintext-storage]") // not the actual key, but the ID of Jenkins credentials
-    private String targetCredentialsApiKey;
+    private transient String targetCredentialsApiKey;
     /** @deprecated use {@link #datadogClientConfiguration} */
     @Deprecated
-    private String targetHost;
+    private transient String targetHost;
     /** @deprecated use {@link #datadogClientConfiguration} */
     @Deprecated
-    private Integer targetPort;
+    private transient Integer targetPort;
     /** @deprecated use {@link #datadogClientConfiguration} */
     @Deprecated
-    private Integer targetLogCollectionPort;
+    private transient Integer targetLogCollectionPort;
     /** @deprecated use {@link #datadogClientConfiguration} */
     @Deprecated
-    private Integer targetTraceCollectionPort;
+    private transient Integer targetTraceCollectionPort;
 
     /** @deprecated use {@link #setCiInstanceName(String)} */
     public void setTraceServiceName(String traceServiceName) {
