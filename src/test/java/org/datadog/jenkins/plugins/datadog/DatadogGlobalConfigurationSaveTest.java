@@ -2,6 +2,7 @@ package org.datadog.jenkins.plugins.datadog;
 
 import com.thoughtworks.xstream.XStream;
 import hudson.util.XStream2;
+import org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,6 +42,46 @@ public class DatadogGlobalConfigurationSaveTest {
     @Test
     public void canSaveAndLoadGlobalConfiguration() {
         DatadogGlobalConfiguration configuration = parseConfigurationFromResource(configurationResource);
+        DatadogGlobalConfiguration loadedConfiguration = parseConfigurationFromString(serializeConfiguration(configuration));
+
+        assertEquals(configuration.getDatadogClientConfiguration(), loadedConfiguration.getDatadogClientConfiguration());
+        assertEquals(configuration.getExcluded(), loadedConfiguration.getExcluded());
+        assertEquals(configuration.getIncluded(), loadedConfiguration.getIncluded());
+        assertEquals(configuration.getCiInstanceName(), loadedConfiguration.getCiInstanceName());
+        assertEquals(configuration.getHostname(), loadedConfiguration.getHostname());
+        assertEquals(configuration.getGlobalTagFile(), loadedConfiguration.getGlobalTagFile());
+        assertEquals(configuration.getGlobalTags(), loadedConfiguration.getGlobalTags());
+        assertEquals(configuration.getGlobalJobTags(), loadedConfiguration.getGlobalJobTags());
+        assertEquals(configuration.getIncludeEvents(), loadedConfiguration.getIncludeEvents());
+        assertEquals(configuration.getExcludeEvents(), loadedConfiguration.getExcludeEvents());
+        assertEquals(configuration.isEmitSecurityEvents(), loadedConfiguration.isEmitSecurityEvents());
+        assertEquals(configuration.isEmitSystemEvents(), loadedConfiguration.isEmitSystemEvents());
+        assertEquals(configuration.isCollectBuildLogs(), loadedConfiguration.isCollectBuildLogs());
+        assertEquals(configuration.getEnableCiVisibility(), loadedConfiguration.getEnableCiVisibility());
+        assertEquals(configuration.isRefreshDogstatsdClient(), loadedConfiguration.isRefreshDogstatsdClient());
+        assertEquals(configuration.isCacheBuildRuns(), loadedConfiguration.isCacheBuildRuns());
+        assertEquals(configuration.isUseAwsInstanceHostname(), loadedConfiguration.isUseAwsInstanceHostname());
+        assertEquals(configuration.getTraceServiceName(), loadedConfiguration.getTraceServiceName());
+        assertEquals(configuration.getBlacklist(), loadedConfiguration.getBlacklist());
+        assertEquals(configuration.getWhitelist(), loadedConfiguration.getWhitelist());
+        assertEquals(configuration.isCollectBuildTraces(), loadedConfiguration.isCollectBuildTraces());
+        assertEquals(configuration.getReportWith(), loadedConfiguration.getReportWith());
+        assertEquals(configuration.getTargetApiURL(), loadedConfiguration.getTargetApiURL());
+        assertEquals(configuration.getTargetLogIntakeURL(), loadedConfiguration.getTargetLogIntakeURL());
+        assertEquals(configuration.getTargetWebhookIntakeURL(), loadedConfiguration.getTargetWebhookIntakeURL());
+        assertEquals(configuration.getTargetApiKey(), loadedConfiguration.getTargetApiKey());
+        assertEquals(configuration.getTargetCredentialsApiKey(), loadedConfiguration.getTargetCredentialsApiKey());
+        assertEquals(configuration.getTargetHost(), loadedConfiguration.getTargetHost());
+        assertEquals(configuration.getTargetPort(), loadedConfiguration.getTargetPort());
+        assertEquals(configuration.getTargetLogCollectionPort(), loadedConfiguration.getTargetLogCollectionPort());
+        assertEquals(configuration.getTargetTraceCollectionPort(), loadedConfiguration.getTargetTraceCollectionPort());
+    }
+
+    @Test
+    public void configurationUpdatesArePreservedOnReload() {
+        DatadogGlobalConfiguration configuration = parseConfigurationFromResource(configurationResource);
+        configuration.setDatadogClientConfiguration(new DatadogAgentConfiguration("updated-host", 1000, 1001, 1002));
+
         DatadogGlobalConfiguration loadedConfiguration = parseConfigurationFromString(serializeConfiguration(configuration));
 
         assertEquals(configuration.getDatadogClientConfiguration(), loadedConfiguration.getDatadogClientConfiguration());
