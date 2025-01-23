@@ -1,6 +1,6 @@
 Changes
 =======
-## 9.1.1 / 2025-01-22
+## 9.1.1 / 2025-01-23
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.1.0...datadog-9.1.1
 
