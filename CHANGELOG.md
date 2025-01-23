@@ -1,5 +1,11 @@
 Changes
 =======
+## 9.1.1 / 2025-01-23
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.1.0...datadog-9.1.1
+
+* [Fixed] Mark deprecated config fields as transient. See [#498](https://github.com/jenkinsci/datadog-plugin/pull/498).
+
 ## 9.1.0 / 2025-01-20
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.0.1...datadog-9.1.0
