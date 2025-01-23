@@ -1,14 +1,20 @@
 package org.datadog.jenkins.plugins.datadog.util.git;
 
+import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.normalizeBranch;
+
 import hudson.remoting.VirtualChannel;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.eclipse.jgit.lib.*;
 import org.jenkinsci.plugins.gitclient.RepositoryCallback;
+import javax.annotation.Nonnull;
 
 /**
  * Populates GitMetadata.Builder instance for a certain repository
@@ -22,6 +28,12 @@ public final class GitMetadataBuilderCallback implements RepositoryCallback<GitM
     private static transient final Logger LOGGER = Logger.getLogger(GitMetadataBuilderCallback.class.getName());
     private static final long serialVersionUID = 1L;
 
+    /**
+     * !IMPORTANT!
+     * Keep in mind that this callback may be executed on a worker node,
+     * which means both the callback and the result are serialized and sent between different hosts.
+     * Avoid using anything that is not serializable
+     */
     @Override
     public Result invoke(Repository repository, VirtualChannel channel) {
         try {
@@ -29,7 +41,7 @@ public final class GitMetadataBuilderCallback implements RepositoryCallback<GitM
             return new Result(
                 getRepoUrl(repository, remoteName),
                 getDefaultBranch(repository, remoteName),
-                getBranch(repository) // currently checked out branch
+                getBranches(repository) // currently checked out branch
             );
 
         } catch (Exception e) {
@@ -75,14 +87,17 @@ public final class GitMetadataBuilderCallback implements RepositoryCallback<GitM
         return null;
     }
 
-    private static String getBranch(Repository repository) throws IOException {
+    private static Collection<String> getBranches(Repository repository) throws IOException {
+        List<String> matchingBranches = new ArrayList<>();
+
         String branch = repository.getBranch();
         if (!GitUtils.isValidCommitSha(branch)) {
-          return branch;
+            matchingBranches.add(branch);
+            return matchingBranches;
         }
 
         // A detached HEAD is checked out.
-        // Iterate over available refs to see if any of them points to the checked out commit.
+        // Iterate over available refs to see which point to the checked out commit (there may be multiple).
         for (Ref ref : repository.getRefDatabase().getRefs()) {
             String refName = ref.getName();
             if (Constants.HEAD.equals(refName) || GitUtils.isValidCommitSha(refName)) {
@@ -90,21 +105,21 @@ public final class GitMetadataBuilderCallback implements RepositoryCallback<GitM
             }
             ObjectId refObjectId = ref.getObjectId();
             if (branch.equals(refObjectId.getName())) {
-                return refName;
+                matchingBranches.add(normalizeBranch(refName));
             }
         }
-        return null;
+        return matchingBranches;
     }
 
     public static final class Result implements Serializable {
         final String repoUrl;
         final String defaultBranch;
-        final String branch;
+        final @Nonnull Collection<String> branches;
 
-        public Result(String repoUrl, String defaultBranch, String branch) {
+        public Result(String repoUrl, String defaultBranch, @Nonnull Collection<String> branches) {
             this.repoUrl = repoUrl;
             this.defaultBranch = defaultBranch;
-            this.branch = branch;
+            this.branches = branches;
         }
     }
 }

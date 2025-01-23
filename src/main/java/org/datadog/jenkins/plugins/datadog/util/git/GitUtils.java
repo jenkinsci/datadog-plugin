@@ -5,11 +5,13 @@ import hudson.FilePath;
 import hudson.model.TaskListener;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
@@ -41,6 +43,7 @@ public final class GitUtils {
     public static final String GIT_REPOSITORY_URL = "GIT_URL";
     public static final String GIT_REPOSITORY_URL_ALT = "GIT_URL_1";
     public static final String GIT_BRANCH = "GIT_BRANCH";
+    public static final String GIT_BRANCH_ALT = "BRANCH_NAME";
     public static final String GIT_COMMIT = "GIT_COMMIT";
 
     private static transient final Logger LOGGER = Logger.getLogger(GitUtils.class.getName());
@@ -87,7 +90,7 @@ public final class GitUtils {
         }
     }
 
-    public static GitMetadata buildGitMetadata(@Nullable final GitClient gitClient) {
+    public static GitMetadata buildGitMetadata(@Nullable final GitClient gitClient, @Nullable String branchHint, String buildName) {
         try {
             if (gitClient == null) {
                 LOGGER.fine("Unable to build Git metadata. GitClient is null");
@@ -99,14 +102,48 @@ public final class GitUtils {
                 GitMetadataBuilderCallback.Result result = gitClient.withRepository(new GitMetadataBuilderCallback());
                 builder.repositoryURL(result.repoUrl);
                 builder.defaultBranch(normalizeBranch(result.defaultBranch));
-                builder.branch(normalizeBranch(result.branch));
 
-                builder.commitMetadata(buildCommitMetadata(gitClient, result.branch));
+                String branch = chooseBranch(result.branches, branchHint, buildName);
+                builder.branch(branch);
+                builder.commitMetadata(buildCommitMetadata(gitClient, branch));
                 return builder.build();
             }
 
         } catch (Exception e) {
             DatadogUtilities.logException(LOGGER, Level.FINE, "Unable to build git metadata", e);
+            return null;
+        }
+    }
+
+    /**
+     * When checking out a repository for a multi-branch pipeline,
+     * Jenkins does so in "detached HEAD" state.
+     * This means that a specific commit is checked out, rather than a branch.
+     * To work around this the plugin examines available branches
+     * to see which one of them points to the checked out commit.
+     * <p>
+     * It is possible that multiple branches point to the same commit.
+     * In which case the logic in this method tries to use a "hint" extracted from environment variables.
+     */
+    private static String chooseBranch(@Nonnull Collection<String> branches, @Nullable String branchHint, String buildName) {
+        if (branchHint != null && branches.contains(branchHint)) {
+            // multiple branches point to the checked out commit,
+            // and one of them is the same as the branch that is set in the env vars
+            return branchHint;
+
+        } else if (branches.size() > 1) {
+            // multiple branches point to the checked out commit,
+            // and none of them is the same as the branch that is set in the env vars,
+            // we are taking a guess at this point
+            LOGGER.warning("Build " + buildName + " has multiple Git branches matched: " + branches);
+            return branches.iterator().next();
+
+        } else if (branches.size() == 1) {
+            // only one branch points to the checked out commit
+            // (also possible that the repo was checked out properly, and not in a detached HEAD state)
+            return branches.iterator().next();
+
+        } else {
             return null;
         }
     }
@@ -209,7 +246,7 @@ public final class GitUtils {
     public static GitMetadata buildGitMetadataWithJenkinsEnvVars(Map<String, String> envVars) {
         GitMetadata.Builder metadataBuilder = new GitMetadata.Builder();
         metadataBuilder.repositoryURL(getRepositoryUrlFromJenkinsEnvVars(envVars));
-        metadataBuilder.branch(normalizeBranch(envVars.get(GIT_BRANCH)));
+        metadataBuilder.branch(normalizeBranch(getBranchFromJenkinsEnvVars(envVars)));
 
         GitCommitMetadata.Builder commitMetadataBuilder = new GitCommitMetadata.Builder();
         commitMetadataBuilder.commit(envVars.get(GIT_COMMIT));
@@ -225,6 +262,14 @@ public final class GitUtils {
             return repoUrl;
         }
         return envVars.get(GIT_REPOSITORY_URL_ALT);
+    }
+
+    private static String getBranchFromJenkinsEnvVars(Map<String, String> envVars) {
+        String branch = envVars.get(GIT_BRANCH);
+        if (StringUtils.isNotBlank(branch)) {
+            return branch;
+        }
+        return envVars.get(GIT_BRANCH_ALT);
     }
 
     public static GitMetadata buildGitMetadataWithUserSuppliedEnvVars(Map<String, String> envVars) {
