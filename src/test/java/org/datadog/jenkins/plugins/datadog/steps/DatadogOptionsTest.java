@@ -10,12 +10,14 @@ import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
+import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.jvnet.hudson.test.JenkinsRule;
 
 public class DatadogOptionsTest {
@@ -24,6 +26,14 @@ public class DatadogOptionsTest {
 
     @ClassRule
     public static JenkinsRule j = new JenkinsRule();
+
+    /**
+     * CI provider sets this environment variable.
+     * It has to be cleared, otherwise it interferes with the tests.
+     */
+    @ClassRule
+    public static final EnvironmentVariables environmentVariables = new EnvironmentVariables().set(GitUtils.GIT_BRANCH_ALT, null);
+
     private static DatadogClientStub stubClient = new DatadogClientStub();
 
     @BeforeClass
