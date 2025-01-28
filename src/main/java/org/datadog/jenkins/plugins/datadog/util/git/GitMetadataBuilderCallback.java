@@ -15,6 +15,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.eclipse.jgit.lib.*;
 import org.jenkinsci.plugins.gitclient.RepositoryCallback;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * Populates GitMetadata.Builder instance for a certain repository
@@ -28,7 +29,15 @@ public final class GitMetadataBuilderCallback implements RepositoryCallback<GitM
     private static transient final Logger LOGGER = Logger.getLogger(GitMetadataBuilderCallback.class.getName());
     private static final long serialVersionUID = 1L;
 
-    /**
+    private final String branchHint;
+    private final boolean examineRepoRefs;
+
+    public GitMetadataBuilderCallback(@Nullable String branchHint, boolean examineRepoRefs) {
+        this.branchHint = branchHint;
+        this.examineRepoRefs = examineRepoRefs;
+    }
+
+  /**
      * !IMPORTANT!
      * Keep in mind that this callback may be executed on a worker node,
      * which means both the callback and the result are serialized and sent between different hosts.
@@ -41,7 +50,7 @@ public final class GitMetadataBuilderCallback implements RepositoryCallback<GitM
             return new Result(
                 getRepoUrl(repository, remoteName),
                 getDefaultBranch(repository, remoteName),
-                getBranches(repository) // currently checked out branch
+                getBranch(repository) // currently checked out branch
             );
 
         } catch (Exception e) {
@@ -87,39 +96,53 @@ public final class GitMetadataBuilderCallback implements RepositoryCallback<GitM
         return null;
     }
 
-    private static Collection<String> getBranches(Repository repository) throws IOException {
-        List<String> matchingBranches = new ArrayList<>();
-
-        String branch = repository.getBranch();
-        if (!GitUtils.isValidCommitSha(branch)) {
-            matchingBranches.add(branch);
-            return matchingBranches;
+    /**
+     * When checking out a repository for a multi-branch pipeline,
+     * Jenkins does so in "detached HEAD" state.
+     * This means that a specific commit is checked out, rather than a branch.
+     * To work around this the plugin examines available branches
+     * to see which one of them points to the checked out commit.
+     * <p>
+     * It is possible that multiple branches point to the same commit.
+     * In which case the logic in this method tries to use a "hint" extracted from environment variables.
+     */
+    private String getBranch(Repository repository) throws IOException {
+        String branchOrSha = repository.getBranch();
+        String branch = normalizeBranch(branchOrSha);
+        if (branch != null) {
+            return branch;
         }
 
-        // A detached HEAD is checked out.
-        // Iterate over available refs to see which point to the checked out commit (there may be multiple).
-        for (Ref ref : repository.getRefDatabase().getRefs()) {
-            String refName = ref.getName();
-            if (Constants.HEAD.equals(refName) || GitUtils.isValidCommitSha(refName)) {
+        if (!examineRepoRefs) {
+            return null;
+        }
+
+        String bestEffortBranch = null;
+        RefDatabase refDatabase = repository.getRefDatabase();
+        Set<Ref> refsPointingToSha = refDatabase.getTipsWithSha1(ObjectId.fromString(branchOrSha));
+        for (Ref ref : refsPointingToSha) {
+            String refName = normalizeBranch(ref.getName());
+            if (refName == null) {
                 continue;
             }
-            ObjectId refObjectId = ref.getObjectId();
-            if (branch.equals(refObjectId.getName())) {
-                matchingBranches.add(normalizeBranch(refName));
+            if (refName.equals(branchHint)) {
+                // Found a branch that has the same name as the one set in env vars
+                return refName;
             }
+            bestEffortBranch = refName;
         }
-        return matchingBranches;
+        return bestEffortBranch;
     }
 
     public static final class Result implements Serializable {
         final String repoUrl;
         final String defaultBranch;
-        final @Nonnull Collection<String> branches;
+        final String branch;
 
-        public Result(String repoUrl, String defaultBranch, @Nonnull Collection<String> branches) {
+        public Result(String repoUrl, String defaultBranch, String branch) {
             this.repoUrl = repoUrl;
             this.defaultBranch = defaultBranch;
-            this.branches = branches;
+            this.branch = branch;
         }
     }
 }

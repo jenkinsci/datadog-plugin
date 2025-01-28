@@ -1289,6 +1289,10 @@ public class DatadogUtilities {
         return envVar(name, Double::parseDouble, defaultValue);
     }
 
+    public static boolean envVar(String name, boolean defaultValue) {
+        return envVar(name, Boolean::parseBoolean, defaultValue);
+    }
+
     public static <T> T envVar(String name, Function<String, T> parser, T defaultValue) {
         String value = System.getenv(name);
         if (value != null) {

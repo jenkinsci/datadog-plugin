@@ -5,25 +5,26 @@ import hudson.FilePath;
 import hudson.model.TaskListener;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
 import org.datadog.jenkins.plugins.datadog.model.git.GitCommitMetadata;
 import org.datadog.jenkins.plugins.datadog.model.git.GitMetadata;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 
 public final class GitUtils {
+
+    private static final String EXAMINE_REPO_REFS_ENV_VAR = "DD_JENKINS_EXAMINE_REPO_REFS";
 
     // User Supplied Git Environment Variables
     public static final String DD_GIT_REPOSITORY_URL = "DD_GIT_REPOSITORY_URL";
@@ -90,60 +91,28 @@ public final class GitUtils {
         }
     }
 
-    public static GitMetadata buildGitMetadata(@Nullable final GitClient gitClient, @Nullable String branchHint, String buildName) {
+    public static GitMetadata buildGitMetadata(@Nullable final GitClient gitClient, @Nullable String branchHint) {
         try {
             if (gitClient == null) {
                 LOGGER.fine("Unable to build Git metadata. GitClient is null");
                 return null;
 
             } else {
-                GitMetadata.Builder builder = new GitMetadata.Builder();
+                long repoCheckStart = System.currentTimeMillis();
+                boolean examineRepoRefs = DatadogUtilities.envVar(EXAMINE_REPO_REFS_ENV_VAR, true);
+                GitMetadataBuilderCallback.Result result = gitClient.withRepository(new GitMetadataBuilderCallback(branchHint, examineRepoRefs));
+                LOGGER.fine("Examined Git repository in " + (System.currentTimeMillis() - repoCheckStart) + " ms");
 
-                GitMetadataBuilderCallback.Result result = gitClient.withRepository(new GitMetadataBuilderCallback());
+                GitMetadata.Builder builder = new GitMetadata.Builder();
                 builder.repositoryURL(result.repoUrl);
                 builder.defaultBranch(normalizeBranch(result.defaultBranch));
-
-                String branch = chooseBranch(result.branches, branchHint, buildName);
-                builder.branch(branch);
-                builder.commitMetadata(buildCommitMetadata(gitClient, branch));
+                builder.branch(result.branch);
+                builder.commitMetadata(buildCommitMetadata(gitClient, result.branch));
                 return builder.build();
             }
 
         } catch (Exception e) {
             DatadogUtilities.logException(LOGGER, Level.FINE, "Unable to build git metadata", e);
-            return null;
-        }
-    }
-
-    /**
-     * When checking out a repository for a multi-branch pipeline,
-     * Jenkins does so in "detached HEAD" state.
-     * This means that a specific commit is checked out, rather than a branch.
-     * To work around this the plugin examines available branches
-     * to see which one of them points to the checked out commit.
-     * <p>
-     * It is possible that multiple branches point to the same commit.
-     * In which case the logic in this method tries to use a "hint" extracted from environment variables.
-     */
-    private static String chooseBranch(@Nonnull Collection<String> branches, @Nullable String branchHint, String buildName) {
-        if (branchHint != null && branches.contains(branchHint)) {
-            // multiple branches point to the checked out commit,
-            // and one of them is the same as the branch that is set in the env vars
-            return branchHint;
-
-        } else if (branches.size() > 1) {
-            // multiple branches point to the checked out commit,
-            // and none of them is the same as the branch that is set in the env vars,
-            // we are taking a guess at this point
-            LOGGER.warning("Build " + buildName + " has multiple Git branches matched: " + branches);
-            return branches.iterator().next();
-
-        } else if (branches.size() == 1) {
-            // only one branch points to the checked out commit
-            // (also possible that the repo was checked out properly, and not in a detached HEAD state)
-            return branches.iterator().next();
-
-        } else {
             return null;
         }
     }
@@ -326,7 +295,7 @@ public final class GitUtils {
      * @return normalized git tag
      */
     public static String normalizeBranch(String branchName) {
-        if(branchName == null || branchName.isEmpty() || branchName.contains("tags") || isValidCommitSha(branchName)) {
+        if (branchName == null || branchName.isEmpty() || branchName.contains("tags") || isValidCommitSha(branchName) || Constants.HEAD.equals(branchName)) {
             return null;
         }
 

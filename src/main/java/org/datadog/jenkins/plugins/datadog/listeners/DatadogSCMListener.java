@@ -104,7 +104,7 @@ public class DatadogSCMListener extends SCMListener {
                     GitClient gitClient = GitUtils.newGitClient(listener, environment, workspace);
                     Source metadataSource = isPipelineScriptClone(workspace) ? Source.GIT_CLIENT_PIPELINE_DEFINITION : Source.GIT_CLIENT;
                     String branchHint = gitMetadataAction.getMetadata().getBranch();
-                    gitMetadataAction.addMetadata(metadataSource, GitUtils.buildGitMetadata(gitClient, branchHint, build.getDisplayName()));
+                    gitMetadataAction.addMetadata(metadataSource, GitUtils.buildGitMetadata(gitClient, branchHint));
                 } else {
                     logger.fine("Non-git SCM checkout: " + (scm != null ? scm.getType() : null));
                 }
