@@ -20,6 +20,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import com.github.stefanbirkner.systemlambda.SystemLambda;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.FreeStyleBuild;
@@ -49,12 +50,14 @@ import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
+import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.jvnet.hudson.test.JenkinsRule;
 
 public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
@@ -63,6 +66,13 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
 
     @ClassRule
     public static final JenkinsRule jenkinsRule = new JenkinsRule();
+
+    /**
+     * CI provider sets this environment variable.
+     * It has to be cleared, otherwise it interferes with the tests.
+     */
+    @ClassRule
+    public static final EnvironmentVariables environmentVariables = new EnvironmentVariables().set(GitUtils.GIT_BRANCH_ALT, null);
 
     private static FilePath localGitRepoPath;
 

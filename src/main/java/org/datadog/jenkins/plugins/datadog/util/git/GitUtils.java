@@ -16,12 +16,15 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
 import org.datadog.jenkins.plugins.datadog.model.git.GitCommitMetadata;
 import org.datadog.jenkins.plugins.datadog.model.git.GitMetadata;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 
 public final class GitUtils {
+
+    private static final String EXAMINE_REPO_REFS_ENV_VAR = "DD_JENKINS_EXAMINE_REPO_REFS";
 
     // User Supplied Git Environment Variables
     public static final String DD_GIT_REPOSITORY_URL = "DD_GIT_REPOSITORY_URL";
@@ -41,6 +44,7 @@ public final class GitUtils {
     public static final String GIT_REPOSITORY_URL = "GIT_URL";
     public static final String GIT_REPOSITORY_URL_ALT = "GIT_URL_1";
     public static final String GIT_BRANCH = "GIT_BRANCH";
+    public static final String GIT_BRANCH_ALT = "BRANCH_NAME";
     public static final String GIT_COMMIT = "GIT_COMMIT";
 
     private static transient final Logger LOGGER = Logger.getLogger(GitUtils.class.getName());
@@ -87,20 +91,22 @@ public final class GitUtils {
         }
     }
 
-    public static GitMetadata buildGitMetadata(@Nullable final GitClient gitClient) {
+    public static GitMetadata buildGitMetadata(@Nullable final GitClient gitClient, @Nullable String branchHint) {
         try {
             if (gitClient == null) {
                 LOGGER.fine("Unable to build Git metadata. GitClient is null");
                 return null;
 
             } else {
-                GitMetadata.Builder builder = new GitMetadata.Builder();
+                long repoCheckStart = System.currentTimeMillis();
+                boolean examineRepoRefs = DatadogUtilities.envVar(EXAMINE_REPO_REFS_ENV_VAR, true);
+                GitMetadataBuilderCallback.Result result = gitClient.withRepository(new GitMetadataBuilderCallback(branchHint, examineRepoRefs));
+                LOGGER.fine("Examined Git repository in " + (System.currentTimeMillis() - repoCheckStart) + " ms");
 
-                GitMetadataBuilderCallback.Result result = gitClient.withRepository(new GitMetadataBuilderCallback());
+                GitMetadata.Builder builder = new GitMetadata.Builder();
                 builder.repositoryURL(result.repoUrl);
                 builder.defaultBranch(normalizeBranch(result.defaultBranch));
-                builder.branch(normalizeBranch(result.branch));
-
+                builder.branch(result.branch);
                 builder.commitMetadata(buildCommitMetadata(gitClient, result.branch));
                 return builder.build();
             }
@@ -209,7 +215,7 @@ public final class GitUtils {
     public static GitMetadata buildGitMetadataWithJenkinsEnvVars(Map<String, String> envVars) {
         GitMetadata.Builder metadataBuilder = new GitMetadata.Builder();
         metadataBuilder.repositoryURL(getRepositoryUrlFromJenkinsEnvVars(envVars));
-        metadataBuilder.branch(normalizeBranch(envVars.get(GIT_BRANCH)));
+        metadataBuilder.branch(normalizeBranch(getBranchFromJenkinsEnvVars(envVars)));
 
         GitCommitMetadata.Builder commitMetadataBuilder = new GitCommitMetadata.Builder();
         commitMetadataBuilder.commit(envVars.get(GIT_COMMIT));
@@ -225,6 +231,14 @@ public final class GitUtils {
             return repoUrl;
         }
         return envVars.get(GIT_REPOSITORY_URL_ALT);
+    }
+
+    private static String getBranchFromJenkinsEnvVars(Map<String, String> envVars) {
+        String branch = envVars.get(GIT_BRANCH);
+        if (StringUtils.isNotBlank(branch)) {
+            return branch;
+        }
+        return envVars.get(GIT_BRANCH_ALT);
     }
 
     public static GitMetadata buildGitMetadataWithUserSuppliedEnvVars(Map<String, String> envVars) {
@@ -281,7 +295,7 @@ public final class GitUtils {
      * @return normalized git tag
      */
     public static String normalizeBranch(String branchName) {
-        if(branchName == null || branchName.isEmpty() || branchName.contains("tags") || isValidCommitSha(branchName)) {
+        if (branchName == null || branchName.isEmpty() || branchName.contains("tags") || isValidCommitSha(branchName) || Constants.HEAD.equals(branchName)) {
             return null;
         }
 

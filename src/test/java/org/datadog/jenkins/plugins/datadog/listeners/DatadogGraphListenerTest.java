@@ -60,6 +60,7 @@ import org.datadog.jenkins.plugins.datadog.publishers.DatadogComputerPublisher;
 import org.datadog.jenkins.plugins.datadog.publishers.DatadogCountersPublisher;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
+import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.actions.TimingAction;
@@ -77,6 +78,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.jvnet.hudson.test.JenkinsRule;
 
 public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
@@ -85,6 +87,13 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
     @ClassRule
     public static JenkinsRule jenkinsRule;
+
+    /**
+     * CI provider sets this environment variable.
+     * It has to be cleared, otherwise it interferes with the tests.
+     */
+    @ClassRule
+    public static final EnvironmentVariables environmentVariables = new EnvironmentVariables().set(GitUtils.GIT_BRANCH_ALT, null);
 
     private static FilePath localGitRepoPath;
 
