@@ -1,5 +1,11 @@
 Changes
 =======
+## 9.1.2 / 2025-01-29
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.1.1...datadog-9.1.2
+
+* [Fixed] Improve accuracy of detecting branch names for repos checked out in detached HEAD state. See [#500](https://github.com/jenkinsci/datadog-plugin/pull/500).
+
 ## 9.1.1 / 2025-01-23
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.1.0...datadog-9.1.1
