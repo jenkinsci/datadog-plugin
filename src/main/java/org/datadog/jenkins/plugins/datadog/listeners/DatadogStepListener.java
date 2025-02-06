@@ -19,6 +19,7 @@ import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.GitMetadataAction;
 import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
+import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.git.Source;
 import org.datadog.jenkins.plugins.datadog.model.node.NodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
@@ -55,6 +56,26 @@ public class DatadogStepListener implements StepListener {
 
             if(!(flowNode instanceof StepAtomNode)){
                 return;
+            }
+
+            PipelineQueueInfoAction pipelineQueueInfoAction = run.getAction(PipelineQueueInfoAction.class);
+            if (pipelineQueueInfoAction != null) {
+                if (pipelineQueueInfoAction.getPropagatedQueueTimeMillis() < 0) {
+                    // This is a pipeline that did not get enqueued and dequeued for whatever reason
+                    // (it is likely missing both the "pipeline {}" and the "node {}" blocks,
+                    // so it is technically neither a scripted, nor a declarative pipeline;
+                    // yes, Jenkins allows that).
+                    // Since it's already being executed
+                    // (we're notified of a StepAtomNode, which is an actual executable step)
+                    // we set propagated queue time to 0
+                    // and submit pipeline data to the backend
+                    // in order to display the pipeline as RUNNING
+                    // (a pipeline whose queue time is not known will not be sent to the backend,
+                    // as queueing time affects start time,
+                    // and pipeline start time must not change for technical reasons)
+                    pipelineQueueInfoAction.setPropagatedQueueTimeMillis(0);
+                    submitPipelineData(run);
+                }
             }
 
             Map<String, String> envVars = getEnvVars(context);
