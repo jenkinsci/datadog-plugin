@@ -1,5 +1,11 @@
 Changes
 =======
+## 9.1.3 / 2025-02-10
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.1.2...datadog-9.1.3
+
+* [Fixed] Display running pipelines that did not pass through the build queue. See [#502](https://github.com/jenkinsci/datadog-plugin/pull/502).
+
 ## 9.1.2 / 2025-01-29
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.1.1...datadog-9.1.2
