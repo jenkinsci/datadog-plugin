@@ -13,7 +13,7 @@ pipeline {
 
         stage('Stage 2') {
             options {
-              datadog(testOptimization: [ enabled: true, serviceName: "my-service", languages: ["JAVA"], additionalVariables: ["my-var": "value"] ])
+              datadog(testOptimization: [ enabled: true, languages: ["JAVA"], additionalVariables: ["my-var": "value"] ])
             }
             steps {
                 sh '''
