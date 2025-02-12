@@ -25,23 +25,17 @@ public class DatadogTracerJobProperty<T extends Job<?, ?>> extends JobProperty<T
     private static final String DISPLAY_NAME = "Enable Datadog Test Optimization";
 
     private final boolean on;
-    private final String serviceName;
     private final Collection<TracerLanguage> languages;
     private final Map<String, String> additionalVariables;
 
-    public DatadogTracerJobProperty(boolean on, String serviceName, @Nonnull Collection<TracerLanguage> languages, Map<String, String> additionalVariables) {
+    public DatadogTracerJobProperty(boolean on, @Nonnull Collection<TracerLanguage> languages, Map<String, String> additionalVariables) {
         this.on = on;
-        this.serviceName = serviceName;
         this.languages = languages;
         this.additionalVariables = additionalVariables;
     }
 
     public boolean isOn() {
         return on;
-    }
-
-    public String getServiceName() {
-        return serviceName;
     }
 
     @Nonnull
@@ -62,7 +56,7 @@ public class DatadogTracerJobProperty<T extends Job<?, ?>> extends JobProperty<T
     }
 
     public TestOptimization getTestOptimization() {
-        return new TestOptimization(on, serviceName, languages, additionalVariables);
+        return new TestOptimization(on, languages, additionalVariables);
     }
 
     @Extension
@@ -84,8 +78,6 @@ public class DatadogTracerJobProperty<T extends Job<?, ?>> extends JobProperty<T
                 return null;
             }
 
-            String serviceName = formData.getString("serviceName");
-
             Set<TracerLanguage> languages = EnumSet.noneOf(TracerLanguage.class);
             JSONObject languagesJson = (JSONObject) formData.get("languages");
             for (Map.Entry<String, Boolean> e : (Set<Map.Entry<String, Boolean>>) languagesJson.entrySet()) {
@@ -101,7 +93,7 @@ public class DatadogTracerJobProperty<T extends Job<?, ?>> extends JobProperty<T
                 additionalVariables.put(additionalVariable.getName(), additionalVariable.getValue());
             }
 
-            return new DatadogTracerJobProperty<>(true, serviceName, languages, additionalVariables);
+            return new DatadogTracerJobProperty<>(true, languages, additionalVariables);
         }
     }
 

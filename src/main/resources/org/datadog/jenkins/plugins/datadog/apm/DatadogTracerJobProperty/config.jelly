@@ -7,10 +7,6 @@
                      checked="${instance != null and instance.on}"
                      inline="true">
 
-        <f:entry field="serviceName" title="Service Name">
-            <f:textbox field="serviceName" default="${serviceName}" optional="false" clazz="required"/>
-        </f:entry>
-
         <f:entry field="languages" title="Languages">
             <f:enumSet field="languages" default="${languages}"/>
         </f:entry>

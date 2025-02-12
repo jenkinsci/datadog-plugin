@@ -291,7 +291,6 @@ public class TracerInjectionIT {
     private void givenTracerInjectionEnabled(Job job) throws IOException {
         DatadogTracerJobProperty<FreeStyleProject> traceInjectionConfig = new DatadogTracerJobProperty<>(
                 true,
-                "integration-test-service-name",
                 Collections.singletonList(TracerLanguage.JAVA),
                 Collections.singletonMap("DD_CIVISIBILITY_ENABLED", "false")
         );

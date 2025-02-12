@@ -35,6 +35,7 @@ public class DatadogTracerConfigurator {
     public DatadogTracerConfigurator() {
         configurators = new EnumMap<>(TracerLanguage.class);
         configurators.put(TracerLanguage.DOTNET, new DotnetConfigurator());
+        configurators.put(TracerLanguage.GO, new GolangConfigurator());
         configurators.put(TracerLanguage.JAVA, new JavaConfigurator());
         configurators.put(TracerLanguage.JAVASCRIPT, new JavascriptConfigurator());
         configurators.put(TracerLanguage.PYTHON, new PythonConfigurator());
@@ -141,7 +142,6 @@ public class DatadogTracerConfigurator {
         variables.put("DD_CIVISIBILITY_AUTO_INSTRUMENTATION_PROVIDER", "jenkins");
         variables.put("DD_CIVISIBILITY_ENABLED", "true");
         variables.put("DD_ENV", "ci");
-        variables.put("DD_SERVICE", testOptimization.getServiceName());
 
         DatadogClientConfiguration clientConfiguration = datadogConfig.getDatadogClientConfiguration();
         Map<String, String> clientEnvironmentVariables = clientConfiguration.toEnvironmentVariables();
