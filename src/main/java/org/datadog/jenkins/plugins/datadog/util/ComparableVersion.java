@@ -23,6 +23,23 @@ public class ComparableVersion implements Comparable<ComparableVersion> {
     return Integer.compare(tokens.length, o.tokens.length);
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    ComparableVersion that = (ComparableVersion) o;
+    return Arrays.equals(tokens, that.tokens);
+  }
+
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(tokens);
+  }
+
   public static ComparableVersion parse(@Nonnull String s) {
     int[] tokens = Arrays.stream(s.split("\\.")).mapToInt(Integer::parseInt).toArray();
     return new ComparableVersion(tokens);
