@@ -2,7 +2,7 @@ package org.datadog.jenkins.plugins.datadog.apm;
 
 public enum TracerLanguage {
     DOTNET(".NET"),
-    GO("Golang"),
+    GO("Go"),
     JAVA("Java"),
     JAVASCRIPT("JS"),
     PYTHON("Python"),

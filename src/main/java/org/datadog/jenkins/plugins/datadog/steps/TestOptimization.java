@@ -10,6 +10,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 public class TestOptimization implements Serializable {
     private boolean enabled;
+    private String serviceName;
     private Collection<TracerLanguage> languages = Collections.emptyList();
     private Map<String, String> additionalVariables = Collections.emptyMap();
 
@@ -17,8 +18,9 @@ public class TestOptimization implements Serializable {
     public TestOptimization() {
     }
 
-    public TestOptimization(boolean enabled, Collection<TracerLanguage> languages, Map<String, String> additionalVariables) {
+    public TestOptimization(boolean enabled, String serviceName, Collection<TracerLanguage> languages, Map<String, String> additionalVariables) {
         this.enabled = enabled;
+        this.serviceName = serviceName;
         this.languages = languages;
         this.additionalVariables = additionalVariables;
     }
@@ -30,6 +32,15 @@ public class TestOptimization implements Serializable {
     @DataBoundSetter
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public String getServiceName() {
+        return serviceName;
+    }
+
+    @DataBoundSetter
+    public void setServiceName(String serviceName) {
+        this.serviceName = serviceName;
     }
 
     public Collection<TracerLanguage> getLanguages() {

@@ -35,6 +35,12 @@
             </f:repeatable>
         </f:entry>
 
+        <f:advanced>
+            <f:entry field="serviceName" title="Service Name">
+                <f:textbox field="serviceName" default="${serviceName}" optional="true"/>
+            </f:entry>
+        </f:advanced>
+
     </f:optionalBlock>
 
 </j:jelly>
