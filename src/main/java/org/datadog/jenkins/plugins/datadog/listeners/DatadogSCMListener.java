@@ -181,8 +181,16 @@ public class DatadogSCMListener extends SCMListener {
         // example of workspace: <JENKINS_HOME>/jobs/<PIPELINE_NAME>/builds/<BUILD_NUMBER>/libs/<LIBRARY_FOLDER>/root
         Path rootPath = build.getRootDir().toPath();
         Path workspacePath = Paths.get(workspace.getRemote());
+        if (!canRelativize(rootPath, workspacePath)) {
+            // possible when, for example, controller runs on Linux and worker runs on Windows
+            return false;
+        }
         Path relativePath = rootPath.relativize(workspacePath);
         return relativePath.startsWith("libs");
+    }
+
+    private static boolean canRelativize(Path root, Path other) {
+        return root.getFileSystem().equals(other.getFileSystem()) && other.startsWith(root);
     }
 
     /**

@@ -8,8 +8,8 @@ import static org.mockito.Mockito.when;
 
 import hudson.FilePath;
 import hudson.model.Run;
-import org.junit.Test;
 import java.io.File;
+import org.junit.Test;
 
 public class DatadogSCMListenerTest {
 
@@ -27,6 +27,9 @@ public class DatadogSCMListenerTest {
     assertFalse(DatadogSCMListener.isFreshSharedLibraryClone(
         run("/var/jenkins_home/jobs/my-pipeline/builds/123"),
         filePath("/var/jenkins_home/workspace/my-pipeline@libs/1234567890")));
+    assertFalse(DatadogSCMListener.isFreshSharedLibraryClone(
+        run("/var/jenkins_home/jobs/my-pipeline/builds/123"),
+        filePath("C:/jenkins_home/workspace/my-pipeline@libs/1234567890")));
   }
 
   private static Run run(String rootDir) {
