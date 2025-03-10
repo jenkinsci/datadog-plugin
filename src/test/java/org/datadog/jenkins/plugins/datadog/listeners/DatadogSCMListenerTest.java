@@ -6,13 +6,10 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.google.common.jimfs.Configuration;
-import com.google.common.jimfs.Jimfs;
 import hudson.FilePath;
 import hudson.model.Run;
-import org.junit.Test;
 import java.io.File;
-import java.nio.file.FileSystem;
+import org.junit.Test;
 
 public class DatadogSCMListenerTest {
 
