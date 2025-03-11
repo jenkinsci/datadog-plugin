@@ -194,7 +194,7 @@ public class TracerInjectionIT {
 
     private WorkflowJob givenPipelineProjectWithTracerEnabledStep() throws Exception {
         Map<String, String> replacements = new HashMap<>();
-        replacements.put("DATADOG_STEP_SETTINGS", "testOptimization: [ enabled: true, serviceName: \"my-service\", languages: [\"JAVA\"], additionalVariables: [\"my-var\": \"value\"] ]");
+        replacements.put("DATADOG_STEP_SETTINGS", "testOptimization: [ enabled: true, languages: [\"JAVA\"], additionalVariables: [\"my-var\": \"value\"] ]");
         replacements.put("PIPELINE_STEPS", getMavenCommand());
 
         String pipelineDefinition = buildPipelineDefinition("test-maven-pipeline-with-datadog-step.txt", replacements);
@@ -212,7 +212,7 @@ public class TracerInjectionIT {
 
     private WorkflowJob givenPipelineProjectWithTracerDisabledStep() throws Exception {
         Map<String, String> replacements = new HashMap<>();
-        replacements.put("DATADOG_STEP_SETTINGS", "testOptimization: [ enabled: false, serviceName: \"my-service\", languages: [\"JAVA\"], additionalVariables: [\"my-var\": \"value\"] ]");
+        replacements.put("DATADOG_STEP_SETTINGS", "testOptimization: [ enabled: false, languages: [\"JAVA\"], additionalVariables: [\"my-var\": \"value\"] ]");
         replacements.put("PIPELINE_STEPS", getMavenCommand());
 
         String pipelineDefinition = buildPipelineDefinition("test-maven-pipeline-with-datadog-step.txt", replacements);
@@ -291,7 +291,7 @@ public class TracerInjectionIT {
     private void givenTracerInjectionEnabled(Job job) throws IOException {
         DatadogTracerJobProperty<FreeStyleProject> traceInjectionConfig = new DatadogTracerJobProperty<>(
                 true,
-                "integration-test-service-name",
+                null,
                 Collections.singletonList(TracerLanguage.JAVA),
                 Collections.singletonMap("DD_CIVISIBILITY_ENABLED", "false")
         );
