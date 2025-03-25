@@ -89,11 +89,13 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
     public static JenkinsRule jenkinsRule;
 
     /**
-     * CI provider sets this environment variable.
-     * It has to be cleared, otherwise it interferes with the tests.
+     * CI provider sets these environment variables.
+     * They have to be cleared, otherwise they interfere with the tests.
      */
     @ClassRule
-    public static final EnvironmentVariables environmentVariables = new EnvironmentVariables().set(GitUtils.GIT_BRANCH_ALT, null);
+    public static final EnvironmentVariables environmentVariables = new EnvironmentVariables()
+        .set(GitUtils.GIT_BRANCH_ALT, null)
+        .set(GitUtils.CHANGE_BRANCH, null);
 
     private static FilePath localGitRepoPath;
 
