@@ -46,6 +46,12 @@ public final class GitUtils {
     public static final String GIT_BRANCH = "GIT_BRANCH";
     public static final String GIT_BRANCH_ALT = "BRANCH_NAME";
     public static final String GIT_COMMIT = "GIT_COMMIT";
+    /**
+     * For a multibranch project corresponding to some kind of change request,
+     * this will be set to the name of the actual head on the source control system which may or may not be different from BRANCH_NAME.
+     * For example in GitHub or Bitbucket this would have the name of the origin branch whereas BRANCH_NAME would be something like PR-24
+     */
+    public static final String CHANGE_BRANCH = "CHANGE_BRANCH";
 
     private static transient final Logger LOGGER = Logger.getLogger(GitUtils.class.getName());
     private static transient final Pattern SCP_REPO_URI_REGEX = Pattern.compile("^([\\w.~-]+@)?(?<host>[\\w.-]+):(?<path>[\\w./-]+)(?:\\?|$)(.*)$");
@@ -256,9 +262,21 @@ public final class GitUtils {
         GitMetadata.Builder metadataBuilder = new GitMetadata.Builder();
         metadataBuilder.repositoryURL(envVars.get(DD_GIT_REPOSITORY_URL));
         metadataBuilder.defaultBranch(normalizeBranch(envVars.get(DD_GIT_DEFAULT_BRANCH)));
-        metadataBuilder.branch(normalizeBranch(envVars.get(DD_GIT_BRANCH)));
+        metadataBuilder.branch(normalizeBranch(getBranchFromUserSuppliedEnvVars(envVars)));
         metadataBuilder.commitMetadata(commitMetadataBuilder.build());
         return metadataBuilder.build();
+    }
+
+    private static String getBranchFromUserSuppliedEnvVars(Map<String, String> envVars) {
+        // we treat CHANGE_BRANCH as a user-supplied env var,
+        // because it needs to have higher priority than the branch name
+        // determined by the Git client
+        // (because for PRs Git client uses something like "refs/remotes/origin/PR-1" as the ref name)
+        String changeBranch = envVars.get(CHANGE_BRANCH);
+        if (StringUtils.isNotBlank(changeBranch) && !isValidCommitSha(changeBranch)) {
+            return changeBranch;
+        }
+        return envVars.get(DD_GIT_BRANCH);
     }
 
     private static String getDateIfValid(Map<String, String> envVars, String envVarName) {
