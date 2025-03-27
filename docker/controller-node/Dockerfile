@@ -23,17 +23,22 @@ ENV JENKINS_PLUGIN_DATADOG_CI_INSTANCE_NAME=$JENKINS_PLUGIN_DATADOG_CI_INSTANCE_
 COPY plugin-dependencies.txt /var/jenkins_home/plugin-dependencies.txt
 RUN jenkins-plugin-cli --latest-specified --plugin-file /var/jenkins_home/plugin-dependencies.txt
 
-# this is not a dependency of the Datadog plugin, it is just needed to test upstream/downstream pipeline linking
+# this is not a dependency of the Datadog plugin, it is needed to test upstream/downstream pipeline linking
 RUN jenkins-plugin-cli --latest-specified --plugins pipeline-build-step
+
+# this is not a dependency of the Datadog plugin, it is needed to test GitHub integration and pull requests building
+RUN jenkins-plugin-cli --latest-specified --plugins github-branch-source
 
 COPY jobs /var/jenkins_home/sample-jobs
 
 COPY 10-create-admin-user.groovy /usr/share/jenkins/ref/init.groovy.d/10-create-admin-user.groovy
 COPY 20-create-agent-nodes.groovy /usr/share/jenkins/ref/init.groovy.d/20-create-agent-nodes.groovy
 COPY 30-create-github-credentials.groovy /usr/share/jenkins/ref/init.groovy.d/30-create-github-credentials.groovy
+COPY 31-create-github-personal-access-token-credentials.groovy /usr/share/jenkins/ref/init.groovy.d/31-create-github-personal-access-token-credentials.groovy
 COPY 40-create-datadog-key_credentials.groovy /usr/share/jenkins/ref/init.groovy.d/40-create-datadog-key_credentials.groovy
 COPY 50-create-jobs.groovy /usr/share/jenkins/ref/init.groovy.d/50-create-jobs.groovy
 COPY 51-create-multi-branch-pipeline.groovy /usr/share/jenkins/ref/init.groovy.d/51-create-multi-branch-pipeline.groovy
+COPY 52-create-organization-folder.groovy /usr/share/jenkins/ref/init.groovy.d/52-create-organization-folder.groovy
 COPY 60-add-script-signature-approvals.groovy /usr/share/jenkins/ref/init.groovy.d/60-add-script-signature-approvals.groovy
 COPY 70-configure-shared-library.groovy /usr/share/jenkins/ref/init.groovy.d/70-configure-shared-library.groovy
 
