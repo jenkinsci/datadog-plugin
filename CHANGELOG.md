@@ -1,5 +1,12 @@
 Changes
 =======
+## 9.1.4 / 2025-04-03
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.1.3...datadog-9.1.4
+
+* [Fixed] Fix library checkout test when Controller and Agent have different file systems. See [#505](https://github.com/jenkinsci/datadog-plugin/pull/505).
+* [Fixed] Fix branch name detection in pull-requests. See [#506](https://github.com/jenkinsci/datadog-plugin/pull/506).
+
 ## 9.1.3 / 2025-02-10
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.1.2...datadog-9.1.3
