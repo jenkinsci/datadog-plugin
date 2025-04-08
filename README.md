@@ -10,7 +10,7 @@ A Jenkins plugin for automatically forwarding metrics, events, and service check
 
 ### Installation
 
-_This plugin requires [Jenkins 2.361.4][2] and Java 11._
+_This plugin requires [Jenkins 2.479.3][2] and Java 17._
 
 _For older versions of Jenkins (i.e 1.632+), you can find the 1.2.0 version of the plugin [here](https://updates.jenkins.io/download/plugins/datadog/)._
 
@@ -77,7 +77,7 @@ import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntak
 import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogSite
 import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogTextApiKey
 
-def jenkins = Jenkins.getInstance()
+def jenkins = Jenkins.getInstanceOrNull()
 def datadog = jenkins.getDescriptorByType(DatadogGlobalConfiguration)
 
 def site = new DatadogIntakeSite(DatadogSite.US1) // pick your Datadog site
@@ -102,7 +102,7 @@ import jenkins.model.Jenkins
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration
 
-def jenkins = Jenkins.getInstance()
+def jenkins = Jenkins.getInstanceOrNull()
 def datadog = jenkins.getDescriptorByType(DatadogGlobalConfiguration)
 
 def agentHost = 'localhost'

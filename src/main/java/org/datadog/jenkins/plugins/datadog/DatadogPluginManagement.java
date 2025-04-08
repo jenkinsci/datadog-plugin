@@ -11,12 +11,12 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.datadog.jenkins.plugins.datadog.flare.FlareContributor;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
+import org.kohsuke.stapler.StaplerRequest2;
+import org.kohsuke.stapler.StaplerResponse2;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -82,7 +82,7 @@ public class DatadogPluginManagement extends ManagementLink {
     }
 
     @RequirePOST
-    public void doDownloadDiagnosticFlare(StaplerRequest request, StaplerResponse response) throws Exception {
+    public void doDownloadDiagnosticFlare(StaplerRequest2 request, StaplerResponse2 response) throws Exception {
         if (!Jenkins.get().hasPermission(Jenkins.MANAGE)) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN);
             return;
@@ -111,7 +111,7 @@ public class DatadogPluginManagement extends ManagementLink {
         }
     }
 
-    private List<FlareContributor> getSelectedContributors(StaplerRequest request) throws ServletException {
+    private List<FlareContributor> getSelectedContributors(StaplerRequest2 request) throws ServletException {
         JSONObject form = request.getSubmittedForm();
         JSONArray selectedUiControls = form.getJSONArray("selectedContributors");
 

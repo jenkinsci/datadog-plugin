@@ -31,9 +31,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.Set;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -41,44 +39,44 @@ import static org.mockito.Mockito.when;
 public class ItemCopiedEventTest {
 
     @Test
-    public void testWithNothingSet() throws IOException, InterruptedException {
+    public void testWithNothingSet() {
         DatadogEvent event = new ItemCopiedEventImpl(null, null, null);
 
         String hostname = DatadogUtilities.getHostname(null);
-        Assert.assertTrue(event.getHost().equals(hostname));
+        Assert.assertEquals(event.getHost(), hostname);
         Assert.assertTrue(event.getDate() != 0);
-        Assert.assertTrue(event.getAggregationKey().equals("unknown"));
-        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertEquals("unknown", event.getAggregationKey());
+        Assert.assertEquals(1, event.getTags().size());
         Assert.assertTrue(event.getTags().get("event_type").contains("system"));
-        Assert.assertTrue(event.getTitle().equals("User anonymous copied the item unknown from unknown"));
+        Assert.assertEquals("User anonymous copied the item unknown from unknown", event.getTitle());
         Assert.assertTrue(event.getText(), event.getText().contains("User anonymous copied the item unknown from unknown"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
-        Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
-        Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
-        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
+        Assert.assertEquals(DatadogEvent.AlertType.INFO, event.getAlertType());
+        Assert.assertEquals(DatadogEvent.Priority.NORMAL, event.getPriority());
+        Assert.assertEquals("unknown", event.getJenkinsUrl());
     }
 
     @Test
-    public void testWithEverythingSet() throws IOException, InterruptedException {
+    public void testWithEverythingSet() {
         FreeStyleProject src = mock(FreeStyleProject.class);
         when(src.getName()).thenReturn("srcname");
         FreeStyleProject item = mock(FreeStyleProject.class);
         when(item.getName()).thenReturn("itemname");
 
-        DatadogEvent event = new ItemCopiedEventImpl(src, item, new HashMap<String, Set<String>>());
+        DatadogEvent event = new ItemCopiedEventImpl(src, item, new HashMap<>());
 
         String hostname = DatadogUtilities.getHostname(null);
-        Assert.assertTrue(event.getHost().equals(hostname));
+        Assert.assertEquals(event.getHost(), hostname);
         Assert.assertTrue(event.getDate() != 0);
-        Assert.assertTrue(event.getAggregationKey().equals("itemname"));
-        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertEquals("itemname", event.getAggregationKey());
+        Assert.assertEquals(1, event.getTags().size());
         Assert.assertTrue(event.getTags().get("event_type").contains("system"));
-        Assert.assertTrue(event.getTitle().equals("User anonymous copied the item itemname from srcname"));
+        Assert.assertEquals("User anonymous copied the item itemname from srcname", event.getTitle());
         Assert.assertTrue(event.getText(), event.getText().contains("User anonymous copied the item itemname from srcname"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
-        Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
-        Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
-        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
+        Assert.assertEquals(DatadogEvent.AlertType.INFO, event.getAlertType());
+        Assert.assertEquals(DatadogEvent.Priority.NORMAL, event.getPriority());
+        Assert.assertEquals("unknown", event.getJenkinsUrl());
 
     }
 }

@@ -13,7 +13,6 @@ import java.net.URL;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration;
 import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntake;
-import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeSite;
 import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeUrls;
 import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogSite;
 import org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogCredentialsApiKey;

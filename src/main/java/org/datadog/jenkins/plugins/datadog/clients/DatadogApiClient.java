@@ -30,14 +30,10 @@ import hudson.util.Secret;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.logging.Logger;
-import net.sf.json.JSON;
+
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
@@ -301,7 +297,7 @@ public class DatadogApiClient implements DatadogClient {
         Map<String, String> headers = Map.of(
             "DD-API-KEY", Secret.toString(apiKey),
             "DD-CI-PROVIDER-NAME", "jenkins");
-        JsonPayloadSender<Payload> payloadSender = new BatchSender<>(httpClient, url, headers, PAYLOAD_SIZE_LIMIT, p -> p.getJson(), COMPRESS_REQUEST);
+        JsonPayloadSender<Payload> payloadSender = new BatchSender<>(httpClient, url, headers, PAYLOAD_SIZE_LIMIT, Payload::getJson, COMPRESS_REQUEST);
 
         return new TraceWriteStrategyImpl(Track.WEBHOOK, payloadSender::send);
     }

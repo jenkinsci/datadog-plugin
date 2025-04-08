@@ -33,7 +33,7 @@ import hudson.model.labels.LabelAtom;
 import java.io.*;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -283,12 +283,12 @@ public class DatadogUtilities {
                                 }
                             }
                         }
-                        Set<String> tagValues = tags.containsKey(tagName) ? tags.get(tagName) : new HashSet<String>();
+                        Set<String> tagValues = tags.containsKey(tagName) ? tags.get(tagName) : new HashSet<>();
                         tagValues.add(tagValue.toLowerCase());
                         tags.put(tagName, tagValues);
                     } else if (tagItem.length == 1) {
                         String tagName = tagItem[0];
-                        Set<String> tagValues = tags.containsKey(tagName) ? tags.get(tagName) : new HashSet<String>();
+                        Set<String> tagValues = tags.containsKey(tagName) ? tags.get(tagName) : new HashSet<>();
                         tagValues.add(""); // no values
                         tags.put(tagName, tagValues);
                     } else {
@@ -324,12 +324,12 @@ public class DatadogUtilities {
                 continue;
             }
 
-            for (int i = 0; i < tagList.size(); i++) {
-                String[] tagItem = tagList.get(i).replaceAll(" ", "").split(":", 2);
+            for (String s : tagList) {
+                String[] tagItem = s.replaceAll(" ", "").split(":", 2);
                 if (tagItem.length == 2) {
                     String tagName = tagItem[0];
                     String tagValue = tagItem[1];
-                    Set<String> tagValues = tags.containsKey(tagName) ? tags.get(tagName) : new HashSet<String>();
+                    Set<String> tagValues = tags.containsKey(tagName) ? tags.get(tagName) : new HashSet<>();
                     // Apply environment variables if specified. ie (custom_tag:$ENV_VAR)
                     if (tagValue.startsWith("$") && EnvVars.masterEnvVars.containsKey(tagValue.substring(1))) {
                         tagValue = EnvVars.masterEnvVars.get(tagValue.substring(1));
@@ -342,7 +342,7 @@ public class DatadogUtilities {
                     tags.put(tagName, tagValues);
                 } else if (tagItem.length == 1) {
                     String tagName = tagItem[0];
-                    Set<String> tagValues = tags.containsKey(tagName) ? tags.get(tagName) : new HashSet<String>();
+                    Set<String> tagValues = tags.containsKey(tagName) ? tags.get(tagName) : new HashSet<>();
                     tagValues.add(""); // no values
                     tags.put(tagName, tagValues);
                 } else {
@@ -446,19 +446,19 @@ public class DatadogUtilities {
             if (tagList.isEmpty()) {
                 continue;
             }
-            for (int i = 0; i < tagList.size(); i++) {
-                String tag = tagList.get(i).replaceAll(" ", "");
+            for (String s : tagList) {
+                String tag = s.replaceAll(" ", "");
                 String[] expanded = envVars.expand(tag).split("=", 2);
                 if (expanded.length == 2) {
                     String name = expanded[0];
                     String value = expanded[1];
-                    Set<String> values = result.containsKey(name) ? result.get(name) : new HashSet<String>();
+                    Set<String> values = result.containsKey(name) ? result.get(name) : new HashSet<>();
                     values.add(value);
                     result.put(name, values);
                     logger.fine(String.format("Emitted tag %s:%s", name, value));
                 } else if (expanded.length == 1) {
                     String name = expanded[0];
-                    Set<String> values = result.containsKey(name) ? result.get(name) : new HashSet<String>();
+                    Set<String> values = result.containsKey(name) ? result.get(name) : new HashSet<>();
                     values.add(""); // no values
                     result.put(name, values);
                 } else {
@@ -556,7 +556,7 @@ public class DatadogUtilities {
                 String[] cmd = {"/bin/hostname", "-f"};
                 Process proc = Runtime.getRuntime().exec(cmd);
                 InputStream in = proc.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(in, Charset.forName("UTF-8")));
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
                 StringBuilder out = new StringBuilder();
                 String line;
                 while ((line = reader.readLine()) != null) {
@@ -591,7 +591,7 @@ public class DatadogUtilities {
         }
 
         // Never found the hostname
-        if (hostname == null || "".equals(hostname)) {
+        if (hostname == null || hostname.isEmpty()) {
             logger.warning("Unable to reliably determine host name. You can define one in "
                     + "the 'Manage Plugins' section under the 'Datadog Plugin' section.");
         }
@@ -833,6 +833,7 @@ public class DatadogUtilities {
 
     // copied from hudson.FilePath.IsUnix
     private static final class IsUnix extends MasterToSlaveCallable<Boolean, IOException> {
+        @Serial
         private static final long serialVersionUID = 1L;
 
         @Override
@@ -887,7 +888,7 @@ public class DatadogUtilities {
     }
 
     public static String getJenkinsUrl() {
-        Jenkins jenkins = Jenkins.getInstance();
+        Jenkins jenkins = Jenkins.getInstanceOrNull();
         if (jenkins == null) {
             return "unknown";
         } else {
@@ -984,16 +985,12 @@ public class DatadogUtilities {
      */
     public static String statusFromResult(String result) {
         String resultLowercase = result == null ? "error" : result.toLowerCase();
-        switch (resultLowercase) {
-            case "failure":
-                return "error";
-            case "aborted":
-                return "canceled";
-            case "not_built":
-                return "skipped";
-            default:
-                return resultLowercase;
-        }
+        return switch (resultLowercase) {
+            case "failure" -> "error";
+            case "aborted" -> "canceled";
+            case "not_built" -> "skipped";
+            default -> resultLowercase;
+        };
     }
 
     public static void severe(Logger logger, Throwable e, String message) {
@@ -1199,7 +1196,7 @@ public class DatadogUtilities {
      * @return list of event name strings that can be sent
      */
     private static List<String> createIncludeLists() {
-        List<String> includedEvents = new ArrayList<String>(Arrays.asList(
+        List<String> includedEvents = new ArrayList<>(Arrays.asList(
                 DatadogGlobalConfiguration.DEFAULT_EVENTS.split(",")));
 
         DatadogGlobalConfiguration cfg = getDatadogGlobalDescriptor();
@@ -1211,13 +1208,13 @@ public class DatadogUtilities {
         }
 
         if (cfg.isEmitSystemEvents()) {
-            includedEvents.addAll(new ArrayList<String>(
+            includedEvents.addAll(new ArrayList<>(
                     Arrays.asList(DatadogGlobalConfiguration.SYSTEM_EVENTS.split(","))
             ));
         }
 
         if (cfg.isEmitSecurityEvents()) {
-            includedEvents.addAll(new ArrayList<String>(
+            includedEvents.addAll(new ArrayList<>(
                     Arrays.asList(DatadogGlobalConfiguration.SECURITY_EVENTS.split(","))
             ));
         }
@@ -1242,8 +1239,7 @@ public class DatadogUtilities {
 
     @Nullable
     public static TaskListener getTaskListener(Run run) throws IOException {
-        if (run instanceof WorkflowRun) {
-            WorkflowRun workflowRun = (WorkflowRun) run;
+        if (run instanceof WorkflowRun workflowRun) {
             FlowExecution execution = workflowRun.getExecution();
             if (execution != null) {
                 FlowExecutionOwner owner = execution.getOwner();

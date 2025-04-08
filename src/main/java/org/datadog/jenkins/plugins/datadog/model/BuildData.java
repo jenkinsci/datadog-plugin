@@ -50,6 +50,7 @@ import hudson.triggers.SCMTrigger;
 import hudson.triggers.TimerTrigger;
 import hudson.util.LogTaskListener;
 import java.io.IOException;
+import java.io.Serial;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.Collections;
@@ -57,6 +58,7 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -143,9 +145,10 @@ public class BuildData implements Serializable {
         }
     }
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
-    private static transient final Logger LOGGER = Logger.getLogger(BuildData.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(BuildData.class.getName());
     private String buildNumber;
     private String buildId;
     private String buildUrl;
@@ -327,8 +330,7 @@ public class BuildData implements Serializable {
             // the job is run on the master node, checking plugin config and locally available info.
             // (nodeName == null) condition is there to preserve existing behavior
             this.hostname = DatadogUtilities.getHostname(envVars);
-        } else if (run instanceof AbstractBuild) {
-            AbstractBuild<?, ?> build = (AbstractBuild<?, ?>) run;
+        } else if (run instanceof AbstractBuild<?, ?> build) {
             Node node = build.getBuiltOn();
             Computer computer = node != null ? node.toComputer() : null;
             this.hostname = DatadogUtilities.getNodeHostname(envVars, computer);
@@ -434,11 +436,7 @@ public class BuildData implements Serializable {
         }
 
         Map<String, String> envVars;
-        if(listener != null){
-            envVars = run.getEnvironment(listener);
-        }else{
-            envVars = run.getEnvironment(new LogTaskListener(LOGGER, Level.INFO));
-        }
+        envVars = run.getEnvironment(Objects.requireNonNullElseGet(listener, () -> new LogTaskListener(LOGGER, Level.INFO)));
         mergedVars.putAll(envVars);
 
         return mergedVars;

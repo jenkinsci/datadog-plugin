@@ -15,6 +15,7 @@ import org.jenkinsci.plugins.workflow.graph.FlowStartNode;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class DatadogTracesUtilities {
@@ -101,7 +102,7 @@ public class DatadogTracesUtilities {
             when(blockEndNode.getId()).thenReturn(SAMPLE_BLOCK_END_NODE_ID);
             when(blockEndNode.getDisplayName()).thenReturn(SAMPLE_BLOCK_END_NODE_NAME);
             when(blockEndNode.getStartNode()).thenReturn(blockStartNode);
-            when(blockEndNode.iterateEnclosingBlocks()).thenReturn(Arrays.asList(flowStartNode));
+            when(blockEndNode.iterateEnclosingBlocks()).thenReturn(List.of(flowStartNode));
             when(blockEndNode.getAction(TimingAction.class)).thenReturn(mockTimingAction);
             flowNodeById.put(SAMPLE_BLOCK_END_NODE_ID, blockEndNode);
 

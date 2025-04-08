@@ -117,8 +117,7 @@ public class DatadogTracerConfigurator {
     }
 
     private static TopLevelItem getTopLevelItem(Run<?, ?> run) {
-        if (run instanceof AbstractBuild) {
-            AbstractBuild<?, ?> build = (AbstractBuild<?, ?>) run;
+        if (run instanceof AbstractBuild<?, ?> build) {
             AbstractProject<?, ?> project = build.getProject();
             if (project instanceof TopLevelItem) {
                 return (TopLevelItem) project;

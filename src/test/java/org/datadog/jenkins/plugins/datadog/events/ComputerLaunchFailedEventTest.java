@@ -31,9 +31,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.Set;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -41,42 +39,42 @@ import static org.mockito.Mockito.when;
 public class ComputerLaunchFailedEventTest {
 
     @Test
-    public void testWithNothingSet() throws IOException, InterruptedException {
+    public void testWithNothingSet() {
         DatadogEvent event = new ComputerLaunchFailedEventImpl(null, null, null);
 
         String hostname = DatadogUtilities.getHostname(null);
-        Assert.assertTrue(event.getHost().equals(hostname));
+        Assert.assertEquals(event.getHost(), hostname);
         Assert.assertTrue(event.getDate() != 0);
-        Assert.assertTrue(event.getAggregationKey() == null);
-        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertNull(event.getAggregationKey());
+        Assert.assertEquals(1, event.getTags().size());
         Assert.assertTrue(event.getTags().get("event_type").contains("system"));
-        Assert.assertTrue(event.getTitle().equals("Jenkins node null failed to launch"));
+        Assert.assertEquals("Jenkins node null failed to launch", event.getTitle());
         Assert.assertTrue(event.getText(), event.getText().contains("Jenkins node null failed to launch"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
-        Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.ERROR));
-        Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
-        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
+        Assert.assertEquals(DatadogEvent.AlertType.ERROR, event.getAlertType());
+        Assert.assertEquals(DatadogEvent.Priority.NORMAL, event.getPriority());
+        Assert.assertEquals("unknown", event.getJenkinsUrl());
     }
 
     @Test
-    public void testWithEverythingSet() throws IOException, InterruptedException {
+    public void testWithEverythingSet() {
         Computer computer = mock(Computer.class);
         when(computer.getName()).thenReturn("computer");
 
         DatadogEvent event = new ComputerLaunchFailedEventImpl(computer, null,
-                new HashMap<String, Set<String>>());
+                new HashMap<>());
 
         String hostname = DatadogUtilities.getHostname(null);
-        Assert.assertTrue(event.getHost().equals(hostname));
+        Assert.assertEquals(event.getHost(), hostname);
         Assert.assertTrue(event.getDate() != 0);
-        Assert.assertTrue(event.getAggregationKey().equals("computer"));
-        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertEquals("computer", event.getAggregationKey());
+        Assert.assertEquals(1, event.getTags().size());
         Assert.assertTrue(event.getTags().get("event_type").contains("system"));
-        Assert.assertTrue(event.getTitle().equals("Jenkins node computer failed to launch"));
+        Assert.assertEquals("Jenkins node computer failed to launch", event.getTitle());
         Assert.assertTrue(event.getText(), event.getText().contains("Jenkins node computer failed to launch"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
-        Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.ERROR));
-        Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
-        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
+        Assert.assertEquals(DatadogEvent.AlertType.ERROR, event.getAlertType());
+        Assert.assertEquals(DatadogEvent.Priority.NORMAL, event.getPriority());
+        Assert.assertEquals("unknown", event.getJenkinsUrl());
     }
 }

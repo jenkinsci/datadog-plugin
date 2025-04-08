@@ -4,10 +4,12 @@ import hudson.Extension;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import java.io.PrintStream;
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import jenkins.YesNoMaybe;
@@ -31,6 +33,7 @@ import org.kohsuke.stapler.DataBoundSetter;
  */
 public class DatadogOptions extends Step implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
     private boolean collectLogs = false;
     private List<String> tags = new ArrayList<>();
@@ -93,6 +96,7 @@ public class DatadogOptions extends Step implements Serializable {
 
     private static class ExecutionImpl extends StepExecution {
 
+        @Serial
         private static final long serialVersionUID = 1L;
         private DatadogPipelineAction action;
 
@@ -109,19 +113,14 @@ public class DatadogOptions extends Step implements Serializable {
             assert listener != null;
             PrintStream taskLogger = listener.getLogger();
             Run<?, ?> run = context.get(Run.class);
-            if (!(run instanceof WorkflowRun)) {
+            if (!(run instanceof WorkflowRun workflowRun)) {
                 // Really not expected
                 return false;
             }
-            WorkflowRun workflowRun = (WorkflowRun) run;
 
             FlowNode optionsNode = context.get(FlowNode.class);
             BlockStartNode stageNode = DatadogUtilities.getEnclosingStageNode(optionsNode);
-            if (stageNode != null) {
-                stageNode.addOrReplaceAction(action);
-            } else {
-                run.addOrReplaceAction(action);
-            }
+            Objects.requireNonNullElse(stageNode, run).addOrReplaceAction(action);
 
             BodyInvoker invoker = context.newBodyInvoker().withCallback(BodyExecutionCallback.wrap(context));
             if (this.action.isCollectLogs()) {

@@ -7,6 +7,8 @@ import com.thoughtworks.xstream.converters.MarshallingContext;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
+
+import java.io.Serial;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
@@ -20,6 +22,7 @@ import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
  */
 public class BuildSpanAction extends DatadogPluginAction {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     private final TraceSpan.TraceSpanContext buildSpanContext;

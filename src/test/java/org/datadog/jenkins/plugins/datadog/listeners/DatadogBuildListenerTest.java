@@ -32,7 +32,6 @@ import java.nio.charset.Charset;
 import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent.AlertType;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent.Priority;
-import org.datadog.jenkins.plugins.datadog.metrics.Metrics;
 import org.datadog.jenkins.plugins.datadog.publishers.DatadogCountersPublisher;
 import org.datadog.jenkins.plugins.datadog.stubs.BuildStub;
 import org.datadog.jenkins.plugins.datadog.stubs.ProjectStub;
@@ -48,7 +47,6 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
 public class DatadogBuildListenerTest {
@@ -59,7 +57,7 @@ public class DatadogBuildListenerTest {
     private Queue queue;
     private WorkflowRun workflowRun;
     EnvVars envVars;
-    
+
     @Before
     public void setUpMocks() {
         this.client = new DatadogClientStub();
@@ -316,11 +314,11 @@ public class DatadogBuildListenerTest {
         expectedTags[4] = "jenkins_url:unknown";
         expectedTags[5] = "branch:test-branch";
         client.assertMetric("jenkins.job.started", 1, "test-hostname-2", expectedTags);
-        Assert.assertTrue(client.metrics.size() == 1);
+        Assert.assertEquals(1, client.metrics.size());
         DatadogMetric metric = client.metrics.get(0);
-        Assert.assertTrue(metric.getName().equals("jenkins.job.waiting"));
+        Assert.assertEquals("jenkins.job.waiting", metric.getName());
         Assert.assertTrue(metric.getValue() > 0);
-        Assert.assertTrue(metric.getHostname().equals("test-hostname-2"));
+        Assert.assertEquals("test-hostname-2", metric.getHostname());
         Assert.assertTrue(metric.getTags().containsAll(Arrays.asList(expectedTags)));
         client.metrics.clear();
         client.assertedAllMetricsAndServiceChecks();

@@ -129,7 +129,7 @@ public class DatadogGlobalTagsTest {
       WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipeline_job");
       String definition = IOUtils.toString(
           this.getClass().getResourceAsStream("testPipeline.txt"),
-          "UTF-8"
+              StandardCharsets.UTF_8
       );
       job.setDefinition(new CpsFlowDefinition(definition, true));
 

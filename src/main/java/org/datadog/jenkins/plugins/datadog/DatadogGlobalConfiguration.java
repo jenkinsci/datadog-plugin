@@ -26,11 +26,6 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog;
 
 import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.*;
-import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentHost;
-import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentLogCollectionPort;
-import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentPort;
-import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentTraceCollectionPort;
-import static org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeSite.DatadogIntakeSiteDescriptor.getSite;
 import static org.datadog.jenkins.plugins.datadog.configuration.api.key.DatadogTextApiKey.DatadogTextApiKeyDescriptor.getDefaultKey;
 
 import com.thoughtworks.xstream.annotations.XStreamConverter;
@@ -47,11 +42,6 @@ import hudson.util.XStream2;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -76,9 +66,6 @@ import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.conversion.PatternListConverter;
 import org.datadog.jenkins.plugins.datadog.util.conversion.PolymorphicReflectionConverter;
 import org.kohsuke.stapler.*;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
 @Extension
@@ -431,7 +418,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     /**
      * Indicates if this builder can be used with all kinds of project types.
      *
-     * @param req      - A StaplerRequest object
+     * @param req      - A StaplerRequest2 object
      * @param formData - A JSONObject containing the submitted form data from the configuration
      *                 screen.
      * @return a boolean signifying the success or failure of configuration.
@@ -439,7 +426,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      */
     @Override
     @SuppressFBWarnings("REC_CATCH_EXCEPTION")
-    public boolean configure(final StaplerRequest req, final JSONObject formData) throws FormException {
+    public boolean configure(final StaplerRequest2 req, final JSONObject formData) throws FormException {
         try {
             if(!super.configure(req, formData)){
                 return false;
@@ -913,10 +900,10 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
         List<String> allEvents = Arrays.asList(
                 String.format("%s,%s,%s", SYSTEM_EVENTS, SECURITY_EVENTS, DEFAULT_EVENTS).split(","));
-        if (!includedEventsList.stream().allMatch(allEvents::contains)) {
+        if (!allEvents.containsAll(includedEventsList)) {
             return FormValidation.error("The included events list contains one or more unrecognized events.");
         }
-        if (!excludedEventsList.stream().allMatch(allEvents::contains)) {
+        if (!allEvents.containsAll(excludedEventsList)) {
             return FormValidation.error("The excluded events list contains one or more unrecognized events.");
         }
 
@@ -1155,8 +1142,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     /** @deprecated use {@link #getDatadogClientConfiguration()} */
     @Deprecated
     public String getTargetApiURL() {
-        if (datadogClientConfiguration instanceof DatadogApiConfiguration) {
-            DatadogApiConfiguration apiConfiguration = (DatadogApiConfiguration) datadogClientConfiguration;
+        if (datadogClientConfiguration instanceof DatadogApiConfiguration apiConfiguration) {
             DatadogIntake intake = apiConfiguration.getIntake();
             return intake.getApiUrl();
         }
@@ -1166,8 +1152,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     /** @deprecated use {@link #getDatadogClientConfiguration()} */
     @Deprecated
     public String getTargetLogIntakeURL() {
-        if (datadogClientConfiguration instanceof DatadogApiConfiguration) {
-            DatadogApiConfiguration apiConfiguration = (DatadogApiConfiguration) datadogClientConfiguration;
+        if (datadogClientConfiguration instanceof DatadogApiConfiguration apiConfiguration) {
             DatadogIntake intake = apiConfiguration.getIntake();
             return intake.getLogsUrl();
         }
@@ -1177,8 +1162,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     /** @deprecated use {@link #getDatadogClientConfiguration()} */
     @Deprecated
     public String getTargetWebhookIntakeURL() {
-        if (datadogClientConfiguration instanceof DatadogApiConfiguration) {
-            DatadogApiConfiguration apiConfiguration = (DatadogApiConfiguration) datadogClientConfiguration;
+        if (datadogClientConfiguration instanceof DatadogApiConfiguration apiConfiguration) {
             DatadogIntake intake = apiConfiguration.getIntake();
             return intake.getWebhooksUrl();
         }
@@ -1188,11 +1172,9 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     /** @deprecated use {@link #getDatadogClientConfiguration()} */
     @Deprecated
     public Secret getTargetApiKey() {
-        if (datadogClientConfiguration instanceof DatadogApiConfiguration) {
-            DatadogApiConfiguration apiConfiguration = (DatadogApiConfiguration) datadogClientConfiguration;
+        if (datadogClientConfiguration instanceof DatadogApiConfiguration apiConfiguration) {
             DatadogApiKey apiKey = apiConfiguration.getApiKey();
-            if (apiKey instanceof DatadogTextApiKey) {
-                DatadogTextApiKey textApiKey = (DatadogTextApiKey) apiKey;
+            if (apiKey instanceof DatadogTextApiKey textApiKey) {
                 return textApiKey.getKey();
             }
         }
@@ -1202,11 +1184,9 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     /** @deprecated use {@link #getDatadogClientConfiguration()} */
     @Deprecated
     public String getTargetCredentialsApiKey() {
-        if (datadogClientConfiguration instanceof DatadogApiConfiguration) {
-            DatadogApiConfiguration apiConfiguration = (DatadogApiConfiguration) datadogClientConfiguration;
+        if (datadogClientConfiguration instanceof DatadogApiConfiguration apiConfiguration) {
             DatadogApiKey apiKey = apiConfiguration.getApiKey();
-            if (apiKey instanceof DatadogCredentialsApiKey) {
-                DatadogCredentialsApiKey credentialsApiKey = (DatadogCredentialsApiKey) apiKey;
+            if (apiKey instanceof DatadogCredentialsApiKey credentialsApiKey) {
                 return credentialsApiKey.getCredentialsId();
             }
         }
@@ -1216,8 +1196,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     /** @deprecated use {@link #getDatadogClientConfiguration()} */
     @Deprecated
     public String getTargetHost() {
-        if (datadogClientConfiguration instanceof DatadogAgentConfiguration) {
-            DatadogAgentConfiguration agentConfiguration = (DatadogAgentConfiguration) datadogClientConfiguration;
+        if (datadogClientConfiguration instanceof DatadogAgentConfiguration agentConfiguration) {
             return agentConfiguration.getAgentHost();
         }
         return null;
@@ -1226,8 +1205,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     /** @deprecated use {@link #getDatadogClientConfiguration()} */
     @Deprecated
     public Integer getTargetPort() {
-        if (datadogClientConfiguration instanceof DatadogAgentConfiguration) {
-            DatadogAgentConfiguration agentConfiguration = (DatadogAgentConfiguration) datadogClientConfiguration;
+        if (datadogClientConfiguration instanceof DatadogAgentConfiguration agentConfiguration) {
             return agentConfiguration.getAgentPort();
         }
         return null;
@@ -1236,8 +1214,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     /** @deprecated use {@link #getDatadogClientConfiguration()} */
     @Deprecated
     public Integer getTargetLogCollectionPort() {
-        if (datadogClientConfiguration instanceof DatadogAgentConfiguration) {
-            DatadogAgentConfiguration agentConfiguration = (DatadogAgentConfiguration) datadogClientConfiguration;
+        if (datadogClientConfiguration instanceof DatadogAgentConfiguration agentConfiguration) {
             return agentConfiguration.getAgentLogCollectionPort();
         }
         return null;
@@ -1246,8 +1223,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     /** @deprecated use {@link #getDatadogClientConfiguration()} */
     @Deprecated
     public Integer getTargetTraceCollectionPort() {
-        if (datadogClientConfiguration instanceof DatadogAgentConfiguration) {
-            DatadogAgentConfiguration agentConfiguration = (DatadogAgentConfiguration) datadogClientConfiguration;
+        if (datadogClientConfiguration instanceof DatadogAgentConfiguration agentConfiguration) {
             return agentConfiguration.getAgentTraceCollectionPort();
         }
         return null;

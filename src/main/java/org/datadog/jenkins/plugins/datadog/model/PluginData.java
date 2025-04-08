@@ -1,9 +1,11 @@
 package org.datadog.jenkins.plugins.datadog.model;
 
 import javax.annotation.Nullable;
+import java.io.Serial;
 import java.io.Serializable;
 
 public class PluginData implements Serializable {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     private long count = 0;

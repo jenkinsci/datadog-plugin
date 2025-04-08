@@ -4,7 +4,6 @@ import hudson.remoting.VirtualChannel;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 import jenkins.MasterToSlaveFileCallable;
 import org.datadog.jenkins.plugins.datadog.util.ShellCommandExecutor;

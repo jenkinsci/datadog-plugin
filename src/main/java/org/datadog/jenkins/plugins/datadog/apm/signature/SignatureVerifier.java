@@ -16,38 +16,39 @@ import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 public class SignatureVerifier {
 
     public static final String DATADOG_PUBLIC_KEY = (
-            "-----BEGIN PGP PUBLIC KEY BLOCK-----\n" +
-            "Version: Hockeypuck 2.1.0-222-g25248d4\n" +
-            "Comment: Hostname:\n" +
-            "\n" +
-            "xsFNBGBbo2cBEAC16RsAMkhlN1YYzmihO//AwHRQ+n33bnmXsGkXgp2vKPcM7bty\n" +
-            "oiZxdz3FAM6fBlBKG0RNn7DBEmkiu2EdxFCp7zLzLa2NC3KW89D0GnmkvX9Uebgf\n" +
-            "Iv8a4QcMHsWl3sAINnbiy2uNnJqmDzA5ofsAkJyL9fEMVdagLASC/CsxckxPDPgg\n" +
-            "RBp8Et625lMdIA4Owf5ZPibYVMR5xOdoucsH3KFGJNVyvX+xwx8hQDyLMg7hbI0T\n" +
-            "9nu840oZR+CQqndu6sFxqxGNzbwRYoJO/zZKttwnfDQnruJjkGL8dptHxuBJ7c+8\n" +
-            "TAabUzvbhNltuJDnt3+qKbV9hg1+tNgbA6oo1E5xONzg4mm/IG9TzejU1uFGNRC2\n" +
-            "2PSzwG8ps9saB61+Px3/1VmYFisdpaGssQJHbSFylQcgWJx4gVo0EBZER/i+JLn6\n" +
-            "g8AiNf2RQoFKkliHMHgR0UXek+5vxiPYCF5fqMvpDqPjKq0TgbVZyfPz50LrNEy/\n" +
-            "HA/a3hdJbYyMThNQ1LTKQVW7JJnIO/87P3/XV0wSpwt4JBJHXNFk+w1YY/DbAHyS\n" +
-            "OGDxYUvJ8AOz1gvt8MBf/pDoV/kbY8b+PsX41eCe0uQ58tmbXhAXBZss2P2AcuZq\n" +
-            "BwNho0CnfXWp04g5I3FlaWb+/ZMQ+/AsXgbTWCRldC+P2Cou5zPVrGrgMQARAQAB\n" +
-            "zWdEYXRhZG9nIGRkLXRyYWNlLWphdmEgUGFja2FnaW5nIChEYXRhZG9nIGRkLXRy\n" +
-            "YWNlLWphdmEgUGFja2FnaW5nKSA8cGFja2FnZStkZC10cmFjZS1qYXZhQGRhdGFk\n" +
-            "b2docS5jb20+wsGTBBMBCAA9FiEE2O7camr/v79OPdjRyiBgiJT0O00FAmBbo2cC\n" +
-            "GwMFCQICKQAECwkIBwUVCgkICwUWAwIBAAIeAQIXgAAKCRDKIGCIlPQ7TV2RD/4w\n" +
-            "wypKpk4GFYoxnfpsNT7g3U1ZSy3qGwabo4FxXN0mH0i92AI2bREWKjkvQQcQUmfR\n" +
-            "+vG05nyF0MJ3Vpre/Qzt7TOcy2sBIOpFzo4pMJpRHp5W9Pqm+PCUpzs+X5LBz04i\n" +
-            "6DRhNWT0kBJI9U5mQCdZETEHQZ8iUC/UAfNkXRrUMNF6OcjkPhWUPZB2OtH07bZl\n" +
-            "GZkX9iwxUcM7nsAbj/qnqcVAxSnr3ylYSBo8ctgEIY/YsQsMzq6JasxtBCaMMz10\n" +
-            "TflGD0bNV0zd8xjY4OfF42C9W+o0lDlTPq3HkxOUC/uUmaX/gSniJOyAp9wtD3Al\n" +
-            "P9oi3RWXEAdbIQ/D38smTYZD/0VopeoX0M7QrH6ifsCCRiMj/rbw3M/KDheWDk6w\n" +
-            "5CKpYDqJVmsVvWm+h7H51nQTM5CZLXHkasWmhOkj48SU3p+NSAnvQywaVW9drU79\n" +
-            "wxjUgCXSwl8IHmTDSEbrBRbLSXWLiGGeqw+EmLZckJE6BQNDFYflkVLuObhNJtRi\n" +
-            "pZtYi8gqyelflomEN6YBJ8dOk6SCcnU6SEzua/2YpYsHakGld0/uyux2MfXwCiJ9\n" +
-            "Wf37KG6e1eegDQWy8BPg6iRoIaEyyeEWQ8CpG8ZG2zfMxUOe4pqsRfUT5k2LE5kx\n" +
-            "IPdMz7WGf1S8iuZcBwF6PhAqJJv41pJ0mO4ewnZbnQ==\n" +
-            "=7erW\n" +
-            "-----END PGP PUBLIC KEY BLOCK-----"
+            """
+                    -----BEGIN PGP PUBLIC KEY BLOCK-----
+                    Version: Hockeypuck 2.1.0-222-g25248d4
+                    Comment: Hostname:
+                    
+                    xsFNBGBbo2cBEAC16RsAMkhlN1YYzmihO//AwHRQ+n33bnmXsGkXgp2vKPcM7bty
+                    oiZxdz3FAM6fBlBKG0RNn7DBEmkiu2EdxFCp7zLzLa2NC3KW89D0GnmkvX9Uebgf
+                    Iv8a4QcMHsWl3sAINnbiy2uNnJqmDzA5ofsAkJyL9fEMVdagLASC/CsxckxPDPgg
+                    RBp8Et625lMdIA4Owf5ZPibYVMR5xOdoucsH3KFGJNVyvX+xwx8hQDyLMg7hbI0T
+                    9nu840oZR+CQqndu6sFxqxGNzbwRYoJO/zZKttwnfDQnruJjkGL8dptHxuBJ7c+8
+                    TAabUzvbhNltuJDnt3+qKbV9hg1+tNgbA6oo1E5xONzg4mm/IG9TzejU1uFGNRC2
+                    2PSzwG8ps9saB61+Px3/1VmYFisdpaGssQJHbSFylQcgWJx4gVo0EBZER/i+JLn6
+                    g8AiNf2RQoFKkliHMHgR0UXek+5vxiPYCF5fqMvpDqPjKq0TgbVZyfPz50LrNEy/
+                    HA/a3hdJbYyMThNQ1LTKQVW7JJnIO/87P3/XV0wSpwt4JBJHXNFk+w1YY/DbAHyS
+                    OGDxYUvJ8AOz1gvt8MBf/pDoV/kbY8b+PsX41eCe0uQ58tmbXhAXBZss2P2AcuZq
+                    BwNho0CnfXWp04g5I3FlaWb+/ZMQ+/AsXgbTWCRldC+P2Cou5zPVrGrgMQARAQAB
+                    zWdEYXRhZG9nIGRkLXRyYWNlLWphdmEgUGFja2FnaW5nIChEYXRhZG9nIGRkLXRy
+                    YWNlLWphdmEgUGFja2FnaW5nKSA8cGFja2FnZStkZC10cmFjZS1qYXZhQGRhdGFk
+                    b2docS5jb20+wsGTBBMBCAA9FiEE2O7camr/v79OPdjRyiBgiJT0O00FAmBbo2cC
+                    GwMFCQICKQAECwkIBwUVCgkICwUWAwIBAAIeAQIXgAAKCRDKIGCIlPQ7TV2RD/4w
+                    wypKpk4GFYoxnfpsNT7g3U1ZSy3qGwabo4FxXN0mH0i92AI2bREWKjkvQQcQUmfR
+                    +vG05nyF0MJ3Vpre/Qzt7TOcy2sBIOpFzo4pMJpRHp5W9Pqm+PCUpzs+X5LBz04i
+                    6DRhNWT0kBJI9U5mQCdZETEHQZ8iUC/UAfNkXRrUMNF6OcjkPhWUPZB2OtH07bZl
+                    GZkX9iwxUcM7nsAbj/qnqcVAxSnr3ylYSBo8ctgEIY/YsQsMzq6JasxtBCaMMz10
+                    TflGD0bNV0zd8xjY4OfF42C9W+o0lDlTPq3HkxOUC/uUmaX/gSniJOyAp9wtD3Al
+                    P9oi3RWXEAdbIQ/D38smTYZD/0VopeoX0M7QrH6ifsCCRiMj/rbw3M/KDheWDk6w
+                    5CKpYDqJVmsVvWm+h7H51nQTM5CZLXHkasWmhOkj48SU3p+NSAnvQywaVW9drU79
+                    wxjUgCXSwl8IHmTDSEbrBRbLSXWLiGGeqw+EmLZckJE6BQNDFYflkVLuObhNJtRi
+                    pZtYi8gqyelflomEN6YBJ8dOk6SCcnU6SEzua/2YpYsHakGld0/uyux2MfXwCiJ9
+                    Wf37KG6e1eegDQWy8BPg6iRoIaEyyeEWQ8CpG8ZG2zfMxUOe4pqsRfUT5k2LE5kx
+                    IPdMz7WGf1S8iuZcBwF6PhAqJJv41pJ0mO4ewnZbnQ==
+                    =7erW
+                    -----END PGP PUBLIC KEY BLOCK-----"""
     );
 
     public static boolean verifySignature(InputStream artifactStream, InputStream signatureStream, InputStream publicKeyStream) throws Exception {

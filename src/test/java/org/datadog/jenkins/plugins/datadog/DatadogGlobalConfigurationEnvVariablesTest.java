@@ -63,7 +63,7 @@ public class DatadogGlobalConfigurationEnvVariablesTest {
         assertEquals("localhost", datadogClientConfiguration.getAgentHost());
         assertEquals((Integer) 8125, datadogClientConfiguration.getAgentPort());
         assertEquals((Integer) 8126, datadogClientConfiguration.getAgentTraceCollectionPort());
-        assertEquals((Integer) null, datadogClientConfiguration.getAgentLogCollectionPort());
+        assertNull(datadogClientConfiguration.getAgentLogCollectionPort());
     }
 
     @Test

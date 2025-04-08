@@ -54,7 +54,7 @@ public class DatadogQueuePublisher extends PeriodicWork {
 
     private static final long RECURRENCE_PERIOD = TimeUnit.MINUTES.toMillis(1);
     private final Queue queue = Queue.getInstance();
-    
+
     @Override
     public long getRecurrencePeriod() {
         return RECURRENCE_PERIOD;
@@ -96,7 +96,7 @@ public class DatadogQueuePublisher extends PeriodicWork {
                 boolean isBuildable = false;
                 boolean isBlocked = false;
                 boolean isPending = false;
-                
+
                 size++;
                 if(item.isStuck()){
                     isStuck = true;
@@ -143,8 +143,7 @@ public class DatadogQueuePublisher extends PeriodicWork {
                 return run.getParent().getFullName();
             }
         }
-        if (task instanceof WorkflowJob) {
-            WorkflowJob workflowJob = (WorkflowJob) task;
+        if (task instanceof WorkflowJob workflowJob) {
             return workflowJob.getFullName();
         }
         return "unknown";
