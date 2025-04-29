@@ -29,10 +29,10 @@ This plugin can be installed from the [Update Center][3] (found at `Manage Jenki
 There are two ways to configure your plugin to submit data to Datadog:
 
 * Using a Datadog Agent that acts as a forwarder between Jenkins and Datadog (recommended).
-  - When using a DogStatsD server instead of a full Datadog Agent, only metrics and events are supported.
-  - For data submitted from an external host, the Datadog Agent requires the following configuration: `dogstatsd_non_local_traffic: true` and `apm_non_local_traffic: true`. This can be configured using the `datadog.yaml` [configuration file][17].
+  * When using a DogStatsD server instead of a full Datadog Agent, only metrics and events are supported.
+  * For data submitted from an external host, the Datadog Agent requires the following configuration: `dogstatsd_non_local_traffic: true` and `apm_non_local_traffic: true`. This can be configured using the `datadog.yaml` [configuration file][17].
 * Sending data directly to Datadog through HTTP.
-  - The HTTP client implementation used is blocking with a timeout duration of 1 minute. If there is a connection problem with Datadog, it may slow your Jenkins instance down.
+  * The HTTP client implementation used is blocking with a timeout duration of 1 minute. If there is a connection problem with Datadog, it may slow your Jenkins instance down.
 
 The configuration can be done from the [plugin user interface](#plugin-user-interface) with a [Groovy script](#groovy-script), or through [environment variables](#environment-variables).
 
@@ -43,7 +43,7 @@ To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure S
 ##### HTTP forwarding
 
 1. Select the radio button next to **Use Datadog site and API key to report to Datadog** (selected by default).
-2. Select your [Datadog site][21] in the **Pick a site** dropdown. 
+2. Select your [Datadog site][21] in the **Pick a site** dropdown.
 3. Paste your [Datadog API key][4] in the `API Key` textbox on the Jenkins configuration screen. If you would like to store your API key with the [Credentails Manager][18], create a Credential for the API key and select that credential in the `Select from credentials` dropdown.
 4. Test your Datadog API key by using the `Test Key` button on the Jenkins configuration screen directly below the API key textbox.
 5. (optional) Enter the name of the host that you use to access Datadog UI (e.g. `app.datadoghq.com`) in the `Datadog App hostname` field.
@@ -133,10 +133,13 @@ Configure your Datadog plugin using environment variables with the `DATADOG_JENK
 3. Set the `DATADOG_JENKINS_PLUGIN_TARGET_API_KEY` variable, which specifies your [Datadog API key][4].
 4. (optional) Set the `DATADOG_JENKINS_PLUGIN_DATADOG_APP_HOSTNAME` variable to the name of the host that you use to access Datadog UI (e.g. `app.datadoghq.com`)  
 5. (optional) Log Collection:
-  - Set the `DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS` variable to `true` in order to enable log collection (disabled by default).
+
+* Set the `DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS` variable to `true` in order to enable log collection (disabled by default).
+
 6. (optional) CI Visibility (trace collection):
-  - Set the `DATADOG_JENKINS_PLUGIN_ENABLE_CI_VISIBILITY` variable to `true` in order to enable CI Visibility (disabled by default).
-  - Set the `DATADOG_JENKINS_PLUGIN_CI_VISIBILITY_CI_INSTANCE_NAME` variable, which specifies the name of the Jenkins instance for CI Visibility (defaults to `jenkins`).
+
+* Set the `DATADOG_JENKINS_PLUGIN_ENABLE_CI_VISIBILITY` variable to `true` in order to enable CI Visibility (disabled by default).
+* Set the `DATADOG_JENKINS_PLUGIN_CI_VISIBILITY_CI_INSTANCE_NAME` variable, which specifies the name of the Jenkins instance for CI Visibility (defaults to `jenkins`).
 
 ##### Datadog Agent forwarding using environment variables
 
@@ -145,21 +148,22 @@ Configure your Datadog plugin using environment variables with the `DATADOG_JENK
 3. Set the `DATADOG_JENKINS_PLUGIN_TARGET_PORT` variable, which specifies the DogStatsD server port (defaults to `8125`).
 4. (optional) Set the `DATADOG_JENKINS_PLUGIN_DATADOG_APP_HOSTNAME` variable to the name of the host that you use to access Datadog UI (e.g. `app.datadoghq.com`)
 5. (optional) Log Collection:
-   -  Enable [log collection](#log-collection-for-agents) in the Datadog Agent.
-   - Set the `DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS` variable to `true` in order to enable log collection (disabled by default).
-   - Set the `DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT` variable, which specifies the Datadog Agent log collection port.
-6. (optional) CI Visibility (trace collection): 
-   - Set the `DATADOG_JENKINS_PLUGIN_ENABLE_CI_VISIBILITY` variable to `true` in order to enable CI Visibility (disabled by default).
-   - Set the `DATADOG_JENKINS_PLUGIN_TARGET_TRACE_COLLECTION_PORT` variable, which specifies the Datadog Agent trace collection port (defaults to `8126`).
-   - Set the `DATADOG_JENKINS_PLUGIN_CI_VISIBILITY_CI_INSTANCE_NAME` variable, which specifies the name of the Jenkins instance for CI Visibility (defaults to `jenkins`).
+   * Enable [log collection](#log-collection-for-agents) in the Datadog Agent.
+   * Set the `DATADOG_JENKINS_PLUGIN_COLLECT_BUILD_LOGS` variable to `true` in order to enable log collection (disabled by default).
+   * Set the `DATADOG_JENKINS_PLUGIN_TARGET_LOG_COLLECTION_PORT` variable, which specifies the Datadog Agent log collection port.
+6. (optional) CI Visibility (trace collection):
+   * Set the `DATADOG_JENKINS_PLUGIN_ENABLE_CI_VISIBILITY` variable to `true` in order to enable CI Visibility (disabled by default).
+   * Set the `DATADOG_JENKINS_PLUGIN_TARGET_TRACE_COLLECTION_PORT` variable, which specifies the Datadog Agent trace collection port (defaults to `8126`).
+   * Set the `DATADOG_JENKINS_PLUGIN_CI_VISIBILITY_CI_INSTANCE_NAME` variable, which specifies the name of the Jenkins instance for CI Visibility (defaults to `jenkins`).
 
 Additionally, you can use the standard Datadog environment variables:
-   - Set the `DD_AGENT_HOST` variable, which specifies the Datadog Agent host.
-   - Set the `DD_AGENT_PORT` variable, which specifies the DogStatsD server port.
-   - Set the `DD_TRACE_AGENT_PORT` variable, which specifies the Datadog Agent trace collection port.
-   - Set the `DD_TRACE_AGENT_URL` variable, which specifies the Datadog Agent URL to send traces. When set this takes precedence over `DD_AGENT_HOST` and `DD_TRACE_AGENT_PORT`.
 
-The environment variables with the `DATADOG_JENKINS_PLUGIN` namespace take precedence over the standard Datadog environment variables. 
+* Set the `DD_AGENT_HOST` variable, which specifies the Datadog Agent host.
+* Set the `DD_AGENT_PORT` variable, which specifies the DogStatsD server port.
+* Set the `DD_TRACE_AGENT_PORT` variable, which specifies the Datadog Agent trace collection port.
+* Set the `DD_TRACE_AGENT_URL` variable, which specifies the Datadog Agent URL to send traces. When set this takes precedence over `DD_AGENT_HOST` and `DD_TRACE_AGENT_PORT`.
+
+The environment variables with the `DATADOG_JENKINS_PLUGIN` namespace take precedence over the standard Datadog environment variables.
 
 #### Logging
 
@@ -258,7 +262,7 @@ pipeline {
         datadog(testOptimization: [ 
             enabled: true, 
             serviceName: "my-service", // the name of service or library being tested
-            languages: ["JAVA"], // languages that should be instrumented (available options are "JAVA", "JAVASCRIPT", "PYTHON", "DOTNET", "RUBY")
+            languages: ["JAVA"], // languages that should be instrumented (available options are "JAVA", "JAVASCRIPT", "PYTHON", "DOTNET", "RUBY", "GO")
             additionalVariables: ["my-var": "value"]  // additional tracer configuration settings (optional)
         ])
     }
@@ -336,9 +340,9 @@ NOTE: `event_type` is always set to `security` for above events and metrics.
 
 This plugin allows you to filter events by the event type as well as the specific event names listed
 above. To include/exclude all events of the system or security type:
-- **In the UI**: Uncheck the checkboxes for these events.
-- **In a groovy script**: Fetch the Datadog global descriptor and call either `d.setEmitSystemEvents()` or `d.setEmitSecurityEvents()`.
-- **In the [environment variables](#environment-variables) section**: Set the environment variables for the emitting security or system events.
+* **In the UI**: Uncheck the checkboxes for these events.
+* **In a groovy script**: Fetch the Datadog global descriptor and call either `d.setEmitSystemEvents()` or `d.setEmitSecurityEvents()`.
+* **In the [environment variables](#environment-variables) section**: Set the environment variables for the emitting security or system events.
 
 To get more specific control over what events are sent, three configuration options are provided to allow a comma-separated include/exclude list of strings of event names. The include/exclude list has precedence over filtering by event type. For example, `security` events can be toggled off, but including `UserAuthenticated` takes precedence, so only `UserAuthenticated` events will be sent from the `security` type. In the UI, text boxes are provided for both the included and excluded lists. In a groovy script, the methods `d.setIncludeEvents()` and `d.setExcludeEvents()` accept a comma-separated list of event names as input which is another valid configuration method. Lastly, there are provided [environment variables](#environment-variables) for manually setting included/excluded lists.
 
@@ -435,17 +439,17 @@ Build status `jenkins.job.status` with the default tags: : `jenkins_url`, `job`,
 
 ## Troubleshooting
 
-### Generating a diagnostic flare.
+### Generating a diagnostic flare
 
 Plugin diagnostic flare contains data that can be used to diagnose problems with the plugin.
 At the time of this writing the flare includes the following:
-- plugin configuration in XML format
-- plugin connectivity checks results
-- runtime data (current versions of JVM, Jenkins Core, plugin)
-- recent exceptions that happened inside the plugin code
-- plugin logs with level `INFO` and above, and recent Jenkins controller logs
-- current stacks of the threads of the Jenkins controller process
-- environment variables starting with `DD_` or `DATADOG_` (except API key and/or APP key)
+* plugin configuration in XML format
+* plugin connectivity checks results
+* runtime data (current versions of JVM, Jenkins Core, plugin)
+* recent exceptions that happened inside the plugin code
+* plugin logs with level `INFO` and above, and recent Jenkins controller logs
+* current stacks of the threads of the Jenkins controller process
+* environment variables starting with `DD_` or `DATADOG_` (except API key and/or APP key)
 
 To generate a flare go to the `Manage Jenkins` page, find the `Troubleshooting` section, and select `Datadog`.
 Click on `Download Diagnostic Flare` (requires "MANAGE" permissions) to generate the flare.

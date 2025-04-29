@@ -39,6 +39,7 @@ public class DatadogTracerConfigurator {
         configurators.put(TracerLanguage.JAVASCRIPT, new JavascriptConfigurator());
         configurators.put(TracerLanguage.PYTHON, new PythonConfigurator());
         configurators.put(TracerLanguage.RUBY, new RubyConfigurator());
+        configurators.put(TracerLanguage.GO, new GoConfigurator());
     }
 
     private TestOptimization getTestOptimization(FlowNode node, Run<?, ?> run) {
