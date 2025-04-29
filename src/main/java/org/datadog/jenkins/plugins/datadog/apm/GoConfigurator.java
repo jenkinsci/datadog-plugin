@@ -31,6 +31,7 @@ public class GoConfigurator implements TracerConfigurator {
     private static final int HTTP_TIMEOUT_MILLIS = 60_000;
     private final HttpClient httpClient = new HttpClient(HTTP_TIMEOUT_MILLIS);
 
+    @SuppressFBWarnings("REC_CATCH_EXCEPTION")
     @Override
     public Map<String, String> configure(TestOptimization testOptimization, Node node, FilePath workspacePath, Map<String, String> envs, TaskListener listener) throws Exception {
         // Check if go is installed
