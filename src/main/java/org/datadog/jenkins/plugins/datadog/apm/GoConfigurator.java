@@ -45,7 +45,7 @@ public class GoConfigurator implements TracerConfigurator {
         }
         Semver installedVersion = Semver.parse(goVersionMatcher.group(1));
         if (installedVersion.compareTo(MIN_SUPPORTED_VERSION) < 0) {
-            listener.getLogger().println("[datadog] Minimum supported Go version is " + MIN_SUPPORTED_VERSION + ", current version is " + goVersion + ". Will skip tracer installation");
+            listener.getLogger().println("[datadog] Minimum supported Go version is " + MIN_SUPPORTED_VERSION + ", current version is " + installedVersion + ". Will skip tracer installation");
             return Collections.emptyMap();
         }
 
