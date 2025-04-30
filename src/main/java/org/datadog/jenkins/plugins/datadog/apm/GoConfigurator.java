@@ -28,6 +28,8 @@ public class GoConfigurator implements TracerConfigurator {
     private static final Pattern ORCHESTRION_TAG_PATTERN = Pattern.compile("\"tag_name\"\\s*:\\s*\"(?<tag>[^\"]+)\"");
     private static final Pattern SHA_PATTERN = Pattern.compile("[0-9a-f]{7,40}");
 
+    private static final Semver MIN_SUPPORTED_VERSION = Semver.parse("1.1");
+
     private static final int HTTP_TIMEOUT_MILLIS = 60_000;
     private final HttpClient httpClient = new HttpClient(HTTP_TIMEOUT_MILLIS);
 
@@ -42,6 +44,15 @@ public class GoConfigurator implements TracerConfigurator {
             return Collections.emptyMap();
         }
         Semver installedVersion = Semver.parse(goVersionMatcher.group(1));
+        if (installedVersion.compareTo(MIN_SUPPORTED_VERSION) < 0) {
+            listener.getLogger().println("[datadog] Minimum supported Go version is " + MIN_SUPPORTED_VERSION + ", current version is " + goVersion + ". Will skip tracer installation");
+            return Collections.emptyMap();
+        }
+
+        if (!workspacePath.child("go.mod").exists()) {
+            // the workspace is not a golang project?
+            return Collections.emptyMap();
+        }
 
         listener.getLogger().println("[datadog] Configuring DD Go tracer: got go version " + goVersionOutput + " from " + workspacePath + " on " + node);
 
@@ -146,9 +157,12 @@ public class GoConfigurator implements TracerConfigurator {
     @Override
     public boolean isConfigurationValid(Node node, FilePath workspacePath) {
         try {
-            // Check if orchestrion is installed by running "orchestrion version"
-            workspacePath.act(new ShellCommandCallable(Collections.emptyMap(), SHELL_CMD_TIMEOUT_MILLIS, "orchestrion", "version"));
-            return true;
+            return workspacePath.child("go.mod").exists() &&
+                    workspacePath.act(new ShellCommandCallable(Collections.emptyMap(), SHELL_CMD_TIMEOUT_MILLIS, "go", "mod", "graph")).contains("orchestrion");
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
         } catch (Exception e) {
             return false;
         }
