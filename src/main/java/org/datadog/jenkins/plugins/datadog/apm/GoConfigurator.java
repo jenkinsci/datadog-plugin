@@ -54,40 +54,32 @@ public class GoConfigurator implements TracerConfigurator {
             return Collections.emptyMap();
         }
 
-        listener.getLogger().println("[datadog] Configuring DD Go tracer: got go version " + goVersionOutput + " from " + workspacePath + " on " + node);
-
-        // Get the tracer version from environment variable or use "latest" as default
-        String tracerVersion = getEnvVariable(testOptimization, TRACER_VERSION_ENV_VAR, LATEST_TAG);
+        listener.getLogger().println("[datadog] Configuring DD Go tracer: got go version " + installedVersion + " from " + workspacePath + " on " + node);
 
         // Get the required Go version from orchestrion's go.mod file
+        String tracerVersion = getEnvVariable(testOptimization, TRACER_VERSION_ENV_VAR, LATEST_TAG);
         String orchestrionGoVersion = getOrchestrionGoVersion(workspacePath, tracerVersion, listener);
-
-        // Compare the installed version with the required version
         Semver requiredVersion = Semver.parse(orchestrionGoVersion);
-
         if (installedVersion.compareTo(requiredVersion) < 0) {
-            throw new IllegalStateException("Go version " + installedVersion + " is less than minimum required version " + requiredVersion);
+            throw new IllegalStateException("Go version " + installedVersion + " is less than minimum required version of " + requiredVersion + " by orchestrion");
         }
 
-        // Install orchestrion using go install
+        // Install orchestrion
         String installOutput = workspacePath.act(new ShellCommandCallable(Collections.emptyMap(),
                 SHELL_CMD_TIMEOUT_MILLIS,
                 "go", "install", ORCHESTRION_REPO_URL + "@" + tracerVersion));
         listener.getLogger().println("[datadog] Configuring DD Go tracer: installed orchestrion. " + installOutput);
 
-        // Pin orchestrion
         String pinOutput = workspacePath.act(new ShellCommandCallable(Collections.emptyMap(),
                 SHELL_CMD_TIMEOUT_MILLIS,
                 "orchestrion", "pin"));
         listener.getLogger().println("[datadog] Configuring DD Go tracer: pin orchestrion. " + pinOutput);
 
-        // Run go get to update dependencies
         String getOutput = workspacePath.act(new ShellCommandCallable(Collections.emptyMap(),
                 SHELL_CMD_TIMEOUT_MILLIS,
                 "go", "get", ORCHESTRION_REPO_URL));
         listener.getLogger().println("[datadog] Configuring DD Go tracer: updated dependencies. " + getOutput);
 
-        // Get orchestrion version
         String orchestrionVersion = "";
         try {
             String orchestrionVersionOutput = workspacePath.act(new ShellCommandCallable(Collections.emptyMap(),
