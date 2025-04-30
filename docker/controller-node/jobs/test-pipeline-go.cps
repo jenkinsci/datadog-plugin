@@ -6,7 +6,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 git url: 'git@github.com:gin-gonic/gin.git',
-                    credentialsId: 'github-ssh'
+                    credentialsId: 'github-ssh', branch: 'main'
             }
         }
 

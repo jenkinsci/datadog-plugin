@@ -25,7 +25,7 @@ public class GoConfigurator implements TracerConfigurator {
 
     private static final Pattern GO_VERSION_PATTERN = Pattern.compile("^.*?go((\\d+\\.?)+).*?$"); // e.g. "go version go1.23.6 linux/arm64"
     private static final Pattern GO_MOD_VERSION_PATTERN = Pattern.compile("go ((\\d+\\.?)+)"); // e.g. "go 1.23.2"
-    private static final Pattern ORCHESTRION_TAG_PATTERN = Pattern.compile("\"tag_name\"\\s*:\\s*\"(?<tag>[^\"]+])\"");
+    private static final Pattern ORCHESTRION_TAG_PATTERN = Pattern.compile("\"tag_name\"\\s*:\\s*\"(?<tag>[^\"]+)\"");
     private static final Pattern SHA_PATTERN = Pattern.compile("[0-9a-f]{7,40}");
 
     private static final int HTTP_TIMEOUT_MILLIS = 60_000;
@@ -50,9 +50,6 @@ public class GoConfigurator implements TracerConfigurator {
 
         // Get the required Go version from orchestrion's go.mod file
         String orchestrionGoVersion = getOrchestrionGoVersion(workspacePath, tracerVersion, listener);
-        if (orchestrionGoVersion == null) {
-            return Collections.emptyMap();
-        }
 
         // Compare the installed version with the required version
         Semver requiredVersion = Semver.parse(orchestrionGoVersion);
@@ -89,6 +86,7 @@ public class GoConfigurator implements TracerConfigurator {
         } catch (Exception e) {
             orchestrionVersion = "vlatest";
         }
+        listener.getLogger().println("[datadog] Configured DD Go tracer with orchestrion version: " + orchestrionVersion);
 
         // Set up environment variables
         Map<String, String> variables = new HashMap<>();
@@ -112,8 +110,7 @@ public class GoConfigurator implements TracerConfigurator {
             }
 
             if (tag.isEmpty()) {
-                listener.getLogger().println("[datadog] Could not retrieve the latest tag for orchestrion");
-                return null;
+                throw new IllegalStateException("Could not retrieve the latest tag for orchestrion");
             }
         } else {
             tag = tracerVersion;
