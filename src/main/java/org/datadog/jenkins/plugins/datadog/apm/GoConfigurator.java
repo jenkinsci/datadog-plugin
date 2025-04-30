@@ -28,7 +28,7 @@ public class GoConfigurator implements TracerConfigurator {
     private static final Pattern ORCHESTRION_TAG_PATTERN = Pattern.compile("\"tag_name\"\\s*:\\s*\"(?<tag>[^\"]+)\"");
     private static final Pattern SHA_PATTERN = Pattern.compile("[0-9a-f]{7,40}");
 
-    private static final Semver MIN_SUPPORTED_VERSION = Semver.parse("1.1");
+    private static final Semver MIN_SUPPORTED_VERSION = Semver.parse("1.1.0");
 
     private static final int HTTP_TIMEOUT_MILLIS = 60_000;
     private final HttpClient httpClient = new HttpClient(HTTP_TIMEOUT_MILLIS);
@@ -159,7 +159,6 @@ public class GoConfigurator implements TracerConfigurator {
         try {
             return workspacePath.child("go.mod").exists() &&
                     workspacePath.act(new ShellCommandCallable(Collections.emptyMap(), SHELL_CMD_TIMEOUT_MILLIS, "go", "mod", "graph")).contains("orchestrion");
-
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return false;

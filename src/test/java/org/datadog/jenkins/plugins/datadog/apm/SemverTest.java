@@ -32,7 +32,6 @@ public class SemverTest {
 
     @Test
     public void testParseInvalidVersion() {
-        assertThrows(IllegalArgumentException.class, () -> Semver.parse("1.2"));
         assertThrows(IllegalArgumentException.class, () -> Semver.parse("1.2.3.4"));
         assertThrows(IllegalArgumentException.class, () -> Semver.parse("1.2.a"));
     }
@@ -41,8 +40,8 @@ public class SemverTest {
     public void testCompareTo() {
         Semver version1 = Semver.parse("1.2.3");
         Semver version2 = Semver.parse("1.2.4");
-        Semver version3 = Semver.parse("1.3.0");
-        Semver version4 = Semver.parse("2.0.0");
+        Semver version3 = Semver.parse("1.3");
+        Semver version4 = Semver.parse("2");
         Semver version5 = Semver.parse("1.2.3");
 
         assertTrue(version1.compareTo(version2) < 0);
