@@ -6,6 +6,7 @@ import hudson.model.TaskListener;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,12 +32,12 @@ public class GoConfigurator implements TracerConfigurator {
     private static final Semver MIN_SUPPORTED_VERSION = Semver.parse("1.1.0");
 
     private static final int HTTP_TIMEOUT_MILLIS = 60_000;
+    private static final Map<String, String> USER_AGENT_HEADER = Map.of("User-Agent", "github-action");
     private final HttpClient httpClient = new HttpClient(HTTP_TIMEOUT_MILLIS);
 
     @SuppressFBWarnings("REC_CATCH_EXCEPTION")
     @Override
     public Map<String, String> configure(TestOptimization testOptimization, Node node, FilePath workspacePath, Map<String, String> envs, TaskListener listener) throws Exception {
-        // Check if go is installed
         String goVersionOutput = workspacePath.act(new ShellCommandCallable(Collections.emptyMap(), SHELL_CMD_TIMEOUT_MILLIS, "go", "version"));
         Matcher goVersionMatcher = GO_VERSION_PATTERN.matcher(goVersionOutput);
         if (!goVersionMatcher.find()) {
@@ -54,31 +55,33 @@ public class GoConfigurator implements TracerConfigurator {
             return Collections.emptyMap();
         }
 
-        listener.getLogger().println("[datadog] Configuring DD Go tracer: got go version " + installedVersion + " from " + workspacePath + " on " + node);
+        if (!isConfigurationValid(node, workspacePath)) {
+            listener.getLogger().println("[datadog] Configuring DD Go tracer: got go version " + installedVersion + " from " + workspacePath + " on " + node);
 
-        // Get the required Go version from orchestrion's go.mod file
-        String tracerVersion = getEnvVariable(testOptimization, TRACER_VERSION_ENV_VAR, LATEST_TAG);
-        String orchestrionGoVersion = getOrchestrionGoVersion(workspacePath, tracerVersion, listener);
-        Semver requiredVersion = Semver.parse(orchestrionGoVersion);
-        if (installedVersion.compareTo(requiredVersion) < 0) {
-            throw new IllegalStateException("Go version " + installedVersion + " is less than minimum required version of " + requiredVersion + " by orchestrion");
+            // Get the required Go version from orchestrion's go.mod file
+            String tracerVersion = getEnvVariable(testOptimization, TRACER_VERSION_ENV_VAR, LATEST_TAG);
+            String orchestrionGoVersion = getOrchestrionGoVersion(workspacePath, tracerVersion, listener);
+            Semver requiredVersion = Semver.parse(orchestrionGoVersion);
+            if (installedVersion.compareTo(requiredVersion) < 0) {
+                throw new IllegalStateException("Go version " + installedVersion + " is less than minimum required version of " + requiredVersion + " by orchestrion");
+            }
+
+            // Install orchestrion
+            String installOutput = workspacePath.act(new ShellCommandCallable(Collections.emptyMap(),
+                    SHELL_CMD_TIMEOUT_MILLIS,
+                    "go", "install", ORCHESTRION_REPO_URL + "@" + tracerVersion));
+            listener.getLogger().println("[datadog] Configuring DD Go tracer: installed orchestrion. " + installOutput);
+
+            String pinOutput = workspacePath.act(new ShellCommandCallable(Collections.emptyMap(),
+                    SHELL_CMD_TIMEOUT_MILLIS,
+                    "orchestrion", "pin"));
+            listener.getLogger().println("[datadog] Configuring DD Go tracer: pin orchestrion. " + pinOutput);
+
+            String getOutput = workspacePath.act(new ShellCommandCallable(Collections.emptyMap(),
+                    SHELL_CMD_TIMEOUT_MILLIS,
+                    "go", "get", ORCHESTRION_REPO_URL));
+            listener.getLogger().println("[datadog] Configuring DD Go tracer: updated dependencies. " + getOutput);
         }
-
-        // Install orchestrion
-        String installOutput = workspacePath.act(new ShellCommandCallable(Collections.emptyMap(),
-                SHELL_CMD_TIMEOUT_MILLIS,
-                "go", "install", ORCHESTRION_REPO_URL + "@" + tracerVersion));
-        listener.getLogger().println("[datadog] Configuring DD Go tracer: installed orchestrion. " + installOutput);
-
-        String pinOutput = workspacePath.act(new ShellCommandCallable(Collections.emptyMap(),
-                SHELL_CMD_TIMEOUT_MILLIS,
-                "orchestrion", "pin"));
-        listener.getLogger().println("[datadog] Configuring DD Go tracer: pin orchestrion. " + pinOutput);
-
-        String getOutput = workspacePath.act(new ShellCommandCallable(Collections.emptyMap(),
-                SHELL_CMD_TIMEOUT_MILLIS,
-                "go", "get", ORCHESTRION_REPO_URL));
-        listener.getLogger().println("[datadog] Configuring DD Go tracer: updated dependencies. " + getOutput);
 
         String orchestrionVersion = "";
         try {
@@ -87,9 +90,10 @@ public class GoConfigurator implements TracerConfigurator {
                     "orchestrion", "version"));
             orchestrionVersion = orchestrionVersionOutput.split(" ")[1]; // Format: "orchestrion v1.0.2"
         } catch (Exception e) {
+            LOGGER.log(Level.FINE, "Unable to get orchestrion version, defaulting to 'vlatest'", e);
             orchestrionVersion = "vlatest";
         }
-        listener.getLogger().println("[datadog] Configured DD Go tracer with orchestrion version: " + orchestrionVersion);
+        listener.getLogger().println("[datadog] DD Go tracer configured with orchestrion version: " + orchestrionVersion);
 
         // Set up environment variables
         Map<String, String> variables = new HashMap<>();
@@ -105,7 +109,7 @@ public class GoConfigurator implements TracerConfigurator {
 
         // If "latest" is provided, fetch the latest release tag from GitHub API
         if (tracerVersion.equals(LATEST_TAG)) {
-            String latestReleaseJson = httpClient.get(ORCHESTRION_LATEST_URL, Collections.emptyMap(), response -> response);
+            String latestReleaseJson = httpClient.get(ORCHESTRION_LATEST_URL, USER_AGENT_HEADER, response -> response);
             // Extract the tag_name from the JSON response
             Matcher tagMatcher = ORCHESTRION_TAG_PATTERN.matcher(latestReleaseJson);
             if (tagMatcher.find()) {
@@ -131,7 +135,7 @@ public class GoConfigurator implements TracerConfigurator {
 
         // Fetch the go.mod file content
         String goMod;
-        goMod = httpClient.get(url, Collections.emptyMap(), response -> response);
+        goMod = httpClient.get(url, USER_AGENT_HEADER, response -> response);
 
         // Extract the Go version by searching for the line starting with "go "
         for (String line : goMod.split("\n")) {
