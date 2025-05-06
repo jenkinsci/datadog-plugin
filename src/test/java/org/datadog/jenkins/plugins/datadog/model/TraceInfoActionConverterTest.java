@@ -17,7 +17,10 @@ public class TraceInfoActionConverterTest extends ActionConverterTest<TraceInfoA
         return Arrays.asList(new Object[][]{
                 {new TraceInfoAction(Collections.emptyMap())},
                 {new TraceInfoAction(Collections.singletonMap("123", 123L))},
-                {new TraceInfoAction(new HashMap<String, Long>() {{ put("123", 123L); put("456", 456L); }})},
+                {new TraceInfoAction(new HashMap<>() {{
+                    put("123", 123L);
+                    put("456", 456L);
+                }})},
         });
     }
 

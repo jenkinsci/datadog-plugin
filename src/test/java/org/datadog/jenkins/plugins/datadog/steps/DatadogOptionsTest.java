@@ -3,6 +3,8 @@ package org.datadog.jenkins.plugins.datadog.steps;
 import hudson.EnvVars;
 import hudson.ExtensionList;
 import hudson.model.labels.LabelAtom;
+
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
@@ -55,7 +57,7 @@ public class DatadogOptionsTest {
         WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "testLogCollection");
         String definition = IOUtils.toString(
                 this.getClass().getResourceAsStream("logCollectedInOptions.txt"),
-                "UTF-8"
+                StandardCharsets.UTF_8
         );
         p.setDefinition(new CpsFlowDefinition(definition, true));
         p.scheduleBuild2(0).get();
@@ -67,7 +69,7 @@ public class DatadogOptionsTest {
         WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "testMetricTags");
         String definition = IOUtils.toString(
                 this.getClass().getResourceAsStream("pipelineMetricTags.txt"),
-                "UTF-8"
+                StandardCharsets.UTF_8
         );
         p.setDefinition(new CpsFlowDefinition(definition, true));
         p.scheduleBuild2(0).get();

@@ -6,7 +6,7 @@ import java.util.logging.Logger;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
-import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.Response;
 
 /**
  * A policy which encapsulates retry rules for HTTP calls. Whether to retry and how long to wait

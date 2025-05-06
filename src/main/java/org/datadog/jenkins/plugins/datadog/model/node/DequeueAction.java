@@ -7,6 +7,8 @@ import com.thoughtworks.xstream.converters.MarshallingContext;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
+
+import java.io.Serial;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogConverter;
@@ -14,6 +16,7 @@ import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
 
 public class DequeueAction extends QueueInfoAction {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     private final long queueTimeMillis;

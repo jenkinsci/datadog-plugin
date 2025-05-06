@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import org.datadog.jenkins.plugins.datadog.model.ActionConverterTest;
 import org.datadog.jenkins.plugins.datadog.model.node.EnqueueAction;
-import org.datadog.jenkins.plugins.datadog.model.node.StatusAction;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 

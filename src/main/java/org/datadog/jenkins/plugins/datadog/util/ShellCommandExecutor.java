@@ -208,7 +208,7 @@ public class ShellCommandExecutor {
       while ((count = inputStream.read(buffer)) != -1) {
         output.write(buffer, 0, count);
       }
-      return new String(output.toByteArray(), Charset.defaultCharset());
+      return output.toString(Charset.defaultCharset());
     }
   }
 

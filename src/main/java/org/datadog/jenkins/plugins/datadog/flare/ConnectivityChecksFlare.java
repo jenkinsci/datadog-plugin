@@ -40,8 +40,7 @@ public class ConnectivityChecksFlare implements FlareContributor {
         payload.put("traces-connectivity", validateConnectivity(clientConfiguration::validateTracesConnection));
         payload.put("logs-connectivity", validateConnectivity(clientConfiguration::validateLogsConnection));
 
-        if (clientConfiguration instanceof DatadogApiConfiguration){
-            DatadogApiConfiguration apiConfiguration = (DatadogApiConfiguration) clientConfiguration;
+        if (clientConfiguration instanceof DatadogApiConfiguration apiConfiguration){
             payload.put("api-connectivity", validateConnectivity(apiConfiguration::validateApiConnection));
         }
 

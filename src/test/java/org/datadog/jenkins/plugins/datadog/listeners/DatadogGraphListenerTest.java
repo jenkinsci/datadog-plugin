@@ -45,7 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import jenkins.model.Jenkins;
@@ -494,7 +493,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
         String pipelineDefinition;
         try (InputStream is = DatadogGraphListenerTest.class.getResourceAsStream(file)) {
-            StringBuffer pipelineBuilder = new StringBuffer();
+            StringBuilder pipelineBuilder = new StringBuilder();
             String pipelineTemplate = IOUtils.toString(is, StandardCharsets.UTF_8);
             Matcher m = PLACEHOLDER_PATTERN.matcher(pipelineTemplate);
             while (m.find()) {
@@ -1157,14 +1156,14 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
 
         // Regular stage with no thread
         when(node.getAction(ThreadNameAction.class)).thenReturn(null);
-        assertEquals(listener.getStageName(node), stageName);
+        assertEquals(stageName, listener.getStageName(node));
 
         // Parallel stage
         String stageNameThread = "Hello thread";
         ThreadNameAction threadNameAction = mock(ThreadNameAction.class);
         when(threadNameAction.getThreadName()).thenReturn(stageNameThread);
         when(node.getAction(ThreadNameAction.class)).thenReturn(threadNameAction);
-        assertEquals(listener.getStageName(node), stageNameThread);
+        assertEquals(stageNameThread, listener.getStageName(node));
     }
 
 
@@ -1409,16 +1408,16 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals(3, spans.size());
 
         final TraceSpan stepSpan = spans.get(2);
-        assertEquals(true, stepSpan.isError());
+        assertTrue(stepSpan.isError());
         assertEquals(CITags.STATUS_ERROR, stepSpan.getMeta().get(CITags.STATUS));
         assertEquals(stepSpan.getMeta().get("error.stack"), "hudson.AbortException", stepSpan.getMeta().get(CITags.ERROR_TYPE));
 
         final TraceSpan stageSpan = spans.get(1);
-        assertEquals(true, stageSpan.isError());
+        assertTrue(stageSpan.isError());
         assertEquals(CITags.STATUS_ERROR, stageSpan.getMeta().get(CITags.STATUS));
 
         final TraceSpan buildSpan = spans.get(0);
-        assertEquals(true, buildSpan.isError());
+        assertTrue(buildSpan.isError());
         assertEquals(CITags.STATUS_ERROR, buildSpan.getMeta().get(CITags.STATUS));
     }
 
@@ -1469,16 +1468,16 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertEquals(3, spans.size());
 
         final TraceSpan stepSpan = spans.get(2);
-        assertEquals(true, stepSpan.isError());
+        assertTrue(stepSpan.isError());
         assertEquals(CITags.STATUS_UNSTABLE, stepSpan.getMeta().get(CITags.STATUS));
         assertEquals("unstable", stepSpan.getMeta().get(CITags.ERROR_TYPE));
 
         final TraceSpan stageSpan = spans.get(1);
-        assertEquals(true, stageSpan.isError());
+        assertTrue(stageSpan.isError());
         assertEquals(CITags.STATUS_UNSTABLE, stageSpan.getMeta().get(CITags.STATUS));
 
         final TraceSpan buildSpan = spans.get(0);
-        assertEquals(true, buildSpan.isError());
+        assertTrue(buildSpan.isError());
         assertEquals(CITags.STATUS_UNSTABLE, buildSpan.getMeta().get(CITags.STATUS));
     }
 
@@ -1679,7 +1678,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
             case "Prepare01":
             case "Validate01":
                 assertEquals(worker01.getNodeName(), stageSpan.getMeta().get(CITags.NODE_NAME));
-                assertTrue(((String) stageSpan.getMeta().get(CITags.NODE_LABELS)).contains(worker01.getNodeName()));
+                assertTrue(stageSpan.getMeta().get(CITags.NODE_LABELS).contains(worker01.getNodeName()));
                 break;
             case "Prepare02":
             case "Validate02":
@@ -1886,7 +1885,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         job.scheduleBuild2(0).get();
     }
 
-    private List<TraceSpan> whenExecuting(int expectedSpanCount) throws InterruptedException, TimeoutException {
+    private List<TraceSpan> whenExecuting(int expectedSpanCount) throws InterruptedException {
         clientStub.waitForTraces(expectedSpanCount);
         final List<TraceSpan> spans = clientStub.getSpans();
         assertEquals(expectedSpanCount, spans.size());
