@@ -21,13 +21,13 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.ProxyConfiguration;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.BufferingResponseListener;
-import org.eclipse.jetty.client.util.BytesContentProvider;
-import org.eclipse.jetty.client.util.InputStreamResponseListener;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.BufferingResponseListener;
+import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -117,7 +117,8 @@ public class HttpClient {
         threadPool.setName("dd-http-client-thread-pool");
 
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        org.eclipse.jetty.client.HttpClient httpClient = new org.eclipse.jetty.client.HttpClient(sslContextFactory);
+        org.eclipse.jetty.client.HttpClient httpClient = new org.eclipse.jetty.client.HttpClient();
+        httpClient.setSslContextFactory(sslContextFactory);
 
         configureProxies(jenkinsProxyConfiguration, httpClient);
 
@@ -235,13 +236,13 @@ public class HttpClient {
                     .method(method)
                     .timeout(timeoutMillis, TimeUnit.MILLISECONDS);
             for (Map.Entry<String, String> e : headers.entrySet()) {
-                request.header(e.getKey(), e.getValue());
+                request.headers(h -> h.add(e.getKey(), e.getValue()));
             }
             if (contentType != null) {
-                request.header(HttpHeader.CONTENT_TYPE, contentType);
+                request.headers(h -> h.add(HttpHeader.CONTENT_TYPE, contentType));
             }
             if (body != null) {
-                request.content(new BytesContentProvider(contentType, body));
+                request.body(new BytesRequestContent(contentType, body));
             }
             return request;
         };
@@ -280,19 +281,12 @@ public class HttpClient {
                     continue;
                 }
 
-                String additionalHint;
-                switch (status) {
-                    case HttpStatus.FORBIDDEN_403:
-                        additionalHint = "API key might be invalid, please check your config";
-                        break;
-                    case HttpStatus.NOT_FOUND_404:
-                    case HttpStatus.BAD_REQUEST_400:
-                        additionalHint = "Request URL might be invalid, please check your config";
-                        break;
-                    default:
-                        additionalHint = "";
-                        break;
-                }
+                String additionalHint = switch (status) {
+                    case HttpStatus.FORBIDDEN_403 -> "API key might be invalid, please check your config";
+                    case HttpStatus.NOT_FOUND_404, HttpStatus.BAD_REQUEST_400 ->
+                            "Request URL might be invalid, please check your config";
+                    default -> "";
+                };
 
                 throw new ResponseProcessingException("Received erroneous response " + response + ". "  + additionalHint);
             }

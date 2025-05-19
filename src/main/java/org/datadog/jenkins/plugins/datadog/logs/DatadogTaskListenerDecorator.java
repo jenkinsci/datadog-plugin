@@ -28,6 +28,7 @@ import hudson.Extension;
 import hudson.model.Queue;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Serial;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nonnull;
@@ -39,6 +40,7 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.log.TaskListenerDecorator;
 
 public class DatadogTaskListenerDecorator extends TaskListenerDecorator {
+    @Serial
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(DatadogTaskListenerDecorator.class.getName());
 
@@ -74,8 +76,7 @@ public class DatadogTaskListenerDecorator extends TaskListenerDecorator {
             }
             try {
                 Queue.Executable executable = owner.getExecutable();
-                if (executable instanceof WorkflowRun) {
-                    WorkflowRun run = (WorkflowRun) executable;
+                if (executable instanceof WorkflowRun run) {
                     if (DatadogUtilities.isJobTracked(run)) {
                         return new DatadogTaskListenerDecorator(run);
                     }

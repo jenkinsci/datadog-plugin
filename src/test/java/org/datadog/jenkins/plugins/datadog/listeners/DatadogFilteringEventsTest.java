@@ -2,7 +2,6 @@ package org.datadog.jenkins.plugins.datadog.listeners;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -73,7 +72,7 @@ public class DatadogFilteringEventsTest {
     public void includeAllEventsViaToggle() throws Exception {
         this.assertAllIncludedEvents();
 
-        assertTrue(this.client.events.size() == 17);
+        assertEquals(17, this.client.events.size());
     }
 
     @Test
@@ -81,11 +80,11 @@ public class DatadogFilteringEventsTest {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEmitSecurityEvents(false);
         cfg.setEmitSystemEvents(false);
-        cfg.setIncludeEvents(String.format("%s,%s", DatadogGlobalConfiguration.SYSTEM_EVENTS, 
+        cfg.setIncludeEvents(String.format("%s,%s", DatadogGlobalConfiguration.SYSTEM_EVENTS,
             DatadogGlobalConfiguration.SECURITY_EVENTS));
 
         this.assertAllIncludedEvents();
-        assertTrue(this.client.events.size() == 17);
+        assertEquals(17, this.client.events.size());
     }
 
     @Test
@@ -96,7 +95,7 @@ public class DatadogFilteringEventsTest {
         cfg.setExcludeEvents(DatadogGlobalConfiguration.DEFAULT_EVENTS);
 
         this.runAllEvents();
-        assertTrue(this.client.events.size() == 0);
+        assertEquals(0, this.client.events.size());
     }
 
     @Test
@@ -109,7 +108,7 @@ public class DatadogFilteringEventsTest {
         cfg.setExcludeEvents(allEvents);
 
         this.runAllEvents();
-        assertTrue(this.client.events.size() == 0);
+        assertEquals(0, this.client.events.size());
     }
 
     @Test
@@ -120,7 +119,7 @@ public class DatadogFilteringEventsTest {
 
         this.runAllEvents();
         this.assertSecurityEvents();
-        assertTrue(this.client.events.size() == 3);
+        assertEquals(3, this.client.events.size());
     }
 
     @Test
@@ -134,7 +133,7 @@ public class DatadogFilteringEventsTest {
         this.runAllEvents();
         this.assertSecurityEvents();
 
-        assertTrue(this.client.events.size() == 3);
+        assertEquals(3, this.client.events.size());
     }
 
     @Test
@@ -145,7 +144,7 @@ public class DatadogFilteringEventsTest {
 
         this.runAllEvents();
         this.assertSystemEvents();
-        assertTrue(this.client.events.size() == 10);
+        assertEquals(10, this.client.events.size());
     }
 
     @Test
@@ -159,7 +158,7 @@ public class DatadogFilteringEventsTest {
         this.runAllEvents();
         this.assertSystemEvents();
 
-        assertTrue(this.client.events.size() == 10);
+        assertEquals(10, this.client.events.size());
     }
 
     @Test
@@ -170,7 +169,7 @@ public class DatadogFilteringEventsTest {
 
         this.runAllEvents();
         this.assertDefaultEvents();
-        assertTrue(this.client.events.size() == 4);
+        assertEquals(4, this.client.events.size());
     }
 
     @Test
@@ -186,7 +185,7 @@ public class DatadogFilteringEventsTest {
 
         this.runSecurityEvents();
 
-        assertTrue(this.client.events.size() == 14);
+        assertEquals(14, this.client.events.size());
     }
 
     @Test
@@ -202,7 +201,7 @@ public class DatadogFilteringEventsTest {
 
         this.runSecurityEvents();
 
-        assertTrue(this.client.events.size() == 14);
+        assertEquals(14, this.client.events.size());
     }
 
     @Test
@@ -218,7 +217,7 @@ public class DatadogFilteringEventsTest {
         this.runSecurityEvents();
         this.assertSecurityEvents();
 
-        assertTrue(this.client.events.size() == 7);
+        assertEquals(7, this.client.events.size());
     }
 
     @Test
@@ -234,7 +233,7 @@ public class DatadogFilteringEventsTest {
         this.runSecurityEvents();
         this.assertSecurityEvents();
 
-        assertTrue(this.client.events.size() == 7);
+        assertEquals(7, this.client.events.size());
     }
 
     @Test
@@ -249,7 +248,7 @@ public class DatadogFilteringEventsTest {
         this.runSecurityEvents();
         this.assertSecurityEvents();
 
-        assertTrue(this.client.events.size() == 13);
+        assertEquals(13, this.client.events.size());
     }
 
     @Test
@@ -269,9 +268,9 @@ public class DatadogFilteringEventsTest {
 
         DatadogEvent authEvent = this.client.events.get(2).getEvent();
         assertTrue(authEvent instanceof UserAuthenticationEventImpl);
-        assertEquals(((UserAuthenticationEventImpl) authEvent).getAction(), UserAuthenticationEventImpl.USER_LOGIN_MESSAGE);
+        assertEquals(UserAuthenticationEventImpl.USER_LOGIN_MESSAGE, ((UserAuthenticationEventImpl) authEvent).getAction());
 
-        assertTrue(this.client.events.size() == 3);
+        assertEquals(3, this.client.events.size());
     }
 
     @Test
@@ -283,13 +282,13 @@ public class DatadogFilteringEventsTest {
         this.runAllEvents();
         DatadogEvent authEvent = this.client.events.get(0).getEvent();
         assertTrue(authEvent instanceof UserAuthenticationEventImpl);
-        assertEquals(((UserAuthenticationEventImpl) authEvent).getAction(), UserAuthenticationEventImpl.USER_ACCESS_DENIED_MESSAGE);
+        assertEquals(UserAuthenticationEventImpl.USER_ACCESS_DENIED_MESSAGE, ((UserAuthenticationEventImpl) authEvent).getAction());
 
         authEvent = this.client.events.get(1).getEvent();
         assertTrue(authEvent instanceof UserAuthenticationEventImpl);
-        assertEquals(((UserAuthenticationEventImpl) authEvent).getAction(), UserAuthenticationEventImpl.USER_LOGOUT_MESSAGE);
+        assertEquals(UserAuthenticationEventImpl.USER_LOGOUT_MESSAGE, ((UserAuthenticationEventImpl) authEvent).getAction());
 
-        assertTrue(this.client.events.size() == 2);
+        assertEquals(2, this.client.events.size());
     }
 
     @Test
@@ -305,7 +304,7 @@ public class DatadogFilteringEventsTest {
         assertTrue(computerEvent instanceof ComputerOnlineEventImpl);
         assertFalse(((ComputerOnlineEventImpl) computerEvent).isTemporarily());
 
-        assertTrue(this.client.events.size() == 1);
+        assertEquals(1, this.client.events.size());
     }
 
     @Test
@@ -327,7 +326,7 @@ public class DatadogFilteringEventsTest {
         this.datadogSCMListener.onCheckout(successRun, null, null, mock(TaskListener.class), null, null);
 
         assertTrue(this.client.events.get(0).getEvent() instanceof SCMCheckoutCompletedEventImpl);
-        assertTrue(this.client.events.size() == 1);
+        assertEquals(1, this.client.events.size());
     }
 
     @Test
@@ -417,7 +416,7 @@ public class DatadogFilteringEventsTest {
     }
 
     @Test
-    public void conflictingGlobalConfigsStrings() throws Exception {
+    public void conflictingGlobalConfigsStrings() {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         environmentVariables.set("DATADOG_JENKINS_PLUGIN_EXCLUDE_EVENTS", "UserAuthenticated");
         cfg.loadEnvVariables();
@@ -427,11 +426,11 @@ public class DatadogFilteringEventsTest {
         FormValidation validation = cfg.doTestFilteringConfig(cfg.isEmitSecurityEvents(), cfg.isEmitSystemEvents(), cfg.getIncludeEvents(),
                 cfg.getExcludeEvents());
 
-        assertEquals(validation.getMessage(), "The following events are in both the include and exclude lists: UserAuthenticated");
+        assertEquals("The following events are in both the include and exclude lists: UserAuthenticated", validation.getMessage());
     }
 
     @Test
-    public void conflictingGlobalConfigsStrings2() throws Exception {
+    public void conflictingGlobalConfigsStrings2() {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         environmentVariables.set("DATADOG_JENKINS_PLUGIN_INCLUDE_EVENTS", "BuildStarted,SCMCheckout");
         cfg.loadEnvVariables();
@@ -442,11 +441,11 @@ public class DatadogFilteringEventsTest {
         FormValidation validation = cfg.doTestFilteringConfig(cfg.isEmitSecurityEvents(), cfg.isEmitSystemEvents(), cfg.getIncludeEvents(),
                 cfg.getExcludeEvents());
 
-        assertEquals(validation.getMessage(), "The following events are in both the include and exclude lists: BuildStarted,SCMCheckout");
+        assertEquals("The following events are in both the include and exclude lists: BuildStarted,SCMCheckout", validation.getMessage());
     }
 
     @Test
-    public void conflictingGlobalConfigsStringsGroovyOnly() throws Exception {
+    public void conflictingGlobalConfigsStringsGroovyOnly() {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEmitSecurityEvents(false);
         cfg.setIncludeEvents("UserAuthenticated");
@@ -454,11 +453,11 @@ public class DatadogFilteringEventsTest {
         FormValidation validation = cfg.doTestFilteringConfig(cfg.isEmitSecurityEvents(), cfg.isEmitSystemEvents(), cfg.getIncludeEvents(),
                 cfg.getExcludeEvents());
 
-        assertEquals(validation.getMessage(), "The following events are in both the include and exclude lists: UserAuthenticated");
+        assertEquals("The following events are in both the include and exclude lists: UserAuthenticated", validation.getMessage());
     }
 
     @Test
-    public void conflictingGlobalConfigsStrings2GroovyOnly() throws Exception {
+    public void conflictingGlobalConfigsStrings2GroovyOnly() {
         DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
         cfg.setEmitSecurityEvents(false);
         cfg.setEmitSystemEvents(false);
@@ -468,7 +467,7 @@ public class DatadogFilteringEventsTest {
 
         FormValidation validation = cfg.doTestFilteringConfig(cfg.isEmitSecurityEvents(), cfg.isEmitSystemEvents(), cfg.getIncludeEvents(),
                 cfg.getExcludeEvents());
-        assertEquals(validation.getMessage(), "The following events are in both the include and exclude lists: BuildStarted,SCMCheckout");
+        assertEquals("The following events are in both the include and exclude lists: BuildStarted,SCMCheckout", validation.getMessage());
     }
 
 
@@ -508,7 +507,7 @@ public class DatadogFilteringEventsTest {
         this.datadogSCMListener.onCheckout(checkoutRun, null, null, mock(TaskListener.class), null, null);
     }
 
-    private void assertDefaultEvents() throws Exception {
+    private void assertDefaultEvents() {
         int size = this.client.events.size();
 
         assertTrue(this.client.events.get(size - 4).getEvent() instanceof BuildStartedEventImpl);
@@ -530,7 +529,7 @@ public class DatadogFilteringEventsTest {
         this.datadogItemListener.onLocationChanged(job, null, null);
     }
 
-    private void assertSystemEvents() throws Exception {
+    private void assertSystemEvents() {
         int size = this.client.events.size();
 
         DatadogEvent computerEvent = this.client.events.get(size - 10).getEvent();
@@ -555,38 +554,38 @@ public class DatadogFilteringEventsTest {
 
         DatadogEvent itemEvent = this.client.events.get(size - 4).getEvent();
         assertTrue(itemEvent instanceof ItemCRUDEventImpl);
-        assertEquals(((ItemCRUDEventImpl) itemEvent).getAction(), ItemCRUDEventImpl.CREATED);
+        assertEquals(ItemCRUDEventImpl.CREATED, ((ItemCRUDEventImpl) itemEvent).getAction());
 
         itemEvent = this.client.events.get(size - 3).getEvent();
         assertTrue(itemEvent instanceof ItemCRUDEventImpl);
-        assertEquals(((ItemCRUDEventImpl) itemEvent).getAction(), ItemCRUDEventImpl.UPDATED);
+        assertEquals(ItemCRUDEventImpl.UPDATED, ((ItemCRUDEventImpl) itemEvent).getAction());
 
         itemEvent = this.client.events.get(size - 2).getEvent();
         assertTrue(itemEvent instanceof ItemCRUDEventImpl);
-        assertEquals(((ItemCRUDEventImpl) itemEvent).getAction(), ItemCRUDEventImpl.DELETED);
+        assertEquals(ItemCRUDEventImpl.DELETED, ((ItemCRUDEventImpl) itemEvent).getAction());
 
         assertTrue(this.client.events.get(size - 1).getEvent() instanceof ItemLocationChangedEventImpl);
     }
 
-    private void runSecurityEvents() throws Exception {
+    private void runSecurityEvents() {
         this.datadogSecurityListener.authenticated(mock(UserDetails.class));
         this.datadogSecurityListener.failedToAuthenticate("testUser");
         this.datadogSecurityListener.loggedOut("testUser");
     }
 
-    private void assertSecurityEvents() throws Exception {
+    private void assertSecurityEvents() {
         int size = this.client.events.size();
 
         DatadogEvent authEvent = this.client.events.get(size - 3).getEvent();
         assertTrue(authEvent instanceof UserAuthenticationEventImpl);
-        assertEquals(((UserAuthenticationEventImpl) authEvent).getAction(), UserAuthenticationEventImpl.USER_LOGIN_MESSAGE);
+        assertEquals(UserAuthenticationEventImpl.USER_LOGIN_MESSAGE, ((UserAuthenticationEventImpl) authEvent).getAction());
 
         authEvent = this.client.events.get(size - 2).getEvent();
         assertTrue(authEvent instanceof UserAuthenticationEventImpl);
-        assertEquals(((UserAuthenticationEventImpl) authEvent).getAction(), UserAuthenticationEventImpl.USER_ACCESS_DENIED_MESSAGE);
+        assertEquals(UserAuthenticationEventImpl.USER_ACCESS_DENIED_MESSAGE, ((UserAuthenticationEventImpl) authEvent).getAction());
 
         authEvent = this.client.events.get(size - 1).getEvent();
         assertTrue(authEvent instanceof UserAuthenticationEventImpl);
-        assertEquals(((UserAuthenticationEventImpl) authEvent).getAction(), UserAuthenticationEventImpl.USER_LOGOUT_MESSAGE);
+        assertEquals(UserAuthenticationEventImpl.USER_LOGOUT_MESSAGE, ((UserAuthenticationEventImpl) authEvent).getAction());
     }
 }

@@ -28,6 +28,7 @@ package org.datadog.jenkins.plugins.datadog.clients;
 
 import com.timgroup.statsd.Event;
 import com.timgroup.statsd.NonBlockingStatsDClient;
+import com.timgroup.statsd.NonBlockingStatsDClientBuilder;
 import com.timgroup.statsd.ServiceCheck;
 import com.timgroup.statsd.StatsDClient;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -39,13 +40,6 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.logging.Logger;
 import javax.annotation.concurrent.GuardedBy;
@@ -230,7 +224,7 @@ public class DatadogAgentClient implements DatadogClient {
 
                 stopStatsDClient();
                 logger.info("Re/Initialize DogStatsD Client: hostname = " + this.hostname + ", port = " + this.port);
-                this.statsd = new NonBlockingStatsDClient(null, this.hostname, this.port);
+                this.statsd = new NonBlockingStatsDClient(new NonBlockingStatsDClientBuilder().prefix(null).hostname(this.hostname).port(this.port));
                 return true;
 
             } catch (Exception e){
@@ -361,7 +355,7 @@ public class DatadogAgentClient implements DatadogClient {
                 "DD-CI-PROVIDER-NAME", "jenkins");
 
             boolean evpProxySupportsGzip = agentEndpoints.contains("/evp_proxy/v4/");
-            JsonPayloadSender<Payload> payloadSender = new BatchSender<>(client, url, headers, PAYLOAD_SIZE_LIMIT, p -> p.getJson(), evpProxySupportsGzip);
+            JsonPayloadSender<Payload> payloadSender = new BatchSender<>(client, url, headers, PAYLOAD_SIZE_LIMIT, Payload::getJson, evpProxySupportsGzip);
             return new TraceWriteStrategyImpl(Track.WEBHOOK, payloadSender::send);
 
         } else {
