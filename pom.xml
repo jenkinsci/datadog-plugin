@@ -175,7 +175,8 @@
     <dependency>
       <groupId>org.kohsuke</groupId>
       <artifactId>access-modifier-suppressions</artifactId>
-      <version>1.33</version>
+      <version>${access-modifier-checker.version}</version>
+      <scope>provided</scope>
     </dependency>
 
     <!-- TEST -->
