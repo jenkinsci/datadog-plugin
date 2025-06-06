@@ -7,3 +7,12 @@ unclassified:
     ciInstanceName: "$JENKINS_PLUGIN_DATADOG_CI_INSTANCE_NAME"
     targetCredentialsApiKey: "datadog-api-key"
     enableCiVisibility: true
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - string:
+              scope: GLOBAL
+              id: "datadog-api-key"
+              secret: "$JENKINS_PLUGIN_DATADOG_API_KEY"
+              description: "Datadog API Key"
