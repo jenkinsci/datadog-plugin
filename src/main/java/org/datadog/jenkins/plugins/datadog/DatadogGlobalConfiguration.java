@@ -203,7 +203,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         return new XmlFile(XSTREAM, legacyConfigFile);
     }
 
-    @Initializer(after = InitMilestone.SYSTEM_CONFIG_LOADED)
+    @Initializer(after = InitMilestone.SYSTEM_CONFIG_ADAPTED)
     public void onStartup() {
         try {
             DatadogClient client = this.datadogClientConfiguration.createClient();
