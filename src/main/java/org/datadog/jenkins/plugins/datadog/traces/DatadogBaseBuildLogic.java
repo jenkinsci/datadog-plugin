@@ -74,11 +74,10 @@ public abstract class DatadogBaseBuildLogic {
     }
 
     protected String getStageBreakdown(Run run) {
-        if (!(run instanceof WorkflowRun)) {
+        if (!(run instanceof WorkflowRun workflowRun)) {
             return null;
         }
 
-        WorkflowRun workflowRun = (WorkflowRun) run;
         FlowExecution execution = workflowRun.getExecution();
         if (execution == null) {
             return null;
@@ -125,11 +124,10 @@ public abstract class DatadogBaseBuildLogic {
                 }
             }
 
-            if (!(node instanceof BlockEndNode)) {
+            if (!(node instanceof BlockEndNode<?> endNode)) {
                 continue;
             }
 
-            BlockEndNode<?> endNode = (BlockEndNode<?>) node;
             BlockStartNode startNode = endNode.getStartNode();
             if (!DatadogUtilities.isStageNode(startNode)) {
                 continue;

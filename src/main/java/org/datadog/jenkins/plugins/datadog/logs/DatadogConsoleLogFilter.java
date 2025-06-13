@@ -35,6 +35,7 @@ import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.logging.Logger;
 
@@ -43,6 +44,7 @@ public class DatadogConsoleLogFilter extends ConsoleLogFilter implements Seriali
 
     private static final Logger logger = Logger.getLogger(DatadogConsoleLogFilter.class.getName());
     public transient Run<?, ?> run;
+    @Serial
     private static final long serialVersionUID = 1L;
 
     public DatadogConsoleLogFilter() {

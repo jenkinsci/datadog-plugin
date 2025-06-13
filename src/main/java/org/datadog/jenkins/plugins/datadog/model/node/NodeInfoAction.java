@@ -7,6 +7,8 @@ import com.thoughtworks.xstream.converters.MarshallingContext;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
+
+import java.io.Serial;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
@@ -16,6 +18,7 @@ import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
 
 public class NodeInfoAction extends DatadogPluginAction {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     private final String nodeName;

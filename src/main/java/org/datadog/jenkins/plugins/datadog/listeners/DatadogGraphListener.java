@@ -29,7 +29,6 @@ import com.cloudbees.workflow.rest.external.FlowNodeExt;
 import hudson.Extension;
 import hudson.model.Queue;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -294,8 +293,7 @@ public class DatadogGraphListener implements GraphListener {
         try {
             if (node instanceof StepAtomNode) {
                 return new PipelineStepData(run, (StepAtomNode) node, nextNode);
-            } else if (node instanceof BlockEndNode) {
-                BlockEndNode<?> endNode = (BlockEndNode<?>) node;
+            } else if (node instanceof BlockEndNode<?> endNode) {
                 return new PipelineStepData(run, endNode.getStartNode(), endNode);
             } else {
                 throw new IllegalArgumentException("Unexpected flow node type: " + node);
@@ -313,13 +311,10 @@ public class DatadogGraphListener implements GraphListener {
             long pauseDuration = 0;
             FlowGraphWalker walker = new FlowGraphWalker(startNode.getExecution());
 
-            Iterator<FlowNode> it = walker.iterator();
-
             // Iterates on the execution nodes to sum pause duration of sub-stages.
             // Walks through all the execution graph of startNode, and considers the sub-nodes that are not active
             // anymore. A sub-node is a node for which startNode is a parent (is part of its enclosing blocks).
-            while (it.hasNext()) {
-                FlowNode node = it.next();
+            for (FlowNode node : walker) {
                 if (!node.isActive()) {
                     // Lists node parents genealogy, and sees if startNode is one of them.
                     for (BlockStartNode parent : node.iterateEnclosingBlocks()) {
