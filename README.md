@@ -63,7 +63,7 @@ To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure S
 7. Save your configuration.
 
 ### Port 7 usage 
-The Datadog Agent sends a SYN packet to port 7 when new build nodes come online. The server is expected to respond with an RST packet (reset). The Agent uses this connection to test if it can reach the Jenkins server. An RST response (rather than no response) confirms that:
+The Datadog Agent sends a SYN packet to port 7 when new build nodes come online to confirm connectivity. The Agent uses this connection to test if it can reach the Jenkins server. The server is expected to respond with an RST packet (reset). An RST response (rather than no response) confirms that:
 
 1. The network path exists
 2. The server is reachable
