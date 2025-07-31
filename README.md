@@ -63,7 +63,7 @@ To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure S
 7. Save your configuration.
 
 ### Port 7 usage 
-When a Jenkins Agent node connects to the controller, the plugin on the controller sends a corresponding event to Datadog. During event creation, the plugin calls Jenkins core APIs to retrieve agent metadata (such as hostname and labels). These API calls internally perform several checks, including a reachability test using java.net.InetAddress#isReachable. This call sends a TCP SYN packet from the controller to port 7 on the Agent node. The server on the Agent node responds with a RST packet (Reset).
+When a Jenkins Agent node connects to the controller, the plugin on the controller sends a corresponding event to Datadog. During event creation, the plugin calls Jenkins core APIs to retrieve Agent metadata (such as hostname and labels). These API calls internally perform several checks, including a reachability test using java.net.InetAddress#isReachable. This call sends a TCP SYN packet from the controller to port 7 on the Agent node. The server on the Agent node responds with a RST packet (Reset).
 
 This is a common technique used to verify network connectivity between services. The fact that it gets a RST response (rather than no response) confirms that:
 
