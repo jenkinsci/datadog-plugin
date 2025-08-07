@@ -337,6 +337,14 @@ public class DatadogBuildListener extends RunListener<Run> {
                 }
             }
 
+            DatadogGlobalConfiguration datadogConfiguration = DatadogUtilities.getDatadogGlobalDescriptor();
+            if (datadogConfiguration != null
+                && datadogConfiguration.getEnableCiVisibility()
+                && datadogConfiguration.isShowDatadogLinks()) {
+                BuildData linkBuildData = BuildData.create(run, listener);
+                addDatadogLinkAction(run, linkBuildData, datadogConfiguration);
+            }
+            
             logger.fine("End DatadogBuildListener#onCompleted");
         } catch (Exception e) {
             DatadogUtilities.severe(logger, e, "Failed to process build completion");
@@ -363,13 +371,6 @@ public class DatadogBuildListener extends RunListener<Run> {
             }
 
             BuildData buildData = BuildData.create(run, null);
-
-            DatadogGlobalConfiguration datadogConfiguration = DatadogUtilities.getDatadogGlobalDescriptor();
-            if (datadogConfiguration != null
-                && datadogConfiguration.getEnableCiVisibility()
-                && datadogConfiguration.isShowDatadogLinks()) {
-                addDatadogLinkAction(run, buildData, datadogConfiguration);
-            }
 
             traceWriter.submitBuild(buildData, run);
             logger.fine("End DatadogBuildListener#onFinalized");
