@@ -1,5 +1,17 @@
 Changes
 =======
+## 9.1.6 / 2025-06-09
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.1.5...datadog-9.1.6
+
+* [Fixed] Fix invalid API Key errors when using JCasC. See [#515](https://github.com/jenkinsci/datadog-plugin/pull/515).
+
+## 9.1.5 / 2025-05-06
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.1.4...datadog-9.1.5
+
+* [Added] Implement Go auto-instrumentation for Test Optimization [#510](https://github.com/jenkinsci/datadog-plugin/pull/510)
+
 ## 9.1.4 / 2025-04-03
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.1.3...datadog-9.1.4

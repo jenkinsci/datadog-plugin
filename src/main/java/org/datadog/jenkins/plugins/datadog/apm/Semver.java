@@ -7,13 +7,13 @@ public class Semver {
         version = version.trim();
         String[] mainAndPreRelease = version.split("-", 2);
         String[] parts = mainAndPreRelease[0].split("\\.");
-        if (parts.length != 3) {
+        if (parts.length > 3) {
             throw new IllegalArgumentException("Invalid version format");
         }
 
         int major = Integer.parseInt(parts[0]);
-        int minor = Integer.parseInt(parts[1]);
-        int patch = Integer.parseInt(parts[2]);
+        int minor = parts.length > 1 ? Integer.parseInt(parts[1]) : 0;
+        int patch = parts.length > 2 ? Integer.parseInt(parts[2]) : 0;
         String preRelease = mainAndPreRelease.length > 1 ? mainAndPreRelease[1] : null;
 
         return new Semver(major, minor, patch, preRelease);
