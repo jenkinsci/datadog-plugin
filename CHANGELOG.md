@@ -1,5 +1,12 @@
 Changes
 =======
+## 9.1.7 / 2025-08-19
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.1.6...datadog-9.1.7
+
+* [Fixed] Persist datadog link after Jenkins restart. See [#522](https://github.com/jenkinsci/datadog-plugin/pull/522).
+* [Changed] Replaced mocking-inline with the mockito-core and use the bom version. See [#509](https://github.com/jenkinsci/datadog-plugin/pull/509)
+
 ## 9.1.6 / 2025-06-09
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.1.5...datadog-9.1.6
