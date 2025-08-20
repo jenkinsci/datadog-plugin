@@ -62,6 +62,16 @@ To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure S
 6. (optional) Enter your Trace Collection Port and select "Enable CI Visibility", optionally configuring your CI Instance name.
 7. Save your configuration.
 
+### Port 7 usage 
+When a Jenkins Agent node connects to the controller, the plugin on the controller sends a corresponding event to Datadog. During event creation, the plugin calls Jenkins core APIs to retrieve Agent metadata (such as hostname and labels). These API calls internally perform several checks, including a reachability test using java.net.InetAddress#isReachable. This call sends a TCP SYN packet from the controller to port 7 on the Agent node. The server on the Agent node responds with a RST packet (Reset).
+
+This is a common technique used to verify network connectivity between services. The fact that it gets a RST response (rather than no response) confirms that:
+
+1. The network path exists
+2. The server is reachable
+3. The server is actively rejecting the connection (which is what we want)
+
+
 #### Groovy script
 
 Configure your Datadog plugin to forward data through HTTP or DogStatsD using the Groovy scripts below. Configuring the plugin this way might be useful if you're running your Jenkins Master in a Docker container using the [official Jenkins Docker image][5] or any derivative that supports `plugins.txt` and Groovy init scripts.
