@@ -7,4 +7,9 @@ public class PropertyUtils {
         String existingPropertyValue = envs.get(propertyName);
         return propertyValue + (existingPropertyValue != null ? " " + existingPropertyValue : "");
     }
+
+    public static String append(Map<String, String> envs, String propertyName, String propertyValue) {
+        String existingPropertyValue = envs.get(propertyName);
+        return (existingPropertyValue != null ?  existingPropertyValue + " " : "") + propertyValue;
+    }
 }

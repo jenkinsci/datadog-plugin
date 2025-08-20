@@ -47,6 +47,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 public class DatadogBuildListenerTest {
