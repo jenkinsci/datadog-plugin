@@ -53,8 +53,8 @@ public final class GitUtils {
      */
     public static final String CHANGE_BRANCH = "CHANGE_BRANCH";
 
-    private static transient final Logger LOGGER = Logger.getLogger(GitUtils.class.getName());
-    private static transient final Pattern SCP_REPO_URI_REGEX = Pattern.compile("^([\\w.~-]+@)?(?<host>[\\w.-]+):(?<path>[\\w./-]+)(?:\\?|$)(.*)$");
+    private static final Logger LOGGER = Logger.getLogger(GitUtils.class.getName());
+    private static final Pattern SCP_REPO_URI_REGEX = Pattern.compile("^([\\w.~-]+@)?(?<host>[\\w.-]+):(?<path>[\\w./-]+)(?:\\?|$)(.*)$");
 
     private GitUtils() {
     }

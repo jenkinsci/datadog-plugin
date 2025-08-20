@@ -18,7 +18,7 @@ import hudson.model.Job;
 import hudson.model.Node;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import java.io.IOException;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
@@ -55,7 +55,7 @@ public class BuildDataTest {
         when(job.getParent()).thenAnswer((Answer<?>) (Answer<Object>) invocationOnMock -> jobParent);
 
         EnvVars envVars = new EnvVars();
-        envVars.putAll(Collections.singletonMap("JOB_NAME", "jobNameFromEnvironment"));
+        envVars.put("JOB_NAME", "jobNameFromEnvironment");
 
         WorkflowRun run = mock(WorkflowRun.class);
         when(run.getEnvironment(any())).thenReturn(envVars);
@@ -76,7 +76,7 @@ public class BuildDataTest {
         when(job.getParent()).thenReturn(jobParent);
 
         EnvVars envVars = new EnvVars();
-        envVars.putAll(Collections.singletonMap("JOB_NAME", "jobNameFromEnvironment"));
+        envVars.put("JOB_NAME", "jobNameFromEnvironment");
 
         Run run = mock(Run.class);
         when(run.getEnvironment(any())).thenReturn(envVars);
@@ -143,7 +143,7 @@ public class BuildDataTest {
         return run;
     }
 
-    private BuildData whenCreatingBuildData(Run run) throws IOException, InterruptedException {
+    private BuildData whenCreatingBuildData(Run run) {
         TaskListener listener = mock(TaskListener.class);
         return BuildData.create(run, listener);
     }

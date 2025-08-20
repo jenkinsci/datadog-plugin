@@ -8,6 +8,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.Serial;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -29,6 +30,7 @@ public class DatadogIntakeSite extends DatadogIntake {
      * Invoked by XStream when this object is deserialized.
      * Ensures environment variables have higher priority than configuration persisted on disk
      */
+    @Serial
     protected Object readResolve() {
         DatadogSite site = DatadogIntakeSiteDescriptor.getSite();
         if (site != null) {
@@ -107,11 +109,7 @@ public class DatadogIntakeSite extends DatadogIntake {
 
         public static DatadogSite getDefaultSite() {
             DatadogSite site = getSite();
-            if (site != null) {
-                return site;
-            } else {
-                return DEFAULT_DATADOG_SITE_VALUE;
-            }
+            return Objects.requireNonNullElse(site, DEFAULT_DATADOG_SITE_VALUE);
         }
 
         @Override

@@ -74,7 +74,7 @@ public class PipelineStepData {
     private final Map<String, Set<String>> tags;
 
     public PipelineStepData(final Run<?, ?> run, final BlockStartNode startNode, final BlockEndNode<?> endNode) {
-        this(run, (FlowNode) startNode, (FlowNode) endNode);
+        this(run, startNode, (FlowNode) endNode);
 
         this.type = StepType.STAGE;
 
@@ -94,7 +94,7 @@ public class PipelineStepData {
     }
 
     public PipelineStepData(final Run<?, ?> run, final StepAtomNode stepNode, final FlowNode nextNode) {
-        this(run, (FlowNode) stepNode, (FlowNode) nextNode);
+        this(run, (FlowNode) stepNode, nextNode);
 
         this.type = StepType.STEP;
 

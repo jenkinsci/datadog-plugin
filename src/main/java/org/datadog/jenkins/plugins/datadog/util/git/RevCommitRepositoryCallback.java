@@ -7,6 +7,7 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.jenkinsci.plugins.gitclient.RepositoryCallback;
 
 import java.io.IOException;
+import java.io.Serial;
 
 /**
  * Returns the RevCommit instance for a certain commit
@@ -16,6 +17,7 @@ import java.io.IOException;
  * See GitUtils.
  */
 public final class RevCommitRepositoryCallback implements RepositoryCallback<RevCommit> {
+    @Serial
     private static final long serialVersionUID = 1L;
     private final String commit;
 

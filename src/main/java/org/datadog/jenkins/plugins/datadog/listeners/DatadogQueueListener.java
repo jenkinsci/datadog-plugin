@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import javax.annotation.CheckForNull;
@@ -46,12 +45,11 @@ public class DatadogQueueListener extends QueueListener {
                 return;
             }
 
-            if(!(task instanceof ExecutorStepExecution.PlaceholderTask)) {
+            if(!(task instanceof ExecutorStepExecution.PlaceholderTask placeholderTask)) {
                 logger.fine("onEnterBuildable: item: " + item + ", task:" + task + " is not ExecutorStepExecution.PlaceholderTask: " + task.getClass() );
                 return;
             }
 
-            final ExecutorStepExecution.PlaceholderTask placeholderTask = (ExecutorStepExecution.PlaceholderTask) task;
             // Use async method to avoid deadlock.
             // It fixes https://github.com/jenkinsci/datadog-plugin/issues/170
             final FlowNode flowNode = getNodeAsync(placeholderTask, 5000);
@@ -82,12 +80,11 @@ public class DatadogQueueListener extends QueueListener {
                 return;
             }
 
-            if(!(task instanceof ExecutorStepExecution.PlaceholderTask)) {
+            if(!(task instanceof ExecutorStepExecution.PlaceholderTask placeholderTask)) {
                 logger.fine("onLeaveBuildable: item: " + item + ", task:" + task + " is not ExecutorStepExecution.PlaceholderTask: " + task.getClass() );
                 return;
             }
 
-            final ExecutorStepExecution.PlaceholderTask placeholderTask = (ExecutorStepExecution.PlaceholderTask) task;
             // Use async method to avoid deadlock.
             // It fixes https://github.com/jenkinsci/datadog-plugin/issues/170
             final FlowNode flowNode = getNodeAsync(placeholderTask, 5000);

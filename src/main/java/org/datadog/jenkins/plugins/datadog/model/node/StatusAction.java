@@ -7,6 +7,8 @@ import com.thoughtworks.xstream.converters.MarshallingContext;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
+
+import java.io.Serial;
 import java.util.Objects;
 import org.datadog.jenkins.plugins.datadog.model.DatadogPluginAction;
 import org.datadog.jenkins.plugins.datadog.model.Status;
@@ -15,6 +17,7 @@ import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
 
 public class StatusAction extends DatadogPluginAction {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     private final Status status;
