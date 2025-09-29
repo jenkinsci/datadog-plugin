@@ -261,7 +261,7 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
             return getAgentHostFromEnvVars(DEFAULT_AGENT_HOST_VALUE);
         }
 
-        private static String getAgentHostFromEnvVars(String defaultValue) {
+        public static String getAgentHostFromEnvVars(String defaultValue) {
             Map<String, String> envVars = System.getenv();
 
             String host = envVars.get(TARGET_HOST_PROPERTY);
@@ -288,7 +288,7 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
             return getAgentPortFromEnvVars(DEFAULT_AGENT_PORT_VALUE);
         }
 
-        private static Integer getAgentPortFromEnvVars(Integer defaultValue) {
+        public static Integer getAgentPortFromEnvVars(Integer defaultValue) {
             Map<String, String> envVars = System.getenv();
             Integer port = getPort(envVars, TARGET_PORT_PROPERTY);
             if (port != null) {
@@ -305,7 +305,7 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
             return getAgentLogCollectionPortFromEnvVars(DEFAULT_LOG_COLLECTION_PORT_VALUE);
         }
 
-        private static Integer getAgentLogCollectionPortFromEnvVars(Integer defaultValue) {
+        public static Integer getAgentLogCollectionPortFromEnvVars(Integer defaultValue) {
             Map<String, String> envVars = System.getenv();
             Integer logsPort = getPort(envVars, TARGET_LOG_COLLECTION_PORT_PROPERTY);
             if (logsPort != null) {
@@ -318,7 +318,7 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
             return getAgentTraceCollectionPortFromEnvVars(DEFAULT_TRACE_COLLECTION_PORT_VALUE);
         }
 
-        private static Integer getAgentTraceCollectionPortFromEnvVars(Integer defaultValue) {
+        public static Integer getAgentTraceCollectionPortFromEnvVars(Integer defaultValue) {
             Map<String, String> envVars = System.getenv();
             Integer traceCollectionPort = getPort(envVars, TARGET_TRACE_COLLECTION_PORT_PROPERTY);
             if (traceCollectionPort != null) {
