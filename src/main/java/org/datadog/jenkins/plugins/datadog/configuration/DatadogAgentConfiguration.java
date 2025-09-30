@@ -281,7 +281,7 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
             if (StringUtils.isNotBlank(agentHost)) {
                 return agentHost;
             }
-            return defaultValue;
+            return defaultValue == null ? DEFAULT_AGENT_HOST_VALUE : defaultValue;
         }
 
         public static Integer getDefaultAgentPort() {
@@ -298,7 +298,7 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
             if (agentPort != null) {
                 return agentPort;
             }
-            return defaultValue;
+            return defaultValue == null ? DEFAULT_AGENT_PORT_VALUE : defaultValue;
         }
 
         public static Integer getDefaultAgentLogCollectionPort() {
@@ -334,7 +334,7 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
             if (traceAgentPort != null) {
                 return traceAgentPort;
             }
-            return defaultValue;
+            return defaultValue == null ? DEFAULT_TRACE_COLLECTION_PORT_VALUE : defaultValue;
         }
 
         private static URL buildURL(String urlStr) {
