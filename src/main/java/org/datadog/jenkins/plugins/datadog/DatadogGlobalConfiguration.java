@@ -1278,7 +1278,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.included = DatadogUtilities.cstrToList(this.whitelist, Pattern::compile);
         }
         if (DATADOG_AGENT_CLIENT_TYPE.equals(reportWith)) {
-            this.datadogClientConfiguration = new DatadogAgentConfiguration(this.targetHost, this.targetPort, this.targetLogCollectionPort, this.targetTraceCollectionPort);
+            String agentHost = DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getAgentHostFromEnvVars(this.targetHost);
+            Integer agentPort = DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getAgentPortFromEnvVars(this.targetPort);
+            Integer agentLogCollectionPort = DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getAgentLogCollectionPortFromEnvVars(this.targetLogCollectionPort);
+            Integer agentTraceCollectionPort = DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getAgentTraceCollectionPortFromEnvVars(this.targetTraceCollectionPort);
+            this.datadogClientConfiguration = new DatadogAgentConfiguration(agentHost, agentPort, agentLogCollectionPort, agentTraceCollectionPort);
         }
         if (DATADOG_API_CLIENT_TYPE.equals(reportWith)) {
             DatadogIntakeUrls intake = new DatadogIntakeUrls(this.targetApiURL, this.targetLogIntakeURL, this.targetWebhookIntakeURL);
