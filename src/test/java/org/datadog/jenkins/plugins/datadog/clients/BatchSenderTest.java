@@ -63,7 +63,7 @@ public class BatchSenderTest {
         List<Collection<Map<String, String>>> batches = whenSending(map("a", "b"));
 
         assertEquals(1, batches.size());
-        assertEquals(Arrays.asList(map("a", "b")), batches.get(0));
+        assertEquals(List.of(map("a", "b")), batches.get(0));
     }
 
     @Test
@@ -88,9 +88,9 @@ public class BatchSenderTest {
         List<Collection<Map<String, String>>> batches = whenSending(map("a", "b"), map("abcdefghijk", "1234567890"), map("e", "f"));
 
         assertEquals(3, batches.size());
-        assertEquals(Arrays.asList(map("a", "b")), batches.get(0));
-        assertEquals(Arrays.asList(map("abcdefghijk", "1234567890")), batches.get(1));
-        assertEquals(Arrays.asList(map("e", "f")), batches.get(2));
+        assertEquals(List.of(map("a", "b")), batches.get(0));
+        assertEquals(List.of(map("abcdefghijk", "1234567890")), batches.get(1));
+        assertEquals(List.of(map("e", "f")), batches.get(2));
     }
 
     @Test
@@ -116,10 +116,11 @@ public class BatchSenderTest {
         List<Collection<Map<String, String>>> batches = whenSending(map("a", "b"), map("cd", "1234567890"));
 
         assertEquals(2, batches.size());
-        assertEquals(Arrays.asList(map("a", "b")), batches.get(0));
-        assertEquals(Arrays.asList(map("cd", "1234567890")), batches.get(1));
+        assertEquals(List.of(map("a", "b")), batches.get(0));
+        assertEquals(List.of(map("cd", "1234567890")), batches.get(1));
     }
 
+    @SafeVarargs
     private List<Collection<Map<String, String>>> whenSending(Map<String, String>... payloads) throws Exception {
         sender.send(Arrays.asList(payloads));
 

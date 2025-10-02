@@ -15,6 +15,8 @@ import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 
+import java.nio.charset.StandardCharsets;
+
 
 public class DatadogQueuePipelinePublisherTest {
     @ClassRule
@@ -23,14 +25,14 @@ public class DatadogQueuePipelinePublisherTest {
 
     @Test
     public void testPipelineInQueue() throws Exception {
-        DatadogClientStub client = new DatadogClientStub();;
+        DatadogClientStub client = new DatadogClientStub();
         ClientHolder.setClient(client);
         DatadogQueuePublisher queuePublisher = new DatadogQueuePublisher();
         String hostname = DatadogUtilities.getHostname(null);
         WorkflowJob job = jenkins.jenkins.createProject(WorkflowJob.class, "pipelineIntegrationQueue");
         String definition = IOUtils.toString(
                 this.getClass().getResourceAsStream("testPipeline.txt"),
-                "UTF-8"
+                StandardCharsets.UTF_8
         );
         job.setDefinition(new CpsFlowDefinition(definition, true));
         String displayName = job.getDisplayName();

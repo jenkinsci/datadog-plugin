@@ -1,6 +1,5 @@
 package org.datadog.jenkins.plugins.datadog.configuration.api.key;
 
-import hudson.DescriptorExtensionList;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
@@ -8,15 +7,12 @@ import hudson.util.Secret;
 import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
-import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntake;
-import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeSite;
-import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeUrls;
-import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogSite;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
+import java.io.Serial;
 import java.util.Objects;
 
 @Symbol("datadogTextApiKey")
@@ -35,6 +31,7 @@ public class DatadogTextApiKey extends DatadogApiKey {
      * Invoked by XStream when this object is deserialized.
      * Ensures environment variables have higher priority than configuration persisted on disk
      */
+    @Serial
     protected Object readResolve() {
         Secret defaultKey = DatadogTextApiKeyDescriptor.getDefaultKey();
         if (defaultKey != null){
@@ -90,7 +87,7 @@ public class DatadogTextApiKey extends DatadogApiKey {
                                                   @QueryParameter("intake") final int intakeIdx,
                                                   @QueryParameter("site") final String site,
                                                   @QueryParameter("apiUrl") final String apiUrl) {
-            Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
+            Jenkins.getInstanceOrNull().checkPermission(Jenkins.ADMINISTER);
             Secret apiKeyValue = Secret.fromString(key);
             return checkConnectivity(apiKeyValue, intakeIdx, site, apiUrl);
         }

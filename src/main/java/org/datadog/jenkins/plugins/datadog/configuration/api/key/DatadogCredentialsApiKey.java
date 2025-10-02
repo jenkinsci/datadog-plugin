@@ -54,10 +54,10 @@ public class DatadogCredentialsApiKey extends DatadogApiKey {
             return null;
         }
         return CredentialsMatchers.firstOrNull(
-                CredentialsProvider.lookupCredentials(
+                CredentialsProvider.lookupCredentialsInItemGroup(
                         StringCredentials.class,
                         Jenkins.get(),
-                        ACL.SYSTEM,
+                        ACL.SYSTEM2,
                         URIRequirementBuilder.fromUri(null).build()),
                 CredentialsMatchers.allOf(CredentialsMatchers.withId(credentialId))
         );
@@ -114,7 +114,7 @@ public class DatadogCredentialsApiKey extends DatadogApiKey {
                 }
             }
             return result.includeEmptyValue()
-                    .includeMatchingAs(ACL.SYSTEM,
+                    .includeMatchingAs(ACL.SYSTEM2,
                             Jenkins.get(),
                             StringCredentials.class,
                             Collections.emptyList(),
@@ -144,9 +144,9 @@ public class DatadogCredentialsApiKey extends DatadogApiKey {
             if (credentialsId.startsWith("${") && credentialsId.endsWith("}")) {
                 return FormValidation.warning("Cannot validate expression based credentials");
             }
-            if (CredentialsProvider.listCredentials(StringCredentials.class,
+            if (CredentialsProvider.listCredentialsInItem(StringCredentials.class,
                     item,
-                    ACL.SYSTEM,
+                    ACL.SYSTEM2,
                     Collections.emptyList(),
                     CredentialsMatchers.withId(credentialsId)).isEmpty()) {
                 return FormValidation.error("Cannot find currently selected credentials");
@@ -159,7 +159,7 @@ public class DatadogCredentialsApiKey extends DatadogApiKey {
                                                   @QueryParameter("intake") final int intakeIdx,
                                                   @QueryParameter("site") final String site,
                                                   @QueryParameter("apiUrl") final String apiUrl) {
-            Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
+            Jenkins.getInstanceOrNull().checkPermission(Jenkins.ADMINISTER);
             StringCredentials credentialFromId = getCredentialFromId(credentialsId);
             if (credentialFromId == null) {
                 return FormValidation.error("Could not find credentials with the given ID");

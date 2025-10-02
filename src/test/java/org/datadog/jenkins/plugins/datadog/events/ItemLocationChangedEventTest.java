@@ -31,9 +31,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.Set;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -41,43 +39,43 @@ import static org.mockito.Mockito.when;
 public class ItemLocationChangedEventTest {
 
     @Test
-    public void testWithNothingSet() throws IOException, InterruptedException {
+    public void testWithNothingSet() {
         DatadogEvent event = new ItemLocationChangedEventImpl(null, null, null, null);
 
         String hostname = DatadogUtilities.getHostname(null);
-        Assert.assertTrue(event.getHost().equals(hostname));
+        Assert.assertEquals(event.getHost(), hostname);
         Assert.assertTrue(event.getDate() != 0);
-        Assert.assertTrue(event.getAggregationKey().equals("unknown"));
-        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertEquals("unknown", event.getAggregationKey());
+        Assert.assertEquals(1, event.getTags().size());
         Assert.assertTrue(event.getTags().get("event_type").contains("system"));
-        Assert.assertTrue(event.getTitle().equals("User anonymous changed the location of the item unknown"));
+        Assert.assertEquals("User anonymous changed the location of the item unknown", event.getTitle());
         Assert.assertTrue(event.getText(), event.getText().contains("User anonymous changed the location of the item unknown from null to null"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
-        Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
-        Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
-        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
+        Assert.assertEquals(DatadogEvent.AlertType.INFO, event.getAlertType());
+        Assert.assertEquals(DatadogEvent.Priority.NORMAL, event.getPriority());
+        Assert.assertEquals("unknown", event.getJenkinsUrl());
     }
 
     @Test
-    public void testWithEverythingSet() throws IOException, InterruptedException {
+    public void testWithEverythingSet() {
         FreeStyleProject item = mock(FreeStyleProject.class);
         when(item.getName()).thenReturn("itemname");
 
         DatadogEvent event = new ItemLocationChangedEventImpl(item, "from_loc", "to_loc",
-                new HashMap<String, Set<String>>());
+                new HashMap<>());
 
         String hostname = DatadogUtilities.getHostname(null);
-        Assert.assertTrue(event.getHost().equals(hostname));
+        Assert.assertEquals(event.getHost(), hostname);
         Assert.assertTrue(event.getDate() != 0);
-        Assert.assertTrue(event.getAggregationKey().equals("itemname"));
-        Assert.assertTrue(event.getTags().size() == 1);
+        Assert.assertEquals("itemname", event.getAggregationKey());
+        Assert.assertEquals(1, event.getTags().size());
         Assert.assertTrue(event.getTags().get("event_type").contains("system"));
-        Assert.assertTrue(event.getTitle().equals("User anonymous changed the location of the item itemname"));
+        Assert.assertEquals("User anonymous changed the location of the item itemname", event.getTitle());
         Assert.assertTrue(event.getText(), event.getText().contains("User anonymous changed the location of the item itemname from from_loc to to_loc"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
-        Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.INFO));
-        Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.NORMAL));
-        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
+        Assert.assertEquals(DatadogEvent.AlertType.INFO, event.getAlertType());
+        Assert.assertEquals(DatadogEvent.Priority.NORMAL, event.getPriority());
+        Assert.assertEquals("unknown", event.getJenkinsUrl());
 
     }
 }

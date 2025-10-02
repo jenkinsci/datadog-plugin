@@ -8,7 +8,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import org.datadog.jenkins.plugins.datadog.model.ActionConverterTest;
 import org.datadog.jenkins.plugins.datadog.model.PipelineNodeInfoAction;
-import org.datadog.jenkins.plugins.datadog.model.PipelineQueueInfoAction;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 

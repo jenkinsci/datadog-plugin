@@ -38,7 +38,7 @@ import net.sf.json.JSONArray;
 
 public class TagsUtil {
 
-    private static transient final Logger LOGGER = Logger.getLogger(TagsUtil.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(TagsUtil.class.getName());
 
     public static Map<String, Set<String>> merge(Map<String, Set<String>> dest, Map<String, Set<String>> orig) {
         if (dest == null) {

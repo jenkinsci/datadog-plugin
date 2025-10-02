@@ -51,7 +51,6 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 public class DatadogClientStub implements DatadogClient {
 
@@ -105,7 +104,7 @@ public class DatadogClientStub implements DatadogClient {
             this.metrics.remove(m);
             return true;
         }
-        Assert.fail("metric { " + m.toString() + " does not exist. " +
+        Assert.fail("metric { " + m + " does not exist. " +
                 "metrics: {" + this.metrics.toString() + " }");
         return false;
     }
@@ -122,7 +121,7 @@ public class DatadogClientStub implements DatadogClient {
             this.metrics.remove(match.get());
             return value;
         }
-        Assert.fail("metric { " + m.toString() + " does not exist (ignoring value). " +
+        Assert.fail("metric { " + m + " does not exist (ignoring value). " +
                 "metrics: {" + this.metrics.toString() + " }");
         return value;
     }
@@ -138,7 +137,7 @@ public class DatadogClientStub implements DatadogClient {
         if (timesSeen == count) {
             return true;
         }
-        Assert.fail("metric { " + m.toString() + " found " + timesSeen + " times, not " + count);
+        Assert.fail("metric { " + m + " found " + timesSeen + " times, not " + count);
         return false;
     }
 
@@ -153,7 +152,7 @@ public class DatadogClientStub implements DatadogClient {
         if (timesSeen >= min) {
             return true;
         }
-        Assert.fail("metric { " + m.toString() + " found " + timesSeen + " times, not more than" + min);
+        Assert.fail("metric { " + m + " found " + timesSeen + " times, not more than" + min);
         return false;
     }
 
@@ -170,13 +169,13 @@ public class DatadogClientStub implements DatadogClient {
             return true;
         }
 
-        List<DatadogMetric> sameMetricsNoTags = metrics.stream().filter(t -> t.sameNoTags(m)).collect(Collectors.toList());
+        List<DatadogMetric> sameMetricsNoTags = metrics.stream().filter(t -> t.sameNoTags(m)).toList();
         if (!sameMetricsNoTags.isEmpty()) {
             Assert.fail("metric { " + m + " does not exist (ignoring value).\n" +
                     "Same metrics ignoring tags: {" + sameMetricsNoTags + " }");
         }
 
-        List<DatadogMetric> metricsWithSameName = metrics.stream().filter(t -> Objects.equal(t.getName(), m.getName())).collect(Collectors.toList());
+        List<DatadogMetric> metricsWithSameName = metrics.stream().filter(t -> Objects.equal(t.getName(), m.getName())).toList();
         if (!metricsWithSameName.isEmpty()) {
             Assert.fail("metric { " + m + " does not exist (ignoring value).\n" +
                     "Metrics with same name: {" + metricsWithSameName + " }");
@@ -193,7 +192,7 @@ public class DatadogClientStub implements DatadogClient {
             this.serviceChecks.remove(m);
             return true;
         }
-        Assert.fail("serviceCheck { " + m.toString() + " does not exist. " +
+        Assert.fail("serviceCheck { " + m + " does not exist. " +
                 "serviceChecks: {" + this.serviceChecks.toString() + "}");
         return false;
     }
@@ -203,7 +202,7 @@ public class DatadogClientStub implements DatadogClient {
             return true;
         }
 
-        Assert.fail("metrics: {" + this.metrics.toString() + " }, serviceChecks : {" +
+        Assert.fail("metrics: {" + this.metrics + " }, serviceChecks : {" +
                 this.serviceChecks.toString() + "}");
         return false;
     }
@@ -246,7 +245,7 @@ public class DatadogClientStub implements DatadogClient {
     }
 
     public static Map<String, Set<String>> addTagToMap(Map<String, Set<String>> tags, String name, String value) {
-        Set<String> v = tags.containsKey(name) ? tags.get(name) : new HashSet<String>();
+        Set<String> v = tags.containsKey(name) ? tags.get(name) : new HashSet<>();
         v.add(value);
         tags.put(name, v);
         return tags;
@@ -388,7 +387,7 @@ public class DatadogClientStub implements DatadogClient {
 
     public List<TraceSpan> getSpans() {
         ArrayList<TraceSpan> spans = new ArrayList<>(traceWriteStrategy.traces);
-        Collections.sort(spans, (span1, span2) -> {
+        spans.sort((span1, span2) -> {
             if (span1.getStartNano() < span2.getStartNano()) {
                 return -1;
             } else if (span1.getStartNano() > span2.getStartNano()) {

@@ -46,7 +46,7 @@ import static org.mockito.Mockito.when;
 public class SCMCheckoutCompletedEventTest {
 
     @Test
-    public void testWithNothingSet() throws IOException, InterruptedException {
+    public void testWithNothingSet() throws IOException {
         Jenkins jenkins = mock(Jenkins.class);
         when(jenkins.getFullName()).thenReturn("");
 
@@ -61,24 +61,24 @@ public class SCMCheckoutCompletedEventTest {
         bd.setHostname(hostname);
         DatadogEvent event = new SCMCheckoutCompletedEventImpl(bd);
 
-        Assert.assertTrue(event.getHost().equals(hostname));
+        Assert.assertEquals(event.getHost(), hostname);
         Assert.assertTrue(event.getDate() != 0);
-        Assert.assertTrue(event.getAggregationKey().equals("unknown"));
-        Assert.assertTrue(event.getTags().size() == 4);
+        Assert.assertEquals("unknown", event.getAggregationKey());
+        Assert.assertEquals(4, event.getTags().size());
         Assert.assertTrue(event.getTags().get("job").contains("unknown"));
         Assert.assertTrue(event.getTags().get("user_id").contains("anonymous"));
         Assert.assertTrue(event.getTags().get("jenkins_url").contains("unknown"));
         Assert.assertTrue(event.getTags().get("event_type").contains("default"));
-        Assert.assertTrue(event.getTitle().equals("Job unknown build #0 checkout finished on " + hostname));
+        Assert.assertEquals(event.getTitle(), "Job unknown build #0 checkout finished on " + hostname);
         Assert.assertTrue(event.getText(), event.getText().contains("[Job unknown build #0](unknown) checkout (branch: unknown ) finished successfully on host " + hostname + " (node: unknown )(0.00 secs)"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
-        Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.SUCCESS));
-        Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.LOW));
-        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
+        Assert.assertEquals(DatadogEvent.AlertType.SUCCESS, event.getAlertType());
+        Assert.assertEquals(DatadogEvent.Priority.LOW, event.getPriority());
+        Assert.assertEquals("unknown", event.getJenkinsUrl());
     }
 
     @Test
-    public void testWithNothingSet_parentFullName() throws IOException, InterruptedException {
+    public void testWithNothingSet_parentFullName() throws IOException {
         Jenkins jenkins = mock(Jenkins.class);
         when(jenkins.getFullName()).thenReturn("parentFullName");
 
@@ -93,24 +93,24 @@ public class SCMCheckoutCompletedEventTest {
         bd.setHostname(hostname);
         DatadogEvent event = new SCMCheckoutCompletedEventImpl(bd);
 
-        Assert.assertTrue(event.getHost().equals(hostname));
+        Assert.assertEquals(event.getHost(), hostname);
         Assert.assertTrue(event.getDate() != 0);
-        Assert.assertTrue(event.getAggregationKey().equals("parentFullName/null"));
-        Assert.assertTrue(event.getTags().size() == 4);
+        Assert.assertEquals("parentFullName/null", event.getAggregationKey());
+        Assert.assertEquals(4, event.getTags().size());
         Assert.assertTrue(event.getTags().get("job").contains("parentFullName/null"));
         Assert.assertTrue(event.getTags().get("user_id").contains("anonymous"));
         Assert.assertTrue(event.getTags().get("jenkins_url").contains("unknown"));
         Assert.assertTrue(event.getTags().get("event_type").contains("default"));
-        Assert.assertTrue(event.getTitle().equals("Job parentFullName/null build #0 checkout finished on " + hostname));
+        Assert.assertEquals(event.getTitle(), "Job parentFullName/null build #0 checkout finished on " + hostname);
         Assert.assertTrue(event.getText(), event.getText().contains("[Job parentFullName/null build #0](unknown) checkout (branch: unknown ) finished successfully on host " + hostname + " (node: unknown )(0.00 secs)"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
-        Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.SUCCESS));
-        Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.LOW));
-        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
+        Assert.assertEquals(DatadogEvent.AlertType.SUCCESS, event.getAlertType());
+        Assert.assertEquals(DatadogEvent.Priority.LOW, event.getPriority());
+        Assert.assertEquals("unknown", event.getJenkinsUrl());
     }
 
     @Test
-    public void testWithNothingSet_parentFullName_2() throws IOException, InterruptedException {
+    public void testWithNothingSet_parentFullName_2() throws IOException {
         Jenkins jenkins = mock(Jenkins.class);
         when(jenkins.getFullName()).thenReturn("parent»Full  Name");
 
@@ -125,24 +125,24 @@ public class SCMCheckoutCompletedEventTest {
         bd.setHostname(hostname);
         DatadogEvent event = new SCMCheckoutCompletedEventImpl(bd);
 
-        Assert.assertTrue(event.getHost().equals(hostname));
+        Assert.assertEquals(event.getHost(), hostname);
         Assert.assertTrue(event.getDate() != 0);
-        Assert.assertTrue(event.getAggregationKey().equals("parent/FullName/null"));
-        Assert.assertTrue(event.getTags().size() == 4);
+        Assert.assertEquals("parent/FullName/null", event.getAggregationKey());
+        Assert.assertEquals(4, event.getTags().size());
         Assert.assertTrue(event.getTags().get("job").contains("parent/FullName/null"));
         Assert.assertTrue(event.getTags().get("user_id").contains("anonymous"));
         Assert.assertTrue(event.getTags().get("jenkins_url").contains("unknown"));
         Assert.assertTrue(event.getTags().get("event_type").contains("default"));
-        Assert.assertTrue(event.getTitle().equals("Job parent/FullName/null build #0 checkout finished on " + hostname));
+        Assert.assertEquals(event.getTitle(), "Job parent/FullName/null build #0 checkout finished on " + hostname);
         Assert.assertTrue(event.getText(), event.getText().contains("[Job parent/FullName/null build #0](unknown) checkout (branch: unknown ) finished successfully on host " + hostname + " (node: unknown )(0.00 secs)"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
-        Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.SUCCESS));
-        Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.LOW));
-        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
+        Assert.assertEquals(DatadogEvent.AlertType.SUCCESS, event.getAlertType());
+        Assert.assertEquals(DatadogEvent.Priority.LOW, event.getPriority());
+        Assert.assertEquals("unknown", event.getJenkinsUrl());
     }
 
     @Test
-    public void testWithNothingSet_jobName() throws IOException, InterruptedException {
+    public void testWithNothingSet_jobName() throws IOException {
         Jenkins jenkins = mock(Jenkins.class);
         when(jenkins.getFullName()).thenReturn("parentFullName");
 
@@ -157,24 +157,24 @@ public class SCMCheckoutCompletedEventTest {
         bd.setHostname(hostname);
         DatadogEvent event = new SCMCheckoutCompletedEventImpl(bd);
 
-        Assert.assertTrue(event.getHost().equals(hostname));
+        Assert.assertEquals(event.getHost(), hostname);
         Assert.assertTrue(event.getDate() != 0);
-        Assert.assertTrue(event.getAggregationKey().equals("parentFullName/jobName"));
-        Assert.assertTrue(event.getTags().size() == 4);
+        Assert.assertEquals("parentFullName/jobName", event.getAggregationKey());
+        Assert.assertEquals(4, event.getTags().size());
         Assert.assertTrue(event.getTags().get("job").contains("parentFullName/jobName"));
         Assert.assertTrue(event.getTags().get("user_id").contains("anonymous"));
         Assert.assertTrue(event.getTags().get("jenkins_url").contains("unknown"));
         Assert.assertTrue(event.getTags().get("event_type").contains("default"));
-        Assert.assertTrue(event.getTitle().equals("Job parentFullName/jobName build #0 checkout finished on " + hostname));
+        Assert.assertEquals(event.getTitle(), "Job parentFullName/jobName build #0 checkout finished on " + hostname);
         Assert.assertTrue(event.getText(), event.getText().contains("[Job parentFullName/jobName build #0](unknown) checkout (branch: unknown ) finished successfully on host " + hostname + " (node: unknown )(0.00 secs)"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
-        Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.SUCCESS));
-        Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.LOW));
-        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
+        Assert.assertEquals(DatadogEvent.AlertType.SUCCESS, event.getAlertType());
+        Assert.assertEquals(DatadogEvent.Priority.LOW, event.getPriority());
+        Assert.assertEquals("unknown", event.getJenkinsUrl());
     }
 
     @Test
-    public void testWithNothingSet_result() throws IOException, InterruptedException {
+    public void testWithNothingSet_result() throws IOException {
         Jenkins jenkins = mock(Jenkins.class);
         when(jenkins.getFullName()).thenReturn("parentFullName");
 
@@ -189,25 +189,25 @@ public class SCMCheckoutCompletedEventTest {
         bd.setHostname(hostname);
         DatadogEvent event = new SCMCheckoutCompletedEventImpl(bd);
 
-        Assert.assertTrue(event.getHost().equals(hostname));
+        Assert.assertEquals(event.getHost(), hostname);
         Assert.assertTrue(event.getDate() != 0);
-        Assert.assertTrue(event.getAggregationKey().equals("parentFullName/jobName"));
-        Assert.assertTrue(event.getTags().size() == 5);
+        Assert.assertEquals("parentFullName/jobName", event.getAggregationKey());
+        Assert.assertEquals(5, event.getTags().size());
         Assert.assertTrue(event.getTags().get("job").contains("parentFullName/jobName"));
         Assert.assertTrue(event.getTags().get("user_id").contains("anonymous"));
         Assert.assertTrue(event.getTags().get("result").contains("FAILURE"));
         Assert.assertTrue(event.getTags().get("jenkins_url").contains("unknown"));
         Assert.assertTrue(event.getTags().get("event_type").contains("default"));
-        Assert.assertTrue(event.getTitle().equals("Job parentFullName/jobName build #0 checkout finished on " + hostname));
+        Assert.assertEquals(event.getTitle(), "Job parentFullName/jobName build #0 checkout finished on " + hostname);
         Assert.assertTrue(event.getText(), event.getText().contains("[Job parentFullName/jobName build #0](unknown) checkout (branch: unknown ) finished successfully on host " + hostname + " (node: unknown )(0.00 secs)"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
-        Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.SUCCESS));
-        Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.LOW));
-        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
+        Assert.assertEquals(DatadogEvent.AlertType.SUCCESS, event.getAlertType());
+        Assert.assertEquals(DatadogEvent.Priority.LOW, event.getPriority());
+        Assert.assertEquals("unknown", event.getJenkinsUrl());
     }
 
     @Test
-    public void testWithEverythingSet() throws IOException, InterruptedException {
+    public void testWithEverythingSet() throws IOException {
         Jenkins jenkins = mock(Jenkins.class);
         when(jenkins.getFullName()).thenReturn("ParentFullName");
 
@@ -228,26 +228,26 @@ public class SCMCheckoutCompletedEventTest {
         bd.setJenkinsUrl("https://jenkins.com");
         DatadogEvent event = new SCMCheckoutCompletedEventImpl(bd);
 
-        Assert.assertTrue(event.getHost().equals("test-hostname-2"));
+        Assert.assertEquals("test-hostname-2", event.getHost());
         Assert.assertTrue(event.getDate() != 0);
-        Assert.assertTrue(event.getAggregationKey().equals("ParentFullName/JobName"));
-        Assert.assertTrue(event.getTags().size() == 6);
+        Assert.assertEquals("ParentFullName/JobName", event.getAggregationKey());
+        Assert.assertEquals(6, event.getTags().size());
         Assert.assertTrue(event.getTags().get("job").contains("ParentFullName/JobName"));
         Assert.assertTrue(event.getTags().get("node").contains("test-node"));
         Assert.assertTrue(event.getTags().get("user_id").contains("anonymous"));
         Assert.assertTrue(event.getTags().get("jenkins_url").contains("https://jenkins.com"));
         Assert.assertTrue(event.getTags().get("event_type").contains("default"));
         Assert.assertTrue(event.getTags().get("branch").contains("test-branch"));
-        Assert.assertTrue(event.getTitle().equals("Job ParentFullName/JobName build #2 checkout finished on test-hostname-2"));
+        Assert.assertEquals("Job ParentFullName/JobName build #2 checkout finished on test-hostname-2", event.getTitle());
         Assert.assertTrue(event.getText(), event.getText().contains("[Job ParentFullName/JobName build #2](http://build_url.com) checkout (branch: test-branch ) finished successfully on host test-hostname-2 (node: test-node )(0.01 secs)"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: test-hostname-2, Jenkins URL: [instance](https://jenkins.com)"));
-        Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.SUCCESS));
-        Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.LOW));
-        Assert.assertTrue(event.getJenkinsUrl().equals("https://jenkins.com"));
+        Assert.assertEquals(DatadogEvent.AlertType.SUCCESS, event.getAlertType());
+        Assert.assertEquals(DatadogEvent.Priority.LOW, event.getPriority());
+        Assert.assertEquals("https://jenkins.com", event.getJenkinsUrl());
     }
 
     @Test
-    public void testWithEverythingSet_envVarsAndTags() throws IOException, InterruptedException {
+    public void testWithEverythingSet_envVarsAndTags() throws IOException {
         Jenkins jenkins = mock(Jenkins.class);
         when(jenkins.getFullName()).thenReturn("ParentFullName");
 
@@ -270,10 +270,10 @@ public class SCMCheckoutCompletedEventTest {
         bd.setHostname(hostname);
         DatadogEvent event = new SCMCheckoutCompletedEventImpl(bd);
 
-        Assert.assertTrue(event.getHost().equals(hostname));
+        Assert.assertEquals(event.getHost(), hostname);
         Assert.assertTrue(event.getDate() != 0);
-        Assert.assertTrue(event.getAggregationKey().equals("ParentFullName/JobName"));
-        Assert.assertTrue(event.getTags().size() == 7);
+        Assert.assertEquals("ParentFullName/JobName", event.getAggregationKey());
+        Assert.assertEquals(7, event.getTags().size());
         Assert.assertTrue(event.getTags().get("job").contains("ParentFullName/JobName"));
         Assert.assertTrue(event.getTags().get("tag1").contains("value1"));
         Assert.assertTrue(event.getTags().get("tag2").contains("value2"));
@@ -281,11 +281,11 @@ public class SCMCheckoutCompletedEventTest {
         Assert.assertTrue(event.getTags().get("jenkins_url").contains("unknown"));
         Assert.assertTrue(event.getTags().get("event_type").contains("default"));
         Assert.assertTrue(event.getTags().get("branch").contains("git-branch"));
-        Assert.assertTrue(event.getTitle().equals("Job ParentFullName/JobName build #2 checkout finished on " + hostname));
+        Assert.assertEquals(event.getTitle(), "Job ParentFullName/JobName build #2 checkout finished on " + hostname);
         Assert.assertTrue(event.getText(), event.getText().contains("[Job ParentFullName/JobName build #2](http://build_url.com) checkout (branch: git-branch ) finished successfully on host " + hostname + " (node: unknown )(0.01 secs)"));
         Assert.assertTrue(event.getText(), event.getText().contains("Host: " + hostname + ", Jenkins URL: unknown"));
-        Assert.assertTrue(event.getAlertType().equals(DatadogEvent.AlertType.SUCCESS));
-        Assert.assertTrue(event.getPriority().equals(DatadogEvent.Priority.LOW));
-        Assert.assertTrue(event.getJenkinsUrl().equals("unknown"));
+        Assert.assertEquals(DatadogEvent.AlertType.SUCCESS, event.getAlertType());
+        Assert.assertEquals(DatadogEvent.Priority.LOW, event.getPriority());
+        Assert.assertEquals("unknown", event.getJenkinsUrl());
     }
 }

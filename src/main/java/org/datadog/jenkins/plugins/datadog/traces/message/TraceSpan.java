@@ -7,6 +7,8 @@ import com.thoughtworks.xstream.converters.MarshallingContext;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
+
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -132,6 +134,7 @@ public class TraceSpan {
 
     public static class TraceSpanContext implements Serializable {
 
+        @Serial
         private static final long serialVersionUID = 1L;
 
         private final long traceId;

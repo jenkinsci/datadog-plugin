@@ -5,6 +5,8 @@ import hudson.RelativePath;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
+
+import java.io.Serial;
 import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
@@ -65,6 +67,7 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
      * Invoked by XStream when this object is deserialized.
      * Ensures environment variables have higher priority than configuration persisted on disk
      */
+    @Serial
     protected Object readResolve() {
         String agentHost = DatadogAgentConfigurationDescriptor.getAgentHostFromEnvVars(this.agentHost);
         Integer agentPort = DatadogAgentConfigurationDescriptor.getAgentPortFromEnvVars(this.agentPort);

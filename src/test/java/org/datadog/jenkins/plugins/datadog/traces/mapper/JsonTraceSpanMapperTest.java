@@ -49,7 +49,7 @@ public class JsonTraceSpanMapperTest {
         assertEquals("test-service-name", jsonSpan.get(SERVICE_NAME));
         assertEquals("test-type", jsonSpan.get(SPAN_TYPE));
         assertEquals("meta-value", ((Map<String, String>)jsonSpan.get(META)).get("meta-key"));
-        assertEquals(1.0, ((Map<String, String>)jsonSpan.get(METRICS)).get("metric-key"));
+        assertEquals(1.0, ((Map<String, Double>)jsonSpan.get(METRICS)).get("metric-key").doubleValue());
 
         assertEquals(0, jsonSpan.get(START));
         assertEquals(1000, jsonSpan.get(DURATION));

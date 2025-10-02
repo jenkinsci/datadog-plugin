@@ -4,17 +4,15 @@ import static org.datadog.jenkins.plugins.datadog.util.git.GitUtils.normalizeBra
 
 import hudson.remoting.VirtualChannel;
 import java.io.IOException;
+import java.io.Serial;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.eclipse.jgit.lib.*;
 import org.jenkinsci.plugins.gitclient.RepositoryCallback;
-import javax.annotation.Nonnull;
+
 import javax.annotation.Nullable;
 
 /**
@@ -26,7 +24,8 @@ import javax.annotation.Nullable;
  */
 public final class GitMetadataBuilderCallback implements RepositoryCallback<GitMetadataBuilderCallback.Result> {
 
-    private static transient final Logger LOGGER = Logger.getLogger(GitMetadataBuilderCallback.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(GitMetadataBuilderCallback.class.getName());
+    @Serial
     private static final long serialVersionUID = 1L;
 
     private final String branchHint;
