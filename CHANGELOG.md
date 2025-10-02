@@ -1,5 +1,11 @@
 Changes
 =======
+## 9.1.8 / 2025-10-02
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.1.7...datadog-9.1.8
+
+* [Fixed] Fix default values when using old format of CasC. See [#524](https://github.com/jenkinsci/datadog-plugin/pull/524).
+
 ## 9.1.7 / 2025-08-19
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.1.6...datadog-9.1.7
