@@ -10,7 +10,7 @@ import java.util.logging.Logger;
  */
 public class DatadogAudit {
 
-    private static transient final Logger LOGGER = Logger.getLogger(DatadogAudit.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(DatadogAudit.class.getName());
 
     static {
         log("## DatadogAudit enabled ##");

@@ -4,6 +4,8 @@ import hudson.Extension;
 import hudson.RelativePath;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
+
+import java.io.Serial;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -13,7 +15,6 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
-import org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -45,6 +46,7 @@ public class DatadogIntakeUrls extends DatadogIntake {
      * Invoked by XStream when this object is deserialized.
      * Ensures environment variables have higher priority than configuration persisted on disk
      */
+    @Serial
     protected Object readResolve() {
         Map<String, String> env = System.getenv();
         String apiUrl = env.getOrDefault(TARGET_API_URL_PROPERTY, this.apiUrl);

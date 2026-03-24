@@ -35,17 +35,17 @@ import java.util.Set;
  */
 public interface DatadogEvent {
 
-    public static final String DEFAULT_EVENT_TYPE = "default";
-    public static final String SECURITY_EVENT_TYPE = "security";
-    public static final String SYSTEM_EVENT_TYPE = "system";
+    String DEFAULT_EVENT_TYPE = "default";
+    String SECURITY_EVENT_TYPE = "security";
+    String SYSTEM_EVENT_TYPE = "system";
 
-    public static enum AlertType {
+    enum AlertType {
         ERROR,
         WARNING,
         INFO,
         SUCCESS;
 
-        private AlertType() {
+        AlertType() {
         }
 
         public Event.AlertType toEventAlertType(){
@@ -53,11 +53,11 @@ public interface DatadogEvent {
         }
     }
 
-    public static enum Priority {
+    enum Priority {
         LOW,
         NORMAL;
 
-        private Priority() {
+        Priority() {
         }
 
         public Event.Priority toEventPriority(){
@@ -65,22 +65,22 @@ public interface DatadogEvent {
         }
     }
 
-    public String getTitle();
+    String getTitle();
 
-    public String getText();
+    String getText();
 
-    public String getHost();
+    String getHost();
 
-    public String getJenkinsUrl();
+    String getJenkinsUrl();
 
-    public Priority getPriority();
+    Priority getPriority();
 
-    public AlertType getAlertType();
+    AlertType getAlertType();
 
-    public String getAggregationKey();
+    String getAggregationKey();
 
-    public Long getDate();
+    Long getDate();
 
-    public Map<String, Set<String>> getTags();
+    Map<String, Set<String>> getTags();
 
 }

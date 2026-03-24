@@ -1,11 +1,14 @@
 package org.datadog.jenkins.plugins.datadog.steps;
 
 import hudson.model.Action;
+
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
 import javax.annotation.CheckForNull;
 
 public class DatadogPipelineAction implements Action, Serializable {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     private final boolean collectLogs;

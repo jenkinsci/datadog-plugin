@@ -78,7 +78,7 @@ public class DatadogComputerPublisher extends PeriodicWork {
             long nodeCount = 0;
             long nodeOffline = 0;
             long nodeOnline = 0;
-            Jenkins jenkins = Jenkins.getInstance();
+            Jenkins jenkins = Jenkins.getInstanceOrNull();
             Computer[] computers = new Computer[0];
             if(jenkins != null){
                 computers = jenkins.getComputers();

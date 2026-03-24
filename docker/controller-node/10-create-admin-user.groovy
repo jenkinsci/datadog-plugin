@@ -1,7 +1,7 @@
 import hudson.security.HudsonPrivateSecurityRealm
 import jenkins.model.Jenkins
 
-def instance = Jenkins.getInstance()
+def instance = Jenkins.getInstanceOrNull()
 
 def hudsonRealm = new HudsonPrivateSecurityRealm(false)
 instance.setSecurityRealm(hudsonRealm)

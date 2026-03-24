@@ -54,11 +54,7 @@ public class TraceInfoAction extends DatadogPluginAction {
 
     public Long removeOrCreate(String flowNodeId) {
         Long existingId = spanIdByNodeId.remove(flowNodeId);
-        if (existingId != null) {
-            return existingId;
-        } else {
-            return IdGenerator.generate();
-        }
+        return Objects.requireNonNullElseGet(existingId, IdGenerator::generate);
     }
 
     @Override

@@ -1,10 +1,6 @@
 package org.datadog.jenkins.plugins.datadog.apm;
 
 import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.*;
-import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentHost;
-import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentLogCollectionPort;
-import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentPort;
-import static org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getDefaultAgentTraceCollectionPort;
 import static org.junit.Assume.assumeTrue;
 
 import hudson.FilePath;
@@ -238,7 +234,7 @@ public class TracerInjectionIT {
     private static String buildPipelineDefinition(String pipelineName, Map<String, String> replacements) throws IOException {
         String pipelineDefinition;
         try (InputStream is = TracerInjectionIT.class.getResourceAsStream(pipelineName)) {
-            StringBuffer pipelineBuilder = new StringBuffer();
+            StringBuilder pipelineBuilder = new StringBuilder();
             String pipelineTemplate = IOUtils.toString(is, Charset.defaultCharset());
             Matcher m = PLACEHOLDER_PATTERN.matcher(pipelineTemplate);
             while (m.find()) {

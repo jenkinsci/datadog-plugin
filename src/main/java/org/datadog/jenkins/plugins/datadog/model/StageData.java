@@ -3,6 +3,7 @@ package org.datadog.jenkins.plugins.datadog.model;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.datadog.jenkins.plugins.datadog.util.json.ToJson;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.logging.Logger;
@@ -12,8 +13,9 @@ import java.util.logging.Logger;
  */
 public class StageData implements Serializable, Comparable<StageData>, ToJson {
 
+    @Serial
     private static final long serialVersionUID = 1L;
-    private static final transient Logger logger = Logger.getLogger(StageData.class.getName());
+    private static final Logger logger = Logger.getLogger(StageData.class.getName());
 
     private final String name;
     private final long startTimeInMicros;
@@ -49,13 +51,7 @@ public class StageData implements Serializable, Comparable<StageData>, ToJson {
 
     @Override
     public int compareTo(StageData other) {
-        if(this.startTimeInMicros < other.getStartTimeInMicros()) {
-            return -1;
-        } else if(this.startTimeInMicros > other.getStartTimeInMicros()) {
-            return 1;
-        } else {
-            return 0;
-        }
+        return Long.compare(this.startTimeInMicros, other.getStartTimeInMicros());
     }
 
     @Override

@@ -3,7 +3,6 @@ package org.datadog.jenkins.plugins.datadog.traces.write;
 import hudson.model.Run;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.function.Consumer;
 import java.util.logging.Logger;
 import javax.annotation.Nullable;
 import net.sf.json.JSONObject;

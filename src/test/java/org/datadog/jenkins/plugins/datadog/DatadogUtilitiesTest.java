@@ -41,7 +41,6 @@ import org.jvnet.hudson.test.JenkinsRule;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
-import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.*;
 
@@ -69,16 +68,16 @@ public class DatadogUtilitiesTest {
 
         List<String> items = new ArrayList<>();
         items.add("item1");
-        assertTrue(DatadogUtilities.cstrToList("item1").equals(items));
-        assertTrue(DatadogUtilities.cstrToList(" item1 ").equals(items));
-        assertTrue(DatadogUtilities.cstrToList(" , item1 , ").equals(items));
+        assertEquals(DatadogUtilities.cstrToList("item1"), items);
+        assertEquals(DatadogUtilities.cstrToList(" item1 "), items);
+        assertEquals(DatadogUtilities.cstrToList(" , item1 , "), items);
 
         items = new ArrayList<>();
         items.add("item1");
         items.add("item2");
-        assertTrue(DatadogUtilities.cstrToList("item1,item2").equals(items));
-        assertTrue(DatadogUtilities.cstrToList("  item1 , item2 ").equals(items));
-        assertTrue(DatadogUtilities.cstrToList(" , item1 , item2 , ").equals(items));
+        assertEquals(DatadogUtilities.cstrToList("item1,item2"), items);
+        assertEquals(DatadogUtilities.cstrToList("  item1 , item2 "), items);
+        assertEquals(DatadogUtilities.cstrToList(" , item1 , item2 , "), items);
     }
 
     @Test
@@ -88,16 +87,16 @@ public class DatadogUtilitiesTest {
 
         List<String> items = new ArrayList<>();
         items.add("item1");
-        assertTrue(DatadogUtilities.linesToList("item1").equals(items));
-        assertTrue(DatadogUtilities.linesToList(" item1 ").equals(items));
-        assertTrue(DatadogUtilities.linesToList(" \n item1 \n ").equals(items));
+        assertEquals(DatadogUtilities.linesToList("item1"), items);
+        assertEquals(DatadogUtilities.linesToList(" item1 "), items);
+        assertEquals(DatadogUtilities.linesToList(" \n item1 \n "), items);
 
         items = new ArrayList<>();
         items.add("item1");
         items.add("item2");
-        assertTrue(DatadogUtilities.linesToList("item1\nitem2").equals(items));
-        assertTrue(DatadogUtilities.linesToList("  item1 \n item2 ").equals(items));
-        assertTrue(DatadogUtilities.linesToList(" \n item1 \n item2 \n ").equals(items));
+        assertEquals(DatadogUtilities.linesToList("item1\nitem2"), items);
+        assertEquals(DatadogUtilities.linesToList("  item1 \n item2 "), items);
+        assertEquals(DatadogUtilities.linesToList(" \n item1 \n item2 \n "), items);
     }
 
 
@@ -117,39 +116,37 @@ public class DatadogUtilitiesTest {
     @Test
     public void getResultTagTest(){
         // passed with null
-        Assert.assertThrows(NullPointerException.class, () -> {
-            DatadogUtilities.getResultTag(null);
-        });
+        Assert.assertThrows(NullPointerException.class, () -> DatadogUtilities.getResultTag(null));
 
         FlowNode node = mock(FlowNode.class);
 
         // when getError returns an error
         when(node.getError()).thenReturn(new ErrorAction(new NullArgumentException()));
-        assertEquals(DatadogUtilities.getResultTag(node), "ERROR");
+        assertEquals("ERROR", DatadogUtilities.getResultTag(node));
 
         // when there's a warning action
         when(node.getError()).thenReturn(null);
         when(node.getPersistentAction(WarningAction.class)).thenReturn(new WarningAction(Result.SUCCESS));
-        assertEquals(DatadogUtilities.getResultTag(node), "SUCCESS");
+        assertEquals("SUCCESS", DatadogUtilities.getResultTag(node));
 
         when(node.getPersistentAction(WarningAction.class)).thenReturn(new WarningAction(Result.NOT_BUILT));
-        assertEquals(DatadogUtilities.getResultTag(node), "NOT_BUILT");
+        assertEquals("NOT_BUILT", DatadogUtilities.getResultTag(node));
 
         // when the result is unknown
         when(node.getPersistentAction(WarningAction.class)).thenReturn(null);
-        assertEquals(DatadogUtilities.getResultTag(node), "SUCCESS");
+        assertEquals("SUCCESS", DatadogUtilities.getResultTag(node));
 
         // when the node is a Stage node and the stage is skipped
         BlockStartNode startNode = mock(BlockStartNode.class);
         TagsAction tagsAction = new TagsAction();
         tagsAction.addTag("STAGE_STATUS", "SKIPPED_FOR_UNSTABLE");
         when(startNode.getPersistentAction(TagsAction.class)).thenReturn(tagsAction);
-        assertEquals(DatadogUtilities.getResultTag(startNode), "SKIPPED");
+        assertEquals("SKIPPED", DatadogUtilities.getResultTag(startNode));
 
         // when the node is a BlockEndNode and the stage containing it was skipped
         BlockEndNode endNode = mock(BlockEndNode.class);
         when(endNode.getStartNode()).thenReturn(startNode);
-        assertEquals(DatadogUtilities.getResultTag(endNode), "SKIPPED");
+        assertEquals("SKIPPED", DatadogUtilities.getResultTag(endNode));
 
 
     }
@@ -187,12 +184,12 @@ public class DatadogUtilitiesTest {
     }
 
     @Test
-    public void testGetHostname() throws IOException {
+    public void testGetHostname() {
         try (MockedStatic datadogUtilities = Mockito.mockStatic(DatadogUtilities.class)) {
-            datadogUtilities.when(() -> DatadogUtilities.getDatadogGlobalDescriptor()).thenReturn(cfg);
+            datadogUtilities.when(DatadogUtilities::getDatadogGlobalDescriptor).thenReturn(cfg);
             HttpURLConnection mockHTTP = mock(HttpURLConnection.class);
 
-            datadogUtilities.when(() -> DatadogUtilities.getAwsInstanceID()).thenReturn("test");
+            datadogUtilities.when(DatadogUtilities::getAwsInstanceID).thenReturn("test");
             datadogUtilities.when(() -> DatadogUtilities.getHostname(null)).thenCallRealMethod();
 
             String hostname = DatadogUtilities.getHostname(null);
