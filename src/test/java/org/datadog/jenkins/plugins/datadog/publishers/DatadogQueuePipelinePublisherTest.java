@@ -1,8 +1,9 @@
 package org.datadog.jenkins.plugins.datadog.publishers;
 
-import hudson.model.Queue;
-import hudson.model.queue.QueueTaskFuture;
-import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import hudson.model.Cause;
+import hudson.model.Computer;
+import hudson.model.Messages;
+import hudson.slaves.OfflineCause;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -23,7 +24,7 @@ public class DatadogQueuePipelinePublisherTest {
 
     @Test
     public void testPipelineInQueue() throws Exception {
-        DatadogClientStub client = new DatadogClientStub();;
+        DatadogClientStub client = new DatadogClientStub();
         ClientHolder.setClient(client);
         DatadogQueuePublisher queuePublisher = new DatadogQueuePublisher();
         String hostname = DatadogUtilities.getHostname(null);
@@ -35,25 +36,18 @@ public class DatadogQueuePipelinePublisherTest {
         job.setDefinition(new CpsFlowDefinition(definition, true));
         String displayName = job.getDisplayName();
 
-        // schedule build and wait for it to get queued
-        QueueTaskFuture<WorkflowRun> task = job.scheduleBuild2(0);
-        Queue queue = jenkins.jenkins.getQueue();
-        for (int i = 0; i < 10; i++) {
-            Thread.sleep(500);
-            if (!queue.getBuildableItems().isEmpty()) {
-                String name  = queue.getBuildableItems().get(0).task.getFullDisplayName();
-                if (name != null & name.contains("pipelineIntegrationQueue")) {
-                    break;
-                }
-            }
+        // set all computers offline so they can't execute any builds, keeping the job in the queue
+        for (Computer computer : jenkins.jenkins.getComputers()) {
+            computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
         }
+
+        job.scheduleBuild(10000, new Cause.RemoteCause("host", "0"));
 
         final String[] expectedTags = new String[2];
         expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
         expectedTags[1] = "job_name:" + displayName;
         queuePublisher.doRun();
         client.assertMetric("jenkins.queue.job.in_queue", 1, hostname, expectedTags);
-        task.cancel(true);
     }
 
 }
