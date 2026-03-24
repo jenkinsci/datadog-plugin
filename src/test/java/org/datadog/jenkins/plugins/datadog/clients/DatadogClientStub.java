@@ -353,7 +353,11 @@ public class DatadogClientStub implements DatadogClient {
     }
 
     public boolean waitForWebhooks(final int number) throws InterruptedException {
-        long timeout = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(10);
+        return waitForWebhooks(number, 30);
+    }
+
+    public boolean waitForWebhooks(final int number, int timeoutSeconds) throws InterruptedException {
+        long timeout = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(timeoutSeconds);
         while (System.currentTimeMillis() < timeout) {
             if (traceWriteStrategy.webhooks.size() >= number) {
                 return true;
@@ -368,7 +372,11 @@ public class DatadogClientStub implements DatadogClient {
     }
 
     public boolean waitForTraces(int number) throws InterruptedException {
-        long timeout = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(10);
+        return waitForTraces(number, 30);
+    }
+
+    public boolean waitForTraces(int number, int timeoutSeconds) throws InterruptedException {
+        long timeout = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(timeoutSeconds);
         while (System.currentTimeMillis() < timeout) {
             if (traceWriteStrategy.traces.size() >= number) {
                 return true;
