@@ -2,8 +2,10 @@ package org.datadog.jenkins.plugins.datadog.traces;
 
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import hudson.EnvVars;
+import hudson.slaves.EnvironmentVariablesNodeProperty;
 import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -12,7 +14,6 @@ import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
-import hudson.slaves.EnvironmentVariablesNodeProperty;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
@@ -51,9 +52,9 @@ public class TraceStepEnvironmentContributorIT {
                     "  stages {\n" +
                     "    stage('MyStage') {\n" +
                     "      steps {\n" +
-                    "        sh 'echo STAGE_ID=$DD_CUSTOM_STAGE_ID'\n" +
-                    "        sh 'echo TRACE_ID=$DD_CUSTOM_TRACE_ID'\n" +
-                    "        sh 'echo PARENT_ID=$DD_CUSTOM_PARENT_ID'\n" +
+                    "        " + shellEcho("STAGE_ID", "DD_CUSTOM_STAGE_ID") + "\n" +
+                    "        " + shellEcho("TRACE_ID", "DD_CUSTOM_TRACE_ID") + "\n" +
+                    "        " + shellEcho("PARENT_ID", "DD_CUSTOM_PARENT_ID") + "\n" +
                     "      }\n" +
                     "    }\n" +
                     "  }\n" +
@@ -76,10 +77,11 @@ public class TraceStepEnvironmentContributorIT {
         WorkflowJob pipeline = jenkinsRule.jenkins.createProject(WorkflowJob.class, "testStageIdNotSet");
         try {
             pipeline.setDefinition(new CpsFlowDefinition("node {\n" +
-                    "  sh 'echo STAGE_ID_CHECK=${DD_CUSTOM_STAGE_ID:-UNSET}'\n" +
+                    "  " + shellEcho("STAGE_ID_CHECK", "DD_CUSTOM_STAGE_ID") + "\n" +
                     "}", true));
             WorkflowRun build = jenkinsRule.buildAndAssertSuccess(pipeline);
-            jenkinsRule.assertLogContains("STAGE_ID_CHECK=UNSET", build);
+            String log = JenkinsRule.getLog(build);
+            assertNull("DD_CUSTOM_STAGE_ID should not be set outside a stage", extractValue(log, "STAGE_ID_CHECK="));
         } finally {
             pipeline.delete();
         }
@@ -94,12 +96,12 @@ public class TraceStepEnvironmentContributorIT {
                     "  stages {\n" +
                     "    stage('Stage1') {\n" +
                     "      steps {\n" +
-                    "        sh 'echo STAGE1_ID=$DD_CUSTOM_STAGE_ID'\n" +
+                    "        " + shellEcho("STAGE1_ID", "DD_CUSTOM_STAGE_ID") + "\n" +
                     "      }\n" +
                     "    }\n" +
                     "    stage('Stage2') {\n" +
                     "      steps {\n" +
-                    "        sh 'echo STAGE2_ID=$DD_CUSTOM_STAGE_ID'\n" +
+                    "        " + shellEcho("STAGE2_ID", "DD_CUSTOM_STAGE_ID") + "\n" +
                     "      }\n" +
                     "    }\n" +
                     "  }\n" +
@@ -115,6 +117,16 @@ public class TraceStepEnvironmentContributorIT {
         } finally {
             pipeline.delete();
         }
+    }
+
+    private static boolean isRunningOnWindows() {
+        return System.getProperty("os.name").toLowerCase().contains("win");
+    }
+
+    private static String shellEcho(String label, String envVar) {
+        return isRunningOnWindows()
+                ? "bat 'echo " + label + "=%" + envVar + "%'"
+                : "sh 'echo " + label + "=$" + envVar + "'";
     }
 
     private static String extractValue(String log, String prefix) {
