@@ -1,6 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.traces;
 
 import static org.datadog.jenkins.plugins.datadog.traces.TracerConstants.SPAN_ID_ENVVAR_KEY;
+import static org.datadog.jenkins.plugins.datadog.traces.TracerConstants.STAGE_ID_ENVVAR_KEY;
 import static org.datadog.jenkins.plugins.datadog.traces.TracerConstants.TRACE_ID_ENVVAR_KEY;
 
 import hudson.EnvVars;
@@ -12,6 +13,7 @@ import java.util.logging.Logger;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.TraceInfoAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
+import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepEnvironmentContributor;
@@ -63,6 +65,14 @@ public class TraceStepEnvironmentContributor extends StepEnvironmentContributor 
                     final String spanIdStr  = Long.toUnsignedString(spanId);
                     envs.put(SPAN_ID_ENVVAR_KEY, spanIdStr);
                     logger.fine("Set DD_CUSTOM_PARENT_ID="+spanIdStr+" for FlowNode: "+flowNode);
+                }
+
+                if (envs.get(STAGE_ID_ENVVAR_KEY) == null) {
+                    BlockStartNode enclosingStage = DatadogUtilities.getEnclosingStageNode(flowNode);
+                    if (enclosingStage != null) {
+                        envs.put(STAGE_ID_ENVVAR_KEY, enclosingStage.getId());
+                        logger.fine("Set DD_CUSTOM_STAGE_ID=" + enclosingStage.getId() + " for FlowNode: " + flowNode);
+                    }
                 }
             }
 
