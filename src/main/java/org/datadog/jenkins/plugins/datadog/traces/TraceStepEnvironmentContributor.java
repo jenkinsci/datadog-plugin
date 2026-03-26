@@ -70,10 +70,8 @@ public class TraceStepEnvironmentContributor extends StepEnvironmentContributor 
                 if (envs.get(STAGE_ID_ENVVAR_KEY) == null) {
                     BlockStartNode enclosingStage = DatadogUtilities.getEnclosingStageNode(flowNode);
                     if (enclosingStage != null) {
-                        Long stageSpanId = traceInfoAction.getOrCreate(enclosingStage.getId());
-                        final String stageSpanIdStr = Long.toUnsignedString(stageSpanId);
-                        envs.put(STAGE_ID_ENVVAR_KEY, stageSpanIdStr);
-                        logger.fine("Set DD_CUSTOM_STAGE_ID=" + stageSpanIdStr + " for FlowNode: " + flowNode);
+                        envs.put(STAGE_ID_ENVVAR_KEY, enclosingStage.getId());
+                        logger.fine("Set DD_CUSTOM_STAGE_ID=" + enclosingStage.getId() + " for FlowNode: " + flowNode);
                     }
                 }
             }
