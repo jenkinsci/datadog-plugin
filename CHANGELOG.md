@@ -1,5 +1,13 @@
 Changes
 =======
+## 9.2.0 / 2026-04-06
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.1.8...datadog-9.2.0
+
+* [Added] Add stage flow node Id to environment contributor. See [#529](https://github.com/jenkinsci/datadog-plugin/pull/529).
+* [Fixed] Fix testAllQueueMetrics. See [#530](https://github.com/jenkinsci/datadog-plugin/pull/530).
+* [Changed] Update codeowners and small fixes. See [#528](https://github.com/jenkinsci/datadog-plugin/pull/528).
+
 ## 9.1.8 / 2025-10-02
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.1.7...datadog-9.1.8
