@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;

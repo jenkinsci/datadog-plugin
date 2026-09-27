@@ -13,7 +13,7 @@ import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
@@ -33,7 +33,7 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
 
     private final JsonTraceSpanMapper jsonTraceSpanMapper = new JsonTraceSpanMapper();
 
-    @Nonnull
+    @NonNull
     @Override
     public JSONObject toJson(PipelineStepData flowNode, Run<?, ?> run) throws IOException, InterruptedException {
         TraceSpan span = toSpan(flowNode, run);
@@ -41,7 +41,7 @@ public class DatadogTracePipelineLogic extends DatadogBasePipelineLogic {
     }
 
     // hook for tests
-    @Nonnull
+    @NonNull
     public TraceSpan toSpan(PipelineStepData current, Run<?, ?> run) throws IOException, InterruptedException {
         BuildData buildData = BuildData.create(run, DatadogUtilities.getTaskListener(run));
 

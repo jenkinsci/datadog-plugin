@@ -39,7 +39,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
@@ -239,7 +239,7 @@ public class DatadogBuildListener extends RunListener<Run> {
      */
 
     @Override
-    public void onCompleted(Run run, @Nonnull TaskListener listener) {
+    public void onCompleted(Run run, @NonNull TaskListener listener) {
         DatadogClient client;
         try {
             // Process only if job in NOT in excluded and is in included

@@ -13,7 +13,7 @@ import hudson.util.ListBoxModel;
 import hudson.util.Secret;
 import java.util.Collections;
 import java.util.Objects;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
@@ -79,7 +79,7 @@ public class DatadogCredentialsApiKey extends DatadogApiKey {
         }
 
         @Override
-        @Nonnull
+        @NonNull
         public String getDisplayName() {
             return "Select from credentials";
         }

@@ -6,7 +6,7 @@ import org.datadog.jenkins.plugins.datadog.util.AsyncWriter;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class LogWriterFactory {
 

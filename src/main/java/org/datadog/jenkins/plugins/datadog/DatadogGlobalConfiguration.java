@@ -58,7 +58,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -592,7 +591,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         this.datadogAppHostname = datadogAppHostname;
     }
 
-    public boolean isJobExcluded(@Nonnull final String jobName) {
+    public boolean isJobExcluded(@NonNull final String jobName) {
         if (excluded == null || excluded.isEmpty()) {
             return false;
         }
@@ -625,7 +624,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
         this.excluded = DatadogUtilities.cstrToList(jobs, Pattern::compile);
     }
 
-    public boolean isJobIncluded(@Nonnull final String jobName) {
+    public boolean isJobIncluded(@NonNull final String jobName) {
         if (included == null || included.isEmpty()) {
             return true;
         }

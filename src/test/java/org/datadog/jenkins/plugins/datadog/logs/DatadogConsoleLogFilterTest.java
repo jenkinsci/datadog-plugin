@@ -11,7 +11,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.jetbrains.annotations.NotNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -53,7 +53,7 @@ public class DatadogConsoleLogFilterTest {
         cfg.setExcluded(jobName);
     }
 
-    private static @NotNull WorkflowRun givenBuildNamed(String jobName) {
+    private static @NonNull WorkflowRun givenBuildNamed(String jobName) {
         WorkflowJob job = mock(WorkflowJob.class);
         when(job.getFullName()).thenReturn(jobName);
 

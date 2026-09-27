@@ -34,9 +34,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
@@ -308,7 +308,7 @@ public class DatadogGraphListener implements GraphListener {
     }
 
     @SuppressFBWarnings("DCN_NULLPOINTER_EXCEPTION")
-    private long getPauseDurationMillis(@Nonnull FlowNode startNode) {
+    private long getPauseDurationMillis(@NonNull FlowNode startNode) {
         try {
             long pauseDuration = 0;
             FlowGraphWalker walker = new FlowGraphWalker(startNode.getExecution());
@@ -350,7 +350,7 @@ public class DatadogGraphListener implements GraphListener {
     }
 
     @CheckForNull
-    private WorkflowRun getRun(@Nonnull FlowNode flowNode) {
+    private WorkflowRun getRun(@NonNull FlowNode flowNode) {
         Queue.Executable exec;
         try {
             exec = flowNode.getExecution().getOwner().getExecutable();
@@ -365,7 +365,7 @@ public class DatadogGraphListener implements GraphListener {
         return null;
     }
 
-    String getStageName(@Nonnull BlockStartNode flowNode) {
+    String getStageName(@NonNull BlockStartNode flowNode) {
         ThreadNameAction threadNameAction = flowNode.getAction(ThreadNameAction.class);
         if (threadNameAction != null) {
             return threadNameAction.getThreadName();

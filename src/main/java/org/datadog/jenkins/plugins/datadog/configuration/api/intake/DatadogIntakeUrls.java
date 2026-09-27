@@ -10,7 +10,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration;
@@ -111,7 +111,7 @@ public class DatadogIntakeUrls extends DatadogIntake {
         }
 
         @Override
-        @Nonnull
+        @NonNull
         public String getDisplayName() {
             return "Enter URLs manually";
         }

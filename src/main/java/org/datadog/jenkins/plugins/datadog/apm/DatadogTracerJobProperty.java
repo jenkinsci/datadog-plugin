@@ -14,7 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.Nonnull;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.steps.TestOptimization;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -29,7 +28,7 @@ public class DatadogTracerJobProperty<T extends Job<?, ?>> extends JobProperty<T
     private final Collection<TracerLanguage> languages;
     private final Map<String, String> additionalVariables;
 
-    public DatadogTracerJobProperty(boolean on, String serviceName, @Nonnull Collection<TracerLanguage> languages, Map<String, String> additionalVariables) {
+    public DatadogTracerJobProperty(boolean on, String serviceName, @NonNull Collection<TracerLanguage> languages, Map<String, String> additionalVariables) {
         this.on = on;
         this.serviceName = serviceName;
         this.languages = languages;
@@ -44,7 +43,7 @@ public class DatadogTracerJobProperty<T extends Job<?, ?>> extends JobProperty<T
         return serviceName;
     }
 
-    @Nonnull
+    @NonNull
     public Collection<TracerLanguage> getLanguages() {
         return languages;
     }

@@ -51,7 +51,6 @@ import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategy;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriteStrategyImpl;
 import org.datadog.jenkins.plugins.datadog.traces.write.Track;
 import org.datadog.jenkins.plugins.datadog.util.CircuitBreaker;
-import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 
 /**
@@ -229,7 +228,6 @@ public class DatadogApiClient implements DatadogClient {
      * @param payload - A JSONObject containing a specific subset of a builds metadata.
      * @param type    - A String containing the URL subpath pertaining to the type of API post required.
      */
-    @SuppressFBWarnings("REC_CATCH_EXCEPTION")
     private void postApi(final JSONObject payload, final String type) throws IOException {
         String url = this.url + type;
 

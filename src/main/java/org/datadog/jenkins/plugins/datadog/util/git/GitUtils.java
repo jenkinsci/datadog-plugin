@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;

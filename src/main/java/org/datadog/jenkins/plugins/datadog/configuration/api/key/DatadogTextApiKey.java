@@ -5,7 +5,7 @@ import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntake;
@@ -67,7 +67,7 @@ public class DatadogTextApiKey extends DatadogApiKey {
         }
 
         @Override
-        @Nonnull
+        @NonNull
         public String getDisplayName() {
             return "Enter manually";
         }

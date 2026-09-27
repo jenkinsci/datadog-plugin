@@ -32,7 +32,7 @@ import hudson.model.*;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -81,7 +81,7 @@ public class DatadogConsoleLogFilter extends ConsoleLogFilter implements Seriali
     }
 
     @Override
-    public OutputStream decorateLogger(@Nonnull Computer computer, OutputStream logger) throws IOException, InterruptedException {
+    public OutputStream decorateLogger(@NonNull Computer computer, OutputStream logger) throws IOException, InterruptedException {
         return logger;
     }
 }

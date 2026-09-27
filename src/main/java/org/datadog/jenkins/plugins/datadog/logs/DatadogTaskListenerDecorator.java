@@ -30,8 +30,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
@@ -48,9 +48,9 @@ public class DatadogTaskListenerDecorator extends TaskListenerDecorator {
         this.buildData = BuildData.create(run, null);
     }
 
-    @Nonnull
+    @NonNull
     @Override
-    public OutputStream decorate(@Nonnull OutputStream outputStream) {
+    public OutputStream decorate(@NonNull OutputStream outputStream) {
         DatadogWriter writer = new DatadogWriter(this.buildData);
         return new DatadogOutputStream(outputStream, writer);
     }
@@ -68,7 +68,7 @@ public class DatadogTaskListenerDecorator extends TaskListenerDecorator {
 
         @Override
         @Nullable
-        public TaskListenerDecorator of(@Nonnull FlowExecutionOwner owner) {
+        public TaskListenerDecorator of(@NonNull FlowExecutionOwner owner) {
             if (!DatadogUtilities.getDatadogGlobalDescriptor().isCollectBuildLogs()) {
                 return null;
             }

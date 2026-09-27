@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;

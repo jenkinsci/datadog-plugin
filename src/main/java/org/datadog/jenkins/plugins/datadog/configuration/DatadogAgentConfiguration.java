@@ -13,8 +13,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Logger;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
@@ -181,7 +181,7 @@ public class DatadogAgentConfiguration extends DatadogClientConfiguration {
         }
 
         @Override
-        @Nonnull
+        @NonNull
         public String getDisplayName() {
             return "Use the Datadog Agent to report to Datadog (recommended)";
         }

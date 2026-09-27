@@ -16,7 +16,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
@@ -162,7 +162,7 @@ public class DatadogTracerConfigurator {
         private final Collection<TracerLanguage> languages;
         private final Map<String, String> variables;
 
-        private ConfigureTracerAction(String nodeHostname, @Nonnull Collection<TracerLanguage> languages, Map<String, String> variables) {
+        private ConfigureTracerAction(String nodeHostname, @NonNull Collection<TracerLanguage> languages, Map<String, String> variables) {
             this.nodeHostname = nodeHostname;
             this.languages = languages;
             this.variables = variables;

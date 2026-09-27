@@ -6,8 +6,8 @@ import jenkins.model.Jenkins;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -80,7 +80,7 @@ public class DatadogIntakeSite extends DatadogIntake {
         }
 
         @Override
-        @Nonnull
+        @NonNull
         public String getDisplayName() {
             return "Pick a site";
         }
