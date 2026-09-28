@@ -35,6 +35,11 @@ public class TraceStepEnvironmentContributorIT {
         cfg.setGlobalJobTags(null);
         cfg.setGlobalTags(null);
         EnvVars.masterEnvVars.remove("ENV_VAR");
+        // when the tests themselves run in a Jenkins with the Datadog plugin (e.g. ci.jenkins.io),
+        // these are inherited from the outer build and the contributor would not override them
+        EnvVars.masterEnvVars.remove(TracerConstants.TRACE_ID_ENVVAR_KEY);
+        EnvVars.masterEnvVars.remove(TracerConstants.SPAN_ID_ENVVAR_KEY);
+        EnvVars.masterEnvVars.remove(TracerConstants.STAGE_ID_ENVVAR_KEY);
 
         DatadogClientStub clientStub = new DatadogClientStub();
         ClientHolder.setClient(clientStub);
