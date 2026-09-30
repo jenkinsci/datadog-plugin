@@ -3,6 +3,7 @@ package org.datadog.jenkins.plugins.datadog.clients;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.when;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -16,9 +17,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import jenkins.model.Jenkins;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 public class HttpClientTest {
 
@@ -122,6 +126,37 @@ public class HttpClientTest {
 
         assertTrue(retried.await(10, TimeUnit.SECONDS));
         assertEquals(2, requests.get());
+    }
+
+    @Test
+    public void usesJenkinsProxyAndRespectsNoProxyHosts() throws Exception {
+        HttpServer proxyServer = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        AtomicInteger proxyRequests = new AtomicInteger();
+        AtomicReference<String> proxiedUri = new AtomicReference<>();
+        proxyServer.createContext("/", exchange -> {
+            proxyRequests.incrementAndGet();
+            proxiedUri.set(exchange.getRequestURI().toString());
+            respond(exchange, 200, "proxied");
+        });
+        proxyServer.start();
+
+        try (MockedStatic<Jenkins> mockedJenkins = Mockito.mockStatic(Jenkins.class)) {
+            Jenkins jenkins = Mockito.mock(Jenkins.class);
+            hudson.ProxyConfiguration proxy = new hudson.ProxyConfiguration(
+                    "127.0.0.1", proxyServer.getAddress().getPort(), null, null, "127.0.0.1");
+            when(jenkins.getProxy()).thenReturn(proxy);
+            mockedJenkins.when(Jenkins::getInstanceOrNull).thenReturn(jenkins);
+
+            HttpClient client = new HttpClient(5000);
+            assertEquals("proxied", client.get("http://example.invalid/proxied", Collections.emptyMap(), content -> content));
+            assertTrue(proxiedUri.get().contains("example.invalid"));
+
+            server.createContext("/direct", exchange -> respond(exchange, 200, "direct"));
+            assertEquals("direct", client.get(url("/direct"), Collections.emptyMap(), content -> content));
+            assertEquals(1, proxyRequests.get());
+        } finally {
+            proxyServer.stop(0);
+        }
     }
 
     private String url(String path) {

@@ -139,13 +139,11 @@ public class HttpClient {
         }
 
         ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();
-        List<ProxyConfiguration.Proxy> proxies = proxyConfig.getProxies();
-        proxies.clear();
 
         String proxyHost = jenkinsProxyConfiguration.getName();
         int proxyPort = jenkinsProxyConfiguration.getPort();
         List<Pattern> noProxyHostPatterns = jenkinsProxyConfiguration.getNoProxyHostPatterns();
-        proxies.add(new HttpProxy(proxyHost, proxyPort) {
+        proxyConfig.addProxy(new HttpProxy(proxyHost, proxyPort) {
             @Override
             public boolean matches(Origin origin) {
                 Origin.Address address = origin.getAddress();
