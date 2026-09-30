@@ -29,6 +29,8 @@ import hudson.EnvVars;
 import hudson.model.Computer;
 import hudson.model.Result;
 import org.apache.commons.math3.exception.NullArgumentException;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.jenkinsci.plugins.workflow.actions.*;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
@@ -184,6 +186,17 @@ public class DatadogUtilitiesTest {
         multipleItems.put("itemKey2", "itemValue2");
         multipleItems.put("itemKey3", "itemValue3");
         assertEquals("{\"itemKey1\":\"itemValue1\",\"itemKey2\":\"itemValue2\",\"itemKey3\":\"itemValue3\"}", DatadogUtilities.toJson(multipleItems));
+    }
+
+    @Test
+    public void testToJsonEscapesSpecialCharacters() {
+        String value = "quote\" backslash\\ newline\n";
+        Set<String> set = Collections.singleton(value);
+        assertEquals(value, new JSONArray(DatadogUtilities.toJson(set)).getString(0));
+
+        String key = "key\" backslash\\";
+        Map<String, String> map = Collections.singletonMap(key, value);
+        assertEquals(value, new JSONObject(DatadogUtilities.toJson(map)).getString(key));
     }
 
     @Test

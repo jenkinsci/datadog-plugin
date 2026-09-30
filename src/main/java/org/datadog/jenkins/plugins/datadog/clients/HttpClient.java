@@ -21,13 +21,13 @@ import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.ProxyConfiguration;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.BufferingResponseListener;
-import org.eclipse.jetty.client.util.BytesContentProvider;
-import org.eclipse.jetty.client.util.InputStreamResponseListener;
+import org.eclipse.jetty.client.BufferingResponseListener;
+import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.InputStreamResponseListener;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -117,7 +117,8 @@ public class HttpClient {
         threadPool.setName("dd-http-client-thread-pool");
 
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        org.eclipse.jetty.client.HttpClient httpClient = new org.eclipse.jetty.client.HttpClient(sslContextFactory);
+        org.eclipse.jetty.client.HttpClient httpClient = new org.eclipse.jetty.client.HttpClient();
+        httpClient.setSslContextFactory(sslContextFactory);
 
         configureProxies(jenkinsProxyConfiguration, httpClient);
 
@@ -188,17 +189,18 @@ public class HttpClient {
         ensureClientIsUpToDate();
 
         Request request = requestSupplier(url, HttpMethod.GET, headers, null, null).get();
-        InputStreamResponseListener responseListener = new InputStreamResponseListener();
-        request.send(responseListener);
+        try (InputStreamResponseListener responseListener = new InputStreamResponseListener()) {
+            request.send(responseListener);
 
-        Response response = responseListener.get(timeoutMillis, TimeUnit.MILLISECONDS);
-        int responseStatus = response.getStatus();
-        if (responseStatus >= 200 && responseStatus < 300) {
-            try (InputStream responseStream = responseListener.getInputStream()) {
-                responseParser.accept(responseStream);
+            Response response = responseListener.get(timeoutMillis, TimeUnit.MILLISECONDS);
+            int responseStatus = response.getStatus();
+            if (responseStatus >= 200 && responseStatus < 300) {
+                try (InputStream responseStream = responseListener.getInputStream()) {
+                    responseParser.accept(responseStream);
+                }
+            } else {
+                throw new ResponseProcessingException("Received erroneous response " + response);
             }
-        } else {
-            throw new ResponseProcessingException("Received erroneous response " + response);
         }
     }
 
@@ -234,14 +236,16 @@ public class HttpClient {
                     .newRequest(url)
                     .method(method)
                     .timeout(timeoutMillis, TimeUnit.MILLISECONDS);
-            for (Map.Entry<String, String> e : headers.entrySet()) {
-                request.header(e.getKey(), e.getValue());
-            }
-            if (contentType != null) {
-                request.header(HttpHeader.CONTENT_TYPE, contentType);
-            }
+            request.headers(requestHeaders -> {
+                for (Map.Entry<String, String> e : headers.entrySet()) {
+                    requestHeaders.add(e.getKey(), e.getValue());
+                }
+                if (contentType != null) {
+                    requestHeaders.put(HttpHeader.CONTENT_TYPE, contentType);
+                }
+            });
             if (body != null) {
-                request.content(new BytesContentProvider(contentType, body));
+                request.body(new BytesRequestContent(contentType, body));
             }
             return request;
         };

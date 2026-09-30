@@ -1,11 +1,13 @@
 package org.datadog.jenkins.plugins.datadog.stubs;
 
 import hudson.EnvVars;
+import hudson.model.Action;
 import hudson.model.Build;
 import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.TaskListener;
 import java.io.IOException;
+import java.util.List;
 import javax.annotation.Nonnull;
 
 public class BuildStub extends Build<ProjectStub, BuildStub> {
@@ -77,6 +79,16 @@ public class BuildStub extends Build<ProjectStub, BuildStub> {
 
     public BuildStub getPreviousNotFailedBuild() {
         return this.previousNotFailedBuild;
+    }
+
+    @Override
+    public <T extends Action> List<T> getActions(Class<T> actionType) {
+        return getActions().stream().filter(actionType::isInstance).map(actionType::cast).toList();
+    }
+
+    @Override
+    public <T extends Action> T getAction(Class<T> actionType) {
+        return getActions(actionType).stream().findFirst().orElse(null);
     }
 
     public long getQueueId() {

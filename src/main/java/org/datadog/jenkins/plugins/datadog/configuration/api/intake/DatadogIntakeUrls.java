@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
