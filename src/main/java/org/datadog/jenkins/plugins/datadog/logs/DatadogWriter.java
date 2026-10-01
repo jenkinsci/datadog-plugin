@@ -26,7 +26,7 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.logs;
 
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.datadog.jenkins.plugins.datadog.util.AsyncWriter;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
