@@ -26,7 +26,7 @@ THE SOFTWARE.
 package org.datadog.jenkins.plugins.datadog.logs;
 
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.datadog.jenkins.plugins.datadog.util.AsyncWriter;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
@@ -38,7 +38,7 @@ import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class DatadogWriter {
 
@@ -47,7 +47,7 @@ public class DatadogWriter {
     private final Charset charset;
     private final BuildData buildData;
 
-    public DatadogWriter(@Nonnull BuildData buildData) {
+    public DatadogWriter(@NonNull BuildData buildData) {
         this.charset = buildData.getCharset();
         this.buildData = buildData;
     }

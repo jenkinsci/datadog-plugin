@@ -14,7 +14,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 
 public final class AsyncWriter<T> {

@@ -14,8 +14,8 @@ import java.util.logging.Logger;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.eclipse.jgit.lib.*;
 import org.jenkinsci.plugins.gitclient.RepositoryCallback;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Populates GitMetadata.Builder instance for a certain repository

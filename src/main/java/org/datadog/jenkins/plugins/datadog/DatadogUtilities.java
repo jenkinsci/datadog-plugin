@@ -45,13 +45,12 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
-import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.text.StringEscapeUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.datadog.jenkins.plugins.datadog.apm.ShellCommandCallable;
 import org.datadog.jenkins.plugins.datadog.clients.HttpClient;
@@ -94,7 +93,7 @@ public class DatadogUtilities {
      * @param r - Current build.
      * @return - The configured {@link DatadogJobProperty}. Null if not there
      */
-    public static DatadogJobProperty getDatadogJobProperties(@Nonnull Run r) {
+    public static DatadogJobProperty getDatadogJobProperties(@NonNull Run r) {
         return (DatadogJobProperty) r.getParent().getProperty(DatadogJobProperty.class);
     }
 
@@ -360,7 +359,7 @@ public class DatadogUtilities {
      * @param jobName - A String containing the name of some job.
      * @return a boolean to signify if the jobName is or is not excluded.
      */
-    private static boolean isJobExcluded(@Nonnull final String jobName) {
+    private static boolean isJobExcluded(@NonNull final String jobName) {
         final DatadogGlobalConfiguration datadogGlobalConfig = getDatadogGlobalDescriptor();
         if (datadogGlobalConfig == null) {
             return false;
@@ -374,7 +373,7 @@ public class DatadogUtilities {
      * @param jobName - A String containing the name of some job.
      * @return a boolean to signify if the jobName is or is not included.
      */
-    private static boolean isJobIncluded(@Nonnull final String jobName) {
+    private static boolean isJobIncluded(@NonNull final String jobName) {
         final DatadogGlobalConfiguration datadogGlobalConfig = getDatadogGlobalDescriptor();
         if (datadogGlobalConfig == null) {
             return true;
@@ -899,7 +898,7 @@ public class DatadogUtilities {
         }
     }
 
-    public static String getResultTag(@Nonnull FlowNode node) {
+    public static String getResultTag(@NonNull FlowNode node) {
         if (StageStatus.isSkippedStage(node)) {
             return "SKIPPED";
         }
@@ -1106,7 +1105,7 @@ public class DatadogUtilities {
         sb.append("[");
         int index = 1;
         for (String val : set) {
-            final String escapedValue = StringEscapeUtils.escapeJavaScript(val);
+            final String escapedValue = StringEscapeUtils.escapeEcmaScript(val);
             sb.append("\"").append(escapedValue).append("\"");
             if (index < set.size()) {
                 sb.append(",");
@@ -1135,8 +1134,8 @@ public class DatadogUtilities {
         sb.append("{");
         int index = 1;
         for (Map.Entry<String, String> entry : map.entrySet()) {
-            final String escapedKey = StringEscapeUtils.escapeJavaScript(entry.getKey());
-            final String escapedValue = StringEscapeUtils.escapeJavaScript(entry.getValue());
+            final String escapedKey = StringEscapeUtils.escapeEcmaScript(entry.getKey());
+            final String escapedValue = StringEscapeUtils.escapeEcmaScript(entry.getValue());
             sb.append(String.format("\"%s\":\"%s\"", escapedKey, escapedValue));
             if (index < map.size()) {
                 sb.append(",");

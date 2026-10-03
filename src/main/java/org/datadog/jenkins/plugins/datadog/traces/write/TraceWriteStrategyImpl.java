@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;

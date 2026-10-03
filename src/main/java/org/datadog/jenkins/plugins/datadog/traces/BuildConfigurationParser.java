@@ -10,7 +10,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.logging.Logger;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.datadog.jenkins.plugins.datadog.listeners.DatadogBuildListener;
 
 public class BuildConfigurationParser {
@@ -29,8 +29,8 @@ public class BuildConfigurationParser {
      * <p>
      * If the run is not a matrix project execution, an empty map is returned.
      */
-    @Nonnull
-    public static Map<String, String> parseConfigurations(@Nonnull Run<?, ?> run) {
+    @NonNull
+    public static Map<String, String> parseConfigurations(@NonNull Run<?, ?> run) {
         Job<?, ?> job = run.getParent();
         if (!(job instanceof MatrixConfiguration)) {
             return Collections.emptyMap();

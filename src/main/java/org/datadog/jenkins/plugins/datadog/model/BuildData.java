@@ -60,11 +60,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import jenkins.branch.MultiBranchProject;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.git.GitMetadata;
@@ -116,7 +116,7 @@ public class BuildData implements Serializable {
      * As a side effect, whatever logs are written while Run instance is being initialized will not be tagged with that run's data.
      */
     // TODO split BuildData fields that are used by DatadogWriter into a separate class whose initialization will not trigger run data load
-    @Nonnull
+    @NonNull
     public static BuildData create(@Nullable Run<?, ?> run, @Nullable TaskListener listener) {
         if (!BUILD_DATA_BEING_CREATED.get().add(run)) {
             String runName = run != null ? run.getDisplayName() : null;
@@ -444,7 +444,7 @@ public class BuildData implements Serializable {
         return mergedVars;
     }
 
-    @Nonnull
+    @NonNull
     private static String getJobName(Run<?, ?> run, EnvVars envVars) {
         Job<?, ?> job = run.getParent();
         ItemGroup<?> jobParent = job.getParent();
@@ -485,8 +485,8 @@ public class BuildData implements Serializable {
         return "unknown";
     }
 
-    @Nonnull
-    private static String normalizeJobName(@Nonnull String jobName) {
+    @NonNull
+    private static String normalizeJobName(@NonNull String jobName) {
         return jobName.replaceAll("»", "/").replaceAll(" ", "");
     }
 
@@ -610,12 +610,12 @@ public class BuildData implements Serializable {
         }
     }
 
-    @Nonnull
+    @NonNull
     public String getJobName() {
         return jobName;
     }
 
-    @Nonnull
+    @NonNull
     public Map<String, String> getBuildConfigurations() {
         return buildConfigurations;
     }

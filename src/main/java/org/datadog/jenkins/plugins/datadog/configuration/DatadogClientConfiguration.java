@@ -5,7 +5,7 @@ import hudson.model.Descriptor;
 import jenkins.model.Jenkins;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;

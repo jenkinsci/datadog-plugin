@@ -1,6 +1,6 @@
 package org.datadog.jenkins.plugins.datadog.traces.write;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import net.sf.json.JSONObject;
 
 public class Payload {
@@ -8,17 +8,17 @@ public class Payload {
     private final JSONObject json;
     private final Track track;
 
-    public Payload(@Nonnull JSONObject json, @Nonnull Track track) {
+    public Payload(@NonNull JSONObject json, @NonNull Track track) {
         this.json = json;
         this.track = track;
     }
 
-    @Nonnull
+    @NonNull
     public JSONObject getJson() {
         return json;
     }
 
-    @Nonnull
+    @NonNull
     public Track getTrack() {
         return track;
     }

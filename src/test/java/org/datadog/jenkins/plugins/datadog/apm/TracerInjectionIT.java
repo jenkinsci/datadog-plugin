@@ -31,7 +31,7 @@ import org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfigurati
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.jetbrains.annotations.NotNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -234,7 +234,7 @@ public class TracerInjectionIT {
 
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\$([A-Z_]+)");
 
-    @NotNull
+    @NonNull
     private static String buildPipelineDefinition(String pipelineName, Map<String, String> replacements) throws IOException {
         String pipelineDefinition;
         try (InputStream is = TracerInjectionIT.class.getResourceAsStream(pipelineName)) {

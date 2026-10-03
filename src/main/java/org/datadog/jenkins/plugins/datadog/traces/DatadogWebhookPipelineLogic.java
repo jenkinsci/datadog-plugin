@@ -11,10 +11,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
@@ -29,7 +29,7 @@ import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
  */
 public class DatadogWebhookPipelineLogic extends DatadogBasePipelineLogic {
 
-    @Nonnull
+    @NonNull
     @Override
     public JSONObject toJson(PipelineStepData current, Run<?, ?> run) throws IOException, InterruptedException {
         BuildData buildData = BuildData.create(run, DatadogUtilities.getTaskListener(run));

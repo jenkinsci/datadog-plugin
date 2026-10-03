@@ -13,11 +13,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONSerializer;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogApiClient;
@@ -154,7 +154,7 @@ public class DatadogApiConfiguration extends DatadogClientConfiguration {
         }
 
         @Override
-        @Nonnull
+        @NonNull
         public String getDisplayName() {
             return "Use Datadog site and API key to report to Datadog";
         }

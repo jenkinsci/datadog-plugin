@@ -4,7 +4,7 @@ import hudson.model.Run;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
 import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Collection;
 

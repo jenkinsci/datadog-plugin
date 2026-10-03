@@ -12,8 +12,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.audit.DatadogAudit;
 import org.datadog.jenkins.plugins.datadog.model.BuildData;
@@ -25,7 +25,6 @@ import org.datadog.jenkins.plugins.datadog.model.node.NodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.traces.BuildSpanAction;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriter;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
-import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.flow.StepListener;
@@ -40,7 +39,7 @@ public class DatadogStepListener implements StepListener {
     private static final Logger logger = Logger.getLogger(DatadogStepListener.class.getName());
 
     @Override
-    public void notifyOfNewStep(@Nonnull Step step, @Nonnull StepContext context) {
+    public void notifyOfNewStep(@NonNull Step step, @NonNull StepContext context) {
         try {
             final Run<?,?> run = context.get(Run.class);
             if (run == null) {
@@ -149,7 +148,6 @@ public class DatadogStepListener implements StepListener {
      * @param stepContext
      * @return hostname of the remote node.
      */
-    @SuppressFBWarnings("REC_CATCH_EXCEPTION")
     private static String getNodeHostname(final StepContext stepContext) {
         return DatadogUtilities.getNodeHostname(getSafely(stepContext, EnvVars.class), getSafely(stepContext, Computer.class));
     }
