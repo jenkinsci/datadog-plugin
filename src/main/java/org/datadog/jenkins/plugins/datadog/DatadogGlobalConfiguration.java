@@ -61,7 +61,7 @@ import java.util.stream.Collectors;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration;
@@ -77,7 +77,6 @@ import org.datadog.jenkins.plugins.datadog.util.conversion.PolymorphicReflection
 import org.kohsuke.stapler.*;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
 @Extension
@@ -430,7 +429,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
     /**
      * Indicates if this builder can be used with all kinds of project types.
      *
-     * @param req      - A StaplerRequest object
+     * @param req      - A StaplerRequest2 object
      * @param formData - A JSONObject containing the submitted form data from the configuration
      *                 screen.
      * @return a boolean signifying the success or failure of configuration.
@@ -438,7 +437,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      */
     @Override
     @SuppressFBWarnings("REC_CATCH_EXCEPTION")
-    public boolean configure(final StaplerRequest req, final JSONObject formData) throws FormException {
+    public boolean configure(final StaplerRequest2 req, final JSONObject formData) throws FormException {
         try {
             if(!super.configure(req, formData)){
                 return false;

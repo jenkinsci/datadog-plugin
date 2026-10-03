@@ -17,7 +17,7 @@ import java.util.Set;
 import net.sf.json.JSONObject;
 import org.datadog.jenkins.plugins.datadog.steps.TestOptimization;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 
 public class DatadogTracerJobProperty<T extends Job<?, ?>> extends JobProperty<T> {
 
@@ -78,7 +78,7 @@ public class DatadogTracerJobProperty<T extends Job<?, ?>> extends JobProperty<T
         }
 
         @Override
-        public DatadogTracerJobProperty<?> newInstance(StaplerRequest req, JSONObject formData) {
+        public DatadogTracerJobProperty<?> newInstance(StaplerRequest2 req, JSONObject formData) {
             if (!formData.optBoolean("on")) {
                 return null;
             }

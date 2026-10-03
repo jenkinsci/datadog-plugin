@@ -26,6 +26,13 @@
     <!-- byte-buddy is needed with java 11: https://stackoverflow.com/questions/69929229/mockito-shipped-within-spring-boot-fails-to-attach-to-jvm-openjdk-11/72912290#72912290 -->
     <byte-buddy.version>1.12.14</byte-buddy.version>
     <useBeta>true</useBeta>
+    <!-- common checks recommended for new/modernized plugins -->
+    <ban-commons-lang-2.skip>false</ban-commons-lang-2.skip>
+    <ban-deprecated-stapler.skip>false</ban-deprecated-stapler.skip>
+    <banObsoleteDependencyOverrides.skip>false</banObsoleteDependencyOverrides.skip>
+    <!-- fail the build if the artifacts actually bundled in the hpi drift from this list -->
+    <hpi.strictBundledArtifacts>true</hpi.strictBundledArtifacts>
+    <hpi.bundledArtifacts>java-dogstatsd-client,jetty-alpn-client,jetty-client,jetty-compression-common,jetty-compression-gzip,jetty-http,jetty-io,jetty-util,jnr-enxio,jnr-unixsocket,metrics-core,metrics-json,support-log-formatter</hpi.bundledArtifacts>
   </properties>
 
   <licenses>
@@ -80,7 +87,6 @@
     <dependency>
       <groupId>io.jenkins.plugins</groupId>
       <artifactId>jnr-posix-api</artifactId>
-      <version>3.1.7-1</version>
     </dependency>
     <!-- jnr-posix-api pulls jnr-ffi:2.2.4, which bundles an older org.ow2.asm than the one
          asm-api (pulled transitively via workflow-cps) provides; declare it directly so its
@@ -106,9 +112,8 @@
         <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.json</groupId>
-      <artifactId>json</artifactId>
-      <version>20260814</version>
+      <groupId>io.jenkins.plugins</groupId>
+      <artifactId>json-api</artifactId>
     </dependency>
     <dependency>
       <groupId>com.github.stefanbirkner</groupId>
@@ -193,11 +198,17 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
       <version>12.1.12</version>
+      <!-- slf4j-api is already provided by jenkins-core; exclude it so it's not bundled a second time in the hpi -->
+      <exclusions>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.bouncycastle</groupId>
-      <artifactId>bcpg-jdk18on</artifactId>
-      <version>1.86</version>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>bouncycastle-api</artifactId>
     </dependency>
     <dependency>
       <groupId>io.jenkins.lib</groupId>
@@ -208,11 +219,19 @@
       <groupId>org.kohsuke</groupId>
       <artifactId>access-modifier-suppressions</artifactId>
       <version>${access-modifier-checker.version}</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>io.dropwizard.metrics</groupId>
       <artifactId>metrics-core</artifactId>
       <version>4.2.28</version>
+      <!-- slf4j-api is already provided by jenkins-core; exclude it so it's not bundled a second time in the hpi -->
+      <exclusions>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.dropwizard.metrics</groupId>
