@@ -35,6 +35,9 @@ public class TraceStepEnvironmentContributorIT {
         cfg.setGlobalJobTags(null);
         cfg.setGlobalTags(null);
         EnvVars.masterEnvVars.remove("ENV_VAR");
+        EnvVars.masterEnvVars.remove(TracerConstants.TRACE_ID_ENVVAR_KEY);
+        EnvVars.masterEnvVars.remove(TracerConstants.SPAN_ID_ENVVAR_KEY);
+        EnvVars.masterEnvVars.remove(TracerConstants.STAGE_ID_ENVVAR_KEY);
 
         DatadogClientStub clientStub = new DatadogClientStub();
         ClientHolder.setClient(clientStub);
