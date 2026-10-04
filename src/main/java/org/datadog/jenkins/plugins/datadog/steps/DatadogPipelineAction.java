@@ -3,7 +3,7 @@ package org.datadog.jenkins.plugins.datadog.steps;
 import hudson.model.Action;
 import java.io.Serializable;
 import java.util.List;
-import javax.annotation.CheckForNull;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
 
 public class DatadogPipelineAction implements Action, Serializable {
     private static final long serialVersionUID = 1L;

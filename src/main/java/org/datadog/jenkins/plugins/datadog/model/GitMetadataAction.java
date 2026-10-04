@@ -14,7 +14,7 @@ import org.datadog.jenkins.plugins.datadog.model.git.GitMetadata;
 import org.datadog.jenkins.plugins.datadog.model.git.Source;
 import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogConverter;
 import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class GitMetadataAction extends DatadogPluginAction {
 
@@ -32,7 +32,7 @@ public class GitMetadataAction extends DatadogPluginAction {
     metadataBySource.merge(metadataSource, metadata, GitMetadata::merge);
   }
 
-  @Nonnull
+  @NonNull
   public synchronized GitMetadata getMetadata() {
     GitMetadata metadata = GitMetadata.EMPTY;
     for (Source source : Source.values()) {

@@ -51,7 +51,7 @@ import org.datadog.jenkins.plugins.datadog.model.PipelineStepData;
 import org.datadog.jenkins.plugins.datadog.traces.CITags;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.util.git.GitUtils;
-import org.jetbrains.annotations.NotNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -207,7 +207,7 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
         assertCleanupActions(run);
     }
 
-    @NotNull
+    @NonNull
     private static String toUrl(String path) {
         if (isRunningOnWindows()) {
             return "file:///" + path.replace('\\', '/');

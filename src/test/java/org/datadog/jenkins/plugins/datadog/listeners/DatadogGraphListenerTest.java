@@ -72,7 +72,7 @@ import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.jetbrains.annotations.NotNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -283,7 +283,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertGitVariablesOnSpan(buildSpan, "master", toUrl(localGitRepoPath.getRemote()));
     }
 
-    @NotNull
+    @NonNull
     private static String toUrl(String path) {
         if (isRunningOnWindows()) {
             return "file:///" + path.replace('\\', '/');
@@ -1093,9 +1093,9 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         job.setDefinition(new CpsFlowDefinition(definition, true));
         job.scheduleBuild2(0).get();
 
-        clientStub.waitForTraces(2);
+        clientStub.waitForTraces(3);
         final List<TraceSpan> spans = clientStub.getSpans();
-        assertEquals(2, spans.size());
+        assertEquals(3, spans.size());
 
         final TraceSpan stage = spans.get(1);
         assertEquals("Stage", stage.getResourceName());
@@ -1111,9 +1111,9 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         job.setDefinition(new CpsFlowDefinition(definition, true));
         job.scheduleBuild2(0).get();
 
-        clientStub.waitForWebhooks(2);
+        clientStub.waitForWebhooks(3);
         final List<JSONObject> webhooks = clientStub.getWebhooks();
-        assertEquals(2, webhooks.size());
+        assertEquals(3, webhooks.size());
 
         final JSONObject stage = searchWebhookByLevel(webhooks, "stage");
         assertNotNull("Could not find stage webhook", stage);

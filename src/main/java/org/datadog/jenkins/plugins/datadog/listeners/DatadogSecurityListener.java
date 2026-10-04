@@ -29,7 +29,7 @@ import hudson.Extension;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import jenkins.security.SecurityListener;
 import org.acegisecurity.userdetails.UserDetails;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
@@ -52,7 +52,7 @@ public class DatadogSecurityListener extends SecurityListener {
     private static final Logger logger = Logger.getLogger(DatadogSecurityListener.class.getName());
 
     @Override
-    protected void authenticated(@Nonnull UserDetails details) {
+    protected void authenticated(@NonNull UserDetails details) {
         try {
 
             // Get the list of global tags to apply
@@ -85,7 +85,7 @@ public class DatadogSecurityListener extends SecurityListener {
     }
 
     @Override
-    protected void failedToAuthenticate(@Nonnull String username) {
+    protected void failedToAuthenticate(@NonNull String username) {
         try {
             // Get the list of global tags to apply
             Map<String, Set<String>> tags = DatadogUtilities.getTagsFromGlobalTags();
@@ -117,17 +117,17 @@ public class DatadogSecurityListener extends SecurityListener {
     }
 
     @Override
-    protected void loggedIn(@Nonnull String username) {
+    protected void loggedIn(@NonNull String username) {
         //Covered by Authenticated
     }
 
     @Override
-    protected void failedToLogIn(@Nonnull String username) {
+    protected void failedToLogIn(@NonNull String username) {
         //Covered by failedToAuthenticate
     }
 
     @Override
-    protected void loggedOut(@Nonnull String username) {
+    protected void loggedOut(@NonNull String username) {
         try {
 
             // Get the list of global tags to apply
