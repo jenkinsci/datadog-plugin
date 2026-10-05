@@ -118,9 +118,11 @@ public class BuildData implements Serializable {
     // TODO split BuildData fields that are used by DatadogWriter into a separate class whose initialization will not trigger run data load
     @Nonnull
     public static BuildData create(@Nullable Run<?, ?> run, @Nullable TaskListener listener) {
+        if (run == null) {
+            return BuildData.EMPTY;
+        }
         if (!BUILD_DATA_BEING_CREATED.get().add(run)) {
-            String runName = run != null ? run.getDisplayName() : null;
-            DatadogUtilities.severe(LOGGER, null, "BuildData creation is in progress for run " + runName + "; using empty data");
+            DatadogUtilities.severe(LOGGER, null, "BuildData creation is in progress for run " + run.getDisplayName() + "; using empty data");
             // there is another call up the stack that is creating BuildData for the same Run,
             // so the initial caller will get fully populated data
             // (empty data will only be used by the nested calls triggered by the original BuildData init)
@@ -964,5 +966,12 @@ public class BuildData implements Serializable {
      */
     public boolean isStartTimeKnown() {
         return !this.isBuilding || !this.isWorkflowRun || this.propagatedMillisInQueue >= 0;
+    }
+
+    /**
+     * Returns {@code true} for the placeholder returned by {@link #create} when build data could not be created.
+     */
+    public boolean isEmpty() {
+        return this == EMPTY;
     }
 }
