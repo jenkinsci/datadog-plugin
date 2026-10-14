@@ -1,5 +1,11 @@
 Changes
 =======
+## 9.2.1 / 2026-10-06
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.2.0...datadog-9.2.1
+
+* [Fixed] Fix NullPointerException when Git HEAD commit cannot be resolved. See [#538](https://github.com/jenkinsci/datadog-plugin/pull/538).
+
 ## 9.2.0 / 2026-04-06
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.1.8...datadog-9.2.0

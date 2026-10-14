@@ -26,7 +26,8 @@ public class GitMetadata implements Serializable {
     this.repositoryURL = repositoryURL;
     this.defaultBranch = defaultBranch;
     this.branch = branch;
-    this.commitMetadata = commitMetadata;
+    // commit metadata is null when HEAD cannot be resolved; a null here breaks every later merge()
+    this.commitMetadata = commitMetadata != null ? commitMetadata : GitCommitMetadata.EMPTY;
   }
 
   public String getRepositoryURL() {
