@@ -31,7 +31,12 @@ public class StageDataTest {
                         .withName(SAMPLE_NAME)
                         .withStartTimeInMicros(1000)
                         .withEndTimeInMicros(2000)
-                        .build(), "{\"name\":\"stage-name\\nline-2\",\"duration\":1000000}"}
+                        .build(), "{\"name\":\"stage-name\\nline-2\",\"duration\":1000000}"},
+                {StageData.builder()
+                        .withName("quote\" backslash\\ newline\n")
+                        .withStartTimeInMicros(1000)
+                        .withEndTimeInMicros(2000)
+                        .build(), "{\"name\":\"quote\\\" backslash\\\\ newline\\n\",\"duration\":1000000}"}
         });
     }
 
@@ -48,4 +53,5 @@ public class StageDataTest {
     public void shouldReturnCorrectJson() {
         assertEquals(expectedJson, data.toJson());
     }
+
 }

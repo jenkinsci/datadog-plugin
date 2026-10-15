@@ -47,12 +47,11 @@ public class DatadogQueuePublisherTest {
         String displayName = project.getDisplayName();
         project.getBuildersList().add(new SleepBuilder(10000));
 
-        jenkins.jenkins.getQueue().schedule(project);
-
         // set all the computers offline so they can't execute any buils, filling up the queue
         for (Computer computer: jenkins.jenkins.getComputers()){
             computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
         }
+        jenkins.jenkins.getQueue().schedule(project);
 
         final String[] expectedTags = new String[2];
         expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
@@ -67,12 +66,11 @@ public class DatadogQueuePublisherTest {
         final WorkflowJob project = jenkins.createProject(WorkflowJob.class);
         String displayName = project.getDisplayName();
 
-        project.scheduleBuild(10000, new Cause.RemoteCause("host", "0"));
-
         // set all the computers offline so they can't execute any builds, filling up the queue
         for (Computer computer: jenkins.jenkins.getComputers()){
             computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
         }
+        project.scheduleBuild(10000, new Cause.RemoteCause("host", "0"));
 
         final String[] expectedTags = new String[2];
         expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
@@ -94,12 +92,12 @@ public class DatadogQueuePublisherTest {
             final FreeStyleProject project = jenkins.createFreeStyleProject("filtered-project");
             project.getBuildersList().add(new SleepBuilder(10000));
 
-            jenkins.jenkins.getQueue().schedule(project);
-
             // set all the computers offline so they can't execute any builds, filling up the queue
             for (Computer computer: jenkins.jenkins.getComputers()){
                 computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
             }
+            jenkins.jenkins.getQueue().schedule(project);
+            assertEquals(1, jenkins.jenkins.getQueue().getItems().length);
 
             queuePublisher.doRun();
 
@@ -117,14 +115,14 @@ public class DatadogQueuePublisherTest {
         String displayName = project.getDisplayName();
         project.getBuildersList().add(new SleepBuilder(10000));
 
-        for (int i = 0; i < 10; i++) {
-            project.scheduleBuild(0, new Cause.RemoteCause("host",String.valueOf(i)), new ParametersAction(new StringParameterValue("param", String.valueOf(i))));
-        }
-
         // set all the computers offline so they can't execute any builds, filling up the queue
         for (Computer computer: jenkins.jenkins.getComputers()){
             computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
         }
+        for (int i = 0; i < 10; i++) {
+            project.scheduleBuild(0, new Cause.RemoteCause("host",String.valueOf(i)), new ParametersAction(new StringParameterValue("param", String.valueOf(i))));
+        }
+        assertEquals(10, jenkins.jenkins.getQueue().getItems().length);
 
         final String[] expectedTags = new String[2];
         expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
@@ -132,15 +130,19 @@ public class DatadogQueuePublisherTest {
         queuePublisher.doRun();
 
         // Since the same job is in the queue multiple times, then its metric should be submitted multiple times
-        client.assertMetric("jenkins.queue.job.in_queue", 1, hostname, expectedTags);
-        client.assertMetric("jenkins.queue.job.in_queue", 1, hostname, expectedTags);
-        client.assertMetric("jenkins.queue.job.in_queue", 1, hostname, expectedTags);
+        for (int i = 0; i < 10; i++) {
+            client.assertMetric("jenkins.queue.job.in_queue", 1, hostname, expectedTags);
+        }
     }
 
     @Test
     public void testQueueMetricsMultipleProjects() throws Exception {
         String hostname = DatadogUtilities.getHostname(null);
 
+        // set all the computers offline so they can't execute any builds, filling up the queue
+        for (Computer computer: jenkins.jenkins.getComputers()){
+            computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
+        }
         String displayName = "";
         for (int i = 0; i < 10; i++) {
             FreeStyleProject project = jenkins.createFreeStyleProject();
@@ -148,11 +150,7 @@ public class DatadogQueuePublisherTest {
             project.getBuildersList().add(new SleepBuilder(10000));
             project.scheduleBuild(0, new Cause.RemoteCause("host",String.valueOf(i)), new ParametersAction(new StringParameterValue("param", String.valueOf(i))));
         }
-
-        // set all the computers offline so they can't execute any builds, filling up the queue
-        for (Computer computer: jenkins.jenkins.getComputers()){
-            computer.setTemporarilyOffline(true, OfflineCause.create(Messages._Hudson_Computer_DisplayName()));
-        }
+        waitForBuildableItems(10);
 
         final String[] expectedTags = new String[2];
         expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
@@ -202,17 +200,8 @@ public class DatadogQueuePublisherTest {
             project.scheduleBuild(0, new Cause.RemoteCause("host",String.valueOf(i)), new ParametersAction(new StringParameterValue("param", String.valueOf(i))));
         }
 
-        // Wait for all queue items to transition to buildable state
-        // (Starts in an initial/pending state and transitions to "buildable" when Jenkins realizes no executor is available)
+        waitForBuildableItems(10);
         Queue queue = jenkins.jenkins.getQueue();
-        long deadline = System.currentTimeMillis() + 30_000;
-        while (queue.countBuildableItems() < queue.getItems().length) {
-            if (System.currentTimeMillis() > deadline) {
-                throw new AssertionError("Timed out waiting for all queue items to become buildable. " +
-                        "Buildable: " + queue.countBuildableItems() + ", Total: " + queue.getItems().length);
-            }
-            Thread.sleep(100);
-        }
 
         final String[] expectedTags = new String[1];
         expectedTags[0] = "jenkins_url:" + jenkins.getURL().toString();
@@ -234,5 +223,17 @@ public class DatadogQueuePublisherTest {
         client.assertMetricValues("jenkins.queue.job.pending", 1, hostname, pending);
         client.assertMetricValuesMin("jenkins.queue.job.pending", 0, hostname, size);
 
+    }
+
+    private static void waitForBuildableItems(int expectedCount) throws InterruptedException {
+        Queue queue = jenkins.jenkins.getQueue();
+        long deadline = System.currentTimeMillis() + 30_000;
+        while (queue.getItems().length != expectedCount || queue.countBuildableItems() != expectedCount) {
+            if (System.currentTimeMillis() > deadline) {
+                throw new AssertionError("Timed out waiting for " + expectedCount + " buildable queue items. " +
+                        "Buildable: " + queue.countBuildableItems() + ", Total: " + queue.getItems().length);
+            }
+            Thread.sleep(100);
+        }
     }
 }

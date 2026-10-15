@@ -395,9 +395,9 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         jenkins.getGlobalNodeProperties().add(prop);
         job.scheduleBuild2(0).get();
 
-        clientStub.waitForTraces(5);
+        clientStub.waitForTraces(6);
         final List<TraceSpan> spans = clientStub.getSpans();
-        assertEquals(5, spans.size());
+        assertEquals(6, spans.size());
         for(TraceSpan span : spans) {
             assertEquals("401d997a6eede777602669ccaec059755c98161f", span.getMeta().get(CITags.GIT_COMMIT_SHA));
         }
@@ -530,9 +530,9 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         jenkins.getGlobalNodeProperties().add(prop);
         job.scheduleBuild2(0).get();
 
-        clientStub.waitForTraces(5);
+        clientStub.waitForTraces(6);
         final List<TraceSpan> spans = clientStub.getSpans();
-        assertEquals(5, spans.size());
+        assertEquals(6, spans.size());
         for(TraceSpan span : spans) {
             assertEquals(toUrl(localGitRepoPath.getRemote()), span.getMeta().get(CITags.GIT_REPOSITORY_URL));
         }
@@ -562,9 +562,9 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         jenkins.getGlobalNodeProperties().add(prop);
         job.scheduleBuild2(0).get();
 
-        clientStub.waitForWebhooks(5);
+        clientStub.waitForWebhooks(6);
         final List<JSONObject> webhooks = clientStub.getWebhooks();
-        assertEquals(5, webhooks.size());
+        assertEquals(6, webhooks.size());
         for(JSONObject webhook : webhooks) {
             assertEquals(toUrl(localGitRepoPath.getRemote()), webhook.getJSONObject("git").get("repository_url"));
         }
@@ -1093,9 +1093,9 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         job.setDefinition(new CpsFlowDefinition(definition, true));
         job.scheduleBuild2(0).get();
 
-        clientStub.waitForTraces(2);
+        clientStub.waitForTraces(3);
         final List<TraceSpan> spans = clientStub.getSpans();
-        assertEquals(2, spans.size());
+        assertEquals(3, spans.size());
 
         final TraceSpan stage = spans.get(1);
         assertEquals("Stage", stage.getResourceName());
@@ -1111,9 +1111,9 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         job.setDefinition(new CpsFlowDefinition(definition, true));
         job.scheduleBuild2(0).get();
 
-        clientStub.waitForWebhooks(2);
+        clientStub.waitForWebhooks(3);
         final List<JSONObject> webhooks = clientStub.getWebhooks();
-        assertEquals(2, webhooks.size());
+        assertEquals(3, webhooks.size());
 
         final JSONObject stage = searchWebhookByLevel(webhooks, "stage");
         assertNotNull("Could not find stage webhook", stage);

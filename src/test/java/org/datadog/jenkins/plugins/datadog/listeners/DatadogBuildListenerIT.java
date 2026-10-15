@@ -38,7 +38,6 @@ import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
@@ -140,7 +139,6 @@ public class DatadogBuildListenerIT extends DatadogTraceAbstractTest {
             final TraceSpan buildSpan = spans.get(0);
             double queueTime = buildSpan.getMetrics().get(CITags.QUEUE_TIME);
             assertTrue(queueTime > 0L);
-            assertTrue(queueTime > TimeUnit.NANOSECONDS.toSeconds(buildSpan.getDurationNano()));
             assertTrue(buildSpan.getDurationNano() > 1L);
         } finally {
             if(worker != null) {

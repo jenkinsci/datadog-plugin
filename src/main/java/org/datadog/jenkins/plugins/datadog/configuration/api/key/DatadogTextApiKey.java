@@ -7,7 +7,7 @@ import hudson.util.FormValidation;
 import hudson.util.Secret;
 import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntake;
 import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeSite;
 import org.datadog.jenkins.plugins.datadog.configuration.api.intake.DatadogIntakeUrls;

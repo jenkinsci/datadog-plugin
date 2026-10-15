@@ -1,7 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.flare;
 
 import hudson.Extension;
-import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 
