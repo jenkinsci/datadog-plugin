@@ -29,6 +29,10 @@ public class GitMetadataAction extends DatadogPluginAction {
   }
 
   public synchronized void addMetadata(Source metadataSource, GitMetadata metadata) {
+    if (metadata == null) {
+      // GitUtils.buildGitMetadata returns null when metadata cannot be extracted
+      return;
+    }
     metadataBySource.merge(metadataSource, metadata, GitMetadata::merge);
   }
 

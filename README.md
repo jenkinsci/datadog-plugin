@@ -479,7 +479,7 @@ Checkout the [contributing guidelines][11] before you submit an issue or a pull 
 Checkout the [development document][12] for tips on spinning up a quick development environment locally.
 
 [1]: https://plugins.jenkins.io/datadog
-[2]: http://updates.jenkins-ci.org/download/war/2.555.3/jenkins.war
+[2]: https://www.jenkins.io/changelog-stable/2.555.3/
 [3]: https://wiki.jenkins-ci.org/display/JENKINS/Plugins#Plugins-Howtoinstallplugins
 [4]: https://app.datadoghq.com/account/settings#api
 [5]: https://github.com/jenkinsci/docker

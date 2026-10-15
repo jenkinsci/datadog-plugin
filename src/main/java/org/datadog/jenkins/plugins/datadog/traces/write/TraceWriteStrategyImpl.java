@@ -49,6 +49,10 @@ public class TraceWriteStrategyImpl implements TraceWriteStrategy {
     @Nullable
     @Override
     public Payload serialize(final BuildData buildData, final Run<?, ?> run) {
+        if (buildData.isEmpty()) {
+            // build data creation failed (already logged): there is nothing meaningful to submit
+            return null;
+        }
         JSONObject buildSpan = buildLogic.toJson(buildData, run);
         return buildSpan != null ? new Payload(buildSpan, track) : null;
     }

@@ -142,13 +142,11 @@ public class HttpClient {
         }
 
         ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();
-        List<ProxyConfiguration.Proxy> proxies = proxyConfig.getProxies();
-        proxies.clear();
 
         String proxyHost = jenkinsProxyConfiguration.getName();
         int proxyPort = jenkinsProxyConfiguration.getPort();
         List<Pattern> noProxyHostPatterns = jenkinsProxyConfiguration.getNoProxyHostPatterns();
-        proxies.add(new HttpProxy(proxyHost, proxyPort) {
+        proxyConfig.addProxy(new HttpProxy(proxyHost, proxyPort) {
             @Override
             public boolean matches(Origin origin) {
                 Origin.Address address = origin.getAddress();
@@ -192,17 +190,18 @@ public class HttpClient {
         ensureClientIsUpToDate();
 
         Request request = requestSupplier(url, HttpMethod.GET, headers, null, null).get();
-        InputStreamResponseListener responseListener = new InputStreamResponseListener();
-        request.send(responseListener);
+        try (InputStreamResponseListener responseListener = new InputStreamResponseListener()) {
+            request.send(responseListener);
 
-        Response response = responseListener.get(timeoutMillis, TimeUnit.MILLISECONDS);
-        int responseStatus = response.getStatus();
-        if (responseStatus >= 200 && responseStatus < 300) {
-            try (InputStream responseStream = responseListener.getInputStream()) {
-                responseParser.accept(responseStream);
+            Response response = responseListener.get(timeoutMillis, TimeUnit.MILLISECONDS);
+            int responseStatus = response.getStatus();
+            if (responseStatus >= 200 && responseStatus < 300) {
+                try (InputStream responseStream = responseListener.getInputStream()) {
+                    responseParser.accept(responseStream);
+                }
+            } else {
+                throw new ResponseProcessingException("Received erroneous response " + response);
             }
-        } else {
-            throw new ResponseProcessingException("Received erroneous response " + response);
         }
     }
 
@@ -238,12 +237,12 @@ public class HttpClient {
                     .newRequest(url)
                     .method(method)
                     .timeout(timeoutMillis, TimeUnit.MILLISECONDS);
-            request.headers(mutable -> {
+            request.headers(requestHeaders -> {
                 for (Map.Entry<String, String> e : headers.entrySet()) {
-                    mutable.add(e.getKey(), e.getValue());
+                    requestHeaders.add(e.getKey(), e.getValue());
                 }
                 if (contentType != null) {
-                    mutable.add(HttpHeader.CONTENT_TYPE, contentType);
+                    requestHeaders.put(HttpHeader.CONTENT_TYPE, contentType);
                 }
             });
             if (body != null) {

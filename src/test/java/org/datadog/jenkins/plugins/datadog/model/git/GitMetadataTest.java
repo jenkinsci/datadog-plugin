@@ -155,4 +155,12 @@ public class GitMetadataTest {
         GitCommitMetadata.merge(a.getCommitMetadata(), b.getCommitMetadata()),
         result.getCommitMetadata());
   }
+
+  @Test
+  public void nullCommitMetadataDefaultsToEmpty() {
+    // GitUtils.buildCommitMetadata returns null when HEAD cannot be resolved
+    GitMetadata noHead = new GitMetadata.Builder().repositoryURL("https://example.com/repo.git").commitMetadata(null).build();
+    assertEquals(GitCommitMetadata.EMPTY, noHead.getCommitMetadata());
+    assertEquals(GitCommitMetadata.EMPTY, GitMetadata.merge(GitMetadata.EMPTY, noHead).getCommitMetadata());
+  }
 }

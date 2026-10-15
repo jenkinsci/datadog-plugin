@@ -15,7 +15,7 @@
   <url>https://github.com/jenkinsci/datadog-plugin</url>
   <groupId>org.datadog.jenkins.plugins</groupId>
   <artifactId>datadog</artifactId>
-  <version>9.2.1-SNAPSHOT</version>
+  <version>10.0.1-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <properties>
@@ -23,7 +23,6 @@
     <jenkins.baseline>2.555</jenkins.baseline>
     <jenkins.version>${jenkins.baseline}.3</jenkins.version>
     <hpi.compatibleSinceVersion>1.0.0</hpi.compatibleSinceVersion>
-    <!-- byte-buddy is needed with java 11: https://stackoverflow.com/questions/69929229/mockito-shipped-within-spring-boot-fails-to-attach-to-jvm-openjdk-11/72912290#72912290 -->
     <byte-buddy.version>1.12.14</byte-buddy.version>
     <useBeta>true</useBeta>
     <!-- common checks recommended for new/modernized plugins -->
@@ -86,6 +85,18 @@
   <dependencies>
     <dependency>
       <groupId>io.jenkins.plugins</groupId>
+      <artifactId>commons-lang3-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.jenkins.plugins</groupId>
+      <artifactId>commons-text-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.jenkins.plugins</groupId>
+      <artifactId>json-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.jenkins.plugins</groupId>
       <artifactId>jnr-posix-api</artifactId>
     </dependency>
     <!-- jnr-posix-api pulls jnr-ffi:2.2.4, which bundles an older org.ow2.asm than the one
@@ -110,10 +121,6 @@
         <groupId>io.jenkins.configuration-as-code</groupId>
         <artifactId>test-harness</artifactId>
         <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.jenkins.plugins</groupId>
-      <artifactId>json-api</artifactId>
     </dependency>
     <dependency>
       <groupId>com.github.stefanbirkner</groupId>
@@ -237,8 +244,16 @@
       <groupId>io.dropwizard.metrics</groupId>
       <artifactId>metrics-json</artifactId>
       <version>4.2.28</version>
-      <!-- exclude the bundled jackson-databind, an older version conflicting with jackson2-api's; jackson2-api supplies it instead -->
+      <!-- exclude the bundled Jackson artifacts, older versions conflicting with jackson2-api's; jackson2-api supplies them instead -->
       <exclusions>
+        <exclusion>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-annotations</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-core</artifactId>
+        </exclusion>
         <exclusion>
           <groupId>com.fasterxml.jackson.core</groupId>
           <artifactId>jackson-databind</artifactId>
@@ -272,7 +287,6 @@
           </archive>
         </configuration>
       </plugin>
-      <!-- This is needed until with java 11: https://stackoverflow.com/questions/69929229/mockito-shipped-within-spring-boot-fails-to-attach-to-jvm-openjdk-11/72912290#72912290 -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
