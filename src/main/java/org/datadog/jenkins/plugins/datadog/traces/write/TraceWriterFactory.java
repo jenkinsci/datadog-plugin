@@ -3,7 +3,7 @@ package org.datadog.jenkins.plugins.datadog.traces.write;
 import hudson.init.Terminator;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class TraceWriterFactory {
 

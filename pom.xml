@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>6.2116.v7501b_67dc517</version>
+    <version>6.2236.v12dd4c483242</version>
     <relativePath />
   </parent>
 
@@ -19,11 +19,18 @@
 
   <properties>
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
-    <jenkins.baseline>2.541</jenkins.baseline>
+    <jenkins.baseline>2.555</jenkins.baseline>
     <jenkins.version>${jenkins.baseline}.3</jenkins.version>
     <hpi.compatibleSinceVersion>1.0.0</hpi.compatibleSinceVersion>
     <byte-buddy.version>1.12.14</byte-buddy.version>
     <useBeta>true</useBeta>
+    <!-- common checks recommended for new/modernized plugins -->
+    <ban-commons-lang-2.skip>false</ban-commons-lang-2.skip>
+    <ban-deprecated-stapler.skip>false</ban-deprecated-stapler.skip>
+    <banObsoleteDependencyOverrides.skip>false</banObsoleteDependencyOverrides.skip>
+    <!-- fail the build if the artifacts actually bundled in the hpi drift from this list -->
+    <hpi.strictBundledArtifacts>true</hpi.strictBundledArtifacts>
+    <hpi.bundledArtifacts>java-dogstatsd-client,jetty-alpn-client,jetty-client,jetty-compression-common,jetty-compression-gzip,jetty-http,jetty-io,jetty-util,jnr-enxio,jnr-unixsocket,metrics-core,metrics-json,support-log-formatter</hpi.bundledArtifacts>
   </properties>
 
   <licenses>
@@ -67,7 +74,7 @@
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
         <artifactId>bom-${jenkins.baseline}.x</artifactId>
-        <version>7002.v028a_3607ddc8</version>
+        <version>7093.v37de7b_4a_8a_4f</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>
@@ -75,11 +82,6 @@
   </dependencyManagement>
 
   <dependencies>
-    <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
-      <version>3.0.2</version>
-    </dependency>
     <dependency>
       <groupId>io.jenkins.plugins</groupId>
       <artifactId>commons-lang3-api</artifactId>
@@ -95,6 +97,13 @@
     <dependency>
       <groupId>io.jenkins.plugins</groupId>
       <artifactId>jnr-posix-api</artifactId>
+    </dependency>
+    <!-- jnr-posix-api pulls jnr-ffi:2.2.4, which bundles an older org.ow2.asm than the one
+         asm-api (pulled transitively via workflow-cps) provides; declare it directly so its
+         newer asm wins over jnr-ffi's bundled one -->
+    <dependency>
+      <groupId>io.jenkins.plugins</groupId>
+      <artifactId>asm-api</artifactId>
     </dependency>
     <dependency>
       <groupId>com.datadoghq</groupId>
@@ -116,12 +125,6 @@
       <groupId>com.github.stefanbirkner</groupId>
       <artifactId>system-lambda</artifactId>
       <version>1.2.1</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jetbrains</groupId>
-      <artifactId>annotations</artifactId>
-      <version>26.0.2</version>
       <scope>test</scope>
     </dependency>
 
@@ -195,10 +198,19 @@
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>jackson2-api</artifactId>
     </dependency>
+    <!-- kept in sync with the Jetty version bundled by jenkins-test-harness for this baseline,
+         to avoid a requireUpperBoundDeps conflict / classpath clash during tests -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
-      <version>12.1.5</version>
+      <version>12.1.12</version>
+      <!-- slf4j-api is already provided by jenkins-core; exclude it so it's not bundled a second time in the hpi -->
+      <exclusions>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
@@ -213,16 +225,25 @@
       <groupId>org.kohsuke</groupId>
       <artifactId>access-modifier-suppressions</artifactId>
       <version>${access-modifier-checker.version}</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>io.dropwizard.metrics</groupId>
       <artifactId>metrics-core</artifactId>
       <version>4.2.28</version>
+      <!-- slf4j-api is already provided by jenkins-core; exclude it so it's not bundled a second time in the hpi -->
+      <exclusions>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.dropwizard.metrics</groupId>
       <artifactId>metrics-json</artifactId>
       <version>4.2.28</version>
+      <!-- exclude the bundled Jackson artifacts, older versions conflicting with jackson2-api's; jackson2-api supplies them instead -->
       <exclusions>
         <exclusion>
           <groupId>com.fasterxml.jackson.core</groupId>
@@ -246,7 +267,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <argLine>--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED -javaagent:/tmp/byte-buddy/byte-buddy-agent-${byte-buddy.version}.jar</argLine>
+          <argLine>${jenkins.addOpens} -javaagent:/tmp/byte-buddy/byte-buddy-agent-${byte-buddy.version}.jar</argLine>
           <includes>
             <include>**/*Test</include>
             <include>**/*IT</include>

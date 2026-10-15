@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import jenkins.YesNoMaybe;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.datadog.jenkins.plugins.datadog.logs.DatadogTaskListenerDecorator;
@@ -141,7 +141,7 @@ public class DatadogOptions extends Step implements Serializable {
 
         /** {@inheritDoc} */
         @Override
-        public void stop(@Nonnull Throwable cause) throws Exception {
+        public void stop(@NonNull Throwable cause) throws Exception {
             StepContext context = getContext();
             context.get(TaskListener.class).getLogger().println("Stop DatadogStep");
             context.get(TaskListener.class).getLogger().println(cause.getMessage());

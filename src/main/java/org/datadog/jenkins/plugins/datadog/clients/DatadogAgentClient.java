@@ -48,7 +48,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.logging.Logger;
-import javax.annotation.concurrent.GuardedBy;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogGlobalConfiguration;
@@ -82,7 +81,6 @@ public class DatadogAgentClient implements DatadogClient {
     // statsd
     private volatile StatsDClient statsd;
     private final Object statsdInitLock = new Object();
-    @GuardedBy("statsdInitLock")
     private String resolvedIp;
 
     /**

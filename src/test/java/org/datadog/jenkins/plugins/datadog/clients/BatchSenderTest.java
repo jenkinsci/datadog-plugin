@@ -20,7 +20,7 @@ import java.util.zip.GZIPInputStream;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
-import org.jetbrains.annotations.NotNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -143,7 +143,7 @@ public class BatchSenderTest {
         return batches;
     }
 
-  private static @NotNull Map<String, String> map(String key, String value) {
+  private static @NonNull Map<String, String> map(String key, String value) {
     return Collections.singletonMap(key, value);
   }
 }

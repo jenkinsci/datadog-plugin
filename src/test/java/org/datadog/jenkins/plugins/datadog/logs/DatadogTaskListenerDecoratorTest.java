@@ -41,7 +41,7 @@ import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.log.TaskListenerDecorator;
-import org.jetbrains.annotations.NotNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -112,7 +112,7 @@ public class DatadogTaskListenerDecoratorTest {
         cfg.setExcluded(jobName);
     }
 
-    private static @NotNull WorkflowRun givenBuildNamed(String jobName) {
+    private static @NonNull WorkflowRun givenBuildNamed(String jobName) {
         WorkflowJob job = mock(WorkflowJob.class);
         when(job.getFullName()).thenReturn(jobName);
 

@@ -3,8 +3,7 @@ package org.datadog.jenkins.plugins.datadog.clients;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.NotThreadSafe;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
 import org.eclipse.jetty.client.Response;
 
@@ -34,7 +33,6 @@ import org.eclipse.jetty.client.Response;
  * <p>Instances of this class are not thread-safe and not reusable: each HTTP call requires its own
  * instance.
  */
-@NotThreadSafe
 public class HttpRetryPolicy {
 
   private static final Logger logger = Logger.getLogger(HttpRetryPolicy.class.getName());

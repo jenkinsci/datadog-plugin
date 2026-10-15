@@ -29,7 +29,7 @@ import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.logs.LogWriterFactory;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
 
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 public class ClientHolder {

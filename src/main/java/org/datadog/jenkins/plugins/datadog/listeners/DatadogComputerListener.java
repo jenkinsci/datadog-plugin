@@ -34,8 +34,8 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.DatadogEvent;
 import org.datadog.jenkins.plugins.datadog.DatadogUtilities;
@@ -94,7 +94,7 @@ public class DatadogComputerListener extends ComputerListener {
     }
 
     @Override
-    public void onOffline(@Nonnull Computer computer, @CheckForNull OfflineCause cause) {
+    public void onOffline(@NonNull Computer computer, @CheckForNull OfflineCause cause) {
         try {
 
             // Get the list of tags to apply

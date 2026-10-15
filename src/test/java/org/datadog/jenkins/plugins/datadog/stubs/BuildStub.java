@@ -1,6 +1,7 @@
 package org.datadog.jenkins.plugins.datadog.stubs;
 
 import hudson.EnvVars;
+import hudson.Util;
 import hudson.model.Action;
 import hudson.model.Build;
 import hudson.model.Node;
@@ -8,7 +9,7 @@ import hudson.model.Result;
 import hudson.model.TaskListener;
 import java.io.IOException;
 import java.util.List;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class BuildStub extends Build<ProjectStub, BuildStub> {
 
@@ -20,7 +21,7 @@ public class BuildStub extends Build<ProjectStub, BuildStub> {
     private BuildStub previousBuiltBuild;
     private BuildStub previousNotFailedBuild;
 
-    public BuildStub(@Nonnull ProjectStub project, Result result, EnvVars envVars, BuildStub previousSuccessfulBuild,
+    public BuildStub(@NonNull ProjectStub project, Result result, EnvVars envVars, BuildStub previousSuccessfulBuild,
                      long duration, int number, BuildStub previousBuiltBuild, long timestamp, BuildStub previousNotFailedBuild)
             throws IOException {
         this(project);
@@ -39,7 +40,27 @@ public class BuildStub extends Build<ProjectStub, BuildStub> {
         return null;
     }
 
-    protected BuildStub(@Nonnull ProjectStub project) throws IOException {
+    /**
+     * Overridden to avoid calling {@link jenkins.model.TransientActionFactory#factoriesFor}, which since Jenkins
+     * 2.555 requires a fully initialized Jenkins instance (it looks up a singleton extension), and therefore
+     * throws in these plain unit tests that only stub out {@link jenkins.model.Jenkins}.
+     */
+    @Override
+    public <T extends Action> List<T> getActions(Class<T> type) {
+        return Util.filter(getActions(), type);
+    }
+
+    @Override
+    public <T extends Action> T getAction(Class<T> type) {
+        for (Action action : getActions()) {
+            if (type.isInstance(action)) {
+                return type.cast(action);
+            }
+        }
+        return null;
+    }
+
+    protected BuildStub(@NonNull ProjectStub project) throws IOException {
         super(project);
     }
 
@@ -51,8 +72,8 @@ public class BuildStub extends Build<ProjectStub, BuildStub> {
         return this.result;
     }
 
-    @Nonnull
-    public EnvVars getEnvironment(@Nonnull TaskListener listener) throws IOException, InterruptedException {
+    @NonNull
+    public EnvVars getEnvironment(@NonNull TaskListener listener) throws IOException, InterruptedException {
         return this.envVars;
     }
 
@@ -68,7 +89,7 @@ public class BuildStub extends Build<ProjectStub, BuildStub> {
         return this.number;
     }
 
-    @Nonnull
+    @NonNull
     public ProjectStub getParent() {
         return project;
     }
@@ -79,16 +100,6 @@ public class BuildStub extends Build<ProjectStub, BuildStub> {
 
     public BuildStub getPreviousNotFailedBuild() {
         return this.previousNotFailedBuild;
-    }
-
-    @Override
-    public <T extends Action> List<T> getActions(Class<T> actionType) {
-        return getActions().stream().filter(actionType::isInstance).map(actionType::cast).toList();
-    }
-
-    @Override
-    public <T extends Action> T getAction(Class<T> actionType) {
-        return getActions(actionType).stream().findFirst().orElse(null);
     }
 
     public long getQueueId() {

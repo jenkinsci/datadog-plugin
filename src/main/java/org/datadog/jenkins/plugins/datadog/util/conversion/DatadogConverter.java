@@ -10,8 +10,8 @@ import java.lang.reflect.Type;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Converter that supports data versioning.
@@ -45,7 +45,7 @@ public abstract class DatadogConverter<T> implements Converter {
      *                   no deserialization is performed.
      */
     @SafeVarargs
-    protected DatadogConverter(VersionedConverter<T> legacyConverter, @Nonnull VersionedConverter<T>... converters) {
+    protected DatadogConverter(VersionedConverter<T> legacyConverter, @NonNull VersionedConverter<T>... converters) {
         this.legacyConverter = legacyConverter;
 
         if (converters.length == 0) {

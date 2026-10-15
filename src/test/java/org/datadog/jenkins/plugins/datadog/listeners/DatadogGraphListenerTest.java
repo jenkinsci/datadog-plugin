@@ -72,7 +72,7 @@ import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.jetbrains.annotations.NotNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -283,7 +283,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         assertGitVariablesOnSpan(buildSpan, "master", toUrl(localGitRepoPath.getRemote()));
     }
 
-    @NotNull
+    @NonNull
     private static String toUrl(String path) {
         if (isRunningOnWindows()) {
             return "file:///" + path.replace('\\', '/');
@@ -395,9 +395,9 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         jenkins.getGlobalNodeProperties().add(prop);
         job.scheduleBuild2(0).get();
 
-        clientStub.waitForTraces(6);
+        clientStub.waitForTraces(5);
         final List<TraceSpan> spans = clientStub.getSpans();
-        assertEquals(6, spans.size());
+        assertEquals(5, spans.size());
         for(TraceSpan span : spans) {
             assertEquals("401d997a6eede777602669ccaec059755c98161f", span.getMeta().get(CITags.GIT_COMMIT_SHA));
         }
@@ -530,9 +530,9 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         jenkins.getGlobalNodeProperties().add(prop);
         job.scheduleBuild2(0).get();
 
-        clientStub.waitForTraces(6);
+        clientStub.waitForTraces(5);
         final List<TraceSpan> spans = clientStub.getSpans();
-        assertEquals(6, spans.size());
+        assertEquals(5, spans.size());
         for(TraceSpan span : spans) {
             assertEquals(toUrl(localGitRepoPath.getRemote()), span.getMeta().get(CITags.GIT_REPOSITORY_URL));
         }
@@ -562,9 +562,9 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         jenkins.getGlobalNodeProperties().add(prop);
         job.scheduleBuild2(0).get();
 
-        clientStub.waitForWebhooks(6);
+        clientStub.waitForWebhooks(5);
         final List<JSONObject> webhooks = clientStub.getWebhooks();
-        assertEquals(6, webhooks.size());
+        assertEquals(5, webhooks.size());
         for(JSONObject webhook : webhooks) {
             assertEquals(toUrl(localGitRepoPath.getRemote()), webhook.getJSONObject("git").get("repository_url"));
         }

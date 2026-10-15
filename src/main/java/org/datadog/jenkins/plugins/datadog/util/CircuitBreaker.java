@@ -1,6 +1,5 @@
 package org.datadog.jenkins.plugins.datadog.util;
 
-import javax.annotation.concurrent.GuardedBy;
 import java.util.function.Consumer;
 
 public class CircuitBreaker<T> {
@@ -15,12 +14,8 @@ public class CircuitBreaker<T> {
     private final long minHealthCheckDelayMillis;
     private final long maxHealthCheckDelayMillis;
     private final double delayFactor;
-
-    @GuardedBy("this")
     private boolean healthy;
-    @GuardedBy("this")
     private long healthCheckDelayMillis;
-    @GuardedBy("this")
     private long healthCheckAt;
 
     public CircuitBreaker(ThrowingConsumer<T> action, Consumer<T> fallback, Consumer<Exception> errorHandler) {

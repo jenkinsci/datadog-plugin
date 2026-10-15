@@ -1,9 +1,6 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:l="/lib/layout" xmlns:f="/lib/form" xmlns:i="jelly:fmt" xmlns:st="jelly:stapler">
-  <l:layout type="one-column" title="Datadog Plugin Management" permissions="${app.MANAGE_AND_SYSTEM_READ}">
-  <l:main-panel>
-    <h1>Datadog Plugin Management</h1>
-
+  <l:settings-subpage permissions="${app.MANAGE_AND_SYSTEM_READ}">
     <l:hasAdministerOrManage>
       <f:form method="post" action="downloadDiagnosticFlare" name="downloadDiagnosticFlare">
         <f:panel>
@@ -22,7 +19,5 @@
         </f:panel>
       </f:form>
     </l:hasAdministerOrManage>
-
-  </l:main-panel>
-  </l:layout>
+  </l:settings-subpage>
 </j:jelly>

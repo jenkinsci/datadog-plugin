@@ -1,6 +1,6 @@
 package org.datadog.jenkins.plugins.datadog.model;
 
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.Serializable;
 
 public class PluginData implements Serializable {

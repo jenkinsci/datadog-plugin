@@ -3,13 +3,13 @@ package org.datadog.jenkins.plugins.datadog.stubs;
 import hudson.model.LoadBalancer;
 import hudson.model.Queue;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class QueueStub extends Queue {
 
     public Queue.Item item;
 
-    public QueueStub(@Nonnull LoadBalancer loadBalancer) {
+    public QueueStub(@NonNull LoadBalancer loadBalancer) {
         super(loadBalancer);
     }
 

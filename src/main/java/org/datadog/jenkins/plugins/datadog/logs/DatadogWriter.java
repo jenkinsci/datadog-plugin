@@ -38,7 +38,7 @@ import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class DatadogWriter {
 
@@ -47,7 +47,7 @@ public class DatadogWriter {
     private final Charset charset;
     private final BuildData buildData;
 
-    public DatadogWriter(@Nonnull BuildData buildData) {
+    public DatadogWriter(@NonNull BuildData buildData) {
         this.charset = buildData.getCharset();
         this.buildData = buildData;
     }
