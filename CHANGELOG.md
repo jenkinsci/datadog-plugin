@@ -1,5 +1,17 @@
 Changes
 =======
+## 10.0.0 / 2026-10-15
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.2.1...datadog-10.0.0
+
+> [!IMPORTANT]
+> This release requires **Jenkins 2.541.3 or newer** and **Java 17 or newer**, up from Jenkins 2.361.4 and Java 11.
+> Upgrade Jenkins and its Java runtime before installing this release. Plugin version 9.2.1 remains available for older Jenkins installations.
+
+* [Changed] Raise the minimum supported Jenkins version to 2.541.3 and the minimum Java version to 17. See [#539](https://github.com/jenkinsci/datadog-plugin/pull/539).
+* [Changed] Update plugin dependencies to maintained Jenkins API plugins and Jetty 12. See [#539](https://github.com/jenkinsci/datadog-plugin/pull/539).
+* [Fixed] Fix Datadog plugin startup on Jenkins 2.579 and newer after Commons Lang 2 was removed from Jenkins core. See [#539](https://github.com/jenkinsci/datadog-plugin/pull/539).
+
 ## 9.2.1 / 2026-10-06
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.2.0...datadog-9.2.1
