@@ -42,14 +42,9 @@ pipeline {
                     }
                     steps {
                         script {
-                            try {
-                                timeout(time:11, unit:'SECONDS') {
-                                    input message: 'User input required',
-                                        parameters: [choice(name: 'Choice', choices: 'no\nyes', description: 'Choose "yes"')]
-                                }
-                            } catch(err) {
-                                echo 'Waiting over'
-                            }
+                            input id: 'Pause', message: 'User input required',
+                                parameters: [choice(name: 'Choice', choices: 'no\nyes', description: 'Choose "yes"')]
+                            echo 'Waiting over'
                         }
                     }
                     post {
