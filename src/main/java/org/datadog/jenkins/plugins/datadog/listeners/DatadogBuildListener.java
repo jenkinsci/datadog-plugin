@@ -29,8 +29,6 @@ import static org.datadog.jenkins.plugins.datadog.DatadogUtilities.cleanUpTraceA
 import static org.datadog.jenkins.plugins.datadog.traces.TracerConstants.SPAN_ID_ENVVAR_KEY;
 import static org.datadog.jenkins.plugins.datadog.traces.TracerConstants.TRACE_ID_ENVVAR_KEY;
 
-import com.cloudbees.workflow.rest.external.RunExt;
-import com.cloudbees.workflow.rest.external.StageNodeExt;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.*;
@@ -61,7 +59,7 @@ import org.datadog.jenkins.plugins.datadog.traces.BuildSpanManager;
 import org.datadog.jenkins.plugins.datadog.traces.message.TraceSpan;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriter;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
-import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
+import org.datadog.jenkins.plugins.datadog.util.PauseDurations;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 /**
@@ -275,19 +273,13 @@ public class DatadogBuildListener extends RunListener<Run> {
             logger.fine(String.format("[%s]: Duration: %s", buildData.getJobName(), toTimeString(buildData.getDuration(0L))));
 
             if (run instanceof WorkflowRun) {
-                RunExt extRun = getRunExtForRun((WorkflowRun) run);
-                if (extRun != null){
-                    long pauseDurationMillis = 0;
-                    for (StageNodeExt stage : extRun.getStages()) {
-                        pauseDurationMillis += stage.getPauseDurationMillis();
-                    }
-                    metrics.gauge("jenkins.job.pause_duration", TimeUnit.MILLISECONDS.toSeconds(pauseDurationMillis), hostname, tags);
-                    logger.fine(String.format("[%s]: Pause Duration: %s", buildData.getJobName(), toTimeString(pauseDurationMillis)));
-                    long buildDurationMillis = run.getDuration() - pauseDurationMillis;
-                    metrics.gauge("jenkins.job.build_duration", TimeUnit.MILLISECONDS.toSeconds(buildDurationMillis), hostname, tags);
-                    logger.fine(
-                            String.format("[%s]: Build Duration (without pause): %s", buildData.getJobName(), toTimeString(buildDurationMillis)));
-                }
+                long pauseDurationMillis = getPauseDurationMillis((WorkflowRun) run);
+                metrics.gauge("jenkins.job.pause_duration", TimeUnit.MILLISECONDS.toSeconds(pauseDurationMillis), hostname, tags);
+                logger.fine(String.format("[%s]: Pause Duration: %s", buildData.getJobName(), toTimeString(pauseDurationMillis)));
+                long buildDurationMillis = run.getDuration() - pauseDurationMillis;
+                metrics.gauge("jenkins.job.build_duration", TimeUnit.MILLISECONDS.toSeconds(buildDurationMillis), hostname, tags);
+                logger.fine(
+                        String.format("[%s]: Build Duration (without pause): %s", buildData.getJobName(), toTimeString(buildDurationMillis)));
             }
 
             Metrics.getInstance().incrementCounter("jenkins.job.completed", hostname, tags);
@@ -498,20 +490,11 @@ public class DatadogBuildListener extends RunListener<Run> {
         return run != null && run.getResult() != Result.SUCCESS;
     }
 
-    @SuppressFBWarnings("DCN_NULLPOINTER_EXCEPTION")
-    public RunExt getRunExtForRun(WorkflowRun run) {
-        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
-        try {
-            if (cfg.isCacheBuildRuns()) {
-                return RunExt.create(run);
-            } else {
-                return RunExt.createNew(run);
-            }
-        } catch (NullPointerException e) {
-            // RunExt#create and RunExt#createNew may throw an NPE
-            DatadogUtilities.severe(logger, e, "Error while getting RunExt");
-            return null;
-        }
+    /**
+     * @return the total time, in milliseconds, the run spent paused (e.g. waiting on {@code input} steps)
+     */
+    public long getPauseDurationMillis(WorkflowRun run) {
+        return PauseDurations.forExecution(run.getExecution());
     }
 
     public Queue getQueue() {

@@ -1,6 +1,5 @@
 package org.datadog.jenkins.plugins.datadog.listeners;
 
-import com.cloudbees.workflow.rest.external.RunExt;
 import hudson.model.Queue;
 import org.datadog.jenkins.plugins.datadog.DatadogClient;
 import org.datadog.jenkins.plugins.datadog.traces.DatadogTraceBuildLogic;
@@ -10,7 +9,7 @@ public class DatadogBuildListenerTestWrapper extends DatadogBuildListener {
     Queue queue;
     DatadogClient client;
     DatadogTraceBuildLogic traceBuildLogic;
-    RunExt runExt;
+    long pauseDurationMillis;
 
     public void setQueue(Queue queue) {
         this.queue = queue;
@@ -32,12 +31,12 @@ public class DatadogBuildListenerTestWrapper extends DatadogBuildListener {
         return this.traceBuildLogic;
     }
 
-    public void setStubbedRunExt(RunExt r){
-        this.runExt = r;
+    public void setStubbedPauseDurationMillis(long pauseDurationMillis){
+        this.pauseDurationMillis = pauseDurationMillis;
     }
 
     @Override
-    public RunExt getRunExtForRun(WorkflowRun r){
-        return this.runExt;
+    public long getPauseDurationMillis(WorkflowRun r){
+        return this.pauseDurationMillis;
     }
 }

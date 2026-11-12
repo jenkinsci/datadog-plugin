@@ -97,10 +97,6 @@
             <f:checkbox title="Use AWS Instance ID" field="useAwsInstanceHostname" default="false" />
         </f:entry>
 
-        <f:entry title="Cache Build Runs" description="Cache build runs when calculating pause duration">
-            <f:checkbox title="Cache Build Runs" field="cacheBuildRuns" default="true" />
-        </f:entry>
-
         <f:entry title="Show Datadog links" description="Show links to Datadog in Jenkins UI">
             <f:checkbox title="Show Datadog links" field="showDatadogLinks" default="true" />
         </f:entry>
