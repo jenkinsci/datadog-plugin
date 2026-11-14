@@ -22,7 +22,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.cloudbees.workflow.rest.external.FlowNodeExt;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.Cause.UserIdCause;
@@ -226,7 +225,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         }
         br.close();
         assertFalse(PauseAction.isPaused(inputNode));
-        long expectedPauseMillis = FlowNodeExt.create(inputNode).getPauseDurationMillis();
+        long expectedPauseMillis = PauseAction.getPauseDuration(inputNode);
         assertTrue(expectedPauseMillis > 0);
 
         String[] baseTags = new String[]{
