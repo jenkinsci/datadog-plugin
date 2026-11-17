@@ -1,5 +1,14 @@
 Changes
 =======
+## 10.1.0 / 2026-11-17
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-10.0.0...datadog-10.1.0
+
+> [!NOTE]
+> `jenkins.job.pause_duration` now also counts `input` pauses outside stages, in an outer stage after a nested stage, and in parallel branches without a stage, which were previously missed. `jenkins.job.build_duration` changes accordingly, so dashboards may show a step change for scripted pipelines that use `input` this way.
+
+* [Changed] Remove the dependency on the Pipeline: Stage View REST API plugin and compute pause durations directly from the Pipeline flow graph. The "Cache Build Runs" global option no longer has any effect and has been removed from the UI; existing configurations still load. See [#545](https://github.com/jenkinsci/datadog-plugin/pull/545).
+
 ## 10.0.0 / 2026-10-15
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.2.1...datadog-10.0.0
