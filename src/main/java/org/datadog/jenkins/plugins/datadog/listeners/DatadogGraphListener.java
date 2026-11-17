@@ -25,11 +25,9 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.listeners;
 
-import com.cloudbees.workflow.rest.external.FlowNodeExt;
 import hudson.Extension;
 import hudson.model.Queue;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,6 +50,7 @@ import org.datadog.jenkins.plugins.datadog.model.node.NodeInfoAction;
 import org.datadog.jenkins.plugins.datadog.model.node.StatusAction;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriter;
 import org.datadog.jenkins.plugins.datadog.traces.write.TraceWriterFactory;
+import org.datadog.jenkins.plugins.datadog.util.PauseDurations;
 import org.datadog.jenkins.plugins.datadog.util.SuppressFBWarnings;
 import org.datadog.jenkins.plugins.datadog.util.TagsUtil;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
@@ -62,7 +61,6 @@ import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.GraphListener;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
-import org.jenkinsci.plugins.workflow.graph.FlowGraphWalker;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
@@ -141,7 +139,7 @@ public class DatadogGraphListener implements GraphListener {
             TagsUtil.addTagToTags(tags, "stage_depth", String.valueOf(stageDepth));
             // Add custom result tag
             TagsUtil.addTagToTags(tags, "result", result);
-            long pauseDuration = getPauseDurationMillis(startNode);
+            long pauseDuration = PauseDurations.forBlock(endNode);
 
             metrics.gauge("jenkins.job.stage_duration", getTime(startNode, endNode), hostname, tags);
             metrics.gauge("jenkins.job.stage_pause_duration", pauseDuration, hostname, tags);
@@ -305,39 +303,6 @@ public class DatadogGraphListener implements GraphListener {
             long end = System.currentTimeMillis();
             DatadogAudit.log("DatadogTracePipelineLogic.buildPipelineNode", start, end);
         }
-    }
-
-    @SuppressFBWarnings("DCN_NULLPOINTER_EXCEPTION")
-    private long getPauseDurationMillis(@Nonnull FlowNode startNode) {
-        try {
-            long pauseDuration = 0;
-            FlowGraphWalker walker = new FlowGraphWalker(startNode.getExecution());
-
-            Iterator<FlowNode> it = walker.iterator();
-
-            // Iterates on the execution nodes to sum pause duration of sub-stages.
-            // Walks through all the execution graph of startNode, and considers the sub-nodes that are not active
-            // anymore. A sub-node is a node for which startNode is a parent (is part of its enclosing blocks).
-            while (it.hasNext()) {
-                FlowNode node = it.next();
-                if (!node.isActive()) {
-                    // Lists node parents genealogy, and sees if startNode is one of them.
-                    for (BlockStartNode parent : node.iterateEnclosingBlocks()) {
-                        if (parent.getId().equals(startNode.getId())) {
-                            FlowNodeExt nodeExt = FlowNodeExt.create(node);
-                            pauseDuration += nodeExt.getPauseDurationMillis();
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // In milliseconds
-            return pauseDuration;
-        } catch (NullPointerException e) {
-            logger.warning("Unable to get the stage pause duration");
-        }
-        return 0;
     }
 
     private boolean isMonitored(FlowNode flowNode) {

@@ -25,7 +25,6 @@ THE SOFTWARE.
 
 package org.datadog.jenkins.plugins.datadog.listeners;
 
-import com.cloudbees.workflow.rest.external.StageNodeExt;
 import hudson.EnvVars;
 import hudson.model.*;
 import java.nio.charset.Charset;
@@ -39,7 +38,6 @@ import org.datadog.jenkins.plugins.datadog.stubs.ProjectStub;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogClientStub;
 import org.datadog.jenkins.plugins.datadog.clients.DatadogMetric;
 import org.datadog.jenkins.plugins.datadog.stubs.QueueStub;
-import org.datadog.jenkins.plugins.datadog.stubs.RunExtStub;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Assert;
@@ -173,13 +171,9 @@ public class DatadogBuildListenerTest {
 
     @Test
     public void testOnCompletedWorkflowRun() throws Exception {
-        final int stageCount = 5;
-        final long stageDuration = 12000;
-        final long pauseDurationPerStage = 400;
-        final long buildDuration = stageDuration * stageCount;
-        final long pauseDuration = pauseDurationPerStage * stageCount;
+        final long buildDuration = 60000;
+        final long pauseDuration = 2000;
         final long totalDuration = buildDuration + pauseDuration;
-        final String[] stageNames = {"Stage 1: Checkout SCM", "Stage 2", "Stage 3", "Stage 4", "Stage 5"};
 
         WorkflowJob job = mock(WorkflowJob.class);
         when(job.getFullName()).thenReturn("Pipeline job");
@@ -193,15 +187,7 @@ public class DatadogBuildListenerTest {
         when(workflowRun.getNumber()).thenReturn(0);
         when(workflowRun.getResult()).thenReturn(Result.SUCCESS);
 
-        RunExtStub runExt = new RunExtStub();
-        for(int i = 0; i < stageCount; i++){
-            StageNodeExt stage = mock(StageNodeExt.class);
-            when(stage.getName()).thenReturn(stageNames[i]);
-            when(stage.getPauseDurationMillis()).thenReturn(pauseDurationPerStage);
-            when(stage.getDurationMillis()).thenReturn(stageDuration);
-            runExt.addStage(stage);
-        }
-        ((DatadogBuildListenerTestWrapper)datadogBuildListener).setStubbedRunExt(runExt);
+        ((DatadogBuildListenerTestWrapper)datadogBuildListener).setStubbedPauseDurationMillis(pauseDuration);
 
         datadogBuildListener.onCompleted(workflowRun, listener);
         DatadogCountersPublisher.publishMetrics(client);
