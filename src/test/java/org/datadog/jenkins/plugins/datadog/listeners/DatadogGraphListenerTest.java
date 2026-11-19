@@ -69,8 +69,12 @@ import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.support.actions.PauseAction;
+import org.jenkinsci.plugins.workflow.support.steps.input.InputAction;
+import org.jenkinsci.plugins.workflow.support.steps.input.InputStepExecution;
 import org.jetbrains.annotations.NotNull;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -202,13 +206,27 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         WorkflowJob job = jenkinsRule.jenkins.createProject(WorkflowJob.class, "pipelineIntegration");
         String definition = getPipelineDefinition("testPipelineDefinition.txt");
         job.setDefinition(new CpsFlowDefinition(definition, true));
-        WorkflowRun run = job.scheduleBuild2(0).get();
+        QueueTaskFuture<WorkflowRun> build = job.scheduleBuild2(0);
+        WorkflowRun run = build.waitForStart();
+        jenkinsRule.waitForMessage("Input requested", run);
+        InputAction inputAction = run.getAction(InputAction.class);
+        assertNotNull(inputAction);
+        InputStepExecution inputExecution = inputAction.getExecution("Pause");
+        assertNotNull(inputExecution);
+        FlowNode inputNode = inputExecution.getContext().get(FlowNode.class);
+        assertNotNull(inputNode);
+        inputExecution.proceed(Collections.singletonMap("Choice", "yes"));
+        jenkinsRule.assertBuildStatusSuccess(build.get());
         BufferedReader br = new BufferedReader(run.getLogReader());
         String s;
         while ((s = br.readLine()) != null) {
             System.out.println(s);
         }
         br.close();
+        assertFalse(PauseAction.isPaused(inputNode));
+        long expectedPauseMillis = PauseAction.getPauseDuration(inputNode);
+        assertTrue(expectedPauseMillis > 0);
+
         String[] baseTags = new String[]{
                 "jenkins_url:" + DatadogUtilities.getJenkinsUrl(),
                 "user_id:anonymous",
@@ -238,11 +256,7 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
             clientStub.assertMetric("jenkins.job.stage_duration", hostname, expectedTags);
 
             if (stageName.equals("Test On Linux") || stageName.equals("Parallel tests")) {
-                // Timeout is set to 11s, but since there are other instructions,
-                // we test it's at least 10s.
-                double pauseValue = clientStub.assertMetricGetValue("jenkins.job.stage_pause_duration", hostname, expectedTags);
-                assertTrue(pauseValue > 10000);
-                assertTrue(pauseValue <= 11100);
+                clientStub.assertMetric("jenkins.job.stage_pause_duration", expectedPauseMillis, hostname, expectedTags);
             } else {
                 clientStub.assertMetric("jenkins.job.stage_pause_duration", 0.0, hostname, expectedTags);
             }
@@ -394,9 +408,9 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         jenkins.getGlobalNodeProperties().add(prop);
         job.scheduleBuild2(0).get();
 
-        clientStub.waitForTraces(5);
+        clientStub.waitForTraces(6);
         final List<TraceSpan> spans = clientStub.getSpans();
-        assertEquals(5, spans.size());
+        assertEquals(6, spans.size());
         for(TraceSpan span : spans) {
             assertEquals("401d997a6eede777602669ccaec059755c98161f", span.getMeta().get(CITags.GIT_COMMIT_SHA));
         }
@@ -529,9 +543,9 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         jenkins.getGlobalNodeProperties().add(prop);
         job.scheduleBuild2(0).get();
 
-        clientStub.waitForTraces(5);
+        clientStub.waitForTraces(6);
         final List<TraceSpan> spans = clientStub.getSpans();
-        assertEquals(5, spans.size());
+        assertEquals(6, spans.size());
         for(TraceSpan span : spans) {
             assertEquals(toUrl(localGitRepoPath.getRemote()), span.getMeta().get(CITags.GIT_REPOSITORY_URL));
         }
@@ -561,9 +575,9 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         jenkins.getGlobalNodeProperties().add(prop);
         job.scheduleBuild2(0).get();
 
-        clientStub.waitForWebhooks(5);
+        clientStub.waitForWebhooks(6);
         final List<JSONObject> webhooks = clientStub.getWebhooks();
-        assertEquals(5, webhooks.size());
+        assertEquals(6, webhooks.size());
         for(JSONObject webhook : webhooks) {
             assertEquals(toUrl(localGitRepoPath.getRemote()), webhook.getJSONObject("git").get("repository_url"));
         }
@@ -1092,9 +1106,9 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         job.setDefinition(new CpsFlowDefinition(definition, true));
         job.scheduleBuild2(0).get();
 
-        clientStub.waitForTraces(2);
+        clientStub.waitForTraces(3);
         final List<TraceSpan> spans = clientStub.getSpans();
-        assertEquals(2, spans.size());
+        assertEquals(3, spans.size());
 
         final TraceSpan stage = spans.get(1);
         assertEquals("Stage", stage.getResourceName());
@@ -1110,9 +1124,9 @@ public class DatadogGraphListenerTest extends DatadogTraceAbstractTest {
         job.setDefinition(new CpsFlowDefinition(definition, true));
         job.scheduleBuild2(0).get();
 
-        clientStub.waitForWebhooks(2);
+        clientStub.waitForWebhooks(3);
         final List<JSONObject> webhooks = clientStub.getWebhooks();
-        assertEquals(2, webhooks.size());
+        assertEquals(3, webhooks.size());
 
         final JSONObject stage = searchWebhookByLevel(webhooks, "stage");
         assertNotNull("Could not find stage webhook", stage);

@@ -52,7 +52,7 @@ import javax.annotation.Nonnull;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.datadog.jenkins.plugins.datadog.clients.ClientHolder;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogAgentConfiguration;
 import org.datadog.jenkins.plugins.datadog.configuration.DatadogApiConfiguration;
@@ -489,7 +489,6 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             setGlobalTags(formData.getString("globalTags"));
             setGlobalJobTags(formData.getString("globalJobTags"));
             setRefreshDogstatsdClient(formData.getBoolean("refreshDogstatsdClient"));
-            setCacheBuildRuns(formData.getBoolean("cacheBuildRuns"));
             setUseAwsInstanceHostname(formData.getBoolean("useAwsInstanceHostname"));
 
             boolean emitSecurityEvents = formData.getBoolean("emitSecurityEvents");
@@ -739,6 +738,9 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
 
     /**
      * @return - A {@link Boolean} indicating if the user has configured Datadog to cache build runs
+     * No longer has any effect: pause durations are computed directly from the flow graph.
+     * Kept (and deliberately not {@code @Deprecated}, which Configuration as Code can reject) so that existing
+     * configurations still load.
      */
     public boolean isCacheBuildRuns() {
         return cacheBuildRuns;
@@ -748,6 +750,7 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
      * Set the checkbox in the UI, used for Jenkins data binding
      *
      * @param cacheBuildRuns - The checkbox status (checked/unchecked)
+     * No longer has any effect, see {@link #isCacheBuildRuns()}.
      */
     public void setCacheBuildRuns(boolean cacheBuildRuns) {
         this.cacheBuildRuns = cacheBuildRuns;
@@ -1254,7 +1257,11 @@ public class DatadogGlobalConfiguration extends GlobalConfiguration {
             this.included = DatadogUtilities.cstrToList(this.whitelist, Pattern::compile);
         }
         if (DATADOG_AGENT_CLIENT_TYPE.equals(reportWith)) {
-            this.datadogClientConfiguration = new DatadogAgentConfiguration(this.targetHost, this.targetPort, this.targetLogCollectionPort, this.targetTraceCollectionPort);
+            String agentHost = DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getAgentHostFromEnvVars(this.targetHost);
+            Integer agentPort = DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getAgentPortFromEnvVars(this.targetPort);
+            Integer agentLogCollectionPort = DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getAgentLogCollectionPortFromEnvVars(this.targetLogCollectionPort);
+            Integer agentTraceCollectionPort = DatadogAgentConfiguration.DatadogAgentConfigurationDescriptor.getAgentTraceCollectionPortFromEnvVars(this.targetTraceCollectionPort);
+            this.datadogClientConfiguration = new DatadogAgentConfiguration(agentHost, agentPort, agentLogCollectionPort, agentTraceCollectionPort);
         }
         if (DATADOG_API_CLIENT_TYPE.equals(reportWith)) {
             DatadogIntakeUrls intake = new DatadogIntakeUrls(this.targetApiURL, this.targetLogIntakeURL, this.targetWebhookIntakeURL);

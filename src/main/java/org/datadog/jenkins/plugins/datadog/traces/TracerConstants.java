@@ -8,5 +8,6 @@ public final class TracerConstants {
     // These env vars will be used by datadog-ci CLI to continue the trace.
     public static final String TRACE_ID_ENVVAR_KEY = "DD_CUSTOM_TRACE_ID";
     public static final String SPAN_ID_ENVVAR_KEY = "DD_CUSTOM_PARENT_ID";
+    public static final String STAGE_ID_ENVVAR_KEY = "DD_CUSTOM_STAGE_ID";
 
 }

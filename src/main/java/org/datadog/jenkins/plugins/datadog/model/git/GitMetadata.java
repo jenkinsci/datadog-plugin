@@ -9,7 +9,7 @@ import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 import java.io.Serializable;
 import java.util.Objects;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.datadog.jenkins.plugins.datadog.util.conversion.DatadogConverter;
 import org.datadog.jenkins.plugins.datadog.util.conversion.VersionedConverter;
 
@@ -26,7 +26,8 @@ public class GitMetadata implements Serializable {
     this.repositoryURL = repositoryURL;
     this.defaultBranch = defaultBranch;
     this.branch = branch;
-    this.commitMetadata = commitMetadata;
+    // commit metadata is null when HEAD cannot be resolved; a null here breaks every later merge()
+    this.commitMetadata = commitMetadata != null ? commitMetadata : GitCommitMetadata.EMPTY;
   }
 
   public String getRepositoryURL() {

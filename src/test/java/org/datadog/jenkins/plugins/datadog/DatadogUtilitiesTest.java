@@ -29,6 +29,8 @@ import hudson.EnvVars;
 import hudson.model.Computer;
 import hudson.model.Result;
 import org.apache.commons.math3.exception.NullArgumentException;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.jenkinsci.plugins.workflow.actions.*;
 import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
 import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
@@ -184,7 +186,18 @@ public class DatadogUtilitiesTest {
     }
 
     @Test
-    public void testGetHostname() {
+    public void testToJsonEscapesSpecialCharacters() {
+        String value = "quote\" backslash\\ newline\n";
+        Set<String> set = Collections.singleton(value);
+        assertEquals(value, new JSONArray(DatadogUtilities.toJson(set)).getString(0));
+
+        String key = "key\" backslash\\";
+        Map<String, String> map = Collections.singletonMap(key, value);
+        assertEquals(value, new JSONObject(DatadogUtilities.toJson(map)).getString(key));
+    }
+
+    @Test
+    public void testGetHostname() throws IOException {
         try (MockedStatic datadogUtilities = Mockito.mockStatic(DatadogUtilities.class)) {
             datadogUtilities.when(DatadogUtilities::getDatadogGlobalDescriptor).thenReturn(cfg);
             HttpURLConnection mockHTTP = mock(HttpURLConnection.class);

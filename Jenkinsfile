@@ -1,11 +1,10 @@
-/*
- See the documentation for more options:
- https://github.com/jenkins-infra/pipeline-library/
-*/
-buildPlugin(
-  forkCount: '1C', // run this number of tests in parallel for faster feedback.  If the number terminates with a 'C', the value will be multiplied by the number of available CPU cores
-  useContainerAgent: true, // Set to `false` if you need to use Docker for containerized tests
-  configurations: [
-    [platform: 'linux', jdk: 21],
-    [platform: 'windows', jdk: 17],
-])
+def minimumSupported = "2.541.3"
+def commonsLangRemoved = "2.579"
+def configurations = [
+    [ platform: "linux", jdk: "17", jenkins: null ],
+    [ platform: "windows", jdk: "17", jenkins: minimumSupported ],
+    [ platform: "linux", jdk: "21", jenkins: commonsLangRemoved ],
+    [ platform: "windows", jdk: "21", jenkins: commonsLangRemoved ],
+]
+
+buildPlugin(configurations: configurations)

@@ -10,7 +10,7 @@ A Jenkins plugin for automatically forwarding metrics, events, and service check
 
 ### Installation
 
-_This plugin requires [Jenkins 2.479.3][2] and Java 17._
+_This plugin requires [Jenkins 2.541.3][2] and Java 17._
 
 _For older versions of Jenkins (i.e 1.632+), you can find the 1.2.0 version of the plugin [here](https://updates.jenkins.io/download/plugins/datadog/)._
 
@@ -61,6 +61,16 @@ To configure your Datadog Plugin, navigate to the `Manage Jenkins -> Configure S
 5. (optional) Enter your Log Collection Port, configure [log collection](#log-collection-for-agents) in the Datadog Agent, and select "Enable Log Collection".
 6. (optional) Enter your Trace Collection Port and select "Enable CI Visibility", optionally configuring your CI Instance name.
 7. Save your configuration.
+
+### Port 7 usage 
+When a Jenkins Agent node connects to the controller, the plugin on the controller sends a corresponding event to Datadog. During event creation, the plugin calls Jenkins core APIs to retrieve Agent metadata (such as hostname and labels). These API calls internally perform several checks, including a reachability test using java.net.InetAddress#isReachable. This call sends a TCP SYN packet from the controller to port 7 on the Agent node. The server on the Agent node responds with a RST packet (Reset).
+
+This is a common technique used to verify network connectivity between services. The fact that it gets a RST response (rather than no response) confirms that:
+
+1. The network path exists
+2. The server is reachable
+3. The server is actively rejecting the connection (which is what we want)
+
 
 #### Groovy script
 
@@ -469,7 +479,7 @@ Checkout the [contributing guidelines][11] before you submit an issue or a pull 
 Checkout the [development document][12] for tips on spinning up a quick development environment locally.
 
 [1]: https://plugins.jenkins.io/datadog
-[2]: http://updates.jenkins-ci.org/download/war/2.361.4/jenkins.war
+[2]: https://www.jenkins.io/changelog-stable/2.541.3/
 [3]: https://wiki.jenkins-ci.org/display/JENKINS/Plugins#Plugins-Howtoinstallplugins
 [4]: https://app.datadoghq.com/account/settings#api
 [5]: https://github.com/jenkinsci/docker

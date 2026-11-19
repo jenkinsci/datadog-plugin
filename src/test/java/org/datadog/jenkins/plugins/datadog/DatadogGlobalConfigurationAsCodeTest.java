@@ -189,5 +189,36 @@ public class DatadogGlobalConfigurationAsCodeTest {
         Assert.assertFalse(cfg.isCacheBuildRuns());
         Assert.assertTrue(cfg.isUseAwsInstanceHostname());
     }
+
+    @Test
+    @ConfiguredWithCode("test-config-legacy-agent-without-port.yml")
+    public void testLegacyAgentConfigurationAsCodeCompatibilityWithDefaultValues() {
+        DatadogGlobalConfiguration cfg = DatadogUtilities.getDatadogGlobalDescriptor();
+        DatadogClientConfiguration datadogClientConfiguration = cfg.getDatadogClientConfiguration();
+        Assert.assertTrue(datadogClientConfiguration instanceof DatadogAgentConfiguration);
+
+        DatadogAgentConfiguration agentConfiguration = (DatadogAgentConfiguration) datadogClientConfiguration;
+        Assert.assertEquals("my-target-host", agentConfiguration.getAgentHost());
+        Assert.assertEquals((Integer) 8125, agentConfiguration.getAgentPort());
+        Assert.assertEquals(null, agentConfiguration.getAgentLogCollectionPort());
+        Assert.assertEquals((Integer) 8126, agentConfiguration.getAgentTraceCollectionPort());
+
+        Assert.assertFalse(cfg.getEnableCiVisibility());
+        Assert.assertEquals("my-trace-service-name", cfg.getCiInstanceName());
+        Assert.assertEquals("my-blacklist", cfg.getExcluded());
+        Assert.assertEquals("my-whitelist", cfg.getIncluded());
+        Assert.assertEquals("my-hostname", cfg.getHostname());
+        Assert.assertEquals("my-global-tag-file", cfg.getGlobalTagFile());
+        Assert.assertEquals("my-global-tags", cfg.getGlobalTags());
+        Assert.assertEquals("my-global-job-tags", cfg.getGlobalJobTags());
+        Assert.assertEquals("my-include-events", cfg.getIncludeEvents());
+        Assert.assertEquals("my-exclude-events", cfg.getExcludeEvents());
+        Assert.assertTrue(cfg.isEmitSecurityEvents());
+        Assert.assertFalse(cfg.isEmitSystemEvents());
+        Assert.assertTrue(cfg.isCollectBuildLogs());
+        Assert.assertTrue(cfg.isRefreshDogstatsdClient());
+        Assert.assertFalse(cfg.isCacheBuildRuns());
+        Assert.assertTrue(cfg.isUseAwsInstanceHostname());
+    }
 }
 

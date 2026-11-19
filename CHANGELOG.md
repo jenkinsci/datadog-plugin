@@ -1,5 +1,46 @@
 Changes
 =======
+## 10.1.0 / 2026-11-17
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-10.0.0...datadog-10.1.0
+
+> [!NOTE]
+> `jenkins.job.pause_duration` now also counts `input` pauses outside stages, in an outer stage after a nested stage, and in parallel branches without a stage, which were previously missed. `jenkins.job.build_duration` changes accordingly, so dashboards may show a step change for scripted pipelines that use `input` this way.
+
+* [Changed] Remove the dependency on the Pipeline: Stage View REST API plugin and compute pause durations directly from the Pipeline flow graph. The "Cache Build Runs" global option no longer has any effect and has been removed from the UI; existing configurations still load. See [#545](https://github.com/jenkinsci/datadog-plugin/pull/545).
+
+## 10.0.0 / 2026-10-15
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.2.1...datadog-10.0.0
+
+> [!IMPORTANT]
+> This release requires **Jenkins 2.541.3 or newer** and **Java 17 or newer**, up from Jenkins 2.361.4 and Java 11.
+> Upgrade Jenkins and its Java runtime before installing this release. Plugin version 9.2.1 remains available for older Jenkins installations.
+
+* [Changed] Raise the minimum supported Jenkins version to 2.541.3 and the minimum Java version to 17. See [#539](https://github.com/jenkinsci/datadog-plugin/pull/539).
+* [Changed] Update plugin dependencies to maintained Jenkins API plugins and Jetty 12. See [#539](https://github.com/jenkinsci/datadog-plugin/pull/539).
+* [Fixed] Fix Datadog plugin startup on Jenkins 2.579 and newer after Commons Lang 2 was removed from Jenkins core. See [#539](https://github.com/jenkinsci/datadog-plugin/pull/539).
+
+## 9.2.1 / 2026-10-06
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.2.0...datadog-9.2.1
+
+* [Fixed] Fix NullPointerException when Git HEAD commit cannot be resolved. See [#538](https://github.com/jenkinsci/datadog-plugin/pull/538).
+
+## 9.2.0 / 2026-04-06
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.1.8...datadog-9.2.0
+
+* [Added] Add stage flow node Id to environment contributor. See [#529](https://github.com/jenkinsci/datadog-plugin/pull/529).
+* [Fixed] Fix testAllQueueMetrics. See [#530](https://github.com/jenkinsci/datadog-plugin/pull/530).
+* [Changed] Update codeowners and small fixes. See [#528](https://github.com/jenkinsci/datadog-plugin/pull/528).
+
+## 9.1.8 / 2025-10-02
+### Details
+https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.1.7...datadog-9.1.8
+
+* [Fixed] Fix default values when using old format of CasC. See [#524](https://github.com/jenkinsci/datadog-plugin/pull/524).
+
 ## 9.1.7 / 2025-08-19
 ### Details
 https://github.com/jenkinsci/datadog-plugin/compare/datadog-9.1.6...datadog-9.1.7
